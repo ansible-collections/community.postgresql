@@ -13,12 +13,12 @@ The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) Pos
 
 ## Included content
 
-- **Info Modules**:
+- **Info modules**:
   - [postgresql_info](https://docs.ansible.com/ansible/latest/modules/postgresql_info_module.html)
   - [postgresql_ping](https://docs.ansible.com/ansible/latest/modules/postgresql_ping_module.html)
   - [postgresql_user_obj_stat_info](https://docs.ansible.com/ansible/latest/modules/postgresql_user_obj_stat_info_module.html)
 
-- **Basic Modules**:
+- **Basic modules**:
   - [postgresql_db](https://docs.ansible.com/ansible/latest/modules/postgresql_db_module.html)
   - [postgresql_ext](https://docs.ansible.com/ansible/latest/modules/postgresql_ext_module.html)
   - [postgresql_lang](https://docs.ansible.com/ansible/latest/modules/postgresql_lang_module.html)
@@ -30,7 +30,7 @@ The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) Pos
   - [postgresql_query](https://docs.ansible.com/ansible/latest/modules/postgresql_query_module.html)
   - [postgresql_user](https://docs.ansible.com/ansible/latest/modules/postgresql_user_module.html)
 
-- **Other Modules**:
+- **Other modules**:
   - [postgresql_copy](https://docs.ansible.com/ansible/latest/modules/postgresql_copy_module.html)
   - [postgresql_idx](https://docs.ansible.com/ansible/latest/modules/postgresql_idx_module.html)
   - [postgresql_membership](https://docs.ansible.com/ansible/latest/modules/postgresql_membership_module.html)
