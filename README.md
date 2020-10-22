@@ -1,30 +1,66 @@
-# collection_template
-You can build a new repository for an Ansible Collection using this template by following [Creating a repository from a template](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template). This README.md contains recommended headings for your collection README.md, with comments describing what each section should contain. Once you have created your collection repository, delete this paragraph and the title above it from your README.md.
-
-# Foo Collection
-<!-- Add CI and code coverage badges here. Samples included below. -->
-[![CI](https://github.com/ansible-collections/REPONAMEHERE/workflows/CI/badge.svg?event=push)](https://github.com/ansible-collections/REPONAMEHERE/actions) [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/REPONAMEHERE)](https://codecov.io/gh/ansible-collections/REPONAMEHERE)
-
-<!-- Describe the collection and why a user would want to use it. What does the collection do? -->
-
-## Tested with Ansible
-
-<!-- List the versions of Ansible the collection has been tested with. Must match what is in galaxy.yml. -->
+# MOVING IN PROGRESS! PostgreSQL collection for Ansible
+[![Plugins CI](https://github.com/ansible-collections/community.postgresql/workflows/Plugins%20CI/badge.svg?event=push)](https://github.com/ansible-collections/community.postgresql/actions?query=workflow%3A"Plugins+CI") [![Roles CI](https://github.com/ansible-collections/community.postgresql/workflows/Roles%20CI/badge.svg?event=push)](https://github.com/ansible-collections/community.postgresql/actions?query=workflow%3A"Roles+CI") [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)
 
 ## External requirements
 
-<!-- List any external resources the collection depends on, for example minimum versions of an OS, libraries, or utilities. Do not list other Ansible collections here. -->
+The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) PostgreSQL database adapter.
 
-### Supported connections
-<!-- Optional. If your collection supports only specific connection types (such as HTTPAPI, netconf, or others), list them here. -->
+## Tested with Ansible
+
+- 2.9
+- 2.10
+- devel
 
 ## Included content
 
-<!-- Galaxy will eventually list the module docs within the UI, but until that is ready, you may need to either describe your plugins etc here, or point to an external docsite to cover that information. -->
+- **Info Modules**:
+  - [postgresql_info](https://docs.ansible.com/ansible/latest/modules/postgresql_info_module.html)
+  - [postgresql_ping](https://docs.ansible.com/ansible/latest/modules/postgresql_ping_module.html)
+  - [postgresql_user_obj_stat_info](https://docs.ansible.com/ansible/latest/modules/postgresql_user_obj_stat_info_module.html)
+
+- **Basic Modules**:
+  - [postgresql_db](https://docs.ansible.com/ansible/latest/modules/postgresql_db_module.html)
+  - [postgresql_ext](https://docs.ansible.com/ansible/latest/modules/postgresql_ext_module.html)
+  - [postgresql_lang](https://docs.ansible.com/ansible/latest/modules/postgresql_lang_module.html)
+  - [postgresql_pg_hba](https://docs.ansible.com/ansible/latest/modules/postgresql_hba_module.html)
+  - [postgresql_privs](https://docs.ansible.com/ansible/latest/modules/postgresql_privs_module.html)
+  - [postgresql_set](https://docs.ansible.com/ansible/latest/modules/postgresql_set_module.html)
+  - [postgresql_schema](https://docs.ansible.com/ansible/latest/modules/postgresql_schema_module.html)
+  - [postgresql_tablespace](https://docs.ansible.com/ansible/latest/modules/postgresql_tablespace_module.html)
+  - [postgresql_query](https://docs.ansible.com/ansible/latest/modules/postgresql_query_module.html)
+  - [postgresql_user](https://docs.ansible.com/ansible/latest/modules/postgresql_user_module.html)
+
+- **Other Modules**:
+  - [postgresql_copy](https://docs.ansible.com/ansible/latest/modules/postgresql_copy_module.html)
+  - [postgresql_idx](https://docs.ansible.com/ansible/latest/modules/postgresql_idx_module.html)
+  - [postgresql_membership](https://docs.ansible.com/ansible/latest/modules/postgresql_membership_module.html)
+  - [postgresql_owner](https://docs.ansible.com/ansible/latest/modules/postgresql_owner_module.html)
+  - [postgresql_publication](https://docs.ansible.com/ansible/latest/modules/postgresql_publication_module.html)
+  - [postgresql_sequence](https://docs.ansible.com/ansible/latest/modules/postgresql_sequence_module.html)
+  - [postgresql_slot](https://docs.ansible.com/ansible/latest/modules/postgresql_slot_module.html)
+  - [postgresql_subscription](https://docs.ansible.com/ansible/latest/modules/postgresql_subscription_module.html)
+  - [postgresql_table](https://docs.ansible.com/ansible/latest/modules/postgresql_table_module.html)
 
 ## Using this collection
 
-<!--Include some quick examples that cover the most common use cases for your collection content. -->
+### Installing the Collection from Ansible Galaxy
+
+Before using the PostgreSQL collection, you need to install it with the Ansible Galaxy CLI:
+
+```bash
+ansible-galaxy collection install community.postgresql
+```
+
+You can include it in a `requirements.yml` file and install it via `ansible-galaxy collection install -r requirements.yml`, using the format:
+
+```yaml
+---
+collections:
+  - name: community.postgresql
+    version: 0.1.0
+```
+
+You can also download the tarball from Ansible Galaxy and install the collection manually wherever you need.
 
 See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.
 
@@ -32,26 +68,29 @@ See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_gui
 
 <!--Describe how the community can contribute to your collection. At a minimum, include how and where users can create issues to report problems or request features for this collection.  List contribution requirements, including preferred workflows and necessary testing, so you can benefit from community PRs. If you are following general Ansible contributor guidelines, you can link to - [Ansible Community Guide](https://docs.ansible.com/ansible/latest/community/index.html). -->
 
+We're following the general Ansible contributor guidelines; see [Ansible Community Guide](https://docs.ansible.com/ansible/latest/community/index.html).
+
+If you want to clone this repositority (or a fork of it) to improve it, you can proceed as follows:
+1. Create a directory `ansible_collections/community`;
+2. In there, checkout this repository (or a fork) as `postgresql`;
+3. Add the directory containing `ansible_collections` to your [ANSIBLE_COLLECTIONS_PATH](https://docs.ansible.com/ansible/latest/reference_appendices/config.html#collections-paths).
+
+See [Ansible's dev guide](https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#contributing-to-collections) for more information.
 
 ## Release notes
 
-See the [changelog](https://github.com/ansible-collections/REPONAMEHERE/tree/main/CHANGELOG.rst).
+See the [changelog](https://github.com/ansible-collections/community.postgresql/blob/main/CHANGELOG.rst).
 
 ## Roadmap
 
-<!-- Optional. Include the roadmap for this collection, and the proposed release/versioning strategy so users can anticipate the upgrade/update cycle. -->
+FIXME
 
 ## More information
-
-<!-- List out where the user can find additional information, such as working group meeting times, slack/IRC channels, or documentation for the product this collection automates. At a minimum, link to: -->
 
 - [Ansible Collection overview](https://github.com/ansible-collections/overview)
 - [Ansible User guide](https://docs.ansible.com/ansible/latest/user_guide/index.html)
 - [Ansible Developer guide](https://docs.ansible.com/ansible/latest/dev_guide/index.html)
-- [Ansible Collections Checklist](https://github.com/ansible-collections/overview/blob/master/collection_requirements.rst)
 - [Ansible Community code of conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html)
-- [The Bullhorn (the Ansible Contributor newsletter)](https://us19.campaign-archive.com/home/?u=56d874e027110e35dea0e03c1&id=d6635f5420)
-- [Changes impacting Contributors](https://github.com/ansible-collections/overview/issues/45)
 
 ## Licensing
 
