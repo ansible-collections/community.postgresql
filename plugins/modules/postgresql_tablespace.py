@@ -103,37 +103,37 @@ author:
 - Andrew Klychkov (@Andersson007)
 
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Create a new tablespace called acme and set bob as an its owner
-  community.general.postgresql_tablespace:
+  community.postgresql.postgresql_tablespace:
     name: acme
     owner: bob
     location: /data/foo
 
 - name: Create a new tablespace called bar with tablespace options
-  community.general.postgresql_tablespace:
+  community.postgresql.postgresql_tablespace:
     name: bar
     set:
       random_page_cost: 1
       seq_page_cost: 1
 
 - name: Reset random_page_cost option
-  community.general.postgresql_tablespace:
+  community.postgresql.postgresql_tablespace:
     name: bar
     set:
       random_page_cost: reset
 
 - name: Rename the tablespace from bar to pcie_ssd
-  community.general.postgresql_tablespace:
+  community.postgresql.postgresql_tablespace:
     name: bar
     rename_to: pcie_ssd
 
 - name: Drop tablespace called bloat
-  community.general.postgresql_tablespace:
+  community.postgresql.postgresql_tablespace:
     name: bloat
     state: absent
 '''
@@ -189,7 +189,7 @@ except ImportError:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
 
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
 )

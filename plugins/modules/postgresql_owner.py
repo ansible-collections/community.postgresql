@@ -73,16 +73,16 @@ options:
     default: yes
     version_added: '0.2.0'
 seealso:
-- module: community.general.postgresql_user
-- module: community.general.postgresql_privs
-- module: community.general.postgresql_membership
+- module: community.postgresql.postgresql_user
+- module: community.postgresql.postgresql_privs
+- module: community.postgresql.postgresql_membership
 - name: PostgreSQL REASSIGN OWNED command reference
   description: Complete reference of the PostgreSQL REASSIGN OWNED command documentation.
   link: https://www.postgresql.org/docs/current/sql-reassign-owned.html
 author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
@@ -91,41 +91,41 @@ EXAMPLES = r'''
 # ansible -m postgresql_owner -a "db=bar new_owner=alice obj_name=myfunc obj_type=function"
 
 - name: The same as above by playbook
-  community.general.postgresql_owner:
+  community.postgresql.postgresql_owner:
     db: bar
     new_owner: alice
     obj_name: myfunc
     obj_type: function
 
 - name: Set owner as bob for table acme in database bar
-  community.general.postgresql_owner:
+  community.postgresql.postgresql_owner:
     db: bar
     new_owner: bob
     obj_name: acme
     obj_type: table
 
 - name: Set owner as alice for view test_view in database bar
-  community.general.postgresql_owner:
+  community.postgresql.postgresql_owner:
     db: bar
     new_owner: alice
     obj_name: test_view
     obj_type: view
 
 - name: Set owner as bob for tablespace ssd in database foo
-  community.general.postgresql_owner:
+  community.postgresql.postgresql_owner:
     db: foo
     new_owner: bob
     obj_name: ssd
     obj_type: tablespace
 
 - name: Reassign all object in database bar owned by bob to alice
-  community.general.postgresql_owner:
+  community.postgresql.postgresql_owner:
     db: bar
     new_owner: alice
     reassign_owned_by: bob
 
 - name: Reassign all object in database bar owned by bob and bill to alice
-  community.general.postgresql_owner:
+  community.postgresql.postgresql_owner:
     db: bar
     new_owner: alice
     reassign_owned_by:
@@ -149,7 +149,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
 )

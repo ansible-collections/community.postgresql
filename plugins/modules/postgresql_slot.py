@@ -94,26 +94,26 @@ author:
 - Andrew Klychkov (@Andersson007)
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Create physical_one physical slot if doesn't exist
   become_user: postgres
-  community.general.postgresql_slot:
+  community.postgresql.postgresql_slot:
     slot_name: physical_one
     db: ansible
 
 - name: Remove physical_one slot if exists
   become_user: postgres
-  community.general.postgresql_slot:
+  community.postgresql.postgresql_slot:
     slot_name: physical_one
     db: ansible
     state: absent
 
 - name: Create logical_one logical slot to the database acme if doesn't exist
-  community.general.postgresql_slot:
+  community.postgresql.postgresql_slot:
     name: logical_slot_one
     slot_type: logical
     state: present
@@ -121,7 +121,7 @@ EXAMPLES = r'''
     db: "acme"
 
 - name: Remove logical_one slot if exists from the cluster running on another host and non-standard port
-  community.general.postgresql_slot:
+  community.postgresql.postgresql_slot:
     name: logical_one
     login_host: mydatabase.example.org
     port: 5433
@@ -151,7 +151,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (

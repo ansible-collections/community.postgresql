@@ -57,7 +57,7 @@ options:
       database objects of type I(type) in the schema specified via I(schema).
       (This also works with PostgreSQL < 9.0.) (C(ALL_IN_SCHEMA) is available
        for C(function) and C(partition table) since Ansible 2.8)
-    - C(procedure) is supported since PostgreSQL 11 and M(community.general) collection 1.3.0.
+    - C(procedure) is supported since PostgreSQL 11 and M(community.postgresql) collection 1.3.0.
     - If I(type) is C(database), this parameter can be omitted, in which case
       privileges are set for the database specified via I(database).
     - If I(type) is I(function) or I(procedure), colons (":") in object names will be
@@ -187,9 +187,9 @@ notes:
 - When revoking privileges, C(RESTRICT) is assumed (see PostgreSQL docs).
 
 seealso:
-- module: community.general.postgresql_user
-- module: community.general.postgresql_owner
-- module: community.general.postgresql_membership
+- module: community.postgresql.postgresql_user
+- module: community.postgresql.postgresql_owner
+- module: community.postgresql.postgresql_membership
 - name: PostgreSQL privileges
   description: General information about PostgreSQL privileges.
   link: https://www.postgresql.org/docs/current/ddl-priv.html
@@ -201,7 +201,7 @@ seealso:
   link: https://www.postgresql.org/docs/current/sql-revoke.html
 
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 
 author:
@@ -214,7 +214,7 @@ EXAMPLES = r'''
 # GRANT SELECT, INSERT, UPDATE ON TABLE public.books, public.authors
 # TO librarian, reader WITH GRANT OPTION
 - name: Grant privs to librarian and reader on database library
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     database: library
     state: present
     privs: SELECT,INSERT,UPDATE
@@ -225,7 +225,7 @@ EXAMPLES = r'''
     grant_option: yes
 
 - name: Same as above leveraging default values
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     privs: SELECT,INSERT,UPDATE
     objs: books,authors
@@ -236,7 +236,7 @@ EXAMPLES = r'''
 # Note that role "reader" will be *granted* INSERT privilege itself if this
 # isn't already the case (since state: present).
 - name: Revoke privs from reader
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     state: present
     priv: INSERT
@@ -246,7 +246,7 @@ EXAMPLES = r'''
 
 # "public" is the default schema. This also works for PostgreSQL 8.x.
 - name: REVOKE INSERT, UPDATE ON ALL TABLES IN SCHEMA public FROM reader
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     state: absent
     privs: INSERT,UPDATE
@@ -254,7 +254,7 @@ EXAMPLES = r'''
     role: reader
 
 - name: GRANT ALL PRIVILEGES ON SCHEMA public, math TO librarian
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     privs: ALL
     type: schema
@@ -263,7 +263,7 @@ EXAMPLES = r'''
 
 # Note the separation of arguments with colons.
 - name: GRANT ALL PRIVILEGES ON FUNCTION math.add(int, int) TO librarian, reader
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     privs: ALL
     type: function
@@ -274,7 +274,7 @@ EXAMPLES = r'''
 # Note that group role memberships apply cluster-wide and therefore are not
 # restricted to database "library" here.
 - name: GRANT librarian, reader TO alice, bob WITH ADMIN OPTION
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     type: group
     objs: librarian,reader
@@ -284,7 +284,7 @@ EXAMPLES = r'''
 # Note that here "db: postgres" specifies the database to connect to, not the
 # database to grant privileges on (which is specified via the "objs" param)
 - name: GRANT ALL PRIVILEGES ON DATABASE library TO librarian
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: postgres
     privs: ALL
     type: database
@@ -294,7 +294,7 @@ EXAMPLES = r'''
 # If objs is omitted for type "database", it defaults to the database
 # to which the connection is established
 - name: GRANT ALL PRIVILEGES ON DATABASE library TO librarian
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     privs: ALL
     type: database
@@ -305,7 +305,7 @@ EXAMPLES = r'''
 # ALL_DEFAULT works only with privs=ALL
 # For specific
 - name: ALTER DEFAULT PRIVILEGES ON DATABASE library TO librarian
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     objs: ALL_DEFAULT
     privs: ALL
@@ -318,7 +318,7 @@ EXAMPLES = r'''
 # ALL_DEFAULT works only with privs=ALL
 # For specific
 - name: ALTER DEFAULT PRIVILEGES ON DATABASE library TO reader, step 1
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     objs: TABLES,SEQUENCES
     privs: SELECT
@@ -326,7 +326,7 @@ EXAMPLES = r'''
     role: reader
 
 - name: ALTER DEFAULT PRIVILEGES ON DATABASE library TO reader, step 2
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     objs: TYPES
     privs: USAGE
@@ -335,16 +335,16 @@ EXAMPLES = r'''
 
 # Available since version 2.8
 - name: GRANT ALL PRIVILEGES ON FOREIGN DATA WRAPPER fdw TO reader
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: test
     objs: fdw
     privs: ALL
     type: foreign_data_wrapper
     role: reader
 
-# Available since community.general 0.2.0
+# Available since community.postgresql 0.2.0
 - name: GRANT ALL PRIVILEGES ON TYPE customtype TO reader
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: test
     objs: customtype
     privs: ALL
@@ -353,7 +353,7 @@ EXAMPLES = r'''
 
 # Available since version 2.8
 - name: GRANT ALL PRIVILEGES ON FOREIGN SERVER fdw_server TO reader
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: test
     objs: fdw_server
     privs: ALL
@@ -363,7 +363,7 @@ EXAMPLES = r'''
 # Available since version 2.8
 # Grant 'execute' permissions on all functions in schema 'common' to role 'caller'
 - name: GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA common TO caller
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     type: function
     state: present
     privs: EXECUTE
@@ -373,9 +373,9 @@ EXAMPLES = r'''
 
 # Available since collection version 1.3.0
 # Grant 'execute' permissions on all procedures in schema 'common' to role 'caller'
-# Needs PostreSQL 11 or higher and community.general 1.3.0 or higher
+# Needs PostreSQL 11 or higher and community.postgresql 1.3.0 or higher
 - name: GRANT EXECUTE ON ALL PROCEDURES IN SCHEMA common TO caller
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     type: prucedure
     state: present
     privs: EXECUTE
@@ -389,7 +389,7 @@ EXAMPLES = r'''
 # default to the role reader.
 # For specific
 - name: ALTER privs
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     schema: library
     objs: TABLES
@@ -404,7 +404,7 @@ EXAMPLES = r'''
 # default from the role reader.
 # For specific
 - name: ALTER privs
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     db: library
     state: absent
     schema: library
@@ -414,9 +414,9 @@ EXAMPLES = r'''
     role: reader
     target_roles: librarian
 
-# Available since community.general 0.2.0
+# Available since community.postgresql 0.2.0
 - name: Grant type privileges for pg_catalog.numeric type to alice
-  community.general.postgresql_privs:
+  community.postgresql.postgresql_privs:
     type: type
     roles: alice
     privs: ALL
@@ -445,7 +445,7 @@ except ImportError:
 
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     pg_quote_identifier,
     check_input,
 )

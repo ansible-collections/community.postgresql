@@ -127,19 +127,19 @@ author:
 - Jens Depuydt (@jensdepuydt)
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Add language pltclu to database testdb if it doesn't exist
-  community.general.postgresql_lang: db=testdb lang=pltclu state=present
+  community.postgresql.postgresql_lang: db=testdb lang=pltclu state=present
 
 # Add language pltclu to database testdb if it doesn't exist and mark it as trusted.
 # Marks the language as trusted if it exists but isn't trusted yet.
 # force_trust makes sure that the language will be marked as trusted
 - name: Add language pltclu to database testdb if it doesn't exist and mark it as trusted
-  community.general.postgresql_lang:
+  community.postgresql.postgresql_lang:
     db: testdb
     lang: pltclu
     state: present
@@ -147,27 +147,27 @@ EXAMPLES = r'''
     force_trust: yes
 
 - name: Remove language pltclu from database testdb
-  community.general.postgresql_lang:
+  community.postgresql.postgresql_lang:
     db: testdb
     lang: pltclu
     state: absent
 
 - name: Remove language pltclu from database testdb and remove all dependencies
-  community.general.postgresql_lang:
+  community.postgresql.postgresql_lang:
     db: testdb
     lang: pltclu
     state: absent
     cascade: yes
 
 - name: Remove language c from database testdb but ignore errors if something prevents the removal
-  community.general.postgresql_lang:
+  community.postgresql.postgresql_lang:
     db: testdb
     lang: pltclu
     state: absent
     fail_on_drop: no
 
 - name: In testdb change owner of mylang to alice
-  community.general.postgresql_lang:
+  community.postgresql.postgresql_lang:
     db: testdb
     lang: mylang
     owner: alice
@@ -182,7 +182,7 @@ queries:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     get_conn_params,

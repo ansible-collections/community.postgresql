@@ -89,18 +89,18 @@ author:
 - Loic Blot (@nerzhul) <loic.blot@unix-experience.fr>
 - Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Create a new publication with name "acme" targeting all tables in database "test".
-  community.general.postgresql_publication:
+  community.postgresql.postgresql_publication:
     db: test
     name: acme
 
 - name: Create publication "acme" publishing only prices and vehicles tables.
-  community.general.postgresql_publication:
+  community.postgresql.postgresql_publication:
     name: acme
     tables:
     - prices
@@ -109,7 +109,7 @@ EXAMPLES = r'''
 - name: >
     Create publication "acme", set user alice as an owner, targeting all tables.
     Allowable DML operations are INSERT and UPDATE only
-  community.general.postgresql_publication:
+  community.postgresql.postgresql_publication:
     name: acme
     owner: alice
     parameters:
@@ -118,7 +118,7 @@ EXAMPLES = r'''
 - name: >
     Assuming publication "acme" exists and there are targeted
     tables "prices" and "vehicles", add table "stores" to the publication.
-  community.general.postgresql_publication:
+  community.postgresql.postgresql_publication:
     name: acme
     tables:
     - prices
@@ -126,7 +126,7 @@ EXAMPLES = r'''
     - stores
 
 - name: Remove publication "acme" if exists in database "test".
-  community.general.postgresql_publication:
+  community.postgresql.postgresql_publication:
     db: test
     name: acme
     state: absent
@@ -178,7 +178,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
 )

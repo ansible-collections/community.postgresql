@@ -141,10 +141,10 @@ notes:
 - If you do not pass db parameter, sequence will be created in the database
   named postgres.
 seealso:
-- module: community.general.postgresql_table
-- module: community.general.postgresql_owner
-- module: community.general.postgresql_privs
-- module: community.general.postgresql_tablespace
+- module: community.postgresql.postgresql_table
+- module: community.postgresql.postgresql_owner
+- module: community.postgresql.postgresql_privs
+- module: community.postgresql.postgresql_tablespace
 - name: CREATE SEQUENCE reference
   description: Complete reference of the CREATE SEQUENCE command documentation.
   link: https://www.postgresql.org/docs/current/sql-createsequence.html
@@ -158,32 +158,32 @@ author:
 - Tobias Birkefeld (@tcraxs)
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Create an ascending bigint sequence called foobar in the default
         database
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foobar
 
 - name: Create an ascending integer sequence called foobar, starting at 101
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foobar
     data_type: integer
     start: 101
 
 - name: Create an descending sequence called foobar, starting at 101 and
         preallocated 10 sequence numbers in cache
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foobar
     increment: -1
     cache: 10
     start: 101
 
 - name: Create an ascending sequence called foobar, which cycle between 1 to 10
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foobar
     cycle: yes
     min: 1
@@ -191,32 +191,32 @@ EXAMPLES = r'''
 
 - name: Create an ascending bigint sequence called foobar in the default
         database with owner foobar
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foobar
     owner: foobar
 
 - name: Rename an existing sequence named foo to bar
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foo
     rename_to: bar
 
 - name: Change the schema of an existing sequence to foobar
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foobar
     newschema: foobar
 
 - name: Change the owner of an existing sequence to foobar
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foobar
     owner: foobar
 
 - name: Drop a sequence called foobar
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foobar
     state: absent
 
 - name: Drop a sequence called foobar with cascade
-  community.general.postgresql_sequence:
+  community.postgresql.postgresql_sequence:
     name: foobar
     cascade: yes
     state: absent
@@ -302,7 +302,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (

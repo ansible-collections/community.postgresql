@@ -15,7 +15,7 @@ short_description: Run PostgreSQL queries
 description:
 - Runs arbitrary PostgreSQL queries.
 - Can run queries from SQL script files.
-- Does not run against backup files. Use M(community.general.postgresql_db) with I(state=restore)
+- Does not run against backup files. Use M(community.postgresql.postgresql_db) with I(state=restore)
   to run queries on files made by pg_dump/pg_dumpall utilities.
 options:
   query:
@@ -82,7 +82,7 @@ options:
     elements: str
     version_added: '1.0.0'
 seealso:
-- module: community.general.postgresql_db
+- module: community.postgresql.postgresql_db
 - name: PostgreSQL Schema reference
   description: Complete reference of the PostgreSQL schema documentation.
   link: https://www.postgresql.org/docs/current/ddl-schemas.html
@@ -91,18 +91,18 @@ author:
 - Andrew Klychkov (@Andersson007)
 - Will Rouesnel (@wrouesnel)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Simple select query to acme db
-  community.general.postgresql_query:
+  community.postgresql.postgresql_query:
     db: acme
     query: SELECT version()
 
 - name: Select query to db acme with positional arguments and non-default credentials
-  community.general.postgresql_query:
+  community.postgresql.postgresql_query:
     db: acme
     login_user: django
     login_password: mysecretpass
@@ -112,7 +112,7 @@ EXAMPLES = r'''
     - test
 
 - name: Select query to test_db with named_args
-  community.general.postgresql_query:
+  community.postgresql.postgresql_query:
     db: test_db
     query: SELECT * FROM test WHERE id = %(id_val)s AND story = %(story_val)s
     named_args:
@@ -120,12 +120,12 @@ EXAMPLES = r'''
       story_val: test
 
 - name: Insert query to test_table in db test_db
-  community.general.postgresql_query:
+  community.postgresql.postgresql_query:
     db: test_db
     query: INSERT INTO test_table (id, story) VALUES (2, 'my_long_story')
 
 - name: Run queries from SQL script using UTF-8 client encoding for session
-  community.general.postgresql_query:
+  community.postgresql.postgresql_query:
     db: test_db
     path_to_script: /var/lib/pgsql/test.sql
     positional_args:
@@ -133,7 +133,7 @@ EXAMPLES = r'''
     encoding: UTF-8
 
 - name: Example of using autocommit parameter
-  community.general.postgresql_query:
+  community.postgresql.postgresql_query:
     db: test_db
     query: VACUUM
     autocommit: yes
@@ -141,7 +141,7 @@ EXAMPLES = r'''
 - name: >
     Insert data to the column of array type using positional_args.
     Note that we use quotes here, the same as for passing JSON, etc.
-  community.general.postgresql_query:
+  community.postgresql.postgresql_query:
     query: INSERT INTO test_table (array_column) VALUES (%s)
     positional_args:
     - '{1,2,3}'
@@ -156,7 +156,7 @@ EXAMPLES = r'''
     my_arr: '{1, 2, 3}'
 
 - name: Select from test table by passing positional_args as arrays
-  community.general.postgresql_query:
+  community.postgresql.postgresql_query:
     query: SELECT * FROM test_array_table WHERE arr_col1 = %s AND arr_col2 = %s
     positional_args:
     - '{{ my_list }}'
@@ -166,7 +166,7 @@ EXAMPLES = r'''
 # if the schema doesn't exist or the table hasn't been found there,
 # try to find it in the schema public
 - name: Select from test using search_path
-  community.general.postgresql_query:
+  community.postgresql.postgresql_query:
     query: SELECT * FROM test_array_table
     search_path:
     - app1
@@ -232,7 +232,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
