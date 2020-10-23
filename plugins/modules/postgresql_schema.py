@@ -89,23 +89,23 @@ author:
 - Flavien Chantelot (@Dorn-) <contact@flavien.io>
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Create a new schema with name acme in test database
-  community.general.postgresql_schema:
+  community.postgresql.postgresql_schema:
     db: test
     name: acme
 
 - name: Create a new schema acme with a user bob who will own it
-  community.general.postgresql_schema:
+  community.postgresql.postgresql_schema:
     name: acme
     owner: bob
 
 - name: Drop schema "acme" with cascade
-  community.general.postgresql_schema:
+  community.postgresql.postgresql_schema:
     name: acme
     state: absent
     cascade_drop: yes
@@ -139,7 +139,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_conn_params,
     postgres_common_argument_spec,
 )
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
     SQLParseError,

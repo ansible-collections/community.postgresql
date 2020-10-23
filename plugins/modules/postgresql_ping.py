@@ -36,11 +36,11 @@ options:
     default: yes
     version_added: '0.2.0'
 seealso:
-- module: community.general.postgresql_info
+- module: community.postgresql.postgresql_info
 author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
@@ -51,7 +51,7 @@ EXAMPLES = r'''
 # In the example below you need to generate certificates previously.
 # See https://www.postgresql.org/docs/current/libpq-ssl.html for more information.
 - name: PostgreSQL ping dbsrv server using not default credentials and ssl
-  community.general.postgresql_ping:
+  community.postgresql.postgresql_ping:
     db: protected_db
     login_host: dbsrv
     login_user: secret
@@ -81,7 +81,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (

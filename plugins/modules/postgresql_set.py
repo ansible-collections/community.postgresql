@@ -71,7 +71,7 @@ notes:
 - For some parameters restart of PostgreSQL server is required.
   See official documentation U(https://www.postgresql.org/docs/current/view-pg-settings.html).
 seealso:
-- module: community.general.postgresql_info
+- module: community.postgresql.postgresql_info
 - name: PostgreSQL server configuration
   description: General information about PostgreSQL server configuration.
   link: https://www.postgresql.org/docs/current/runtime-config.html
@@ -84,20 +84,20 @@ seealso:
 author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Restore wal_keep_segments parameter to initial state
-  community.general.postgresql_set:
+  community.postgresql.postgresql_set:
     name: wal_keep_segments
     reset: yes
 
 # Set work_mem parameter to 32MB and show what's been changed and restart is required or not
 # (output example: "msg": "work_mem 4MB >> 64MB restart_req: False")
 - name: Set work mem parameter
-  community.general.postgresql_set:
+  community.postgresql.postgresql_set:
     name: work_mem
     value: 32mb
   register: set
@@ -110,12 +110,12 @@ EXAMPLES = r'''
 # (If you passed the value that was different from the current server setting).
 
 - name: Set log_min_duration_statement parameter to 1 second
-  community.general.postgresql_set:
+  community.postgresql.postgresql_set:
     name: log_min_duration_statement
     value: 1s
 
 - name: Set wal_log_hints parameter to default value (remove parameter from postgresql.auto.conf)
-  community.general.postgresql_set:
+  community.postgresql.postgresql_set:
     name: wal_log_hints
     value: default
 '''
@@ -167,7 +167,7 @@ except Exception:
 from copy import deepcopy
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (

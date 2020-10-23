@@ -79,7 +79,7 @@ options:
       - The entries will be written out in a specific order.
         With this option you can control by which field they are ordered first, second and last.
         s=source, d=databases, u=users.
-        This option is deprecated since 2.9 and will be removed in community.general 3.0.0.
+        This option is deprecated since 2.9 and will be removed in community.postgresql 3.0.0.
         Sortorder is now hardcoded to sdu.
     type: str
     default: sdu
@@ -105,7 +105,7 @@ notes:
      This could give unexpected results with manual created hba files, if it was improperly sorted.
      For example a rule was created for a net first and for a ip in that net range next.
      In that situation, the 'ip specific rule' will never hit, it is in the C(pg_hba) file obsolete.
-     After the C(pg_hba) file is rewritten by the M(community.general.postgresql_pg_hba) module, the ip specific rule will be sorted above the range rule.
+     After the C(pg_hba) file is rewritten by the M(community.postgresql.postgresql_pg_hba) module, the ip specific rule will be sorted above the range rule.
      And then it will hit, which will give unexpected results.
    - With the 'order' parameter you can control which field is used to sort first, next and last.
    - The module supports a check mode and a diff mode.
@@ -123,7 +123,7 @@ author: Sebastiaan Mannem (@sebasmannem)
 
 EXAMPLES = '''
 - name: Grant users joe and simon access to databases sales and logistics from ipv6 localhost ::1/128 using peer authentication.
-  community.general.postgresql_pg_hba:
+  community.postgresql.postgresql_pg_hba:
     dest: /var/lib/postgres/data/pg_hba.conf
     contype: host
     users: joe,simon
@@ -133,7 +133,7 @@ EXAMPLES = '''
     create: true
 
 - name: Grant user replication from network 192.168.0.100/24 access for replication with client cert authentication.
-  community.general.postgresql_pg_hba:
+  community.postgresql.postgresql_pg_hba:
     dest: /var/lib/postgres/data/pg_hba.conf
     contype: host
     users: replication
@@ -142,7 +142,7 @@ EXAMPLES = '''
     method: cert
 
 - name: Revoke access from local user mary on database mydb.
-  community.general.postgresql_pg_hba:
+  community.postgresql.postgresql_pg_hba:
     dest: /var/lib/postgres/data/pg_hba.conf
     contype: local
     users: mary
@@ -671,7 +671,7 @@ def main():
         netmask=dict(type='str'),
         options=dict(type='str'),
         order=dict(type='str', default="sdu", choices=PG_HBA_ORDERS,
-                   removed_in_version='3.0.0', removed_from_collection='community.general'),
+                   removed_in_version='3.0.0', removed_from_collection='community.postgresql'),
         state=dict(type='str', default="present", choices=["absent", "present"]),
         users=dict(type='str', default='all')
     )

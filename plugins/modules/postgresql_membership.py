@@ -16,8 +16,8 @@ description:
 - Users are roles with login privilege.
 - Groups are PostgreSQL roles usually without LOGIN privilege.
 - "Common use case:"
-- 1) add a new group (groups) by M(community.general.postgresql_user) module with I(role_attr_flags=NOLOGIN)
-- 2) grant them desired privileges by M(community.general.postgresql_privs) module
+- 1) add a new group (groups) by M(community.postgresql.postgresql_user) module with I(role_attr_flags=NOLOGIN)
+- 2) grant them desired privileges by M(community.postgresql.postgresql_privs) module
 - 3) add desired PostgreSQL users to the new group (groups) by this module
 options:
   groups:
@@ -75,9 +75,9 @@ options:
     default: yes
     version_added: '0.2.0'
 seealso:
-- module: community.general.postgresql_user
-- module: community.general.postgresql_privs
-- module: community.general.postgresql_owner
+- module: community.postgresql.postgresql_user
+- module: community.postgresql.postgresql_privs
+- module: community.postgresql.postgresql_owner
 - name: PostgreSQL role membership reference
   description: Complete reference of the PostgreSQL role membership documentation.
   link: https://www.postgresql.org/docs/current/role-membership.html
@@ -87,13 +87,13 @@ seealso:
 author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Grant role read_only to alice and bob
-  community.general.postgresql_membership:
+  community.postgresql.postgresql_membership:
     group: read_only
     target_roles:
     - alice
@@ -103,7 +103,7 @@ EXAMPLES = r'''
 # you can also use target_roles: alice,bob,etc to pass the role list
 
 - name: Revoke role read_only and exec_func from bob. Ignore if roles don't exist
-  community.general.postgresql_membership:
+  community.postgresql.postgresql_membership:
     groups:
     - read_only
     - exec_func
@@ -143,7 +143,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     get_conn_params,

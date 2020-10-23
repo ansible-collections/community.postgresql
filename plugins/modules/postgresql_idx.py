@@ -120,8 +120,8 @@ options:
     version_added: '0.2.0'
 
 seealso:
-- module: community.general.postgresql_table
-- module: community.general.postgresql_tablespace
+- module: community.postgresql.postgresql_table
+- module: community.postgresql.postgresql_tablespace
 - name: PostgreSQL indexes reference
   description: General information about PostgreSQL indexes.
   link: https://www.postgresql.org/docs/current/indexes.html
@@ -144,20 +144,20 @@ author:
 - Thomas O'Donnell (@andytom)
 
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Create btree index if not exists test_idx concurrently covering columns id and name of table products
-  community.general.postgresql_idx:
+  community.postgresql.postgresql_idx:
     db: acme
     table: products
     columns: id,name
     name: test_idx
 
 - name: Create btree index test_idx concurrently with tablespace called ssd and storage parameter
-  community.general.postgresql_idx:
+  community.postgresql.postgresql_idx:
     db: acme
     table: products
     columns:
@@ -169,7 +169,7 @@ EXAMPLES = r'''
     - fillfactor=90
 
 - name: Create gist index test_gist_idx concurrently on column geo_data of table map
-  community.general.postgresql_idx:
+  community.postgresql.postgresql_idx:
     db: somedb
     table: map
     idxtype: gist
@@ -178,7 +178,7 @@ EXAMPLES = r'''
 
 # Note: for the example below pg_trgm extension must be installed for gin_trgm_ops
 - name: Create gin index gin0_idx not concurrently on column comment of table test
-  community.general.postgresql_idx:
+  community.postgresql.postgresql_idx:
     idxname: gin0_idx
     table: test
     columns: comment gin_trgm_ops
@@ -186,13 +186,13 @@ EXAMPLES = r'''
     idxtype: gin
 
 - name: Drop btree test_idx concurrently
-  community.general.postgresql_idx:
+  community.postgresql.postgresql_idx:
     db: mydb
     idxname: test_idx
     state: absent
 
 - name: Drop test_idx cascade
-  community.general.postgresql_idx:
+  community.postgresql.postgresql_idx:
     db: mydb
     idxname: test_idx
     state: absent
@@ -200,7 +200,7 @@ EXAMPLES = r'''
     concurrent: no
 
 - name: Create btree index test_idx concurrently on columns id,comment where column id > 1
-  community.general.postgresql_idx:
+  community.postgresql.postgresql_idx:
     db: mydb
     table: test
     columns: id,comment
@@ -208,7 +208,7 @@ EXAMPLES = r'''
     cond: id > 1
 
 - name: Create unique btree index if not exists test_unique_idx on column name of table products
-  community.general.postgresql_idx:
+  community.postgresql.postgresql_idx:
     db: acme
     table: products
     columns: name
@@ -263,7 +263,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     exec_sql,

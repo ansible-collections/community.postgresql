@@ -158,9 +158,9 @@ notes:
   C(PGOPTIONS: "-c password_encryption=scram-sha-256") (see the provided example).'
 - Supports ``check_mode``.
 seealso:
-- module: community.general.postgresql_privs
-- module: community.general.postgresql_membership
-- module: community.general.postgresql_owner
+- module: community.postgresql.postgresql_privs
+- module: community.postgresql.postgresql_membership
+- module: community.postgresql.postgresql_owner
 - name: PostgreSQL database roles
   description: Complete reference of the PostgreSQL database roles documentation.
   link: https://www.postgresql.org/docs/current/user-manag.html
@@ -170,13 +170,13 @@ seealso:
 author:
 - Ansible Core Team
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Connect to acme database, create django user, and grant access to database and products table
-  community.general.postgresql_user:
+  community.postgresql.postgresql_user:
     db: acme
     name: django
     password: ceec4eif7ya
@@ -184,7 +184,7 @@ EXAMPLES = r'''
     expires: "Jan 31 2020"
 
 - name: Add a comment on django user
-  community.general.postgresql_user:
+  community.postgresql.postgresql_user:
     db: acme
     name: django
     comment: This is a test user
@@ -192,13 +192,13 @@ EXAMPLES = r'''
 # Connect to default database, create rails user, set its password (MD5-hashed),
 # and grant privilege to create other databases and demote rails from super user status if user exists
 - name: Create rails user, set MD5-hashed password, grant privs
-  community.general.postgresql_user:
+  community.postgresql.postgresql_user:
     name: rails
     password: md59543f1d82624df2b31672ec0f7050460
     role_attr_flags: CREATEDB,NOSUPERUSER
 
 - name: Connect to acme database and remove test user privileges from there
-  community.general.postgresql_user:
+  community.postgresql.postgresql_user:
     db: acme
     name: test
     priv: "ALL/products:ALL"
@@ -206,14 +206,14 @@ EXAMPLES = r'''
     fail_on_user: no
 
 - name: Connect to test database, remove test user from cluster
-  community.general.postgresql_user:
+  community.postgresql.postgresql_user:
     db: test
     name: test
     priv: ALL
     state: absent
 
 - name: Connect to acme database and set user's password with no expire date
-  community.general.postgresql_user:
+  community.postgresql.postgresql_user:
     db: acme
     name: django
     password: mysupersecretword
@@ -224,13 +224,13 @@ EXAMPLES = r'''
 # INSERT,UPDATE/table:SELECT/anothertable:ALL
 
 - name: Connect to test database and remove an existing user's password
-  community.general.postgresql_user:
+  community.postgresql.postgresql_user:
     db: test
     user: test
     password: ""
 
 - name: Create user test and grant group user_ro and user_rw to it
-  community.general.postgresql_user:
+  community.postgresql.postgresql_user:
     name: test
     groups:
     - user_ro
@@ -239,7 +239,7 @@ EXAMPLES = r'''
 # Create user with a cleartext password if it does not exist or update its password.
 # The password will be encrypted with SCRAM algorithm (available since PostgreSQL 10)
 - name: Create appclient user with SCRAM-hashed password
-  community.general.postgresql_user:
+  community.postgresql.postgresql_user:
     name: appclient
     password: "secret123"
   environment:
@@ -270,7 +270,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     pg_quote_identifier,
     SQLParseError,
     check_input,
@@ -283,7 +283,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 )
 from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible.module_utils.six import iteritems
-import ansible_collections.community.general.plugins.module_utils.saslprep as saslprep
+import ansible_collections.community.postgresql.plugins.module_utils.saslprep as saslprep
 
 try:
     # pbkdf2_hmac is missing on python 2.6, we can safely assume,

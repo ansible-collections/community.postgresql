@@ -53,8 +53,8 @@ notes:
 - For tracking function statistics the PostgreSQL C(track_functions) parameter must be enabled.
   See U(https://www.postgresql.org/docs/current/runtime-config-statistics.html) for more information.
 seealso:
-- module: community.general.postgresql_info
-- module: community.general.postgresql_ping
+- module: community.postgresql.postgresql_info
+- module: community.postgresql.postgresql_ping
 - name: PostgreSQL statistics collector reference
   description: Complete reference of the PostgreSQL statistics collector documentation.
   link: https://www.postgresql.org/docs/current/monitoring-stats.html
@@ -62,22 +62,22 @@ author:
 - Andrew Klychkov (@Andersson007)
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Collect information about all supported user objects of the acme database
-  community.general.postgresql_user_obj_stat_info:
+  community.postgresql.postgresql_user_obj_stat_info:
     db: acme
 
 - name: Collect information about all supported user objects in the custom schema of the acme database
-  community.general.postgresql_user_obj_stat_info:
+  community.postgresql.postgresql_user_obj_stat_info:
     db: acme
     schema: custom
 
 - name: Collect information about user tables and indexes in the acme database
-  community.general.postgresql_user_obj_stat_info:
+  community.postgresql.postgresql_user_obj_stat_info:
     db: acme
     filter: tables, indexes
 '''
@@ -108,7 +108,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (

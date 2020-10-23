@@ -48,11 +48,11 @@ options:
     default: yes
     version_added: '0.2.0'
 seealso:
-- module: community.general.postgresql_ping
+- module: community.postgresql.postgresql_ping
 author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
@@ -72,13 +72,13 @@ EXAMPLES = r'''
 - name: Collect PostgreSQL version and extensions
   become: yes
   become_user: postgres
-  community.general.postgresql_info:
+  community.postgresql.postgresql_info:
     filter: ver*,ext*
 
 - name: Collect all info except settings and roles
   become: yes
   become_user: postgres
-  community.general.postgresql_info:
+  community.postgresql.postgresql_info:
     filter: "!settings,!roles"
 
 # On FreeBSD with PostgreSQL 9.5 version and lower use pgsql user to become
@@ -86,7 +86,7 @@ EXAMPLES = r'''
 - name: Collect tablespaces and repl_slots info
   become: yes
   become_user: pgsql
-  community.general.postgresql_info:
+  community.postgresql.postgresql_info:
     db: postgres
     filter:
     - tablesp*
@@ -95,7 +95,7 @@ EXAMPLES = r'''
 - name: Collect all info except databases
   become: yes
   become_user: postgres
-  community.general.postgresql_info:
+  community.postgresql.postgresql_info:
     filter:
     - "!databases"
 '''
@@ -491,7 +491,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (

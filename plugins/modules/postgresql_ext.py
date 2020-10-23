@@ -114,25 +114,25 @@ author:
 - Sandro Santilli (@strk)
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Adds postgis extension to the database acme in the schema foo
-  community.general.postgresql_ext:
+  community.postgresql.postgresql_ext:
     name: postgis
     db: acme
     schema: foo
 
 - name: Removes postgis extension to the database acme
-  community.general.postgresql_ext:
+  community.postgresql.postgresql_ext:
     name: postgis
     db: acme
     state: absent
 
 - name: Adds earthdistance extension to the database template1 cascade
-  community.general.postgresql_ext:
+  community.postgresql.postgresql_ext:
     name: earthdistance
     db: template1
     cascade: true
@@ -140,20 +140,20 @@ EXAMPLES = r'''
 # In the example below, if earthdistance extension is installed,
 # it will be removed too because it depends on cube:
 - name: Removes cube extension from the database acme cascade
-  community.general.postgresql_ext:
+  community.postgresql.postgresql_ext:
     name: cube
     db: acme
     cascade: yes
     state: absent
 
 - name: Create extension foo of version 1.2 or update it if it's already created
-  community.general.postgresql_ext:
+  community.postgresql.postgresql_ext:
     db: acme
     name: foo
     version: 1.2
 
 - name: Assuming extension foo is created, update it to the latest version
-  community.general.postgresql_ext:
+  community.postgresql.postgresql_ext:
     db: acme
     name: foo
     version: latest
@@ -180,7 +180,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (

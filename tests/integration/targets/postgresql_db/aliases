@@ -1,6 +1,3 @@
 destructive
-shippable/posix/group4
+shippable/posix/group1
 postgresql_db
-skip/aix
-skip/osx
-skip/macos

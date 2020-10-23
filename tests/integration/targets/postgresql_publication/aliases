@@ -1,6 +1,3 @@
 destructive
-shippable/posix/group4
-skip/aix
-skip/osx
-skip/macos
+shippable/posix/group1
 skip/freebsd

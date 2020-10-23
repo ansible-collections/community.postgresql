@@ -97,8 +97,8 @@ notes:
 - PostgreSQL version must be 10 or greater.
 
 seealso:
-- module: community.general.postgresql_publication
-- module: community.general.postgresql_info
+- module: community.postgresql.postgresql_publication
+- module: community.postgresql.postgresql_info
 - name: CREATE SUBSCRIPTION reference
   description: Complete reference of the CREATE SUBSCRIPTION command documentation.
   link: https://www.postgresql.org/docs/current/sql-createsubscription.html
@@ -113,7 +113,7 @@ author:
 - Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
@@ -122,7 +122,7 @@ EXAMPLES = r'''
     Create acme subscription in mydb database using acme_publication and
     the following connection parameters to connect to the publisher.
     Set the subscription owner as alice.
-  community.general.postgresql_subscription:
+  community.postgresql.postgresql_subscription:
     db: mydb
     name: acme
     state: present
@@ -136,7 +136,7 @@ EXAMPLES = r'''
       dbname: mydb
 
 - name: Assuming that acme subscription exists, try to change conn parameters
-  community.general.postgresql_subscription:
+  community.postgresql.postgresql_subscription:
     db: mydb
     name: acme
     connparams:
@@ -147,20 +147,20 @@ EXAMPLES = r'''
       connect_timeout: 100
 
 - name: Refresh acme publication
-  community.general.postgresql_subscription:
+  community.postgresql.postgresql_subscription:
     db: mydb
     name: acme
     state: refresh
 
 - name: Drop acme subscription from mydb with dependencies (cascade=yes)
-  community.general.postgresql_subscription:
+  community.postgresql.postgresql_subscription:
     db: mydb
     name: acme
     state: absent
     cascade: yes
 
 - name: Assuming that acme subscription exists and enabled, disable the subscription
-  community.general.postgresql_subscription:
+  community.postgresql.postgresql_subscription:
     db: mydb
     name: acme
     state: present
@@ -208,7 +208,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     exec_sql,

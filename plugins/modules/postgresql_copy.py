@@ -94,18 +94,18 @@ author:
 - Andrew Klychkov (@Andersson007)
 
 extends_documentation_fragment:
-- community.general.postgres
+- community.postgresql.postgres
 
 '''
 
 EXAMPLES = r'''
 - name: Copy text TAB-separated data from file /tmp/data.txt to acme table
-  community.general.postgresql_copy:
+  community.postgresql.postgresql_copy:
     copy_from: /tmp/data.txt
     dst: acme
 
 - name: Copy CSV (comma-separated) data from file /tmp/data.csv to columns id, name of table acme
-  community.general.postgresql_copy:
+  community.postgresql.postgresql_copy:
     copy_from: /tmp/data.csv
     dst: acme
     columns: id,name
@@ -115,7 +115,7 @@ EXAMPLES = r'''
 - name: >
     Copy text vertical-bar-separated data from file /tmp/data.txt to bar table.
     The NULL values are specified as N
-  community.general.postgresql_copy:
+  community.postgresql.postgresql_copy:
     copy_from: /tmp/data.csv
     dst: bar
     options:
@@ -123,19 +123,19 @@ EXAMPLES = r'''
       null: 'N'
 
 - name: Copy data from acme table to file /tmp/data.txt in text format, TAB-separated
-  community.general.postgresql_copy:
+  community.postgresql.postgresql_copy:
     src: acme
     copy_to: /tmp/data.txt
 
 - name: Copy data from SELECT query to/tmp/data.csv in CSV format
-  community.general.postgresql_copy:
+  community.postgresql.postgresql_copy:
     src: 'SELECT * FROM acme'
     copy_to: /tmp/data.csv
     options:
       format: csv
 
 - name: Copy CSV data from my_table to gzip
-  community.general.postgresql_copy:
+  community.postgresql.postgresql_copy:
     src: my_table
     copy_to: 'gzip > /tmp/data.csv.gz'
     program: yes
@@ -145,7 +145,7 @@ EXAMPLES = r'''
 - name: >
     Copy data from columns id, name of table bar to /tmp/data.txt.
     Output format is text, vertical-bar-separated, NULL as N
-  community.general.postgresql_copy:
+  community.postgresql.postgresql_copy:
     src: bar
     columns:
     - id
@@ -182,7 +182,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.general.plugins.module_utils.database import (
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
 )
