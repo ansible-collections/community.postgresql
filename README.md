@@ -1,5 +1,6 @@
 # MOVING IN PROGRESS! PostgreSQL collection for Ansible
-[![Plugins CI](https://github.com/ansible-collections/community.postgresql/workflows/Plugins%20CI/badge.svg?event=push)](https://github.com/ansible-collections/community.postgresql/actions?query=workflow%3A"Plugins+CI") [![Roles CI](https://github.com/ansible-collections/community.postgresql/workflows/Roles%20CI/badge.svg?event=push)](https://github.com/ansible-collections/community.postgresql/actions?query=workflow%3A"Roles+CI") [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)
+[![Shippable build status](https://api.shippable.com/projects/5f9156109adc3400069f1814/badge?branch=main)](https://api.shippable.com/projects/5f9156109adc3400069f1814)
+[![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)
 
 ## External requirements
 
