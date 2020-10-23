@@ -219,7 +219,7 @@ except ImportError:
 else:
     HAS_PSYCOPG2 = True
 
-import ansible_collections.community.general.plugins.module_utils.postgres as pgutils
+import ansible_collections.community.postgresql.plugins.module_utils.postgres as pgutils
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.database import (
     check_input,

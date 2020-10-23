@@ -449,7 +449,7 @@ from ansible_collections.community.general.plugins.module_utils.database import 
     pg_quote_identifier,
     check_input,
 )
-from ansible_collections.community.general.plugins.module_utils.postgres import postgres_common_argument_spec
+from ansible_collections.community.postgresql.plugins.module_utils.postgres import postgres_common_argument_spec
 from ansible.module_utils._text import to_native
 
 VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',

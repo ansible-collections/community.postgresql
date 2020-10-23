@@ -111,7 +111,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.general.plugins.module_utils.database import (
     check_input,
 )
-from ansible_collections.community.general.plugins.module_utils.postgres import (
+from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     exec_sql,
     get_conn_params,
