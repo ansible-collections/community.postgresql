@@ -141,7 +141,7 @@ function cleanup
             set -ux
 
             # shellcheck disable=SC2086
-            ansible-test coverage xml --color -v --requirements --group-by command --group-by version ${stub:+"$stub"}
+            ansible-test coverage xml --color -vvvvvv --requirements --group-by command --group-by version ${stub:+"$stub"}
             cp -a tests/output/reports/coverage=*.xml "$SHIPPABLE_RESULT_DIR/codecoverage/"
 
             if [ "${ansible_version}" != "2.9" ]; then
