@@ -1,5 +1,5 @@
 # MOVING IN PROGRESS! PostgreSQL collection for Ansible
-[![Shippable build status](https://api.shippable.com/projects/5f9156109adc3400069f1814/badge?branch=main)](https://api.shippable.com/projects/5f9156109adc3400069f1814)
+[![Shippable build status](https://api.shippable.com/projects/5f9156109adc3400069f1814/badge?branch=main)](https://app.shippable.com/github/ansible-collections/community.postgresql/dashboard)
 [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)
 
 ## External requirements

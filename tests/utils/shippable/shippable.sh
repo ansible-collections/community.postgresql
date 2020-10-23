@@ -72,8 +72,6 @@ if [ "${script}" != "units" ] && [ "${script}" != "sanity" ] && [ "${ansible_ver
 fi
 # END: HACK
 
-# END: HACK
-
 export PYTHONIOENCODING='utf-8'
 
 if [ "${JOB_TRIGGERED_BY_NAME:-}" == "nightly-trigger" ]; then
