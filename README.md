@@ -86,7 +86,7 @@ See the [changelog](https://github.com/ansible-collections/community.postgresql/
 
 ## Roadmap
 
-FIXME
+See the [release plan](https://github.com/ansible-collections/community.postgresql/issues/13).
 
 ## More information
 
