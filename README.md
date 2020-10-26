@@ -1,4 +1,4 @@
-# MOVING IN PROGRESS! PostgreSQL collection for Ansible
+# PostgreSQL collection for Ansible
 [![Shippable build status](https://api.shippable.com/projects/5f9156109adc3400069f1814/badge?branch=main)](https://app.shippable.com/github/ansible-collections/community.postgresql/dashboard)
 [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)
 
@@ -77,6 +77,8 @@ If you want to clone this repositority (or a fork of it) to improve it, you can 
 3. Add the directory containing `ansible_collections` to your [ANSIBLE_COLLECTIONS_PATH](https://docs.ansible.com/ansible/latest/reference_appendices/config.html#collections-paths).
 
 See [Ansible's dev guide](https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#contributing-to-collections) for more information.
+
+There is also [the community pinboard](https://github.com/ansible/community/issues/435) used by [the PostgreSQL working group](https://github.com/ansible/community/wiki/PostgreSQL) for announcements and discussing general questions.
 
 ## Release notes
 
