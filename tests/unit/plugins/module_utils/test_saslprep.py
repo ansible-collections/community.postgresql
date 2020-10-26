@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.community.general.plugins.module_utils.saslprep import saslprep
+from ansible_collections.community.postgresql.plugins.module_utils.saslprep import saslprep
 
 
 VALID = [
