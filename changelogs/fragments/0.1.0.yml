@@ -1,0 +1,4 @@
+release_summary: |
+  The ``community.postgresql`` continues the work on the Ansible PostgreSQL
+  modules from their state in ``community.general`` 1.2.0.
+  The changes listed here are thus relative to the modules ``community.general.postgresql_*``.
