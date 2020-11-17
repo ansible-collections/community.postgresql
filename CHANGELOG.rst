@@ -5,6 +5,16 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.0.0
+======
+
+Release Summary
+---------------
+
+This is the first proper release of the ``community.postgresql`` collection which is needed to include the collection in Ansible.
+This changelog does not contain any changes because there are no changes made since release 0.1.0.
+
+
 v0.1.0
 ======
 
@@ -29,4 +39,3 @@ Bugfixes
 - postgresql_ext - fix the module crashes when available ext versions cannot be compared with current version (https://github.com/ansible-collections/community.general/issues/1095).
 - postgresql_ext - fix version selection when ``version=latest`` (https://github.com/ansible-collections/community.general/pull/1078).
 - postgresql_privs - fix module fails when ``type`` group and passing ``objs`` value containing hyphens (https://github.com/ansible-collections/community.general/issues/1058).
-- postgresql_pg_hba - fix a crash when a new rule with an ``options`` field replaces a rule without or vice versa (https://github.com/ansible-collections/community.general/issues/1108).

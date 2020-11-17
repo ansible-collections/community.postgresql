@@ -31,3 +31,15 @@ releases:
     - 1099-postgresql_ext_fix_failing_when_version_cannot_be_compared.yml
     - 886-postgresql_query_add_ret_vals.yml
     release_date: '2020-10-29'
+  1.0.0:
+    changes:
+      release_summary: 'This is the first proper release of the ``community.postgresql``
+        collection which is needed to include the collection in Ansible.
+
+        This changelog does not contain any changes because there are no changes made
+        since release 0.1.0.
+
+        '
+    fragments:
+    - 1.0.0.yml
+    release_date: '2020-11-17'
