@@ -58,7 +58,6 @@ You can include it in a `requirements.yml` file and install it via `ansible-gala
 ---
 collections:
   - name: community.postgresql
-    version: 1.0.0
 ```
 
 You can also download the tarball from Ansible Galaxy and install the collection manually wherever you need.
