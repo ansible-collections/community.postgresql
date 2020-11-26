@@ -18,7 +18,7 @@ short_description: Add, remove or modify a rule in a pg_hba file
 description:
    - The fundamental function of the module is to create, or delete lines in pg_hba files.
    - The lines in the file should be in a typical pg_hba form and lines should be unique per key (type, databases, users, source).
-     If they are not unique and the SID is 'the one to change', only one for C(state=present) or
+     If they are not unique and the SID is 'the one to change', only one for I(state=present) or
      none for C(state=absent) of the SID's will remain.
 extends_documentation_fragment: files
 options:
