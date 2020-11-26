@@ -31,7 +31,6 @@ options:
   tablespace:
     description:
     - Set a tablespace for the table.
-    required: false
     type: str
   owner:
     description:
@@ -101,6 +100,7 @@ options:
     default: yes
     version_added: '0.2.0'
 notes:
+- Supports C(check_mode).
 - If you do not pass db parameter, tables will be created in the database
   named postgres.
 - PostgreSQL allows to create columnless table, so columns param is optional.

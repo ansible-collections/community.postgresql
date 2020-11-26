@@ -32,7 +32,8 @@ options:
     - List of tables to add to the publication.
     - If no value is set all tables are targeted.
     - If the publication already exists for specific tables and I(tables) is not passed,
-      nothing will be changed. If you need to add all tables to the publication with the same name,
+      nothing will be changed.
+    - If you need to add all tables to the publication with the same name,
       drop existent and create new without passing I(tables).
     type: list
     elements: str
@@ -75,6 +76,7 @@ options:
     version_added: '0.2.0'
 notes:
 - PostgreSQL version must be 10 or greater.
+- Supports C(check_mode).
 seealso:
 - name: CREATE PUBLICATION reference
   description: Complete reference of the CREATE PUBLICATION command documentation.
@@ -90,16 +92,15 @@ author:
 - Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''
-- name: Create a new publication with name "acme" targeting all tables in database "test".
+- name: Create a new publication with name "acme" targeting all tables in database "test"
   community.postgresql.postgresql_publication:
     db: test
     name: acme
 
-- name: Create publication "acme" publishing only prices and vehicles tables.
+- name: Create publication "acme" publishing only prices and vehicles tables
   community.postgresql.postgresql_publication:
     name: acme
     tables:
@@ -107,7 +108,7 @@ EXAMPLES = r'''
     - vehicles
 
 - name: >
-    Create publication "acme", set user alice as an owner, targeting all tables.
+    Create publication "acme", set user alice as an owner, targeting all tables
     Allowable DML operations are INSERT and UPDATE only
   community.postgresql.postgresql_publication:
     name: acme
@@ -117,7 +118,7 @@ EXAMPLES = r'''
 
 - name: >
     Assuming publication "acme" exists and there are targeted
-    tables "prices" and "vehicles", add table "stores" to the publication.
+    tables "prices" and "vehicles", add table "stores" to the publication
   community.postgresql.postgresql_publication:
     name: acme
     tables:
@@ -125,7 +126,7 @@ EXAMPLES = r'''
     - vehicles
     - stores
 
-- name: Remove publication "acme" if exists in database "test".
+- name: Remove publication "acme" if exists in database "test"
   community.postgresql.postgresql_publication:
     db: test
     name: acme

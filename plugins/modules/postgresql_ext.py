@@ -98,6 +98,7 @@ seealso:
   description: Complete reference of the DROP EXTENSION command documentation.
   link: https://www.postgresql.org/docs/current/sql-droppublication.html
 notes:
+- Supports C(check_mode).
 - The default authentication assumes that you are either logging in as
   or sudo'ing to the C(postgres) account on the host.
 - This module uses I(psycopg2), a Python PostgreSQL database adapter.

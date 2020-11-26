@@ -93,7 +93,6 @@ options:
     description:
     - Set a tablespace for the index.
     - Mutually exclusive with I(state=absent).
-    required: false
     type: str
   storage_params:
     description:
@@ -106,7 +105,7 @@ options:
     - Automatically drop objects that depend on the index,
       and in turn all objects that depend on those objects.
     - It used only with I(state=absent).
-    - Mutually exclusive with I(concurrent=yes)
+    - Mutually exclusive with I(concurrent=yes).
     type: bool
     default: no
   trust_input:
@@ -136,6 +135,7 @@ seealso:
   link: https://www.postgresql.org/docs/current/sql-dropindex.html
 
 notes:
+- Supports C(check_mode).
 - The index building process can affect database performance.
 - To avoid table locks on production databases, use I(concurrent=yes) (default behavior).
 

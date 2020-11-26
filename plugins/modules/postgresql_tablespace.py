@@ -165,7 +165,7 @@ location:
     type: str
     sample: '/incredible/fast/ssd'
 newname:
-    description: New tablespace name
+    description: New tablespace name.
     returned: if existent
     type: str
     sample: new_ssd

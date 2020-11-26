@@ -95,6 +95,7 @@ options:
 
 notes:
 - PostgreSQL version must be 10 or greater.
+- Supports C(check_mode).
 
 seealso:
 - module: community.postgresql.postgresql_publication

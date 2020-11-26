@@ -79,7 +79,7 @@ options:
 notes:
 - Supports PostgreSQL version 9.4+.
 - COPY command is only allowed to database superusers.
-- if I(check_mode=yes), we just check the src/dst table availability
+- If I(check_mode=yes), we just check the src/dst table availability
   and return the COPY query that actually has not been executed.
 - If i(check_mode=yes) and the source has been passed as SQL, the module
   will execute it and rolled the transaction back but pay attention
@@ -95,7 +95,6 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''
