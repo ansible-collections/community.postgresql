@@ -77,6 +77,7 @@ options:
 notes:
 - Physical replication slots were introduced to PostgreSQL with version 9.4,
   while logical replication slots were added beginning with version 10.0.
+- Supports C(check_mode).
 
 seealso:
 - name: PostgreSQL pg_replication_slots view reference
@@ -132,7 +133,7 @@ EXAMPLES = r'''
 
 RETURN = r'''
 name:
-  description: Name of the slot
+  description: Name of the slot.
   returned: always
   type: str
   sample: "physical_one"

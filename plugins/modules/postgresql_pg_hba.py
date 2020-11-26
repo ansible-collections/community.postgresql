@@ -18,7 +18,8 @@ short_description: Add, remove or modify a rule in a pg_hba file
 description:
    - The fundamental function of the module is to create, or delete lines in pg_hba files.
    - The lines in the file should be in a typical pg_hba form and lines should be unique per key (type, databases, users, source).
-     If they are not unique and the SID is 'the one to change', only one for C(state=present) or none for C(state=absent) of the SID's will remain.
+     If they are not unique and the SID is 'the one to change', only one for I(state=present) or
+     none for I(state=absent) of the SID's will remain.
 extends_documentation_fragment: files
 options:
   address:
@@ -122,7 +123,7 @@ author: Sebastiaan Mannem (@sebasmannem)
 '''
 
 EXAMPLES = '''
-- name: Grant users joe and simon access to databases sales and logistics from ipv6 localhost ::1/128 using peer authentication.
+- name: Grant users joe and simon access to databases sales and logistics from ipv6 localhost ::1/128 using peer authentication
   community.postgresql.postgresql_pg_hba:
     dest: /var/lib/postgres/data/pg_hba.conf
     contype: host
@@ -132,7 +133,7 @@ EXAMPLES = '''
     method: peer
     create: true
 
-- name: Grant user replication from network 192.168.0.100/24 access for replication with client cert authentication.
+- name: Grant user replication from network 192.168.0.100/24 access for replication with client cert authentication
   community.postgresql.postgresql_pg_hba:
     dest: /var/lib/postgres/data/pg_hba.conf
     contype: host
@@ -141,7 +142,7 @@ EXAMPLES = '''
     databases: replication
     method: cert
 
-- name: Revoke access from local user mary on database mydb.
+- name: Revoke access from local user mary on database mydb
   community.postgresql.postgresql_pg_hba:
     dest: /var/lib/postgres/data/pg_hba.conf
     contype: local
@@ -152,7 +153,7 @@ EXAMPLES = '''
 
 RETURN = r'''
 msgs:
-    description: List of textual messages what was done
+    description: List of textual messages what was done.
     returned: always
     type: list
     sample:
@@ -162,12 +163,12 @@ msgs:
           "Writing"
         ]
 backup_file:
-    description: File that the original pg_hba file was backed up to
+    description: File that the original pg_hba file was backed up to.
     returned: changed
     type: str
     sample: /tmp/pg_hba_jxobj_p
 pg_hba:
-    description: List of the pg_hba rules as they are configured in the specified hba file
+    description: List of the pg_hba rules as they are configured in the specified hba file.
     returned: always
     type: list
     sample:

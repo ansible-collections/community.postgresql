@@ -10,48 +10,51 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: postgresql_db
-short_description: Add or remove PostgreSQL databases from a remote host.
+short_description: Add or remove PostgreSQL databases from a remote host
 description:
    - Add or remove PostgreSQL databases from a remote host.
 options:
   name:
     description:
-      - Name of the database to add or remove
+      - Name of the database to add or remove.
     type: str
     required: true
     aliases: [ db ]
   port:
     description:
-      - Database port to connect (if needed)
+      - Database port to connect (if needed).
     type: int
     default: 5432
     aliases:
       - login_port
   owner:
     description:
-      - Name of the role to set as owner of the database
+      - Name of the role to set as owner of the database.
     type: str
   template:
     description:
-      - Template used to create the database
+      - Template used to create the database.
     type: str
   encoding:
     description:
-      - Encoding of the database
+      - Encoding of the database.
     type: str
   lc_collate:
     description:
-      - Collation order (LC_COLLATE) to use in the database. Must match collation order of template database unless C(template0) is used as template.
+      - Collation order (LC_COLLATE) to use in the database
+        must match collation order of template database unless C(template0) is used as template.
     type: str
   lc_ctype:
     description:
-      - Character classification (LC_CTYPE) to use in the database (e.g. lower, upper, ...) Must match LC_CTYPE of template database unless C(template0)
-        is used as template.
+      - Character classification (LC_CTYPE) to use in the database (e.g. lower, upper, ...).
+      - Must match LC_CTYPE of template database unless C(template0) is used as template.
     type: str
   session_role:
     description:
-    - Switch to session_role after connecting. The specified session_role must be a role that the current login_user is a member of.
-    - Permissions checking for SQL commands is carried out as though the session_role were the one that had logged in originally.
+    - Switch to session_role after connecting.
+    - The specified session_role must be a role that the current login_user is a member of.
+    - Permissions checking for SQL commands is carried out as though the session_role
+      were the one that had logged in originally.
     type: str
   state:
     description:
@@ -63,10 +66,10 @@ options:
       returns rc 0 even when errors occurred (e.g. the connection is forbidden by pg_hba.conf, etc.),
       so the module returns changed=True but the dump has not actually been done. Please, be sure that your version of
       pg_dump returns rc 1 in this case.
-    - C(restore) also requires a target definition from which the database will be restored. (Added in Ansible 2.4)
+    - C(restore) also requires a target definition from which the database will be restored. (Added in Ansible 2.4).
     - The format of the backup will be detected based on the target name.
-    - Supported compression formats for dump and restore include C(.pgc), C(.bz2), C(.gz) and C(.xz)
-    - Supported formats for dump and restore include C(.sql) and C(.tar)
+    - Supported compression formats for dump and restore include C(.pgc), C(.bz2), C(.gz) and C(.xz).
+    - Supported formats for dump and restore include C(.sql) and C(.tar).
     - "Restore program is selected by target file format: C(.tar) and C(.pgc) are handled by pg_restore, other with pgsql."
     type: str
     choices: [ absent, dump, present, restore ]
@@ -129,6 +132,7 @@ seealso:
 - module: community.postgresql.postgresql_ping
 notes:
 - State C(dump) and C(restore) don't require I(psycopg2) since version 2.8.
+- Supports C(check_mode).
 author: "Ansible Core Team"
 extends_documentation_fragment:
 - community.postgresql.postgres
@@ -140,8 +144,9 @@ EXAMPLES = r'''
   community.postgresql.postgresql_db:
     name: acme
 
-# Note: If a template different from "template0" is specified, encoding and locale settings must match those of the template.
-- name: Create a new database with name "acme" and specific encoding and locale # settings.
+# Note: If a template different from "template0" is specified,
+# encoding and locale settings must match those of the template.
+- name: Create a new database with name "acme" and specific encoding and locale # settings
   community.postgresql.postgresql_db:
     name: acme
     encoding: UTF-8
@@ -149,7 +154,8 @@ EXAMPLES = r'''
     lc_ctype: de_DE.UTF-8
     template: template0
 
-# Note: Default limit for the number of concurrent connections to a specific database is "-1", which means "unlimited"
+# Note: Default limit for the number of concurrent connections to
+# a specific database is "-1", which means "unlimited"
 - name: Create a new database with name "acme" which has a limit of 100 concurrent connections
   community.postgresql.postgresql_db:
     name: acme

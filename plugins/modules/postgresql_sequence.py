@@ -138,6 +138,7 @@ options:
     default: yes
     version_added: '0.2.0'
 notes:
+- Supports C(check_mode).
 - If you do not pass db parameter, sequence will be created in the database
   named postgres.
 seealso:
@@ -239,7 +240,7 @@ queries:
     type: str
     sample: [ "CREATE SEQUENCE \"foo\"" ]
 schema:
-    description: Name of the schema of the sequence
+    description: Name of the schema of the sequence.
     returned: always
     type: str
     sample: 'foo'

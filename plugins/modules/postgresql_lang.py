@@ -129,6 +129,8 @@ author:
 extends_documentation_fragment:
 - community.postgresql.postgres
 
+notes:
+- Supports C(check_mode).
 '''
 
 EXAMPLES = r'''

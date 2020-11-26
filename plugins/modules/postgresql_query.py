@@ -92,7 +92,8 @@ author:
 - Will Rouesnel (@wrouesnel)
 extends_documentation_fragment:
 - community.postgresql.postgres
-
+notes:
+- Supports C(check_mode).
 '''
 
 EXAMPLES = r'''

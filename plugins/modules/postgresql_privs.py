@@ -56,7 +56,7 @@ options:
       the special valueC(ALL_IN_SCHEMA) can be provided instead to specify all
       database objects of type I(type) in the schema specified via I(schema).
       (This also works with PostgreSQL < 9.0.) (C(ALL_IN_SCHEMA) is available
-       for C(function) and C(partition table) since Ansible 2.8)
+       for C(function) and C(partition table) since Ansible 2.8).
     - C(procedure) is supported since PostgreSQL 11 and M(community.postgresql) collection 1.3.0.
     - If I(type) is C(database), this parameter can be omitted, in which case
       privileges are set for the database specified via I(database).
@@ -174,6 +174,7 @@ options:
     version_added: '1.2.0'
 
 notes:
+- Supports C(check_mode).
 - Parameters that accept comma separated lists (I(privs), I(objs), I(roles))
   have singular alias names (I(priv), I(obj), I(role)).
 - To revoke only C(GRANT OPTION) for a specific object, set I(state) to

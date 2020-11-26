@@ -52,6 +52,7 @@ notes:
 - C(size) and C(total_size) returned values are presented in bytes.
 - For tracking function statistics the PostgreSQL C(track_functions) parameter must be enabled.
   See U(https://www.postgresql.org/docs/current/runtime-config-statistics.html) for more information.
+- Supports C(check_mode).
 seealso:
 - module: community.postgresql.postgresql_info
 - module: community.postgresql.postgresql_ping
@@ -84,7 +85,7 @@ EXAMPLES = r'''
 
 RETURN = r'''
 indexes:
-  description: User index statistics
+  description: User index statistics.
   returned: always
   type: dict
   sample: {"public": {"test_id_idx": {"idx_scan": 0, "idx_tup_fetch": 0, "idx_tup_read": 0, "relname": "test", "size": 8192, ...}}}

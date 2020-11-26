@@ -90,7 +90,8 @@ author:
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
 - community.postgresql.postgres
-
+notes:
+- Supports C(check_mode).
 '''
 
 EXAMPLES = r'''
