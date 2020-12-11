@@ -163,7 +163,8 @@ stages:
           nameFormat: RHEL 8.2 {0}
           testFormat: 2.10/rhel/8.2/{0}/1
           targets:
-            - test: ''
+            - name: RHEL 8.2
+              test: rhel/8.2
   - stage: Remote_2_9
     displayName: Remote 2.9
     dependsOn: []
@@ -173,14 +174,14 @@ stages:
           nameFormat: RHEL 8.2 {0}
           testFormat: 2.9/rhel/8.2/{0}/1
           targets:
-            - test: ''
+            - name: RHEL 8.2
+              test: rhel/8.2
   - stage: Summary
     condition: succeededOrFailed()
     dependsOn:
       - Ansible_devel
       - Ansible_2_10
       - Ansible_2_9
-      - Remote_devel
       - Docker_devel
       - Docker_2_10
       - Docker_2_9

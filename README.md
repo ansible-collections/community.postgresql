@@ -1,5 +1,6 @@
 # PostgreSQL collection for Ansible
-[![Shippable build status](https://api.shippable.com/projects/5f9156109adc3400069f1814/badge?branch=main)](https://app.shippable.com/github/ansible-collections/community.postgresql/dashboard)
+[![Build Status](
+https://dev.azure.com/ansible/community.postgres/_apis/build/status/CI?branchName=main)](https://dev.azure.com/ansible/community.postgres/_build?definitionId=28)
 [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)
 
 ## External requirements
