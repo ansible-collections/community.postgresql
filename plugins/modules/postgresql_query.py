@@ -27,6 +27,7 @@ options:
     description:
     - List of values to be passed as positional arguments to the query.
       When the value is a list, it will be converted to PostgreSQL array.
+    - To pass NULL value, use C(null).
     - Mutually exclusive with I(named_args).
     type: list
     elements: raw
@@ -34,6 +35,7 @@ options:
     description:
     - Dictionary of key-value arguments to pass to the query.
       When the value is a list, it will be converted to PostgreSQL array.
+    - To pass NULL value, use C(null).
     - Mutually exclusive with I(positional_args).
     type: dict
   path_to_script:
