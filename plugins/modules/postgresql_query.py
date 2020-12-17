@@ -182,7 +182,7 @@ EXAMPLES = r'''
 - name: When undefined, set to NULL
   set_fact:
     my_var: NULL
-    when: my_var is undefined
+  when: my_var is undefined
 
 # Then:
 - name: Insert a value using positional arguments
