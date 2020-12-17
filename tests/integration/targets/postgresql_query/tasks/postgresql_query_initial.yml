@@ -243,14 +243,14 @@
     query: INSERT INTO test_table (id, story) VALUES (%s, %s)
     positional_args:
     - 4
-    - NULL
+    - fourth
   register: result
   ignore_errors: true
 
 - assert:
     that:
     - result is changed
-    - result.query == "INSERT INTO test_table (id, story) VALUES (4, NULL)"
+    - result.query == "INSERT INTO test_table (id, story) VALUES (4, 'fourth')" or result.query == "INSERT INTO test_table (id, story) VALUES (4, E'fourth')"
     - result.rowcount == 1
     - result.statusmessage == 'INSERT 0 1'
     - result.query_result == {}
