@@ -172,6 +172,24 @@ EXAMPLES = r'''
     search_path:
     - app1
     - public
+
+# If you use a variable in positional_args / named_args that can
+# be undefined and you wish to set it as NULL, the constructions like
+# "{{ my_var if (my_var is defined) else none | default(none) }}"
+# will not work as expected substituting an empty string instead of NULL.
+# You should precheck such a value and define it as NULL when undefined.
+# For example:
+- name: When undefined, set to NULL
+  set_fact:
+    my_var: NULL
+    when: my_var is undefined
+
+# Then:
+- name: Insert a value using positional arguments
+  community.postgresql.postgresql_query:
+    query: INSERT INTO test_table (col1) VALUES (%s)
+    positional_args:
+    - '{{ my_var }}'
 '''
 
 RETURN = r'''
