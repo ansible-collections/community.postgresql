@@ -177,6 +177,10 @@ EXAMPLES = r'''
 # be undefined and you wish to set it as NULL, the constructions like
 # "{{ my_var if (my_var is defined) else none | default(none) }}"
 # will not work as expected substituting an empty string instead of NULL.
+# If possible, we suggest to use Ansible's DEFAULT_JINJA2_NATIVE configuration
+# (https://docs.ansible.com/ansible/latest/reference_appendices/config.html#default-jinja2-native).
+# Enabling it fixes this problem. If you cannot enable it, the following workaround
+# can be used.
 # You should precheck such a value and define it as NULL when undefined.
 # For example:
 - name: When undefined, set to NULL
