@@ -40,6 +40,10 @@ options:
     description:
     - Path to a SQL script on the target machine.
     - If the script contains several queries, they must be semicolon-separated.
+    - To run scripts containing objects with semicolons
+      (for example, function and procedure definitions), use I(single_query=yes).
+    - To upload dumps or to execute other complex scripts, the preferable way
+      is to use the M(community.postgresql.postgresql_db) module with I(state=restore).
     - Mutually exclusive with I(query).
     type: path
   session_role:
@@ -81,6 +85,18 @@ options:
     type: list
     elements: str
     version_added: '1.0.0'
+  single_query:
+    description:
+    - If C(yes), when reading from the I(path_to_script) file,
+      executes its whole content in a single query.
+    - When C(yes), the C(query_all_results) return value
+      contains only the result of the last statement.
+    - Whether the state has been reported as changed or not
+      is determined by the last statement of the file.
+    - Used only when I(path_to_script) is specified, otherwise ignored.
+    type: bool
+    default: no
+    version_added: '1.1.0'
 seealso:
 - module: community.postgresql.postgresql_db
 - name: PostgreSQL Schema reference
@@ -254,6 +270,8 @@ except ImportError:
     # ansible.module_utils.postgres
     pass
 
+import re
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
@@ -332,6 +350,7 @@ def main():
         encoding=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         search_path=dict(type='list', elements='str'),
+        single_query=dict(type='bool', default=False),
     )
 
     module = AnsibleModule(
@@ -349,6 +368,7 @@ def main():
     session_role = module.params["session_role"]
     trust_input = module.params["trust_input"]
     search_path = module.params["search_path"]
+    single_query = module.params["single_query"]
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -371,10 +391,15 @@ def main():
         try:
             with open(path_to_script, 'rb') as f:
                 query = to_native(f.read())
-                if ';' in query:
-                    query_list = [q for q in query.split(';') if q != '\n']
+
+                if not single_query:
+                    if ';' in query:
+                        query_list = [q for q in query.split(';') if q != '\n']
+                    else:
+                        query_list.append(query)
                 else:
                     query_list.append(query)
+
         except Exception as e:
             module.fail_json(msg="Cannot read file '%s' : %s" % (path_to_script, to_native(e)))
     else:
@@ -425,7 +450,7 @@ def main():
             query_all_results.append(query_result)
 
             if 'SELECT' not in statusmessage:
-                if 'UPDATE' in statusmessage or 'INSERT' in statusmessage or 'DELETE' in statusmessage:
+                if re.search(re.compile(r'(UPDATE|INSERT|DELETE)'), statusmessage):
                     s = statusmessage.split()
                     if len(s) == 3:
                         if s[2] != '0':

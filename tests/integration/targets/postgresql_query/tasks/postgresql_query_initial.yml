@@ -16,34 +16,19 @@
   shell: psql postgres -U "{{ pg_user }}" -t -c "INSERT INTO test_table (id, story) VALUES (1, 'first'), (2, 'second'), (3, 'third');"
   ignore_errors: true
 
-- name: postgresql_query - remove SQL script if exists
-  become: true
-  file:
-    path: ~{{ pg_user}}/test.sql
-    state: absent
-  ignore_errors: true
-
-- name: postgresql_query - create an empty file to check permission
-  become: true
-  file:
-    path: ~{{ pg_user}}/test.sql
-    state: touch
+- name: Copy script files
+  become: yes
+  copy:
+    src: '{{ item }}'
+    dest: '~{{ pg_user }}/{{ item }}'
     owner: '{{ pg_user }}'
-    group: '{{ pg_user }}'
-    mode: '0644'
+    force: yes
+  loop:
+  - test0.sql
+  - test1.sql
   register: sql_file_created
-  ignore_errors: true
+  ignore_errors: yes
 
-- name: postgresql_query - prepare SQL script
-  become_user: '{{ pg_user }}'
-  become: true
-  shell: echo "{{ item }}" >> ~{{ pg_user}}/test.sql
-  ignore_errors: true
-  with_items:
-  - SELECT version();
-  - SELECT story FROM test_table
-  - WHERE id = %s OR story = 'Данные';
-  when: sql_file_created
 - name: postgresql_query - analyze test_table
   become_user: '{{ pg_user }}'
   become: true
@@ -70,7 +55,7 @@
   postgresql_query:
     login_user: '{{ pg_user }}'
     db: postgres
-    path_to_script: ~{{ pg_user }}/test.sql
+    path_to_script: ~{{ pg_user }}/test0.sql
     positional_args:
     - 1
     encoding: UTF-8
@@ -81,7 +66,7 @@
 - assert:
     that:
     - result is not changed
-    - result.query == "\nSELECT story FROM test_table\nWHERE id = 1 OR story = 'Данные'"
+    - result.query == "\n\nSELECT story FROM test_table\n  WHERE id = 1 OR story = 'Данные'"
     - result.query_result[0].story == 'first'
     - result.query_all_results[0][0].version is search('PostgreSQL')
     - result.query_all_results[1][0].story == 'first'
@@ -532,3 +517,26 @@
 - assert:
     that:
     - result is failed
+
+# Tests for the single_query option
+- name: Run queries from SQL script as a single query
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: postgres
+    path_to_script: ~{{ pg_user }}/test1.sql
+    positional_args:
+    - 1
+    encoding: UTF-8
+    single_query: yes
+  register: result
+
+- name: >
+    Must pass. Not changed because we can only
+    check statusmessage of the last query
+  assert:
+    that:
+    - result is not changed
+    - result.statusmessage == 'SELECT 1'
+    - result.query_list[0] == "CREATE FUNCTION add(integer, integer) RETURNS integer\n  AS 'select $1 + $2;'\n  LANGUAGE SQL\n  IMMUTABLE\n  RETURNS NULL ON NULL INPUT;\n\nSELECT story FROM test_table\n  WHERE id = %s OR story = 'Данные';\n\nSELECT version();\n"
