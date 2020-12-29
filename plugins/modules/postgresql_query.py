@@ -141,6 +141,8 @@ EXAMPLES = r'''
     db: test_db
     query: INSERT INTO test_table (id, story) VALUES (2, 'my_long_story')
 
+# If your script contains semicolons as parts of separate objects
+# like functions, procedures, and so on, use "single_query: yes"
 - name: Run queries from SQL script using UTF-8 client encoding for session
   community.postgresql.postgresql_query:
     db: test_db
