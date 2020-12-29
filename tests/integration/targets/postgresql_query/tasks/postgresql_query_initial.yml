@@ -538,5 +538,5 @@
   assert:
     that:
     - result is not changed
-    - result.statusmessage == 'SELECT 1'
+    - result.statusmessage == 'SELECT 1' or result.statusmessage == 'SELECT'
     - result.query_list[0] == "CREATE FUNCTION add(integer, integer) RETURNS integer\n  AS 'select $1 + $2;'\n  LANGUAGE SQL\n  IMMUTABLE\n  RETURNS NULL ON NULL INPUT;\n\nSELECT story FROM test_table\n  WHERE id = %s OR story = 'Данные';\n\nSELECT version();\n"
