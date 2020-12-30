@@ -41,7 +41,7 @@ options:
     - Path to a SQL script on the target machine.
     - If the script contains several queries, they must be semicolon-separated.
     - To run scripts containing objects with semicolons
-      (for example, function and procedure definitions), use I(single_query=yes).
+      (for example, function and procedure definitions), use I(as_single_query=yes).
     - To upload dumps or to execute other complex scripts, the preferable way
       is to use the M(community.postgresql.postgresql_db) module with I(state=restore).
     - Mutually exclusive with I(query).
@@ -85,7 +85,7 @@ options:
     type: list
     elements: str
     version_added: '1.0.0'
-  single_query:
+  as_single_query:
     description:
     - If C(yes), when reading from the I(path_to_script) file,
       executes its whole content in a single query.
@@ -142,7 +142,7 @@ EXAMPLES = r'''
     query: INSERT INTO test_table (id, story) VALUES (2, 'my_long_story')
 
 # If your script contains semicolons as parts of separate objects
-# like functions, procedures, and so on, use "single_query: yes"
+# like functions, procedures, and so on, use "as_single_query: yes"
 - name: Run queries from SQL script using UTF-8 client encoding for session
   community.postgresql.postgresql_query:
     db: test_db
@@ -352,7 +352,7 @@ def main():
         encoding=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         search_path=dict(type='list', elements='str'),
-        single_query=dict(type='bool', default=False),
+        as_single_query=dict(type='bool', default=False),
     )
 
     module = AnsibleModule(
@@ -370,7 +370,7 @@ def main():
     session_role = module.params["session_role"]
     trust_input = module.params["trust_input"]
     search_path = module.params["search_path"]
-    single_query = module.params["single_query"]
+    as_single_query = module.params["as_single_query"]
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -394,7 +394,7 @@ def main():
             with open(path_to_script, 'rb') as f:
                 query = to_native(f.read())
 
-                if not single_query:
+                if not as_single_query:
                     if ';' in query:
                         query_list = [q for q in query.split(';') if q != '\n']
                     else:

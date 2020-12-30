@@ -1,2 +1,2 @@
 minor_changes:
-- postgresql_query - add ``single_query`` option to execute a script content as a single query to avoid semicolon related errors (https://github.com/ansible-collections/community.postgresql/pull/37).
+- postgresql_query - add ``as_single_query`` option to execute a script content as a single query to avoid semicolon related errors (https://github.com/ansible-collections/community.postgresql/pull/37).

@@ -518,7 +518,7 @@
     that:
     - result is failed
 
-# Tests for the single_query option
+# Tests for the as_single_query option
 - name: Run queries from SQL script as a single query
   become_user: '{{ pg_user }}'
   become: true
@@ -529,7 +529,7 @@
     positional_args:
     - 1
     encoding: UTF-8
-    single_query: yes
+    as_single_query: yes
   register: result
 
 - name: >
