@@ -91,7 +91,7 @@ options:
       executes its whole content in a single query.
     - When C(yes), the C(query_all_results) return value
       contains only the result of the last statement.
-    - Whether the state has been reported as changed or not
+    - Whether the state is reported as changed or not
       is determined by the last statement of the file.
     - Used only when I(path_to_script) is specified, otherwise ignored.
     type: bool
