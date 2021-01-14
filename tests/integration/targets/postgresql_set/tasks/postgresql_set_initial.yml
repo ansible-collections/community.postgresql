@@ -386,4 +386,4 @@
   - assert:
       that:
       - result is failed
-      - result.msg == 'No such parameter: Timezone'
+      - result.msg is search('No such parameter')
