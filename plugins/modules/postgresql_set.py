@@ -201,6 +201,9 @@ def param_get(cursor, module, name):
     except Exception as e:
         module.fail_json(msg="Unable to get %s value due to : %s" % (name, to_native(e)))
 
+    if not info:
+        module.fail_json(msg="No such parameter: %s" % name)
+
     raw_val = info[0][1]
     unit = info[0][2]
     context = info[0][3]
