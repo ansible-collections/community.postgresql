@@ -43,3 +43,25 @@ releases:
     fragments:
     - 1.0.0.yml
     release_date: '2020-11-17'
+  1.1.0:
+    changes:
+      bugfixes:
+      - postgresql_info - fix crash caused by wrong PgSQL version parsing (https://github.com/ansible-collections/community.postgresql/issues/40).
+      - postgresql_ping - fix crash caused by wrong PgSQL version parsing (https://github.com/ansible-collections/community.postgresql/issues/40).
+      - postgresql_set - return a message instead of traceback when a passed parameter
+        has not been found (https://github.com/ansible-collections/community.postgresql/issues/41).
+      minor_changes:
+      - postgresql_query - add ``as_single_query`` option to execute a script content
+        as a single query to avoid semicolon related errors (https://github.com/ansible-collections/community.postgresql/pull/37).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.0.0.'
+    fragments:
+    - 1.1.0.yml
+    - 37-postgresql_query_add_single_query_opt.yml
+    - 42-postgresql_set_add_message_when_parameter_not_found.yml
+    - 43-modules_fix_version_parsing.yml
+    release_date: '2021-01-18'

@@ -5,6 +5,28 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.1.0
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.0.0.
+
+Minor Changes
+-------------
+
+- postgresql_query - add ``as_single_query`` option to execute a script content as a single query to avoid semicolon related errors (https://github.com/ansible-collections/community.postgresql/pull/37).
+
+Bugfixes
+--------
+
+- postgresql_info - fix crash caused by wrong PgSQL version parsing (https://github.com/ansible-collections/community.postgresql/issues/40).
+- postgresql_ping - fix crash caused by wrong PgSQL version parsing (https://github.com/ansible-collections/community.postgresql/issues/40).
+- postgresql_set - return a message instead of traceback when a passed parameter has not been found (https://github.com/ansible-collections/community.postgresql/issues/41).
+
 v1.0.0
 ======
 
