@@ -272,6 +272,7 @@ except ImportError:
     # ansible.module_utils.postgres
     pass
 
+import decimal
 import re
 
 from ansible.module_utils.basic import AnsibleModule
@@ -439,8 +440,17 @@ def main():
             if cursor.rowcount > 0:
                 rowcount += cursor.rowcount
 
+            query_result = []
             try:
-                query_result = [dict(row) for row in cursor.fetchall()]
+                for row in cursor.fetchall():
+                    # Ansible engine does not support decimals.
+                    # An explicit conversion is required on the module's side
+                    row = dict(row)
+                    for (key, val) in iteritems(row):
+                        if isinstance(val, decimal.Decimal):
+                            row[key] = float(val)
+
+                    query_result.append(row)
 
             except Psycopg2ProgrammingError as e:
                 if to_native(e) == 'no results to fetch':
