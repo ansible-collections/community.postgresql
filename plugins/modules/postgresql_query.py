@@ -272,6 +272,7 @@ except ImportError:
     # ansible.module_utils.postgres
     pass
 
+import datetime
 import decimal
 import re
 
@@ -449,6 +450,9 @@ def main():
                     for (key, val) in iteritems(row):
                         if isinstance(val, decimal.Decimal):
                             row[key] = float(val)
+
+                        elif isinstance(val, datetime.timedelta):
+                            row[key] = str(val)
 
                     query_result.append(row)
 
