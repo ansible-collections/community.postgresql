@@ -419,22 +419,10 @@
     <<: *task_parameters
     postgresql_set:
       <<: *pg_parameters
-      name: work_mem
-      value: '100000B'
+      name: track_activity_query_size
+      value: '4096B'
     register: result
     check_mode: yes
-
-  - assert:
-      that:
-      - result is changed
-
-  - name: Pass another parameter containing B
-    <<: *task_parameters
-    postgresql_set:
-      <<: *pg_parameters
-      name: work_mem
-      value: '100000B'
-    register: result
 
   - assert:
       that:
@@ -448,18 +436,6 @@
       value: '2048b'
     register: result
     check_mode: yes
-
-  - assert:
-      that:
-      - result is changed
-
-  - name: Pass another parameter containing b
-    <<: *task_parameters
-    postgresql_set:
-      <<: *pg_parameters
-      name: track_activity_query_size
-      value: '2048b'
-    register: result
 
   - assert:
       that:
