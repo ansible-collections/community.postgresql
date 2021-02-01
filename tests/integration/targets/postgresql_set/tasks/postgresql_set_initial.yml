@@ -387,3 +387,80 @@
       that:
       - result is failed
       - result.msg is search('No such parameter')
+
+  #######################################################################
+  # https://github.com/ansible-collections/community.postgresql/issues/48
+  - name: Pass a parameter containing b in check_mode
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: archive_command
+      value: '/usr/bin/touch %f'
+    register: result
+    check_mode: yes
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: Pass a parameter containing b
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: archive_command
+      value: '/usr/bin/touch %f'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: Pass another parameter containing B in check_mode
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: work_mem
+      value: '100000B'
+    register: result
+    check_mode: yes
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: Pass another parameter containing B
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: work_mem
+      value: '100000B'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: Pass another parameter containing b in check_mode
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: work_mem
+      value: '110000b'
+    register: result
+    check_mode: yes
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: Pass another parameter containing b
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: work_mem
+      value: '110000b'
+    register: result
+
+  - assert:
+      that:
+      - result is changed

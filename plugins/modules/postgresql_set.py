@@ -182,7 +182,7 @@ from ansible.module_utils._text import to_native
 PG_REQ_VER = 90400
 
 # To allow to set value like 1mb instead of 1MB, etc:
-POSSIBLE_SIZE_UNITS = ("mb", "gb", "tb")
+POSSIBLE_SIZE_UNITS = ("mb", "gb", "tb", "b")
 
 # ===========================================
 # PostgreSQL module specific support methods.
@@ -242,28 +242,29 @@ def pretty_to_bytes(pretty_val):
 
     val_in_bytes = None
 
-    if 'kB' in pretty_val:
-        num_part = int(''.join(d for d in pretty_val if d.isdigit()))
-        val_in_bytes = num_part * 1024
+    if len(pretty_val) >= 2:
+        if 'kB' in pretty_val[-2:]:
+            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
+            val_in_bytes = num_part * 1024
 
-    elif 'MB' in pretty_val.upper():
-        num_part = int(''.join(d for d in pretty_val if d.isdigit()))
-        val_in_bytes = num_part * 1024 * 1024
+        elif 'MB' in pretty_val.upper()[-2:]:
+            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
+            val_in_bytes = num_part * 1024 * 1024
 
-    elif 'GB' in pretty_val.upper():
-        num_part = int(''.join(d for d in pretty_val if d.isdigit()))
-        val_in_bytes = num_part * 1024 * 1024 * 1024
+        elif 'GB' in pretty_val.upper()[-2:]:
+            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
+            val_in_bytes = num_part * 1024 * 1024 * 1024
 
-    elif 'TB' in pretty_val.upper():
-        num_part = int(''.join(d for d in pretty_val if d.isdigit()))
-        val_in_bytes = num_part * 1024 * 1024 * 1024 * 1024
+        elif 'TB' in pretty_val.upper()[-2:]:
+            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
+            val_in_bytes = num_part * 1024 * 1024 * 1024 * 1024
 
-    elif 'B' in pretty_val.upper():
-        num_part = int(''.join(d for d in pretty_val if d.isdigit()))
-        val_in_bytes = num_part
+        elif len(pretty_val) >= 1 and 'B' in pretty_val.upper()[-1]:
+            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
+            val_in_bytes = num_part
 
-    else:
-        return pretty_val
+        else:
+            return pretty_val
 
     return val_in_bytes
 
@@ -318,7 +319,7 @@ def main():
     # Allow to pass values like 1mb instead of 1MB, etc:
     if value:
         for unit in POSSIBLE_SIZE_UNITS:
-            if value[:-2].isdigit() and unit in value[-2:]:
+            if (value[:-2].isdigit() and unit in value[-2:]) or ('b' in value[-1] and value[:-1].isdigit()):
                 value = value.upper()
 
     if value is not None and reset:
