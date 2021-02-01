@@ -444,8 +444,8 @@
     <<: *task_parameters
     postgresql_set:
       <<: *pg_parameters
-      name: work_mem
-      value: '110000b'
+      name: track_activity_query_size
+      value: '2048b'
     register: result
     check_mode: yes
 
@@ -457,8 +457,8 @@
     <<: *task_parameters
     postgresql_set:
       <<: *pg_parameters
-      name: work_mem
-      value: '110000b'
+      name: track_activity_query_size
+      value: '2048b'
     register: result
 
   - assert:
