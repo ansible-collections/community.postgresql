@@ -263,10 +263,10 @@ def pretty_to_bytes(pretty_val):
             num_part = int(''.join(d for d in pretty_val if d.isdigit()))
             val_in_bytes = num_part
 
-        else:
-            return pretty_val
-
-    return val_in_bytes
+    if val_in_bytes is not None:
+        return val_in_bytes
+    else:
+        return pretty_val
 
 
 def param_set(cursor, module, name, value, context):
