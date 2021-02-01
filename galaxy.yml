@@ -3,7 +3,7 @@ name: postgresql
 version: 1.1.0
 readme: README.md
 authors:
-  - PostgreSQL Working Group (https://github.com/ansible/community/wiki/PostgreSQL)
+  - Ansible PostgreSQL community
 description: null
 license_file: COPYING
 tags:
