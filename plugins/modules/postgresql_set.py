@@ -240,28 +240,51 @@ def pretty_to_bytes(pretty_val):
     # if the value contains 'B', 'kB', 'MB', 'GB', 'TB'.
     # Otherwise it returns the passed argument.
 
+    # It's sometimes possible to have an empty values
+    if not pretty_val:
+        return pretty_val
+
+    # If the first char is not a digit, it does not make sense
+    # to parse further, so just return a passed value
+    if not pretty_val[0].isdigit():
+        return pretty_val
+
+    # If the last char is not an alphabetical symbol, it means that
+    # it does not contain any suffices, so no sense to parse further
+    if not pretty_val[-1].isalpha():
+        return pretty_val
+
+    # Extract digits
+    num_part = []
+    for c in pretty_val:
+        # When we reach the first non-digit element,
+        # e.g. in 1024kB, stop iterating
+        if not c.isdigit():
+            break
+
+        if c.isdigit():
+            num_part.append(c)
+
+    num_part = ''.join(num_part)
+
     val_in_bytes = None
 
     if len(pretty_val) >= 2:
         if 'kB' in pretty_val[-2:]:
-            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
             val_in_bytes = num_part * 1024
 
-        elif 'MB' in pretty_val.upper()[-2:]:
-            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
+        elif 'MB' in pretty_val[-2:]:
             val_in_bytes = num_part * 1024 * 1024
 
-        elif 'GB' in pretty_val.upper()[-2:]:
-            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
+        elif 'GB' in pretty_val[-2:]:
             val_in_bytes = num_part * 1024 * 1024 * 1024
 
-        elif 'TB' in pretty_val.upper()[-2:]:
-            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
+        elif 'TB' in pretty_val[-2:]:
             val_in_bytes = num_part * 1024 * 1024 * 1024 * 1024
 
-        elif len(pretty_val) >= 1 and 'B' in pretty_val.upper()[-1]:
-            num_part = int(''.join(d for d in pretty_val if d.isdigit()))
-            val_in_bytes = num_part
+    # For cases like "1B"
+    if not val_in_bytes and 'B' in pretty_val[-1]:
+        val_in_bytes = num_part
 
     if val_in_bytes is not None:
         return val_in_bytes
@@ -319,7 +342,7 @@ def main():
     # Allow to pass values like 1mb instead of 1MB, etc:
     if value:
         for unit in POSSIBLE_SIZE_UNITS:
-            if (value[:-2].isdigit() and unit in value[-2:]) or ('b' in value[-1] and value[:-1].isdigit()):
+            if (value[:-3].isdigit() and unit in value[-2:]) or ('b' in value[-1] and value[:-1].isdigit()):
                 value = value.upper()
 
     if value is not None and reset:
