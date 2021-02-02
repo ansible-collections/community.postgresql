@@ -182,7 +182,7 @@ from ansible.module_utils._text import to_native
 PG_REQ_VER = 90400
 
 # To allow to set value like 1mb instead of 1MB, etc:
-POSSIBLE_SIZE_UNITS = ("mb", "gb", "tb", "b")
+POSSIBLE_SIZE_UNITS = ("mb", "gb", "tb")
 
 # ===========================================
 # PostgreSQL module specific support methods.
