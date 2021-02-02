@@ -96,7 +96,7 @@ options:
     - Used only when I(path_to_script) is specified, otherwise ignored.
     - If set to C(no), the script can contain only semicolon-separated queries.
       (see the I(path_to_script) option documentation).
-    - The default value is C(False).
+    - The default value is C(no).
     type: bool
     version_added: '1.1.0'
 seealso:
