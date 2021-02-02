@@ -250,7 +250,7 @@ def pretty_to_bytes(pretty_val):
         return pretty_val
 
     # If the last char is not an alphabetical symbol, it means that
-    # it does not contain any suffices, so no sense to parse further
+    # it does not contain any suffixes, so no sense to parse further
     if not pretty_val[-1].isalpha():
         return pretty_val
 
