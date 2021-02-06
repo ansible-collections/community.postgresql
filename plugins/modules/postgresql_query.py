@@ -378,9 +378,9 @@ def main():
 
     if path_to_script and as_single_query is None:
         module.warn('You use the "path_to_script" option with the "as_single_query" '
-                    'option unset. The default is False. '
+                    'option unset. The default is false. '
                     'To avoid crashes, please read the documentation '
-                    'and define the "as_single_query" option explicitly')
+                    'and define the "as_single_query" option explicitly.')
 
     if not trust_input:
         # Check input for potentially dangerous elements:
