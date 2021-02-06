@@ -182,7 +182,7 @@ from ansible.module_utils._text import to_native
 PG_REQ_VER = 90400
 
 # To allow to set value like 1mb instead of 1MB, etc:
-POSSIBLE_SIZE_UNITS = ("mb", "gb", "tb")
+LOWERCASE_SIZE_UNITS = ("mb", "gb", "tb")
 
 # ===========================================
 # PostgreSQL module specific support methods.
@@ -261,8 +261,7 @@ def pretty_to_bytes(pretty_val):
         # e.g. in 1024kB, stop iterating
         if not c.isdigit():
             break
-
-        if c.isdigit():
+        else:
             num_part.append(c)
 
     num_part = ''.join(num_part)
@@ -339,11 +338,14 @@ def main():
         # Check input for potentially dangerous elements:
         check_input(module, name, value, session_role)
 
-    # Allow to pass values like 1mb instead of 1MB, etc:
     if value:
-        for unit in POSSIBLE_SIZE_UNITS:
-            if (value[:-2].isdigit() and unit in value[-2:]) or ('b' in value[-1] and value[:-1].isdigit()):
-                value = value.upper()
+        # Convert a value like 1mb (Postgres does not support) to 1MB, etc:
+        if len(value) > 2 and value[:-2].isdigit() and value[-2:] in LOWERCASE_SIZE_UNITS:
+            value = value.upper()
+
+        # Convert a value like 1b (Postgres does not support) to 1B:
+        elif len(value) > 1 and ('b' in value[-1] and value[:-1].isdigit()):
+            value = value.upper()
 
     if value is not None and reset:
         module.fail_json(msg="%s: value and reset params are mutually exclusive" % name)
