@@ -90,10 +90,10 @@ stages:
               test: centos6
             - name: CentOS 7
               test: centos7
-            - name: Fedora 31
-              test: fedora31
             - name: Fedora 32
               test: fedora32
+            - name: Fedora 33
+              test: fedora33
             - name: Ubuntu 16.04
               test: ubuntu1604
             - name: Ubuntu 18.04
