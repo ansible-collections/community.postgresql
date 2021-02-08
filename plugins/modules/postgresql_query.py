@@ -94,8 +94,10 @@ options:
     - Whether the state is reported as changed or not
       is determined by the last statement of the file.
     - Used only when I(path_to_script) is specified, otherwise ignored.
+    - If set to C(no), the script can contain only semicolon-separated queries.
+      (see the I(path_to_script) option documentation).
+    - The default value is C(no).
     type: bool
-    default: no
     version_added: '1.1.0'
 seealso:
 - module: community.postgresql.postgresql_db
@@ -354,7 +356,7 @@ def main():
         encoding=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         search_path=dict(type='list', elements='str'),
-        as_single_query=dict(type='bool', default=False),
+        as_single_query=dict(type='bool'),
     )
 
     module = AnsibleModule(
@@ -373,6 +375,12 @@ def main():
     trust_input = module.params["trust_input"]
     search_path = module.params["search_path"]
     as_single_query = module.params["as_single_query"]
+
+    if path_to_script and as_single_query is None:
+        module.warn('You use the "path_to_script" option with the "as_single_query" '
+                    'option unset. The default is false. '
+                    'To avoid crashes, please read the documentation '
+                    'and define the "as_single_query" option explicitly.')
 
     if not trust_input:
         # Check input for potentially dangerous elements:
