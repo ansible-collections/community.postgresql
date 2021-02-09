@@ -5,6 +5,24 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.1.1
+======
+
+Release Summary
+---------------
+
+This is the patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.1.0.
+
+Bugfixes
+--------
+
+- postgresql_query - add a warning to set ``as_single_query`` option explicitly (https://github.com/ansible-collections/community.postgresql/pull/54).
+- postgresql_query - fix datetime.timedelta type handling (https://github.com/ansible-collections/community.postgresql/issues/47).
+- postgresql_query - fix decimal handling (https://github.com/ansible-collections/community.postgresql/issues/45).
+- postgresql_set - fails in check_mode on non-numeric values containing `B` (https://github.com/ansible-collections/community.postgresql/issues/48).
+
 v1.1.0
 ======
 

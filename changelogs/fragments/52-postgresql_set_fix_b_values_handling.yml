@@ -1,2 +1,0 @@
-bugfixes:
-- postgresql_set - fails in check_mode on non-numeric values containing `B` (https://github.com/ansible-collections/community.postgresql/issues/48).

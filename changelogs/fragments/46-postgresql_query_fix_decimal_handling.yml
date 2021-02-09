@@ -1,2 +1,0 @@
-bugfixes:
-- postgresql_query - fix decimal handling (https://github.com/ansible-collections/community.postgresql/issues/45).

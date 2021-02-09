@@ -1,2 +1,0 @@
-bugfixes:
-- postgresql_query - add a warning to set ``as_single_query`` option explicitly (https://github.com/ansible-collections/community.postgresql/pull/54).

@@ -21,7 +21,7 @@ releases:
 
         The changes listed here are thus relative to the modules ``community.general.postgresql_*``.
 
-        '
+'
     fragments:
     - 0.1.0.yml
     - 1048-postgresql_privs_add_procedure_type.yml
@@ -39,7 +39,7 @@ releases:
         This changelog does not contain any changes because there are no changes made
         since release 0.1.0.
 
-        '
+'
     fragments:
     - 1.0.0.yml
     release_date: '2020-11-17'
@@ -65,3 +65,25 @@ releases:
     - 42-postgresql_set_add_message_when_parameter_not_found.yml
     - 43-modules_fix_version_parsing.yml
     release_date: '2021-01-18'
+  1.1.1:
+    changes:
+      bugfixes:
+      - postgresql_query - add a warning to set ``as_single_query`` option explicitly
+        (https://github.com/ansible-collections/community.postgresql/pull/54).
+      - postgresql_query - fix datetime.timedelta type handling (https://github.com/ansible-collections/community.postgresql/issues/47).
+      - postgresql_query - fix decimal handling (https://github.com/ansible-collections/community.postgresql/issues/45).
+      - postgresql_set - fails in check_mode on non-numeric values containing `B`
+        (https://github.com/ansible-collections/community.postgresql/issues/48).
+      release_summary: 'This is the patch release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.1.0.'
+    fragments:
+    - 1.1.1.yml
+    - 46-postgresql_query_fix_decimal_handling.yml
+    - 51-postgresql_query_fix_datetime_timedelta_type_handling.yml
+    - 52-postgresql_set_fix_b_values_handling.yml
+    - 54-postgresql_query_add_warning_as_single_query.yml
+    release_date: '2021-02-09'

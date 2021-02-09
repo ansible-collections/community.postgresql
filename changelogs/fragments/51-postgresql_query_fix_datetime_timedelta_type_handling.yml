@@ -1,2 +1,0 @@
-bugfixes:
-- postgresql_query - fix datetime.timedelta type handling (https://github.com/ansible-collections/community.postgresql/issues/47).
