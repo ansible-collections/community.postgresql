@@ -90,12 +90,12 @@ stages:
               test: centos6
             - name: CentOS 7
               test: centos7
+            - name: CentOS 8
+              test: centos7
             - name: Fedora 32
               test: fedora32
             - name: Fedora 33
               test: fedora33
-            - name: Ubuntu 16.04
-              test: ubuntu1604
             - name: Ubuntu 18.04
               test: ubuntu1804
             - name: Ubuntu 20.04
@@ -148,14 +148,14 @@ stages:
         parameters:
           testFormat: devel/{0}/1
           targets:
-            - name: RHEL 7.8
-              test: rhel/7.8
-            - name: RHEL 8.2
-              test: rhel/8.2
-            - name: FreeBSD 11.1
-              test: freebsd/11.1
-            - name: FreeBSD 12.1
-              test: freebsd/12.1
+            - name: RHEL 7.9
+              test: rhel/7.9
+            - name: RHEL 8.3
+              test: rhel/8.3
+            - name: FreeBSD 11.4
+              test: freebsd/11.4
+            - name: FreeBSD 12.2
+              test: freebsd/12.2
   - stage: Remote_2_10
     displayName: Remote 2.10
     dependsOn: []
