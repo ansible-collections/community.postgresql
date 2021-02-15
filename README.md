@@ -24,7 +24,7 @@ The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) Pos
   - [postgresql_db](https://docs.ansible.com/ansible/latest/modules/postgresql_db_module.html)
   - [postgresql_ext](https://docs.ansible.com/ansible/latest/modules/postgresql_ext_module.html)
   - [postgresql_lang](https://docs.ansible.com/ansible/latest/modules/postgresql_lang_module.html)
-  - [postgresql_pg_hba](https://docs.ansible.com/ansible/latest/modules/postgresql_hba_module.html)
+  - [postgresql_pg_hba](https://docs.ansible.com/ansible/latest/modules/postgresql_pg_hba_module.html)
   - [postgresql_privs](https://docs.ansible.com/ansible/latest/modules/postgresql_privs_module.html)
   - [postgresql_set](https://docs.ansible.com/ansible/latest/modules/postgresql_set_module.html)
   - [postgresql_schema](https://docs.ansible.com/ansible/latest/modules/postgresql_schema_module.html)
