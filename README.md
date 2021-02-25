@@ -16,32 +16,32 @@ The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) Pos
 ## Included content
 
 - **Info modules**:
-  - [postgresql_info](https://docs.ansible.com/ansible/latest/modules/postgresql_info_module.html)
-  - [postgresql_ping](https://docs.ansible.com/ansible/latest/modules/postgresql_ping_module.html)
-  - [postgresql_user_obj_stat_info](https://docs.ansible.com/ansible/latest/modules/postgresql_user_obj_stat_info_module.html)
+  - [postgresql_info](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_info_module.html)
+  - [postgresql_ping](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_ping_module.html)
+  - [postgresql_user_obj_stat_info](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_user_obj_stat_info_module.html)
 
 - **Basic modules**:
-  - [postgresql_db](https://docs.ansible.com/ansible/latest/modules/postgresql_db_module.html)
-  - [postgresql_ext](https://docs.ansible.com/ansible/latest/modules/postgresql_ext_module.html)
-  - [postgresql_lang](https://docs.ansible.com/ansible/latest/modules/postgresql_lang_module.html)
-  - [postgresql_pg_hba](https://docs.ansible.com/ansible/latest/modules/postgresql_pg_hba_module.html)
-  - [postgresql_privs](https://docs.ansible.com/ansible/latest/modules/postgresql_privs_module.html)
-  - [postgresql_set](https://docs.ansible.com/ansible/latest/modules/postgresql_set_module.html)
-  - [postgresql_schema](https://docs.ansible.com/ansible/latest/modules/postgresql_schema_module.html)
-  - [postgresql_tablespace](https://docs.ansible.com/ansible/latest/modules/postgresql_tablespace_module.html)
-  - [postgresql_query](https://docs.ansible.com/ansible/latest/modules/postgresql_query_module.html)
-  - [postgresql_user](https://docs.ansible.com/ansible/latest/modules/postgresql_user_module.html)
+  - [postgresql_db](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_db_module.html)
+  - [postgresql_ext](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_ext_module.html)
+  - [postgresql_lang](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_lang_module.html)
+  - [postgresql_pg_hba](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_pg_hba_module.html)
+  - [postgresql_privs](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_privs_module.html)
+  - [postgresql_set](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_set_module.html)
+  - [postgresql_schema](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_schema_module.html)
+  - [postgresql_tablespace](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_tablespace_module.html)
+  - [postgresql_query](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_query_module.html)
+  - [postgresql_user](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_user_module.html)
 
 - **Other modules**:
-  - [postgresql_copy](https://docs.ansible.com/ansible/latest/modules/postgresql_copy_module.html)
-  - [postgresql_idx](https://docs.ansible.com/ansible/latest/modules/postgresql_idx_module.html)
-  - [postgresql_membership](https://docs.ansible.com/ansible/latest/modules/postgresql_membership_module.html)
-  - [postgresql_owner](https://docs.ansible.com/ansible/latest/modules/postgresql_owner_module.html)
-  - [postgresql_publication](https://docs.ansible.com/ansible/latest/modules/postgresql_publication_module.html)
-  - [postgresql_sequence](https://docs.ansible.com/ansible/latest/modules/postgresql_sequence_module.html)
-  - [postgresql_slot](https://docs.ansible.com/ansible/latest/modules/postgresql_slot_module.html)
-  - [postgresql_subscription](https://docs.ansible.com/ansible/latest/modules/postgresql_subscription_module.html)
-  - [postgresql_table](https://docs.ansible.com/ansible/latest/modules/postgresql_table_module.html)
+  - [postgresql_copy](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_copy_module.html)
+  - [postgresql_idx](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_idx_module.html)
+  - [postgresql_membership](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_membership_module.html)
+  - [postgresql_owner](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_owner_module.html)
+  - [postgresql_publication](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_publication_module.html)
+  - [postgresql_sequence](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_sequence_module.html)
+  - [postgresql_slot](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_slot_module.html)
+  - [postgresql_subscription](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_subscription_module.html)
+  - [postgresql_table](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_table_module.html)
 
 ## Using this collection
 
