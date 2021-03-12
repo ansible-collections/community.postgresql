@@ -23,7 +23,7 @@
       publications: '{{ test_pub }}'
       connparams:
         host: 127.0.0.1
-        port: '{{ master_port }}'
+        port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
@@ -39,7 +39,7 @@
       publications: '{{ test_pub2 }}'
       connparams:
         host: 127.0.0.1
-        port: '{{ master_port }}'
+        port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
@@ -143,7 +143,7 @@
     postgresql_info:
       <<: *pg_parameters
       login_db: '{{ test_db }}'
-      login_port: '{{ master_port }}'
+      login_port: '{{ primary_port }}'
       trust_input: yes
 
   - assert:
@@ -165,7 +165,7 @@
     postgresql_info:
       <<: *pg_parameters
       login_db: '{{ test_db }}'
-      login_port: '{{ master_port }}'
+      login_port: '{{ primary_port }}'
       trust_input: no
       session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
     register: result

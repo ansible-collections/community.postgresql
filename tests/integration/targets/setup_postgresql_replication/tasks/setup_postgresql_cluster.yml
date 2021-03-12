@@ -10,8 +10,8 @@
     group: postgres
     mode: '0700'
   loop:
-  - '{{ master_root_dir }}'
-  - '{{ master_data_dir }}'
+  - '{{ primary_root_dir }}'
+  - '{{ primary_data_dir }}'
   - '{{ replica_root_dir }}'
   - '{{ replica_data_dir }}'
   notify: cleanup postgresql
@@ -26,7 +26,7 @@
   become_user: '{{ pg_user }}'
   shell: '{{ initdb }} --pgdata {{ item }}'
   loop:
-  - '{{ master_data_dir }}'
+  - '{{ primary_data_dir }}'
   - '{{ replica_data_dir }}'
 - name: Copy config templates
   template:
@@ -36,12 +36,12 @@
     group: postgres
     force: true
   loop:
-  - conf_templ: master_postgresql.conf.j2
-    conf_dest: '{{ master_postgresql_conf }}'
+  - conf_templ: primary_postgresql.conf.j2
+    conf_dest: '{{ primary_postgresql_conf }}'
   - conf_templ: replica_postgresql.conf.j2
     conf_dest: '{{ replica_postgresql_conf }}'
   - conf_templ: pg_hba.conf.j2
-    conf_dest: '{{ master_pg_hba_conf }}'
+    conf_dest: '{{ primary_pg_hba_conf }}'
   - conf_templ: pg_hba.conf.j2
     conf_dest: '{{ replica_pg_hba_conf }}'
 - name: Find pg_ctl
@@ -55,18 +55,18 @@
   become_user: '{{ pg_user }}'
   shell: '{{ pg_ctl }} -D {{ item.datadir }} -o "-p {{ item.port }}" start'
   loop:
-  - datadir: '{{ master_data_dir }}'
-    port: '{{ master_port }}'
+  - datadir: '{{ primary_data_dir }}'
+    port: '{{ primary_port }}'
   - datadir: '{{ replica_data_dir }}'
     port: '{{ replica_port }}'
   notify: stop postgresql
-- name: Check connectivity to the master and get PostgreSQL version
+- name: Check connectivity to the primary and get PostgreSQL version
   become: true
   become_user: '{{ pg_user }}'
   postgresql_ping:
     db: '{{ db_default }}'
     login_user: '{{ pg_user }}'
-    login_port: '{{ master_port }}'
+    login_port: '{{ primary_port }}'
   register: result
 - name: Check connectivity to the replica and get PostgreSQL version
   become: true

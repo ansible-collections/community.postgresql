@@ -3,7 +3,7 @@
   become_user: '{{ pg_user }}'
   shell: '{{ pg_ctl }} -D {{ item.datadir }} -o "-p {{ item.port }}" -m immediate stop'
   loop:
-  - { datadir: '{{ master_data_dir }}', port: '{{ master_port }}' }
+  - { datadir: '{{ primary_data_dir }}', port: '{{ primary_port }}' }
   - { datadir: '{{ replica_data_dir }}', port: '{{ replica_port }}' }
   listen: stop postgresql
 
@@ -18,6 +18,6 @@
     state: absent
     path: "{{ item }}"
   loop:
-  - "{{ master_root_dir }}"
+  - "{{ primary_root_dir }}"
   - "{{ replica_root_dir }}"
   listen: cleanup postgresql

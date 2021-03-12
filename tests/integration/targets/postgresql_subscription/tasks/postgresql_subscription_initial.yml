@@ -37,7 +37,7 @@
       publications: '{{ test_pub }}'
       connparams:
         host: 127.0.0.1
-        port: '{{ master_port }}'
+        port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
@@ -47,7 +47,7 @@
       that:
       - result is changed
       - result.name == '{{ test_subscription }}'
-      - result.queries == ["CREATE SUBSCRIPTION test CONNECTION 'host=127.0.0.1 port={{ master_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }}' PUBLICATION {{ test_pub }}"]
+      - result.queries == ["CREATE SUBSCRIPTION test CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }}' PUBLICATION {{ test_pub }}"]
       - result.exists == true
       - result.initial_state == {}
       - result.final_state.owner == '{{ pg_user }}'
@@ -57,7 +57,7 @@
       - result.final_state.slotname == '{{ test_subscription }}'
       - result.final_state.conninfo.dbname == '{{ test_db }}'
       - result.final_state.conninfo.host == '127.0.0.1'
-      - result.final_state.conninfo.port == {{ master_port }}
+      - result.final_state.conninfo.port == {{ primary_port }}
       - result.final_state.conninfo.user == '{{ replication_role }}'
       - result.final_state.conninfo.password == '{{ replication_pass }}'
 
@@ -143,7 +143,7 @@
       owner: '{{ test_role1 }}'
       connparams:
         host: 127.0.0.1
-        port: '{{ master_port }}'
+        port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
@@ -267,7 +267,7 @@
       trust_input: no
       connparams:
         host: 127.0.0.1
-        port: '{{ master_port }}'
+        port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
@@ -350,7 +350,7 @@
       publications: '{{ test_pub }}'
       connparams:
         host: 127.0.0.1
-        port: '{{ master_port }}'
+        port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
@@ -363,7 +363,7 @@
       that:
       - result is changed
       - result.name == '{{ test_subscription }}'
-      - result.queries == ["CREATE SUBSCRIPTION test CONNECTION 'host=127.0.0.1 port={{ master_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }}' PUBLICATION {{ test_pub }} WITH (enabled = false, synchronous_commit = false)"]
+      - result.queries == ["CREATE SUBSCRIPTION test CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }}' PUBLICATION {{ test_pub }} WITH (enabled = false, synchronous_commit = false)"]
       - result.exists == true
       - result.final_state.enabled == false
       - result.final_state.synccommit == false
@@ -554,7 +554,7 @@
       state: present
       connparams:
         host: 127.0.0.1
-        port: '{{ master_port }}'
+        port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
@@ -566,7 +566,7 @@
       that:
       - result is changed
       - result.name == '{{ test_subscription }}'
-      - result.queries == ["ALTER SUBSCRIPTION {{ test_subscription }} CONNECTION 'host=127.0.0.1 port={{ master_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }} connect_timeout={{ conn_timeout }}'"]
+      - result.queries == ["ALTER SUBSCRIPTION {{ test_subscription }} CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }} connect_timeout={{ conn_timeout }}'"]
       - result.initial_state.conninfo == result.final_state.conninfo
 
   - name: Change conninfo
@@ -578,7 +578,7 @@
       state: present
       connparams:
         host: 127.0.0.1
-        port: '{{ master_port }}'
+        port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
@@ -589,7 +589,7 @@
       that:
       - result is changed
       - result.name == '{{ test_subscription }}'
-      - result.queries == ["ALTER SUBSCRIPTION {{ test_subscription }} CONNECTION 'host=127.0.0.1 port={{ master_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }} connect_timeout={{ conn_timeout }}'"]
+      - result.queries == ["ALTER SUBSCRIPTION {{ test_subscription }} CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }} connect_timeout={{ conn_timeout }}'"]
       - result.initial_state.conninfo != result.final_state.conninfo
 
   - name: Check
@@ -601,7 +601,7 @@
 
   - assert:
       that:
-      - result.query_result[0].subconninfo == "host=127.0.0.1 port={{ master_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }} connect_timeout={{ conn_timeout }}"
+      - result.query_result[0].subconninfo == "host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }} connect_timeout={{ conn_timeout }}"
 
   - name: Try to change conninfo again with the same values
     <<: *task_parameters
@@ -612,7 +612,7 @@
       state: present
       connparams:
         host: 127.0.0.1
-        port: '{{ master_port }}'
+        port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
