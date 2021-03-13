@@ -859,7 +859,7 @@ class PgClusterInfo(object):
         self.pg_info["settings"] = set_dict
 
     def get_repl_info(self):
-        """Get information about replication if the server is a master."""
+        """Get information about replication if the server is a primary."""
         # Check that pg_replication_slots exists:
         res = self.__exec_sql("SELECT EXISTS (SELECT 1 FROM "
                               "information_schema.tables "
