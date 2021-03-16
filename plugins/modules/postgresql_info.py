@@ -119,6 +119,24 @@ version:
       returned: always
       type: int
       sample: 1
+    patch:
+      description: Patch server version.
+      returned: if supported
+      type: int
+      sample: 5
+      version_added: ''
+    full:
+      description: Full server version.
+      returned: always
+      type: str
+      sample: '13.2'
+      version_added: '1.2.0'
+    raw:
+      description: Full output returned by ``SELECT version()``.
+      returned: always
+      type: str
+      sample: 'PostgreSQL 13.2 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 10.2.1 20201125 (Red Hat 10.2.1-9), 64-bit'
+      version_added: '1.2.0'
 in_recovery:
   description: Indicates if the service is in recovery mode or not.
   returned: always
@@ -925,11 +943,24 @@ class PgClusterInfo(object):
         """Get major and minor PostgreSQL server version."""
         query = "SELECT version()"
         raw = self.__exec_sql(query)[0][0]
-        raw = raw.split()[1].split('.')
+        full = raw.split()[1]
+        tmp = full.split('.')
+
+        major = int(tmp[0])
+        minor = int(tmp[1].rstrip(','))
+        patch = None
+        if len(tmp) == 3:
+            patch = int(tmp[2].rstrip(','))
+
         self.pg_info["version"] = dict(
-            major=int(raw[0]),
-            minor=int(raw[1].rstrip(',')),
+            major=major,
+            minor=minor,
+            full=full,
+            raw=raw,
         )
+
+        if patch is not None:
+            self.pg_info["version"]["patch"] = patch
 
     def get_recovery_state(self):
         """Get if the service is in recovery mode."""

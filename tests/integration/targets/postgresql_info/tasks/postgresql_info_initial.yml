@@ -63,6 +63,7 @@
   - assert:
       that:
       - result.version != {}
+      - result.version.raw is search('PostgreSQL')
       - result.in_recovery == false
       - result.databases.{{ db_default }}.collate
       - result.databases.{{ db_default }}.languages
@@ -73,6 +74,17 @@
       - result.settings
       - result.tablespaces
       - result.roles
+
+  - assert:
+      that:
+      - result.version.patch != {}
+      - result.version.full == '{{ result.version.major }}.{{ result.version.minor }}.{{ result.version.patch }}'
+    when: result.version.major == 9
+
+  - assert:
+      that:
+      - result.version.full == '{{ result.version.major }}.{{ result.version.minor }}'
+    when: result.version.major >= 10
 
   - name: postgresql_info - check filter param passed by list
     <<: *task_parameters
