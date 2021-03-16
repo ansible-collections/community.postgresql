@@ -124,7 +124,7 @@ version:
       returned: if supported
       type: int
       sample: 5
-      version_added: ''
+      version_added: '1.2.0'
     full:
       description: Full server version.
       returned: always
