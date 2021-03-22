@@ -949,7 +949,7 @@ class PgClusterInfo(object):
         major = int(tmp[0])
         minor = int(tmp[1].rstrip(','))
         patch = None
-        if len(tmp) == 3:
+        if len(tmp) >= 3:
             patch = int(tmp[2].rstrip(','))
 
         self.pg_info["version"] = dict(
