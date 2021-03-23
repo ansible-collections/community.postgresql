@@ -71,7 +71,7 @@ server_version:
   description: PostgreSQL server version.
   returned: always
   type: dict
-  sample: { major: 10, minor: 1 }
+  sample: { major: 13, minor: 2, full: '13.2', raw: 'PostgreSQL 13.2 on x86_64-pc-linux-gnu' }
 '''
 
 try:
@@ -112,13 +112,30 @@ class PgPing(object):
     def get_pg_version(self):
         query = "SELECT version()"
         raw = exec_sql(self, query, add_to_executed=False)[0][0]
-        if raw:
-            self.is_available = True
-            raw = raw.split()[1].split('.')
-            self.version = dict(
-                major=int(raw[0]),
-                minor=int(raw[1].rstrip(',')),
-            )
+
+        if not raw:
+            return
+
+        self.is_available = True
+
+        full = raw.split()[1]
+        tmp = full.split('.')
+
+        major = int(tmp[0])
+        minor = int(tmp[1].rstrip(','))
+        patch = None
+        if len(tmp) >= 3:
+            patch = int(tmp[2].rstrip(','))
+
+        self.version = dict(
+            major=major,
+            minor=minor,
+            full=full,
+            raw=raw,
+        )
+
+        if patch is not None:
+            self.version['patch'] = patch
 
 
 # ===========================================
