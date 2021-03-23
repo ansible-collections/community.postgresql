@@ -15,9 +15,21 @@
     that:
       - result.is_available == true
       - result.server_version != {}
+      - result.server_version.raw is search('PostgreSQL')
       - result.server_version.major != false
       - result.server_version.minor != false
       - result is not changed
+
+- assert:
+    that:
+    - result.server_version.patch != {}
+    - result.server_version.full == '{{ result.server_version.major }}.{{ result.server_version.minor }}.{{ result.server_version.patch }}'
+  when: result.server_version.major == 9
+
+- assert:
+    that:
+    - result.server_version.full == '{{ result.server_version.major }}.{{ result.server_version.minor }}'
+  when: result.server_version.major >= 10
 
 - name: postgresql_ping - check ping of non-existing database doesn't return anything
   become_user: "{{ pg_user }}"
