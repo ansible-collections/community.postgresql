@@ -3,6 +3,19 @@
 https://dev.azure.com/ansible/community.postgres/_apis/build/status/CI?branchName=main)](https://dev.azure.com/ansible/community.postgres/_build?definitionId=28)
 [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)
 
+## Contributing to this collection
+
+How to get started quickly, see the [CONTRIBUTING.md](CONTRIBUTING.md).
+
+We use the following guidelines:
+
+* [CONTRIBUTING.md](CONTRIBUTING.md)
+* [Ansible Community Guide](https://docs.ansible.com/ansible/latest/community/index.html)
+* [Ansible Development Guide](https://docs.ansible.com/ansible/devel/dev_guide/index.html)
+* [Ansible Collection Development Guide](https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#contributing-to-collections)
+
+We, [the PostgreSQL working group](https://github.com/ansible-collections/community.postgresql/wiki/PostgreSQL-Working-Group), use [the community pinboard](https://github.com/ansible-collections/community.postgresql/issues/30) for general announcements and discussions.
+
 ## External requirements
 
 The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) PostgreSQL database adapter.
@@ -65,21 +78,6 @@ You can also download the tarball from Ansible Galaxy and install the collection
 
 See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.
 
-## Contributing to this collection
-
-<!--Describe how the community can contribute to your collection. At a minimum, include how and where users can create issues to report problems or request features for this collection.  List contribution requirements, including preferred workflows and necessary testing, so you can benefit from community PRs. If you are following general Ansible contributor guidelines, you can link to - [Ansible Community Guide](https://docs.ansible.com/ansible/latest/community/index.html). -->
-
-We're following the general Ansible contributor guidelines; see [Ansible Community Guide](https://docs.ansible.com/ansible/latest/community/index.html).
-
-If you want to clone this repositority (or a fork of it) to improve it, you can proceed as follows:
-1. Create a directory `ansible_collections/community`;
-2. In there, checkout this repository (or a fork) as `postgresql`;
-3. Add the directory containing `ansible_collections` to your [ANSIBLE_COLLECTIONS_PATH](https://docs.ansible.com/ansible/latest/reference_appendices/config.html#collections-paths).
-
-See [Ansible's dev guide](https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#contributing-to-collections) for more information.
-
-There is also [the community pinboard](https://github.com/ansible/community/issues/435) used by [the PostgreSQL working group](https://github.com/ansible/community/wiki/PostgreSQL) for announcements and discussing general questions.
-
 ## Release notes
 
 See the [changelog](https://github.com/ansible-collections/community.postgresql/blob/main/CHANGELOG.rst).
@@ -87,7 +85,6 @@ See the [changelog](https://github.com/ansible-collections/community.postgresql/
 ## Roadmap
 
 See the [release plan](https://github.com/ansible-collections/community.postgresql/issues/13).
-See blah blah
 
 ## More information
 
@@ -97,8 +94,6 @@ See blah blah
 - [Ansible Community code of conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html)
 
 ## Licensing
-
-<!-- Include the appropriate license information here and a pointer to the full licensing details. If the collection contains modules migrated from the ansible/ansible repo, you must use the same license that existed in the ansible/ansible repo. See the GNU license example below. -->
 
 GNU General Public License v3.0 or later.
 
