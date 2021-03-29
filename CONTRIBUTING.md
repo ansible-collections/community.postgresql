@@ -2,6 +2,8 @@
 
 We follow [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html) in all our contributions and interactions within this repository.
 
+If you are a committer, also refer to the [Ansible committer guidelines](https://docs.ansible.com/ansible/devel/community/committer_guidelines.html).
+
 ## Issue tracker
 
 Whether you are looking for an opportunity to contribute or you found a bug and already know how to solve it, please go to the [issue tracker](https://github.com/ansible-collections/community.postgresql/issues).
