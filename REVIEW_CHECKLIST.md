@@ -2,6 +2,8 @@
 
 When reviewing, keep in mind that we follow [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html) in all our contributions and interactions within this repository.
 
+If you are a committer, also refer to the [Ansible committer guidelines](https://docs.ansible.com/ansible/devel/community/committer_guidelines.html).
+
 **General tips**
 - Try to create a culture of collaboration when reviewing
 - Welcome the author and thank them for the pull request
