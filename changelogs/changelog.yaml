@@ -21,7 +21,7 @@ releases:
 
         The changes listed here are thus relative to the modules ``community.general.postgresql_*``.
 
-'
+        '
     fragments:
     - 0.1.0.yml
     - 1048-postgresql_privs_add_procedure_type.yml
@@ -39,7 +39,7 @@ releases:
         This changelog does not contain any changes because there are no changes made
         since release 0.1.0.
 
-'
+        '
     fragments:
     - 1.0.0.yml
     release_date: '2020-11-17'
@@ -87,3 +87,21 @@ releases:
     - 52-postgresql_set_fix_b_values_handling.yml
     - 54-postgresql_query_add_warning_as_single_query.yml
     release_date: '2021-02-09'
+  1.2.0:
+    changes:
+      minor_changes:
+      - postgresql_info - add the ``patch``, ``full``, and ``raw`` values of the ``version``
+        return value (https://github.com/ansible-collections/community.postgresql/pull/68).
+      - postgresql_ping - add the ``patch``, ``full``, and ``raw`` values of the ``server_version``
+        return value (https://github.com/ansible-collections/community.postgresql/pull/70).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.1.1.'
+    fragments:
+    - 1.2.0.yml
+    - 68-postgresql_info_add_ret_values.yml
+    - 70-postgresql_ping_add_ret_values.yml
+    release_date: '2021-03-30'
