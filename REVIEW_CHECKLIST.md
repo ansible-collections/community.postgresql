@@ -26,7 +26,7 @@ If you are a committer, also refer to the [Ansible committer guidelines](https:/
       * this usually is the next minor release, sometimes the next major release (example: if 2.7.5 is the current release, the next minor release will be 2.8.0, and the next major release will be 3.0.0)
 - [ ] FQCNs are used for `extends_documentation_fragment:`, unless the author is referring to doc_fragments from ansible-core
 
-**Tests (if applicable and technically possible to implement):**
+**Tests (if applicable and technically possible to implement)**
 - [ ] the pull request has [integration tests](https://docs.ansible.com/ansible/devel/dev_guide/testing_integration.html)
 - [ ] the pull request has [unit tests](https://docs.ansible.com/ansible/devel/dev_guide/testing_units.html)
 - [ ] all changes are covered
