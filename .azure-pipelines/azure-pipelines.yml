@@ -55,6 +55,17 @@ stages:
               test: 'devel/sanity/extra'
             - name: Units
               test: 'devel/units/1'
+  - stage: Ansible_2_11
+    displayName: Sanity & Units 2.11
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: '2.11/sanity/1'
+            - name: Units
+              test: '2.11/units/1'
   - stage: Ansible_2_10
     displayName: Sanity & Units 2.10
     dependsOn: []
@@ -92,6 +103,26 @@ stages:
               test: centos7
             - name: CentOS 8
               test: centos8
+            - name: Fedora 32
+              test: fedora32
+            - name: Fedora 33
+              test: fedora33
+            - name: Ubuntu 18.04
+              test: ubuntu1804
+            - name: Ubuntu 20.04
+              test: ubuntu2004
+  - stage: Docker_2_11
+    displayName: Docker 2.11
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.11/linux/{0}/1
+          targets:
+            - name: CentOS 6
+              test: centos6
+            - name: CentOS 7
+              test: centos7
             - name: Fedora 32
               test: fedora32
             - name: Fedora 33
@@ -152,6 +183,18 @@ stages:
               test: rhel/7.9
             - name: RHEL 8.3
               test: rhel/8.3
+  - stage: Remote_2_11
+    displayName: Remote 2.11
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.11/{0}/1
+          targets:
+            - name: RHEL 7.9
+              test: rhel/7.9
+            - name: RHEL 8.3
+              test: rhel/8.3
   - stage: Remote_2_10
     displayName: Remote 2.10
     dependsOn: []
@@ -178,12 +221,15 @@ stages:
     condition: succeededOrFailed()
     dependsOn:
       - Ansible_devel
+      - Ansible_2_11
       - Ansible_2_10
       - Ansible_2_9
       - Docker_devel
+      - Docker_2_11
       - Docker_2_10
       - Docker_2_9
       - Remote_devel
+      - Remote_2_11
       - Remote_2_10
       - Remote_2_9
     jobs:
