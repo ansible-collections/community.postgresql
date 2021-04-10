@@ -1121,13 +1121,11 @@ def main():
             roles = p.roles.split(',')
 
             if len(roles) == 1 and not role_exists(module, conn.cursor, roles[0]):
-                module.exit_json(changed=False)
-
                 if fail_on_role:
                     module.fail_json(msg="Role '%s' does not exist" % roles[0].strip())
-
                 else:
                     module.warn("Role '%s' does not exist, nothing to do" % roles[0].strip())
+                module.exit_json(changed=False, queries=executed_queries)
 
         # check if target_roles is set with type: default_privs
         if p.target_roles and not p.type == 'default_privs':
