@@ -378,7 +378,8 @@ def main():
 
     if path_to_script and as_single_query is None:
         module.warn('You use the "path_to_script" option with the "as_single_query" '
-                    'option unset. The default is false. '
+                    'option unset. The default is False and will be changed to True '
+                    'in community.postgresql release 2.0.0. '
                     'To avoid crashes, please read the documentation '
                     'and define the "as_single_query" option explicitly.')
 
