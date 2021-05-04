@@ -29,7 +29,12 @@
       paths:
       - '{{ role_path }}/vars'
 
-- name: make sure the dbus service is started under systemd
+- name: Make sure the dbus service is enabled under systemd
+  shell: systemctl enable dbus || systemctl enable dbus-broker
+  ignore_errors: yes
+  when: ansible_service_mgr == 'systemd' and ansible_distribution == 'Fedora'
+
+- name: Make sure the dbus service is started under systemd
   systemd:
     name: dbus
     state: started
