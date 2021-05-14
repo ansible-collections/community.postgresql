@@ -3,9 +3,17 @@
 https://dev.azure.com/ansible/community.postgres/_apis/build/status/CI?branchName=main)](https://dev.azure.com/ansible/community.postgres/_build?definitionId=28)
 [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)
 
+## Code of Conduct
+
+We follow [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html) in all our interactions within this project.
+
 ## Contributing to this collection
 
-How to get started quickly, see the [CONTRIBUTING.md](CONTRIBUTING.md).
+The content of this collection are made by [people](CONTRIBUTORS) like you.
+
+Every contribution is very welcomed!
+
+You don't know how to start? Refer to our [contribution guide](CONTRIBUTING.md)!
 
 We use the following guidelines:
 
@@ -14,7 +22,13 @@ We use the following guidelines:
 * [Ansible Development Guide](https://docs.ansible.com/ansible/devel/dev_guide/index.html)
 * [Ansible Collection Development Guide](https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#contributing-to-collections)
 
+## Governance
+
 We, [the PostgreSQL working group](https://github.com/ansible-collections/community.postgresql/wiki/PostgreSQL-Working-Group), use [the community pinboard](https://github.com/ansible-collections/community.postgresql/issues/30) for general announcements and discussions.
+
+The process of decision making in this collection is based on discussing and finding consensus among participants.
+
+Every voice is important and every idea is valuable. If you have something on your mind, create an issue or dedicated discussion and let's discuss it!
 
 ## External requirements
 
