@@ -11,7 +11,7 @@ We follow [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/comm
 
 The content of this collection are made by [people](CONTRIBUTORS) like you.
 
-Every contribution is very welcomed!
+All types of contributions are very welcome.
 
 You don't know how to start? Refer to our [contribution guide](CONTRIBUTING.md)!
 
