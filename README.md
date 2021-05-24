@@ -7,6 +7,8 @@ https://dev.azure.com/ansible/community.postgres/_apis/build/status/CI?branchNam
 
 We follow [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html) in all our interactions within this project.
 
+If you encounter abusive behavior violating [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html), please let [maintainers](MAINTAINERS) know by mentioning them or creating a dedicated issue.
+
 ## Contributing to this collection
 
 The content of this collection are made by [people](CONTRIBUTORS) like you.
