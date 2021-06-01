@@ -26,6 +26,9 @@ We use the following guidelines:
 
 The current maintainers are listed in the [MAINTAINERS](MAINTAINERS) file. Don't hesitate to reach them out mentioning in the proposals.
 
+Join us on IRC in the ``ansible-community`` [irc.libera.chat](https://libera.chat/) channel.
+See the [Registration guide](https://libera.chat/guides/registration) to learn how to register.
+
 ## Governance
 
 We, [the PostgreSQL working group](https://github.com/ansible-collections/community.postgresql/wiki/PostgreSQL-Working-Group), use [the community pinboard](https://github.com/ansible-collections/community.postgresql/issues/30) for general announcements and discussions.
