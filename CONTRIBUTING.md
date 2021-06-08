@@ -4,6 +4,8 @@ We follow [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/comm
 
 If you are a committer, also refer to the [Ansible committer guidelines](https://docs.ansible.com/ansible/devel/community/committer_guidelines.html).
 
+If you are a maintainer / interested in becoming a maintainer of this collection, refer to the [Maintainer guidelines](https://github.com/ansible/community-docs/blob/main/maintaining.rst).
+
 ## Issue tracker
 
 Whether you are looking for an opportunity to contribute or you found a bug and already know how to solve it, please go to the [issue tracker](https://github.com/ansible-collections/community.postgresql/issues).
