@@ -13,7 +13,7 @@ If you encounter abusive behavior violating the [Ansible Code of Conduct](https:
 
 ## Contributing to this collection
 
-The content of this collection is made by [people](CONTRIBUTORS) like you.
+The content of this collection is made by [people](CONTRIBUTORS) like you, a community of individuals collaborating on making the world better through developing automation software.
 
 All types of contributions are very welcome.
 
@@ -28,8 +28,15 @@ We use the following guidelines:
 
 The current maintainers are listed in the [MAINTAINERS](MAINTAINERS) file. Don't hesitate to reach them out mentioning in the proposals. To learn how to maintain / become a maintainer of this collection, refer to the [Maintainer guidelines](https://github.com/ansible/community-docs/blob/main/maintaining.rst).
 
-Join us on IRC in the ``ansible-community`` [irc.libera.chat](https://libera.chat/) channel.
-See the [Registration guide](https://libera.chat/guides/registration) to learn how to register.
+## Communication
+
+We announce releases and important changes through the [Ansible Bullhorn newsletter](https://github.com/ansible/community/issues/546). Be sure you are subscribed.
+
+Join us in the ``ansible-community`` [IRC channel](https://docs.ansible.com/ansible/devel/community/communication.html#irc-meetings).
+
+We take part in the global quarterly [Ansible Contributor Summit](https://github.com/ansible/community/wiki/Contributor-Summit) virtually or in-person. Track the [Bullhorn newsletter](https://github.com/ansible/community/issues/546) and join us.
+
+For more information about communication, refer to the [Ansible Communication guide](https://docs.ansible.com/ansible/devel/community/communication.html).
 
 ## Governance
 
@@ -84,7 +91,7 @@ The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) Pos
 
 ### Installing the Collection from Ansible Galaxy
 
-Before using the PostgreSQL collection, you need to install it with the Ansible Galaxy CLI:
+Before using the PostgreSQL collection, you need to install it with the Ansible Galaxy command-line tool:
 
 ```bash
 ansible-galaxy collection install community.postgresql
@@ -98,7 +105,19 @@ collections:
   - name: community.postgresql
 ```
 
-You can also download the tarball from Ansible Galaxy and install the collection manually wherever you need.
+You can also download the tarball from [Ansible Galaxy](https://galaxy.ansible.com/community/postgresql) and install the collection manually wherever you need.
+
+Note that if you install the collection from Ansible Galaxy with the command-line tool or tarball, it will not be upgraded automatically with upgrade of the Ansible package. To upgrade the collection to the latest available version, run the following command:
+
+```bash
+ansible-galaxy collection install community.postgresql --upgrade
+```
+
+You can also install a specific version of the collection, for example, if you need to downgrade when something is broken in the latest version (please report an issue in this repository). Use the following syntax:
+
+```bash
+ansible-galaxy collection install community.postgresql:==X.Y.Z
+```
 
 See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.
 
