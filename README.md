@@ -26,13 +26,13 @@ We use the following guidelines:
 * [Ansible Development Guide](https://docs.ansible.com/ansible/devel/dev_guide/index.html)
 * [Ansible Collection Development Guide](https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#contributing-to-collections)
 
-The current maintainers (contributors with `write` or higher access) are listed in the [MAINTAINERS](https://github.com/ansible-collections/community.postgresql/blob/main/MAINTAINERS) file. Don't hesitate to reach them out mentioning in the proposals. To learn how to maintain / become a maintainer of this collection, refer to the [Maintainer guidelines](https://github.com/ansible/community-docs/blob/main/maintaining.rst).
+The current maintainers (contributors with `write` or higher access) are listed in the [MAINTAINERS](https://github.com/ansible-collections/community.postgresql/blob/main/MAINTAINERS) file. If you have questions or need help, feel free to mention them in the proposals. To learn how to maintain / become a maintainer of this collection, refer to the [Maintainer guidelines](https://github.com/ansible/community-docs/blob/main/maintaining.rst).
 
 ## Communication
 
 We announce important development changes and releases through the [Ansible Bullhorn newsletter](http://eepurl.com/gZmiEP). If you are a collection developer, be sure you are subscribed.
 
-Join us in the ``#ansible-community`` [IRC channel](https://docs.ansible.com/ansible/devel/community/communication.html#irc-channels).
+Join us in the ``ansible`` (general use questions and support), ``#ansible-community`` (community and collection development questions), and other [IRC channels](https://docs.ansible.com/ansible/devel/community/communication.html#irc-channels).
 
 We take part in the global quarterly [Ansible Contributor Summit](https://github.com/ansible/community/wiki/Contributor-Summit) virtually or in-person. Track the [Bullhorn newsletter](http://eepurl.com/gZmiEP) and join us.
 
