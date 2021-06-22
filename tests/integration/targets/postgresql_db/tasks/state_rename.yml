@@ -1,0 +1,33 @@
+# 1. When both databases do not exists, it must fail.
+# 2. When both databases exist, it must fail.
+# 3. When the source database exists and the target does not, rename it.
+# 4. When the source database doesn't exist and the target does, do nothing.
+# 5. Check mode
+
+- meta: end_play
+
+- become_user: '{{ pg_user }}'
+  become: true
+  vars:
+    db_source_name: acme
+    db_target_name: acme1
+
+    task_parameters: &task_parameters
+      register: result
+
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: '{{ db_name }}'
+
+  block:
+  - name: Try to rename when both do not exist, must fail
+    <<: *task_parameters
+    postgresql_db:
+      <<: *pg_parameters
+      name: '{{ db_source_name }}'
+      target: '{{ db_target_name}}'
+    ignore_errors: yes
+
+  - assert:
+      that:
+      - result is failed
