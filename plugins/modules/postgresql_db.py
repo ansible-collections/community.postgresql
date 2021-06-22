@@ -71,11 +71,12 @@ options:
     - Supported compression formats for dump and restore include C(.pgc), C(.bz2), C(.gz) and C(.xz).
     - Supported formats for dump and restore include C(.sql), C(.tar), and C(.dir) (for the directory format which is supported since collection version 1.4.0).
     - "Restore program is selected by target file format: C(.tar), C(.pgc), and C(.dir) are handled by pg_restore, other with pgsql."
+    - "."
     - C(rename) is used to rename the database C(name) to C(target).
     - If the database C(name) exists, it will be renamed to C(target).
     - If the database C(name) does not exist and the C(target) database exists,
       the module will report that nothing has changed.
-    - If both the databases exist, an error will be raised.
+    - If both the databases exist as well as when they have the same value, an error will be raised.
     - When I(state=rename), the module requires the C(target) option and ignores other options.
       Supported since collection version 1.4.0.
     type: str
@@ -624,8 +625,12 @@ def main():
     dump_extra_args = module.params['dump_extra_args']
     trust_input = module.params['trust_input']
 
-    if state == 'rename' and not target:
-        module.fail_json('The "target" option must be defined when the "rename" option is used.')
+    if state == 'rename':
+        if not target:
+            module.fail_json('The "target" option must be defined when the "rename" option is used.')
+
+        if db == target:
+            module.fail_json('The "name/db" option and the "target" option cannot be the same.')
 
     # Check input
     if not trust_input:
