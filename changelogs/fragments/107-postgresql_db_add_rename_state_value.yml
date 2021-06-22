@@ -1,0 +1,2 @@
+minor_changes:
+- postgresql_db - add the ``rename`` value to the ``state`` option (https://github.com/ansible-collections/community.postgresql/pull/107).
