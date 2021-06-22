@@ -217,8 +217,8 @@ EXAMPLES = r'''
     tablespace: bar
 
 # Rename the database foo to bar.
-# If the database C(name) exists, it will be renamed to C(target).
-# If the database C(name) does not exist and the C(target) database exists,
+# If the database foo exists, it will be renamed to bar.
+# If the database foo does not exist and the bar database exists,
 # the module will report that nothing has changed.
 # If both the databases exist, an error will be raised.
 - name: Rename the database foo to bar
