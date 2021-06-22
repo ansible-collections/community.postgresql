@@ -559,7 +559,7 @@ def rename_db(module, cursor, db, target, check_mode=False):
     target_db = db_exists(cursor, target)
 
     if source_db and target_db:
-        module.fail_json('Both the source and the target databases exist.')
+        module.fail_json(msg='Both the source and the target databases exist.')
 
     if not source_db and target_db:
         # If the source db doesn't exist and
@@ -569,7 +569,7 @@ def rename_db(module, cursor, db, target, check_mode=False):
         return False
 
     if not source_db and not target_db:
-        module.fail_json('The source and the target databases do not exist.')
+        module.fail_json(msg='The source and the target databases do not exist.')
 
     if source_db and not target_db:
         if check_mode:
@@ -630,13 +630,13 @@ def main():
 
     if state == 'rename':
         if not target:
-            module.fail_json('The "target" option must be defined when the "rename" option is used.')
+            module.fail_json(msg='The "target" option must be defined when the "rename" option is used.')
 
         if db == target:
-            module.fail_json('The "name/db" option and the "target" option cannot be the same.')
+            module.fail_json(msg='The "name/db" option and the "target" option cannot be the same.')
 
         if maintenance_db == db:
-            module.fail_json('The "maintenance_db" option and the "name/db" option cannot be the same.')
+            module.fail_json(msg='The "maintenance_db" option and the "name/db" option cannot be the same.')
 
     # Check input
     if not trust_input:
