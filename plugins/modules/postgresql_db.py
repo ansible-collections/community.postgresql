@@ -77,7 +77,7 @@ options:
     - If the database C(name) does not exist and the C(target) database exists,
       the module will report that nothing has changed.
     - If both the databases exist as well as when they have the same value, an error will be raised.
-    - When I(state=rename), the module requires the C(target) option and ignores other options.
+    - When I(state=rename), in addition to the C(name) option, the module requires the C(target) option. Other options are ignored.
       Supported since collection version 1.4.0.
     type: str
     choices: [ absent, dump, present, rename, restore ]
@@ -634,6 +634,9 @@ def main():
 
         if db == target:
             module.fail_json('The "name/db" option and the "target" option cannot be the same.')
+
+        if maintenance_db == db:
+            module.fail_json('The "maintenance_db" option and the "name/db" option cannot be the same.')
 
     # Check input
     if not trust_input:
