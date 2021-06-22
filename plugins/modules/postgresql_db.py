@@ -424,7 +424,7 @@ def db_dump(module, target, target_opts="",
         os.mkfifo(fifo)
         cmd = '{1} <{3} > {2} & {0} >{3}'.format(cmd, comp_prog_path, shlex_quote(target), fifo)
     else:
-        if  ' --format=d' in cmd:
+        if ' --format=d' in cmd:
             cmd = '{0} -f {1}'.format(cmd, shlex_quote(target))
         else:
             cmd = '{0} > {1}'.format(cmd, shlex_quote(target))
@@ -487,7 +487,7 @@ def db_restore(module, target, target_opts="",
         else:
             return p2.returncode, '', stderr2, 'cmd: ****'
     else:
-        if  '--format=Directory' in cmd:
+        if '--format=Directory' in cmd:
             cmd = '{0} {1}'.format(cmd, shlex_quote(target))
         else:
             cmd = '{0} < {1}'.format(cmd, shlex_quote(target))
