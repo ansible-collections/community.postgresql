@@ -559,7 +559,7 @@ def rename_db(module, cursor, db, target, check_mode=False):
     target_db = db_exists(cursor, target)
 
     if source_db and target_db:
-        module.fail_json('Both the source and the target database exist.')
+        module.fail_json('Both the source and the target databases exist.')
 
     if not source_db and target_db:
         # If the source db doesn't exist and
@@ -567,6 +567,9 @@ def rename_db(module, cursor, db, target, check_mode=False):
         # the desired state has been reached and
         # respectively nothing needs to be changed
         return False
+
+    if not source_db and not target_db:
+        module.fail_json('The source and the target databases do not exist.')
 
     if source_db and not target_db:
         if check_mode:

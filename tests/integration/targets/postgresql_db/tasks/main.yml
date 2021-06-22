@@ -11,6 +11,9 @@
 # General tests:
 - import_tasks: postgresql_db_general.yml
 
+# Tests for rename value of state option
+- import_tasks: state_rename.yml
+
 # Dump/restore tests per format:
 - include_tasks: state_dump_restore.yml
   vars:
