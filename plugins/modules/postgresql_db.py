@@ -69,8 +69,8 @@ options:
     - C(restore) also requires a target definition from which the database will be restored. (Added in Ansible 2.4).
     - The format of the backup will be detected based on the target name.
     - Supported compression formats for dump and restore include C(.pgc), C(.bz2), C(.gz) and C(.xz).
-    - Supported formats for dump and restore include C(.sql) and C(.tar).
-    - "Restore program is selected by target file format: C(.tar) and C(.pgc) are handled by pg_restore, other with pgsql."
+    - Supported formats for dump and restore include C(.sql), C(.tar), and C(.dir) (for the directory format).
+    - "Restore program is selected by target file format: C(.tar), C(.pgc), and C(.dir) are handled by pg_restore, other with pgsql."
     type: str
     choices: [ absent, dump, present, restore ]
     default: present
@@ -193,6 +193,12 @@ EXAMPLES = r'''
     state: dump
     target: /tmp/table1_table2.sql
     target_opts: "-t table1 -t table2"
+
+- name: Dump an existing database using the directory format
+  community.postgresql.postgresql_db:
+    name: acme
+    state: dump
+    target: /tmp/acme.dir
 
 # Note: In the example below, if database foo exists and has another tablespace
 # the tablespace will be changed to foo. Access to the database will be locked
@@ -389,6 +395,9 @@ def db_dump(module, target, target_opts="",
         flags.append(' --format=t')
     elif os.path.splitext(target)[-1] == '.pgc':
         flags.append(' --format=c')
+    elif os.path.splitext(target)[-1] == '.dir':
+        flags.append(' --format=d')
+
     if os.path.splitext(target)[-1] == '.gz':
         if module.get_bin_path('pigz'):
             comp_prog_path = module.get_bin_path('pigz', True)
@@ -415,7 +424,10 @@ def db_dump(module, target, target_opts="",
         os.mkfifo(fifo)
         cmd = '{1} <{3} > {2} & {0} >{3}'.format(cmd, comp_prog_path, shlex_quote(target), fifo)
     else:
-        cmd = '{0} > {1}'.format(cmd, shlex_quote(target))
+        if  ' --format=d' in cmd:
+            cmd = '{0} -f {1}'.format(cmd, shlex_quote(target))
+        else:
+            cmd = '{0} > {1}'.format(cmd, shlex_quote(target))
 
     return do_with_password(module, cmd, password)
 
@@ -441,6 +453,10 @@ def db_restore(module, target, target_opts="",
 
     elif os.path.splitext(target)[-1] == '.pgc':
         flags.append(' --format=Custom')
+        cmd = module.get_bin_path('pg_restore', True)
+
+    elif os.path.splitext(target)[-1] == '.dir':
+        flags.append(' --format=Directory')
         cmd = module.get_bin_path('pg_restore', True)
 
     elif os.path.splitext(target)[-1] == '.gz':
@@ -471,7 +487,10 @@ def db_restore(module, target, target_opts="",
         else:
             return p2.returncode, '', stderr2, 'cmd: ****'
     else:
-        cmd = '{0} < {1}'.format(cmd, shlex_quote(target))
+        if  '--format=Directory' in cmd:
+            cmd = '{0} {1}'.format(cmd, shlex_quote(target))
+        else:
+            cmd = '{0} < {1}'.format(cmd, shlex_quote(target))
 
     return do_with_password(module, cmd, password)
 

@@ -26,6 +26,10 @@
   - dbdata.tar.bz2
   - dbdata.tar.xz
   - dbdata.pgc
+  - dbdata.dir
+  - dbdata.dir.gz
+  - dbdata.dir.bz2
+  - dbdata.dir.xz
   loop_control:
     loop_var: loop_item
 
