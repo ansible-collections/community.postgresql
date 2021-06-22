@@ -69,7 +69,7 @@ options:
     - C(restore) also requires a target definition from which the database will be restored. (Added in Ansible 2.4).
     - The format of the backup will be detected based on the target name.
     - Supported compression formats for dump and restore include C(.pgc), C(.bz2), C(.gz) and C(.xz).
-    - Supported formats for dump and restore include C(.sql), C(.tar), and C(.dir) (for the directory format).
+    - Supported formats for dump and restore include C(.sql), C(.tar), and C(.dir) (for the directory format which is supported since collection version 1.4.0).
     - "Restore program is selected by target file format: C(.tar), C(.pgc), and C(.dir) are handled by pg_restore, other with pgsql."
     type: str
     choices: [ absent, dump, present, restore ]

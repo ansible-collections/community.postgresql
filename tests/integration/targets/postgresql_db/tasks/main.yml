@@ -32,6 +32,7 @@
   - dbdata.dir.xz
   loop_control:
     loop_var: loop_item
+  when: postgres_version_resp.stdout is version('9.1', '>=')
 
 # Dump/restore tests per other logins:
 - import_tasks: state_dump_restore.yml
