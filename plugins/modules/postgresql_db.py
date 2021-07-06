@@ -71,8 +71,16 @@ options:
     - Supported compression formats for dump and restore include C(.pgc), C(.bz2), C(.gz) and C(.xz).
     - Supported formats for dump and restore include C(.sql), C(.tar), and C(.dir) (for the directory format which is supported since collection version 1.4.0).
     - "Restore program is selected by target file format: C(.tar), C(.pgc), and C(.dir) are handled by pg_restore, other with pgsql."
+    - "."
+    - C(rename) is used to rename the database C(name) to C(target).
+    - If the database C(name) exists, it will be renamed to C(target).
+    - If the database C(name) does not exist and the C(target) database exists,
+      the module will report that nothing has changed.
+    - If both the databases exist as well as when they have the same value, an error will be raised.
+    - When I(state=rename), in addition to the C(name) option, the module requires the C(target) option. Other options are ignored.
+      Supported since collection version 1.4.0.
     type: str
-    choices: [ absent, dump, present, restore ]
+    choices: [ absent, dump, present, rename, restore ]
     default: present
   target:
     description:
@@ -207,6 +215,17 @@ EXAMPLES = r'''
   community.postgresql.postgresql_db:
     name: foo
     tablespace: bar
+
+# Rename the database foo to bar.
+# If the database foo exists, it will be renamed to bar.
+# If the database foo does not exist and the bar database exists,
+# the module will report that nothing has changed.
+# If both the databases exist, an error will be raised.
+- name: Rename the database foo to bar
+  community.postgresql.postgresql_db:
+    name: foo
+    state: rename
+    target: bar
 '''
 
 RETURN = r'''
@@ -534,6 +553,33 @@ def set_tablespace(cursor, db, tablespace):
     cursor.execute(query)
     return True
 
+
+def rename_db(module, cursor, db, target, check_mode=False):
+    source_db = db_exists(cursor, db)
+    target_db = db_exists(cursor, target)
+
+    if source_db and target_db:
+        module.fail_json(msg='Both the source and the target databases exist.')
+
+    if not source_db and target_db:
+        # If the source db doesn't exist and
+        # the target db exists, we assume that
+        # the desired state has been reached and
+        # respectively nothing needs to be changed
+        return False
+
+    if not source_db and not target_db:
+        module.fail_json(msg='The source and the target databases do not exist.')
+
+    if source_db and not target_db:
+        if check_mode:
+            return True
+
+        query = 'ALTER DATABASE "%s" RENAME TO "%s"' % (db, target)
+        executed_commands.append(query)
+        cursor.execute(query)
+        return True
+
 # ===========================================
 # Module execution.
 #
@@ -548,7 +594,8 @@ def main():
         encoding=dict(type='str', default=''),
         lc_collate=dict(type='str', default=''),
         lc_ctype=dict(type='str', default=''),
-        state=dict(type='str', default='present', choices=['absent', 'dump', 'present', 'restore']),
+        state=dict(type='str', default='present',
+                   choices=['absent', 'dump', 'present', 'rename', 'restore']),
         target=dict(type='path', default=''),
         target_opts=dict(type='str', default=''),
         maintenance_db=dict(type='str', default="postgres"),
@@ -580,6 +627,16 @@ def main():
     tablespace = module.params['tablespace']
     dump_extra_args = module.params['dump_extra_args']
     trust_input = module.params['trust_input']
+
+    if state == 'rename':
+        if not target:
+            module.fail_json(msg='The "target" option must be defined when the "rename" option is used.')
+
+        if db == target:
+            module.fail_json(msg='The "name/db" option and the "target" option cannot be the same.')
+
+        if maintenance_db == db:
+            module.fail_json(msg='The "maintenance_db" option and the "name/db" option cannot be the same.')
 
     # Check input
     if not trust_input:
@@ -645,8 +702,13 @@ def main():
         if module.check_mode:
             if state == "absent":
                 changed = db_exists(cursor, db)
+
             elif state == "present":
                 changed = not db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace)
+
+            elif state == "rename":
+                changed = rename_db(module, cursor, db, target, check_mode=True)
+
             module.exit_json(changed=changed, db=db, executed_commands=executed_commands)
 
         if state == "absent":
@@ -676,6 +738,9 @@ def main():
                                      executed_commands=executed_commands)
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
+
+        elif state == 'rename':
+            changed = rename_db(module, cursor, db, target)
 
     except NotSupportedError as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
