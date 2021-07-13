@@ -22,6 +22,7 @@ options:
   login_host:
     description:
       - Host running the database.
+      - If you have connection issues when using C(localhost), try to use C(127.0.0.1) instead.
     type: str
   login_unix_socket:
     description:
