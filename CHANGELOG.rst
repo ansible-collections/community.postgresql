@@ -5,6 +5,22 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.4.0
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.3.0.
+
+Minor Changes
+-------------
+
+- postgresql_db - add support for the ``directory`` format when the ``state`` option is ``dump`` or ``restore`` (https://github.com/ansible-collections/community.postgresql/pull/108).
+- postgresql_db - add the ``rename`` value to the ``state`` option (https://github.com/ansible-collections/community.postgresql/pull/107).
+
 v1.3.0
 ======
 
