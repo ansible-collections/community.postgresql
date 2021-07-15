@@ -12,12 +12,12 @@ class ModuleDocFragment(object):
 options:
   login_user:
     description:
-      - The username used to authenticate with.
+      - The username this module should use to establish its PostgreSQL session.
     type: str
     default: postgres
   login_password:
     description:
-      - The password used to authenticate with.
+      - The password this module should use to establish its PostgreSQL session.
     type: str
   login_host:
     description:
