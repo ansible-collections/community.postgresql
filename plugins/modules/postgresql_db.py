@@ -84,7 +84,7 @@ options:
     default: present
   force:
     description:
-    - Used to force drop database
+    - Used to forcefully drop a database when the I(state) is C(absent), ignored otherwise.
     type: bool
     default: False
   target:
