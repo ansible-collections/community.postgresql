@@ -1,0 +1,3 @@
+postgresql_db name=mydb state=absent fails to remove mydb database if it has active connections.
+
+Added a force option (boolean) to remove active connections first and then remove the database.
