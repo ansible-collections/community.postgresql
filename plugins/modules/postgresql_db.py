@@ -82,6 +82,11 @@ options:
     type: str
     choices: [ absent, dump, present, rename, restore ]
     default: present
+  force:
+    description:
+    - Used to force drop database
+    type: bool
+    default: False
   target:
     description:
     - File to back up or restore from.
@@ -312,8 +317,26 @@ def db_exists(cursor, db):
     return cursor.rowcount == 1
 
 
-def db_delete(cursor, db):
+def db_dropconns(cursor, db):
+    if cursor.connection.server_version >= 90200:
+        """ Drop DB connections in Postgres 9.2 and above """
+        query = """
+        SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity
+        WHERE pg_stat_activity.datname=%(db)s AND pid <> pg_backend_pid()
+        """
+    else:
+        """ Drop DB connections in Postgres 9.1 and below """
+        query = """
+        SELECT pg_terminate_backend(pg_stat_activity.procpid) FROM pg_stat_activity
+        WHERE pg_stat_activity.datname=%(db)s AND procpid <> pg_backend_pid()
+        """
+    cursor.execute(query, {'db': db})
+
+
+def db_delete(cursor, db, force=False):
     if db_exists(cursor, db):
+        if force:
+            db_dropconns(cursor, db)
         query = 'DROP DATABASE "%s"' % db
         executed_commands.append(query)
         cursor.execute(query)
@@ -604,6 +627,7 @@ def main():
         tablespace=dict(type='path', default=''),
         dump_extra_args=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
+        force=dict(type='bool', default=False)
     )
 
     module = AnsibleModule(
@@ -627,6 +651,7 @@ def main():
     tablespace = module.params['tablespace']
     dump_extra_args = module.params['dump_extra_args']
     trust_input = module.params['trust_input']
+    force = module.params['force']
 
     if state == 'rename':
         if not target:
@@ -713,7 +738,10 @@ def main():
 
         if state == "absent":
             try:
-                changed = db_delete(cursor, db)
+                if force:
+                    changed = db_delete(cursor, db, force=True)
+                else:
+                    changed = db_delete(cursor, db)
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
