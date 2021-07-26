@@ -320,10 +320,8 @@ def db_exists(cursor, db):
 def db_dropconns(cursor, db):
     if cursor.connection.server_version >= 90200:
         """ Drop DB connections in Postgres 9.2 and above """
-        query = """
-        SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity
-        WHERE pg_stat_activity.datname=%(db)s AND pid <> pg_backend_pid()
-        """
+        query = ("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity "
+                      "WHERE pg_stat_activity.datname=%(db)s AND pid <> pg_backend_pid()")
     else:
         """ Drop DB connections in Postgres 9.1 and below """
         query = """
