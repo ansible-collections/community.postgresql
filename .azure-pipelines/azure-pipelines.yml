@@ -181,10 +181,8 @@ stages:
           targets:
             - name: RHEL 7.9
               test: rhel/7.9
-            - name: RHEL 8.4 py36
-              test: rhel/8.4@3.6
-            - name: RHEL 8.4 py38
-              test: rhel/8.4@3.8
+            - name: RHEL 8.4
+              test: rhel/8.4
   - stage: Remote_2_11
     displayName: Remote 2.11
     dependsOn: []
