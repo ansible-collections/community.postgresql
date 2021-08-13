@@ -311,11 +311,11 @@ class PgHba(object):
                 if backup_file:
                     self.last_backup = backup_file
                 else:
-                    __backup_file_h, self.last_backup = tempfile.mkstemp(prefix='pg_hba')
+                    _backup_file_h, self.last_backup = tempfile.mkstemp(prefix='pg_hba')
                 shutil.copy(self.pg_hba_file, self.last_backup)
             fileh = open(self.pg_hba_file, 'w')
         else:
-            filed, __path = tempfile.mkstemp(prefix='pg_hba')
+            filed, _path = tempfile.mkstemp(prefix='pg_hba')
             fileh = os.fdopen(filed, 'w')
 
         fileh.write(contents)
