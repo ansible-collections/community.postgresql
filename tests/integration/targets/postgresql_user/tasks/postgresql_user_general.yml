@@ -758,7 +758,7 @@
     postgresql_user:
       <<: *pg_parameters
       name: 'issue122'
-      priv: 'pg_stat_database:SELECT'
+      priv: 'pg_catalog.pg_stat_database:SELECT'
     register: result
 
   - assert:
@@ -770,7 +770,7 @@
     postgresql_user:
       <<: *pg_parameters
       name: 'issue122'
-      priv: 'pg_stat_database:SELECT'
+      priv: 'pg_catalog.pg_stat_database:SELECT'
     register: result
 
   - assert:
@@ -800,4 +800,3 @@
     - '{{ test_group1 }}'
     - '{{ test_group2 }}'
     - '{{ dangerous_name }}'
-    - 'issue122'
