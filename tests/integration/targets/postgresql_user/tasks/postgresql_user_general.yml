@@ -750,6 +750,33 @@
       that:
       - result is changed
 
+  ########################################################################
+  # https://github.com/ansible-collections/community.postgresql/issues/122
+
+  - name: Create role with SELECT
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: 'issue122'
+      priv: 'pg_catalog.pg_stat_database:SELECT'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: Create role with SELECT again
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: 'issue122'
+      priv: 'pg_catalog.pg_stat_database:SELECT'
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+
   always:
   #
   # Clean up
