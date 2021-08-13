@@ -65,6 +65,9 @@ options:
       'TRUNCATE', 'REFERENCES', 'TRIGGER', 'ALL'. For example
       C(table:SELECT) ). Mixed example of this string:
       C(CONNECT/CREATE/table1:SELECT/table2:INSERT)."
+    - When I(priv) contains tables, the module uses the schema C(public) by default.
+      If you need to specify a different schema, use the C(schema_name.table_name) notation,
+      for example, C(pg_catalog.pg_stat_database:SELECT).
     type: str
   role_attr_flags:
     description:
@@ -249,6 +252,11 @@ EXAMPLES = r'''
     password: "secret123"
   environment:
     PGOPTIONS: "-c password_encryption=scram-sha-256"
+
+- name: Create a user, grant SELECT on pg_catalog.pg_stat_database
+  community.postgresql.postgresql_user:
+    name: monitoring
+    priv: 'pg_catalog.pg_stat_database:SELECT'
 '''
 
 RETURN = r'''
@@ -288,7 +296,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 )
 from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible.module_utils.six import iteritems
-import ansible_collections.community.postgresql.plugins.module_utils.saslprep as saslprep
+from ansible_collections.community.postgresql.plugins.module_utils import saslprep
 
 try:
     # pbkdf2_hmac is missing on python 2.6, we can safely assume,
@@ -315,6 +323,14 @@ PRIV_TO_AUTHID_COLUMN = dict(SUPERUSER='rolsuper', CREATEROLE='rolcreaterole',
                              REPLICATION='rolreplication', BYPASSRLS='rolbypassrls')
 
 executed_queries = []
+
+# This is a special list for debugging.
+# If you need to fetch information (e.g. results of cursor.fetchall(),
+# queries built with cursor.mogrify(), vars values, etc.):
+# 1. Put debug_info.append(<information_you_need>) as many times as you need.
+# 2. Run integration tests or you playbook with -vvv
+# 3. If it's not empty, you'll see the list in the returned json.
+debug_info = []
 
 
 class InvalidFlagsError(Exception):
@@ -991,6 +1007,8 @@ def main():
 
     kw['changed'] = changed
     kw['queries'] = executed_queries
+    if debug_info:
+        kw['debug_info'] = debug_info
     module.exit_json(**kw)
 
 
