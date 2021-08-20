@@ -393,12 +393,6 @@ def main():
     if path_to_script and query:
         module.fail_json(msg="path_to_script is mutually exclusive with query")
 
-    if positional_args:
-        positional_args = convert_elements_to_pg_arrays(positional_args)
-
-    elif named_args:
-        named_args = convert_elements_to_pg_arrays(named_args)
-
     query_list = []
     if path_to_script:
         try:
@@ -428,12 +422,17 @@ def main():
         set_search_path(cursor, '%s' % ','.join([x.strip(' ') for x in search_path]))
 
     # Prepare args:
-    if module.params.get("positional_args"):
-        arguments = module.params["positional_args"]
-    elif module.params.get("named_args"):
-        arguments = module.params["named_args"]
+    if positional_args:
+        args = positional_args
+    elif named_args:
+        args = named_args
     else:
-        arguments = None
+        args = None
+
+    # Convert elements of type list to strings
+    # representing PG arrays
+    if args:
+        args = convert_elements_to_pg_arrays(args)
 
     # Set defaults:
     changed = False
@@ -445,7 +444,7 @@ def main():
     # Execute query:
     for query in query_list:
         try:
-            cursor.execute(query, arguments)
+            cursor.execute(query, args)
             statusmessage = cursor.statusmessage
             if cursor.rowcount > 0:
                 rowcount += cursor.rowcount
@@ -497,7 +496,7 @@ def main():
 
             cursor.close()
             db_connection.close()
-            module.fail_json(msg="Cannot execute SQL '%s' %s: %s, query list: %s" % (query, arguments, to_native(e), query_list))
+            module.fail_json(msg="Cannot execute SQL '%s' %s: %s, query list: %s" % (query, args, to_native(e), query_list))
 
     if module.check_mode:
         db_connection.rollback()
