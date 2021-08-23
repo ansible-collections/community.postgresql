@@ -199,7 +199,10 @@ def get_conn_params(module, params_dict, warn_db_default=True):
               if k in params_map and v != '' and v is not None)
 
     # If a login_unix_socket is specified, incorporate it here.
-    is_localhost = "host" not in kw or kw["host"] is None or kw["host"] == "localhost"
+    is_localhost = False
+    if 'host' not in kw or kw['host'] in [None, 'localhost']:
+        is_localhost = True
+
     if is_localhost and params_dict["login_unix_socket"] != "":
         kw["host"] = params_dict["login_unix_socket"]
 
