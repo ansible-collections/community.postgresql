@@ -85,6 +85,12 @@ options:
     type: str
     default: sdu
     choices: [ sdu, sud, dsu, dus, usd, uds ]
+  keep_comments_at_rules:
+    description:
+     - If true, comments that stand together with a rule in one line are kept behind that line.
+     - If false, such comments are moved to the beginning of the file, like all other comments.
+     type: bool
+     default: false
   state:
     description:
       - The lines will be added/modified when C(state=present) and removed when C(state=absent).
@@ -242,7 +248,7 @@ class PgHba(object):
     PgHba object to read/write entries to/from.
     pg_hba_file - the pg_hba file almost always /etc/pg_hba
     """
-    def __init__(self, pg_hba_file=None, order="sdu", backup=False, create=False):
+    def __init__(self, pg_hba_file=None, order="sdu", backup=False, create=False, keep_comments_at_rules=False):
         if order not in PG_HBA_ORDERS:
             msg = "invalid order setting {0} (should be one of '{1}')."
             raise PgHbaError(msg.format(order, "', '".join(PG_HBA_ORDERS)))
@@ -253,6 +259,7 @@ class PgHba(object):
         self.backup = backup
         self.last_backup = None
         self.create = create
+        self.keep_comments_at_rules = keep_comments_at_rules
         self.unchanged()
         # self.databases will be update by add_rule and gives some idea of the number of databases
         # (at least that are handled by this pg_hba)
@@ -282,15 +289,27 @@ class PgHba(object):
         try:
             with open(self.pg_hba_file, 'r') as file:
                 for line in file:
+                    # split into line and comment
                     line = line.strip()
-                    # uncomment
+                    comment = None
                     if '#' in line:
                         line, comment = line.split('#', 1)
-                        self.comment.append('#' + comment)
-                    try:
-                        self.add_rule(PgHbaRule(line=line))
-                    except PgHbaRuleError:
-                        pass
+                        if comment == '':
+                            comment = None
+
+                    # if there is just a comment, save it
+                    if line == '':
+                        if comment is not None:
+                            self.comment.append('#' + comment)
+                    else:
+                        if comment is not None and not self.keep_comments_at_rules:
+                            # save the comment independent of the line
+                            self.comment.append('#' + comment)
+                            comment = None
+                        try:
+                            self.add_rule(PgHbaRule(line=line, comment=comment))
+                        except PgHbaRuleError:
+                            pass
             self.unchanged()
         except IOError:
             pass
@@ -385,8 +404,13 @@ class PgHba(object):
         The returning value can be used directly to write to a new file.
         '''
         comment = '\n'.join(self.comment)
-        rule_lines = '\n'.join([rule['line'] for rule in self.get_rules(with_lines=True)])
-        result = comment + '\n' + rule_lines
+        rule_lines = []
+        for rule in self.get_rules(with_lines=True):
+            if 'comment' in rule:
+                rule_lines.append(rule['line'] + '\t#' + rule['comment'])
+            else:
+                rule_lines.append(rule['line'])
+        result = comment + '\n' + '\n'.join(rule_lines)
         # End it properly with a linefeed (if not already).
         if result and result[-1] not in ['\n', '\r']:
             result += '\n'
@@ -405,7 +429,7 @@ class PgHbaRule(dict):
     '''
 
     def __init__(self, contype=None, databases=None, users=None, source=None, netmask=None,
-                 method=None, options=None, line=None):
+                 method=None, options=None, line=None, comment=None):
         '''
         This function can be called with a comma seperated list of databases and a comma seperated
         list of users and it will act as a generator that returns a expanded list of rules one by
@@ -417,6 +441,9 @@ class PgHbaRule(dict):
         if line:
             # Read values from line if parsed
             self.fromline(line)
+
+        if comment:
+            self['comment'] = comment
 
         # read rule cols from parsed items
         rule = dict(zip(PG_HBA_HDR, [contype, databases, users, source, netmask, method, options]))
@@ -673,6 +700,7 @@ def main():
         options=dict(type='str'),
         order=dict(type='str', default="sdu", choices=PG_HBA_ORDERS,
                    removed_in_version='3.0.0', removed_from_collection='community.postgresql'),
+        keep_comments_at_rules=dict(type='bool', default=False),
         state=dict(type='str', default="present", choices=["absent", "present"]),
         users=dict(type='str', default='all')
     )
@@ -701,10 +729,11 @@ def main():
     source = module.params["address"]
     state = module.params["state"]
     users = module.params["users"]
+    keep_comments_at_rules = module.params["keep_comments_at_rules"]
 
     ret = {'msgs': []}
     try:
-        pg_hba = PgHba(dest, order, backup=backup, create=create)
+        pg_hba = PgHba(dest, order, backup=backup, create=create, keep_comments_at_rules=keep_comments_at_rules)
     except PgHbaError as error:
         module.fail_json(msg='Error reading file:\n{0}'.format(error))
 
