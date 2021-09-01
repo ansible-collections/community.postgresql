@@ -53,8 +53,9 @@ options:
     choices: [ local, host, hostnossl, hostssl ]
   comment:
     description:
-      - A comment that will be placed in the same line behind the rule. See also parameter I(keep_comments_at_rules).
+      - A comment that will be placed in the same line behind the rule. See also the I(keep_comments_at_rules) parameter.
     type: str
+    version_added: '1.5.0'
   databases:
     description:
       - Databases this line applies to.
@@ -91,10 +92,11 @@ options:
     choices: [ sdu, sud, dsu, dus, usd, uds ]
   keep_comments_at_rules:
     description:
-      - If true, comments that stand together with a rule in one line are kept behind that line.
-      - If false, such comments are moved to the beginning of the file, like all other comments.
+      - If C(true), comments that stand together with a rule in one line are kept behind that line.
+      - If C(false), such comments are moved to the beginning of the file, like all other comments.
     type: bool
     default: false
+    version_added: '1.5.0'
   state:
     description:
       - The lines will be added/modified when C(state=present) and removed when C(state=absent).
