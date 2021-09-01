@@ -91,10 +91,10 @@ options:
     choices: [ sdu, sud, dsu, dus, usd, uds ]
   keep_comments_at_rules:
     description:
-     - If true, comments that stand together with a rule in one line are kept behind that line.
-     - If false, such comments are moved to the beginning of the file, like all other comments.
-     type: bool
-     default: false
+      - If true, comments that stand together with a rule in one line are kept behind that line.
+      - If false, such comments are moved to the beginning of the file, like all other comments.
+    type: bool
+    default: false
   state:
     description:
       - The lines will be added/modified when C(state=present) and removed when C(state=absent).
