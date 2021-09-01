@@ -51,6 +51,10 @@ options:
       - Type of the rule. If not set, C(postgresql_pg_hba) will only return contents.
     type: str
     choices: [ local, host, hostnossl, hostssl ]
+  comment:
+    description:
+      - A comment that will be placed in the same line behind the rule. See also parameter I(keep_comments_at_rules).
+    type: str
   databases:
     description:
       - Databases this line applies to.
@@ -692,6 +696,7 @@ def main():
         backup=dict(type='bool', default=False),
         backup_file=dict(type='str'),
         contype=dict(type='str', default=None, choices=PG_HBA_TYPES),
+        comment=dict(type='str', default=None),
         create=dict(type='bool', default=False),
         databases=dict(type='str', default='all'),
         dest=dict(type='path', required=True),
@@ -730,6 +735,7 @@ def main():
     state = module.params["state"]
     users = module.params["users"]
     keep_comments_at_rules = module.params["keep_comments_at_rules"]
+    comment = module.params["comment"]
 
     ret = {'msgs': []}
     try:
@@ -741,7 +747,7 @@ def main():
         try:
             for database in databases.split(','):
                 for user in users.split(','):
-                    rule = PgHbaRule(contype, database, user, source, netmask, method, options)
+                    rule = PgHbaRule(contype, database, user, source, netmask, method, options, comment=comment)
                     if state == "present":
                         ret['msgs'].append('Adding')
                         pg_hba.add_rule(rule)
