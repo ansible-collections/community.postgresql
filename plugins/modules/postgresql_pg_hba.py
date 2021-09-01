@@ -161,6 +161,17 @@ EXAMPLES = '''
     users: mary
     databases: mydb
     state: absent
+
+- name: Grant some_user access to some_db, comment that and keep other rule-specific comments attached to their rules
+  community.postgresql.postgresql_pg_hba:
+    dest: /var/lib/postgres/data/pg_hba.conf
+    contype: host
+    users: some_user
+    databases: some_db
+    method: md5
+    source: ::/0
+    keep_comments_at_rules: true
+    comment: "this rule is an example"
 '''
 
 RETURN = r'''
