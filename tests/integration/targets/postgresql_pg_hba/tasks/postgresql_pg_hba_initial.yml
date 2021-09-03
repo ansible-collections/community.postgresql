@@ -181,3 +181,62 @@
     - 'pg_hba_fail_src_all_with_netmask is failed'
     - 'not netmask_sameas_prefix_check is changed'
     - 'pg_hba_options is changed'
+
+- name: Create a rule with the comment 'comment1'
+  postgresql_pg_hba:
+    contype: host
+    dest: /tmp/pg_hba2.conf
+    create: true
+    method: md5
+    address: "2001:db8::1/128"
+    order: sud
+    state: present
+    comment: "comment1"
+
+- name: read pgh_hba2.conf
+  set_fact:
+    content: "{{ lookup('file', '/tmp/pg_hba2.conf') }}"
+- debug:
+    var: content
+- assert:
+    that:
+      - '"\nhost\tall\tall\t2001:db8::1/128\tmd5\t#comment1" == content'
+
+- name: Create a rule with the comment 'comment2'
+  postgresql_pg_hba:
+    contype: host
+    dest: /tmp/pg_hba2.conf
+    method: md5
+    address: "2001:db8::2/128"
+    order: sud
+    state: present
+    comment: "comment2"
+
+- name: read pgh_hba2.conf
+  set_fact:
+    content: "{{ lookup('file', '/tmp/pg_hba2.conf') }}"
+- debug:
+    var: content
+- assert:
+    that:
+      - '"#comment1\nhost\tall\tall\t2001:db8::1/128\tmd5\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2" == content'
+
+- name: Create a rule with the comment 'comment3' and keep_comments_at_rules
+  postgresql_pg_hba:
+    contype: host
+    dest: /tmp/pg_hba2.conf
+    method: md5
+    address: "2001:db8::3/128"
+    order: sud
+    state: present
+    comment: "comment3"
+    keep_comments_at_rules: true
+
+- name: read pgh_hba2.conf
+  set_fact:
+    content: "{{ lookup('file', '/tmp/pg_hba2.conf') }}"
+- debug:
+    var: content
+- assert:
+    that:
+      - '"#comment1\nhost\tall\tall\t2001:db8::1/128\tmd5\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2\nhost\tall\tall\t2001:db8::3/128\tmd5\t#comment3" == content'
