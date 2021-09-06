@@ -217,6 +217,7 @@
     dest: /usr/share/postgresql/{{ pg_ver }}/extension/{{ item }}
     mode: '0444'
   with_items:
+  - dummy--0.sql
   - dummy--1.0.sql
   - dummy--2.0.sql
   - dummy--3.0.sql
@@ -228,6 +229,7 @@
     mode: '0444'
     state: touch
   with_items:
+  - dummy--0--1.0.sql
   - dummy--1.0--2.0.sql
   - dummy--2.0--3.0.sql
   when: ansible_os_family == 'Debian'

@@ -347,6 +347,53 @@
       that:
       - result is changed
 
+  # https://github.com/ansible-collections/community.postgresql/issues/137
+  - name: Drop extension
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      state: absent
+
+  - name: Non standard version
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      version: 0
+
+  - name: Test
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+
+  - assert:
+      that:
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == 0
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == None
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '0'
+
+  - name: Upgrade extension to the latest
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      version: latest
+
+  - name: Test
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+
+  - assert:
+      that:
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == 3
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == 0
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '3.0'
+
   # Cleanup:
   - name: postgresql_ext_version - drop the extension
     <<: *task_parameters
