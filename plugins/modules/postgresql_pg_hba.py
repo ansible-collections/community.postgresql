@@ -131,7 +131,9 @@ seealso:
 requirements:
     - ipaddress
 
-author: Sebastiaan Mannem (@sebasmannem)
+author:
+- Sebastiaan Mannem (@sebasmannem)
+- Felix Hamme (@betanummeric)
 '''
 
 EXAMPLES = '''
