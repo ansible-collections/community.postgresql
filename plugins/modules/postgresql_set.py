@@ -25,7 +25,7 @@ description:
 options:
   name:
     description:
-    - Name of PostgreSQL server parameter.
+    - Name of PostgreSQL server parameter. Pay attention that parameters are case sensitive (see examples below).
     type: str
     required: true
   value:
@@ -120,6 +120,12 @@ EXAMPLES = r'''
   community.postgresql.postgresql_set:
     name: wal_log_hints
     value: default
+
+- name: Set TimeZone parameter (careful, case sensitive)
+  community.postgresql.postgresql_set:
+    name: TimeZone
+    value: 'Europe/Paris'
+
 '''
 
 RETURN = r'''
