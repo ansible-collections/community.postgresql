@@ -276,7 +276,7 @@ def ext_get_versions(cursor, ext):
     query = ("SELECT extversion FROM pg_catalog.pg_extension "
              "WHERE extname = %(ext)s")
 
-    current_version = '0'
+    current_version = None
     cursor.execute(query, {'ext': ext})
     res = cursor.fetchone()
     if res:
@@ -290,7 +290,7 @@ def ext_get_versions(cursor, ext):
 
     available_versions = parse_ext_versions(current_version, res)
 
-    if current_version == '0':
+    if current_version is None:
         current_version = False
 
     return (current_version, available_versions)
@@ -314,8 +314,12 @@ def parse_ext_versions(current_version, ext_ver_list):
             continue
 
         try:
-            if LooseVersion(line['version']) > LooseVersion(current_version):
-                available_versions.append(line['version'])
+            if current_version is None:
+                if LooseVersion(line['version']) >= LooseVersion('0'):
+                    available_versions.append(line['version'])
+            else:
+                if LooseVersion(line['version']) > LooseVersion(current_version):
+                    available_versions.append(line['version'])
         except Exception:
             # When a version cannot be compared, skip it
             # (there's a note in the documentation)

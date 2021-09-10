@@ -197,7 +197,7 @@ databases:
           type: dict
           sample:
           - { "plpgsql": { "description": "PL/pgSQL procedural language",
-            "extversion": { "major": 1, "minor": 0 } } }
+            "extversion": { "major": 1, "minor": 0, "raw": '1.0' } } }
           contains:
             extdescription:
               description: Extension description.
@@ -219,6 +219,11 @@ databases:
                   returned: always
                   type: int
                   sample: 0
+                raw:
+                  description: Extension full version.
+                  returned: always
+                  type: str
+                  sample: '1.0'
             nspname:
               description: Namespace where the extension is.
               returned: always
@@ -746,12 +751,17 @@ class PgClusterInfo(object):
         res = self.__exec_sql(query)
         ext_dict = {}
         for i in res:
+            ext_ver_raw = i[1]
             ext_ver = i[1].split('.')
+
+            if len(ext_ver) < 2:
+                ext_ver.append(None)
 
             ext_dict[i[0]] = dict(
                 extversion=dict(
                     major=int(ext_ver[0]),
-                    minor=int(ext_ver[1]),
+                    minor=int(ext_ver[1]) if ext_ver[1] else None,
+                    raw=ext_ver_raw,
                 ),
                 nspname=i[2],
                 description=i[3],
