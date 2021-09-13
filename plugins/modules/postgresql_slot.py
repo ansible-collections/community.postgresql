@@ -191,8 +191,8 @@ class PgSlot(object):
             return None
 
         if kind == 'physical':
-            # Check server version (needs for immedately_reserverd needs 9.6+):
-            if self.cursor.connection.server_version < 96000:
+            # Check server version (immediately_reserved needs 9.6+):
+            if self.cursor.connection.server_version < 90600:
                 query = "SELECT pg_create_physical_replication_slot(%(name)s)"
 
             else:
