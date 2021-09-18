@@ -320,16 +320,18 @@ def db_exists(cursor, db):
 def db_dropconns(cursor, db):
     if cursor.connection.server_version >= 90200:
         """ Drop DB connections in Postgres 9.2 and above """
-        query = """
-        SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity
-        WHERE pg_stat_activity.datname=%(db)s AND pid <> pg_backend_pid()
-        """
+        query_terminate = ("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity"
+                           "WHERE pg_stat_activity.datname=%(db)s AND pid <> pg_backend_pid()")
     else:
         """ Drop DB connections in Postgres 9.1 and below """
-        query = """
-        SELECT pg_terminate_backend(pg_stat_activity.procpid) FROM pg_stat_activity
-        WHERE pg_stat_activity.datname=%(db)s AND procpid <> pg_backend_pid()
-        """
+        query_terminate = ("SELECT pg_terminate_backend(pg_stat_activity.procpid) FROM pg_stat_activity"
+                           "WHERE pg_stat_activity.datname=%(db)s AND procpid <> pg_backend_pid()")
+    if cursor.connection.server_version < 13000:
+        query_block = ("UPDATE pg_database SET datallowconn = false WHERE datname=%(db)s")
+        query = query_block + ';' + query_terminate
+    else:
+        query = ("DROP DATABASE %(db)s  WITH (FORCE)")
+
     cursor.execute(query, {'db': db})
 
 
