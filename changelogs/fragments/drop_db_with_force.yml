@@ -1,3 +1,2 @@
-postgresql_db name=mydb state=absent fails to remove mydb database if it has active connections.
-
-Added a force option (boolean) to remove active connections first and then remove the database.
+minor_changes:
+- postgresql_db - Add the ``force`` boolean option to drop active connections first and then remove the database (https://github.com/ansible-collections/community.postgresql/issues/109).

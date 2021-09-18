@@ -84,7 +84,7 @@ options:
     default: present
   force:
     description:
-    - Used to force drop database
+    - Used to forcefully drop a database when the I(state) is C(absent), ignored otherwise.
     type: bool
     default: False
   target:
@@ -740,10 +740,7 @@ def main():
 
         if state == "absent":
             try:
-                if force:
-                    changed = db_delete(cursor, db, force=True)
-                else:
-                    changed = db_delete(cursor, db)
+                changed = db_delete(cursor, db, force)
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
