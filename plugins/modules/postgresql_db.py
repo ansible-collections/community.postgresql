@@ -324,10 +324,8 @@ def db_dropconns(cursor, db):
                  "WHERE pg_stat_activity.datname=%(db)s AND pid <> pg_backend_pid()")
     else:
         """ Drop DB connections in Postgres 9.1 and below """
-        query = """
-        SELECT pg_terminate_backend(pg_stat_activity.procpid) FROM pg_stat_activity
-        WHERE pg_stat_activity.datname=%(db)s AND procpid <> pg_backend_pid()
-        """
+        query = ("SELECT pg_terminate_backend(pg_stat_activity.procpid) FROM pg_stat_activity "
+                 "WHERE pg_stat_activity.datname=%(db)s AND procpid <> pg_backend_pid()")
     cursor.execute(query, {'db': db})
 
 
