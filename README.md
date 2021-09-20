@@ -34,6 +34,13 @@ The current maintainers (contributors with `write` or higher access) are listed 
 
 To learn how to maintain / become a maintainer of this collection, refer to the [Maintainer guidelines](https://github.com/ansible-collections/community.postgresql/blob/main/MAINTAINING.md).
 
+It is necessary for maintainers of this collection to be subscribed to:
+
+* The collection itself (the `Watch` button -> `All Activity` in the upper right corner of the repository's homepage).
+* The "Changes Impacting Collection Contributors and Maintainers" [issue](https://github.com/ansible-collections/overview/issues/45).
+
+They also should be subscribed to Ansible's [The Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn).
+
 ## Communication
 
 We announce important development changes and releases through Ansible's [The Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn). If you are a collection developer, be sure you are subscribed.
