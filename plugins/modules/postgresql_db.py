@@ -326,11 +326,8 @@ def db_dropconns(cursor, db):
         """ Drop DB connections in Postgres 9.1 and below """
         query_terminate = ("SELECT pg_terminate_backend(pg_stat_activity.procpid) FROM pg_stat_activity"
                            "WHERE pg_stat_activity.datname=%(db)s AND procpid <> pg_backend_pid()")
-    if cursor.connection.server_version < 13000:
-        query_block = ("UPDATE pg_database SET datallowconn = false WHERE datname=%(db)s")
-        query = query_block + ';' + query_terminate
-    else:
-        query = ("DROP DATABASE %(db)s  WITH (FORCE)")
+    query_block = ("UPDATE pg_database SET datallowconn = false WHERE datname=%(db)s")
+    query = query_block + ';' + query_terminate
 
     cursor.execute(query, {'db': db})
 
