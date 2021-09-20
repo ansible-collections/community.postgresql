@@ -629,7 +629,7 @@ def main():
         tablespace=dict(type='path', default=''),
         dump_extra_args=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
-        force=dict(type='bool', default=False)
+        force=dict(type='bool', default=False),
     )
 
     module = AnsibleModule(
