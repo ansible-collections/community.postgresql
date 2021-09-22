@@ -42,3 +42,6 @@
   vars:
     file: dbdata.tar
     test_fixture: admin
+
+# Simple test to create and then drop with force
+- import_tasks: manage_database.yml

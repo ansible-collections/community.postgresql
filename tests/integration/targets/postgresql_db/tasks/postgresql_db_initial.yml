@@ -46,7 +46,6 @@
   become: yes
   postgresql_db:
     state: absent
-    force: yes
     name: "{{ db_name }}"
     login_user: "{{ pg_user }}"
   register: result
@@ -72,7 +71,6 @@
   become: yes
   postgresql_db:
     state: absent
-    force: yes
     name: "{{ db_name }}"
     login_user: "{{ pg_user }}"
   register: result
