@@ -7,4 +7,3 @@
     name: mydb
     state: absent
     force: yes
-
