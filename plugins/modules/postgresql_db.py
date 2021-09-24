@@ -341,7 +341,7 @@ def db_delete(cursor, db, force=False):
             else:
                 db_dropconns(cursor, db)
         executed_commands.append(query)
-        cursor.execute(query, {'db': db})
+        cursor.execute(query)
         return True
     else:
         return False
