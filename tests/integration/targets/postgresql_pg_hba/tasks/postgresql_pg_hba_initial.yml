@@ -193,7 +193,12 @@
     state: present
     comment: "comment1"
 
-- name: read pgh_hba2.conf
+- name: Fetch the file
+  fetch:
+    src: /tmp/pg_hba2.conf
+    dest: /tmp/pg_hba2.conf
+    flat: yes
+- name: Read pg_hba2.conf
   set_fact:
     content: "{{ lookup('file', '/tmp/pg_hba2.conf') }}"
 - debug:
@@ -212,7 +217,12 @@
     state: present
     comment: "comment2"
 
-- name: read pgh_hba2.conf
+- name: Fetch the file
+  fetch:
+    src: /tmp/pg_hba2.conf
+    dest: /tmp/pg_hba2.conf
+    flat: yes
+- name: Read pg_hba2.conf
   set_fact:
     content: "{{ lookup('file', '/tmp/pg_hba2.conf') }}"
 - debug:
@@ -232,7 +242,12 @@
     comment: "comment3"
     keep_comments_at_rules: true
 
-- name: read pgh_hba2.conf
+- name: Fetch the file
+  fetch:
+    src: /tmp/pg_hba2.conf
+    dest: /tmp/pg_hba2.conf
+    flat: yes
+- name: Read pg_hba2.conf
   set_fact:
     content: "{{ lookup('file', '/tmp/pg_hba2.conf') }}"
 - debug:
