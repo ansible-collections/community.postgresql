@@ -99,14 +99,8 @@ stages:
           targets:
             - name: CentOS 7
               test: centos7
-            - name: CentOS 8
-              test: centos8
-            - name: Fedora 33
-              test: fedora33
             - name: Fedora 34
               test: fedora34
-            - name: Ubuntu 18.04
-              test: ubuntu1804
             - name: Ubuntu 20.04
               test: ubuntu2004
   - stage: Docker_2_11
@@ -119,12 +113,6 @@ stages:
           targets:
             - name: CentOS 7
               test: centos7
-            - name: Fedora 32
-              test: fedora32
-            - name: Fedora 33
-              test: fedora33
-            - name: Ubuntu 18.04
-              test: ubuntu1804
             - name: Ubuntu 20.04
               test: ubuntu2004
   - stage: Docker_2_10
@@ -137,14 +125,6 @@ stages:
           targets:
             - name: CentOS 7
               test: centos7
-            - name: Fedora 31
-              test: fedora31
-            - name: Fedora 32
-              test: fedora32
-            - name: Ubuntu 16.04
-              test: ubuntu1604
-            - name: Ubuntu 18.04
-              test: ubuntu1804
   - stage: Docker_2_9
     displayName: Docker 2.9
     dependsOn: []
@@ -155,12 +135,6 @@ stages:
           targets:
             - name: CentOS 7
               test: centos7
-            - name: Fedora 31
-              test: fedora31
-            - name: Ubuntu 16.04
-              test: ubuntu1604
-            - name: Ubuntu 18.04
-              test: ubuntu1804
 
 ### Remote
   - stage: Remote_devel
@@ -171,8 +145,6 @@ stages:
         parameters:
           testFormat: devel/{0}/1
           targets:
-            - name: RHEL 7.9
-              test: rhel/7.9
             - name: RHEL 8.4
               test: rhel/8.4
   - stage: Remote_2_11
@@ -183,8 +155,6 @@ stages:
         parameters:
           testFormat: 2.11/{0}/1
           targets:
-            - name: RHEL 7.9
-              test: rhel/7.9
             - name: RHEL 8.3
               test: rhel/8.3
   - stage: Remote_2_10
