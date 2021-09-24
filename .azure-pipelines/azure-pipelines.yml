@@ -97,8 +97,6 @@ stages:
         parameters:
           testFormat: devel/linux/{0}/1
           targets:
-            - name: CentOS 6
-              test: centos6
             - name: CentOS 7
               test: centos7
             - name: CentOS 8
@@ -119,8 +117,6 @@ stages:
         parameters:
           testFormat: 2.11/linux/{0}/1
           targets:
-            - name: CentOS 6
-              test: centos6
             - name: CentOS 7
               test: centos7
             - name: Fedora 32
@@ -139,8 +135,6 @@ stages:
         parameters:
           testFormat: 2.10/linux/{0}/1
           targets:
-            - name: CentOS 6
-              test: centos6
             - name: CentOS 7
               test: centos7
             - name: Fedora 31
@@ -159,8 +153,6 @@ stages:
         parameters:
           testFormat: 2.9/linux/{0}/1
           targets:
-            - name: CentOS 6
-              test: centos6
             - name: CentOS 7
               test: centos7
             - name: Fedora 31
