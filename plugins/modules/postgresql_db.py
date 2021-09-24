@@ -337,7 +337,7 @@ def db_delete(cursor, db, force=False):
         query = 'DROP DATABASE %(db)s'
         if force:
             if cursor.connection.server_version >= 130000:
-                query = ("DROP DATABASE %(db)s  WITH (FORCE)")
+                query = ('DROP DATABASE "%s" WITH (FORCE)' % db)
             else:
                 db_dropconns(cursor, db)
         executed_commands.append(query)
