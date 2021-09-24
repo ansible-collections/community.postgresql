@@ -327,7 +327,7 @@ def db_dropconns(cursor, db):
         query_terminate = ("SELECT pg_terminate_backend(pg_stat_activity.procpid) FROM pg_stat_activity "
                            "WHERE pg_stat_activity.datname=%(db)s AND procpid <> pg_backend_pid()")
     query_block = ("UPDATE pg_database SET datallowconn = false WHERE datname=%(db)s")
-    query = query_block + ';' + query_terminate
+    query = query_block + '; ' + query_terminate
 
     cursor.execute(query, {'db': db})
 
