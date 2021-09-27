@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_set - Fix wrong numerical value conversion (https://github.com/ansible-collections/community.postgresql/issues/110).
