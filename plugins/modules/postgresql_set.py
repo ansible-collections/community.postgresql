@@ -258,6 +258,12 @@ def pretty_to_bytes(pretty_val):
     # If the last char is not an alphabetical symbol, it means that
     # it does not contain any suffixes, so no sense to parse further
     if not pretty_val[-1].isalpha():
+        try:
+            pretty_val = int(pretty_val)
+
+        except ValueError:
+            pretty_val = float(pretty_val)
+
         return pretty_val
 
     # Extract digits
@@ -270,7 +276,7 @@ def pretty_to_bytes(pretty_val):
         else:
             num_part.append(c)
 
-    num_part = ''.join(num_part)
+    num_part = int(''.join(num_part))
 
     val_in_bytes = None
 
