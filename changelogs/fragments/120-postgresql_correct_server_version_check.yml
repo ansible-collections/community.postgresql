@@ -1,2 +1,0 @@
-bugfixes:
-- postgresql_slot - Correct the server_version check for PG 9.6 (https://github.com/ansible-collections/community.postgresql/issue/120)
