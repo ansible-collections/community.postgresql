@@ -1,2 +1,0 @@
-minor_changes:
-  - postgresql_pg_hba - Add the parameters ``keep_comments_at_rules`` and ``comment`` (https://github.com/ansible-collections/community.postgresql/issues/134).
