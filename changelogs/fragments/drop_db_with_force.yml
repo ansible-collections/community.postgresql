@@ -1,0 +1,2 @@
+minor_changes:
+- postgresql_db - Add the ``force`` boolean option to drop active connections first and then remove the database (https://github.com/ansible-collections/community.postgresql/issues/109).
