@@ -12,6 +12,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import re
+from ansible.module_utils._text import to_native
 
 
 # Input patterns for is_input_dangerous function:
@@ -167,22 +168,25 @@ def check_input(module, *args):
     dangerous_elements = []
 
     for elem in needs_to_check:
-        if isinstance(elem, str):
-            if is_input_dangerous(elem):
-                dangerous_elements.append(elem)
+        try:
+            if isinstance(elem, str):
+                if is_input_dangerous(elem):
+                    dangerous_elements.append(elem)
 
-        elif isinstance(elem, list):
-            for e in elem:
-                if is_input_dangerous(e):
-                    dangerous_elements.append(e)
+            elif isinstance(elem, list):
+                for e in elem:
+                    if is_input_dangerous(e):
+                        dangerous_elements.append(e)
 
-        elif elem is None or isinstance(elem, bool):
-            pass
+            elif elem is None or isinstance(elem, bool):
+                pass
 
-        else:
-            elem = str(elem)
-            if is_input_dangerous(elem):
-                dangerous_elements.append(elem)
+            else:
+                elem = str(elem)
+                if is_input_dangerous(elem):
+                    dangerous_elements.append(elem)
+        except ValueError as e:
+            module.fail_json(msg=to_native(e))
 
     if dangerous_elements:
         module.fail_json(msg="Passed input '%s' is "
