@@ -55,6 +55,19 @@ stages:
               test: 'devel/sanity/extra'
             - name: Units
               test: 'devel/units/1'
+
+  - stage: Ansible_2_12
+    displayName: Sanity & Units 2.12
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: '2.12/sanity/1'
+            - name: Units
+              test: '2.12/units/1'
+
   - stage: Ansible_2_11
     displayName: Sanity & Units 2.11
     dependsOn: []
@@ -66,6 +79,7 @@ stages:
               test: '2.11/sanity/1'
             - name: Units
               test: '2.11/units/1'
+
   - stage: Ansible_2_10
     displayName: Sanity & Units 2.10
     dependsOn: []
@@ -77,6 +91,7 @@ stages:
               test: '2.10/sanity/1'
             - name: Units
               test: '2.10/units/1'
+
   - stage: Ansible_2_9
     displayName: Sanity & Units 2.9
     dependsOn: []
@@ -103,6 +118,22 @@ stages:
               test: fedora34
             - name: Ubuntu 20.04
               test: ubuntu2004
+
+  - stage: Docker_2_12
+    displayName: Docker 2.12
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.12/linux/{0}/1
+          targets:
+            - name: CentOS 7
+              test: centos7
+            - name: Fedora 34
+              test: fedora34
+            - name: Ubuntu 20.04
+              test: ubuntu2004
+
   - stage: Docker_2_11
     displayName: Docker 2.11
     dependsOn: []
@@ -115,6 +146,7 @@ stages:
               test: centos7
             - name: Ubuntu 20.04
               test: ubuntu2004
+
   - stage: Docker_2_10
     displayName: Docker 2.10
     dependsOn: []
@@ -125,6 +157,7 @@ stages:
           targets:
             - name: CentOS 7
               test: centos7
+
   - stage: Docker_2_9
     displayName: Docker 2.9
     dependsOn: []
@@ -147,6 +180,18 @@ stages:
           targets:
             - name: RHEL 8.4
               test: rhel/8.4
+
+  - stage: Remote_2_12
+    displayName: Remote 2.12
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.12/{0}/1
+          targets:
+            - name: RHEL 8.4
+              test: rhel/8.4
+
   - stage: Remote_2_11
     displayName: Remote 2.11
     dependsOn: []
@@ -157,6 +202,7 @@ stages:
           targets:
             - name: RHEL 8.3
               test: rhel/8.3
+
   - stage: Remote_2_10
     displayName: Remote 2.10
     dependsOn: []
@@ -168,6 +214,7 @@ stages:
           targets:
             - name: RHEL 8.2
               test: rhel/8.2
+
   - stage: Remote_2_9
     displayName: Remote 2.9
     dependsOn: []
@@ -179,18 +226,22 @@ stages:
           targets:
             - name: RHEL 8.2
               test: rhel/8.2
+
   - stage: Summary
     condition: succeededOrFailed()
     dependsOn:
       - Ansible_devel
+      - Ansible_2_12
       - Ansible_2_11
       - Ansible_2_10
       - Ansible_2_9
       - Docker_devel
+      - Docker_2_12
       - Docker_2_11
       - Docker_2_10
       - Docker_2_9
       - Remote_devel
+      - Remote_2_12
       - Remote_2_11
       - Remote_2_10
       - Remote_2_9
