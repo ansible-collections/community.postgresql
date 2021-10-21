@@ -70,6 +70,13 @@ The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) Pos
 - 2.11
 - devel
 
+Our AZP CI includes testing with the following docker images / PostgreSQL versions:
+
+- CentOS 7: 9.2
+- RHEL 8.3 / 8.4: 10
+- Fedora 34: 13
+- Ubuntu 20.04: 14
+
 ## Included content
 
 - **Info modules**:
