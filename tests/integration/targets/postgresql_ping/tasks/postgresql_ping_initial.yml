@@ -16,8 +16,8 @@
       - result.is_available == true
       - result.server_version != {}
       - result.server_version.raw is search('PostgreSQL')
-      - result.server_version.major != false
-      - result.server_version.minor != false
+      - result.server_version.major != ''
+      - result.server_version.minor != ''
       - result is not changed
 
 - assert:

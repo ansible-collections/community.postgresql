@@ -10,6 +10,8 @@ pg_group: root
 locale_latin_suffix:
 locale_utf8_suffix:
 
+postgis: postgis
+
 # defaults for test SSL
 ssl_db: 'ssl_db'
 ssl_user: 'ssl_user'

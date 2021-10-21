@@ -580,14 +580,14 @@
   postgresql_query:
     login_user: '{{ pg_user }}'
     db: postgres
-    query: "SELECT EXTRACT(epoch from make_interval(secs => 3))"
+    query: "SELECT EXTRACT(epoch from make_interval(secs => 3)) AS extract"
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - assert:
     that:
     - result.rowcount == 1
-    - result.query_result[0]["date_part"] == 3
+    - result.query_result[0]["extract"] == 3 or result.query_result[0]["extract"] == 3.0
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Get interval value
