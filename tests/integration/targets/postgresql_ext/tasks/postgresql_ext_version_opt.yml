@@ -334,7 +334,7 @@
   # https://github.com/ansible-collections/community.general/issues/1095
   - name: Install postgis
     package:
-      name: postgis
+      name: '{{ postgis }}'
 
   - name: Create postgis extension
     <<: *task_parameters
