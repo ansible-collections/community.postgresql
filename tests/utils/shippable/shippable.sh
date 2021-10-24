@@ -47,7 +47,7 @@ function retry
         echo "@* -> ${result}"
     done
     echo "Command '@*' failed 3 times!"
-    exit -1
+    exit 255
 }
 
 command -v pip
