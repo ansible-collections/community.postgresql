@@ -25,6 +25,11 @@
       paths:
       - '{{ role_path }}/vars'
 
+- name: Ensure sudo is installed
+  ansible.builtin.package:
+    name: sudo
+    state: present
+
 - name: Make sure the dbus service is enabled under systemd
   shell: systemctl enable dbus || systemctl enable dbus-broker
   ignore_errors: yes
