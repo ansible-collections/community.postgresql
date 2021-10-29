@@ -1,0 +1,178 @@
+---
+# GHA syntax ref:
+# https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
+name: Plugins CI
+on:
+  push:
+    paths:
+    - 'plugins/**'
+    - 'tests/**'
+    - '.github/workflows/ansible-test-plugins.yml'
+  pull_request:
+    paths:
+    - 'plugins/**'
+    - 'tests/**'
+    - '.github/workflows/ansible-test-plugins.yml'
+
+# Versions requirements:
+# https://github.com/ansible-collections/overview/blob/main/collection_requirements.rst#python-compatibility
+env:
+  # Here we're explicitly running on ubuntu 20 with python 3
+  # because we install python3 packages in the playbook based on the distribution
+  postgresql_version_file: "./ansible_collections/community/postgresql/tests/integration/targets/setup_postgresql_db/vars/Ubuntu-20-py3.yml"
+
+# All test are run ubuntu 20.04 currently because the main purpose is to evaluate
+# PostgreSQL versions more than all python/ansible combo per OS.
+jobs:
+  sanity:
+    name: "Sanity (Python: ${{ matrix.python }}, Ansible: ${{ matrix.ansible }})"
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        ansible:
+        - stable-2.9
+        - stable-2.10
+        - stable-2.11
+        - stable-2.12
+        - devel
+    steps:
+
+    - name: Check out code
+      uses: actions/checkout@v2
+      with:
+        path: ansible_collections/community/postgresql
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        # Just use the latest stable version of python here, as it's just for "sanity"
+        python-version: 3.9
+
+    - name: Install ansible-base (${{ matrix.ansible }})
+      run: pip install https://github.com/ansible/ansible/archive/${{ matrix.ansible }}.tar.gz --disable-pip-version-check
+
+    - name: Run sanity tests
+      run: ansible-test sanity --docker -v --color
+      working-directory: ./ansible_collections/community/postgresql
+
+  integration:
+    name: "Integration (Python: ${{ matrix.python }}, Ansible: ${{ matrix.ansible }}, PostgreSQL: ${{ matrix.postgresql }})"
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: true    # Default value, no point in getting a full run if there is an error.
+      # FIXME increase matrix to cover all mandatory versions.
+      matrix:
+        # define the versions of PostgreSQL we're going to test
+        postgresql:
+        - 9.4  # EOL February 13, 2020
+        - 9.5  # EOL February 11, 2021
+        - 9.6  # EOL November 11, 2021
+        - 10   # EOL November 10, 2022
+        - 11   # EOL November 9,  2023
+        - 12   # EOL November 14, 2024
+        - 13   # EOL November 13, 2025
+        - 14   # EOL November 12, 2026
+        # define the version of ansible we're testing the collection with
+        ansible:
+        - stable-2.9
+        - stable-2.10
+        - stable-2.11
+        - stable-2.12
+        - devel
+        # define the version of python we're testing the collection with
+        python:
+        - 3.9
+        include:
+        #- python: 2.7   # MUST, FIXME NOT SUPPORTED YET by this GHA setup
+          #ansible: stable-2.12
+        - python: 3.5
+          ansible: stable-2.12
+        - python: 3.6
+          ansible: stable-2.12
+        - python: 3.7
+          ansible: stable-2.12
+        - python: 3.8
+          ansible: stable-2.12
+        - python: 3.9
+          ansible: stable-2.12
+        - python: 3.10
+          ansible: devel
+
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ansible_collections/community/postgresql
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install ansible-base (${{ matrix.ansible }})
+        run: pip install https://github.com/ansible/ansible/archive/${{ matrix.ansible }}.tar.gz --disable-pip-version-check
+
+      - name: Install community.general
+        uses: ./ansible_collections/community/postgresql/.github/actions/collection-via-git
+        with:
+          collection: community.general
+
+      - name: Set PostgreSQL version (${{ matrix.postgresql }})
+        run: "sed -i 's/^pg_version:.*/pg_version: \"${{ matrix.postgresql }}\"/g' ${{ env.postgresql_version_file }}"
+
+      - name: Run integration tests
+        run: ansible-test integration --docker -v --color --retry-on-error --continue-on-error --python ${{ matrix.python }} --diff --coverage
+        working-directory: ./ansible_collections/community/postgresql
+
+      - name: Generate coverage report.
+        run: ansible-test coverage xml -v --requirements --group-by command --group-by version
+        working-directory: ./ansible_collections/community/postgresql
+
+      - uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: false
+
+  units:
+    runs-on: ubuntu-20.04
+    name: Units (Ⓐ${{ matrix.ansible }})
+    strategy:
+      # As soon as the first unit test fails,
+      # cancel the others to free the CI queue
+      fail-fast: true
+      matrix:
+        ansible:
+          - stable-2.9
+          - stable-2.10
+          - stable-2.11
+          - stable-2.12
+          - devel
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ./ansible_collections/community/postgresql
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install ansible-base (${{matrix.ansible}})
+        run: pip install https://github.com/ansible/ansible/archive/${{ matrix.ansible }}.tar.gz --disable-pip-version-check
+
+      # Run the unit tests
+      - name: Run unit test
+        run: ansible-test units -v --color --docker --coverage
+        working-directory: ./ansible_collections/community/postgresql
+
+      # ansible-test support producing code coverage date
+      - name: Generate coverage report
+        run: ansible-test coverage xml -v --requirements --group-by command --group-by version
+        working-directory: ./ansible_collections/community/postgresql
+
+      # See the reports at https://codecov.io/gh/GITHUBORG/REPONAME
+      - uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: false

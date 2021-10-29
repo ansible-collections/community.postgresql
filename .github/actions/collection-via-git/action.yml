@@ -1,0 +1,52 @@
+---
+# from https://github.com/ansible-collections/community.hashi_vault
+# tks briantist
+name: Ansible Collection via GitHub
+description: Install Ansible collections direct from GitHub repositories without using ansible-galaxy.
+branding:
+  icon: git-branch
+  color: yellow
+inputs:
+  collection:
+    description: The name of the collection in namespace.collection_name form.
+    required: true
+  ref:
+    description: The git ref to install. Defaults to the latest release as listed in GitHub releases. Only supports branches and tags.
+    required: false
+  path:
+    description: The path to clone it to. Defaults to ansible_collections/namespace/collection_name.
+    required: false
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        COLLECTION="${{ inputs.collection }}"
+        P_PATH="${{ inputs.path }}"
+        P_REF="${{ inputs.ref }}"
+
+        NS="${COLLECTION%.*}"
+        CN="${COLLECTION#*.}"
+
+        # only collections in the ansible-collections organization are supported right now
+        URLBASE="https://github.com/ansible-collections/${COLLECTION}"
+        URLCLONE="${URLBASE}.git"
+        URLLATEST="${URLBASE}/releases/latest"
+
+        if [[ -n "${P_PATH}" ]]
+        then
+          OUTPATH="${P_PATH}"
+        else
+          OUTPATH="ansible_collections/${NS}/${CN}"
+        fi
+
+        if [[ -n "${P_REF}" ]]
+        then
+          REF="${P_REF}"
+        else
+          # credit to https://gist.github.com/lukechilds/a83e1d7127b78fef38c2914c4ececc3c#gistcomment-3294173
+          latest=$(curl -fs -o/dev/null -w %{redirect_url} "${URLLATEST}")
+          REF=$(basename ${latest})
+        fi
+
+        git clone --depth=1 --branch "${REF}" "${URLCLONE}" "${OUTPATH}"
