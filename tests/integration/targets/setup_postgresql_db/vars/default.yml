@@ -1,3 +1,5 @@
+pg_version: 14
+
 postgresql_packages:
   - "postgresql-server"
   - "python-psycopg2"

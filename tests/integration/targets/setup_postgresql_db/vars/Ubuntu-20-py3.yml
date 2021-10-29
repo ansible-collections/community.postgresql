@@ -1,11 +1,11 @@
+pg_version: 14
 postgresql_packages:
   - "apt-utils"
-  - "postgresql-14"
+  - "postgresql-{{ pg_version }}"
   - "postgresql-common"
   - "python3-psycopg2"
 
 pg_hba_location: "/etc/postgresql/14/main/pg_hba.conf"
 pg_dir: "/var/lib/postgresql/14/main"
-pg_ver: 14
 
 postgis: postgresql-14-postgis-3

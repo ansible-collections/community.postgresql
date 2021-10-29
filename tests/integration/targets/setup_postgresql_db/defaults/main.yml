@@ -1,3 +1,4 @@
+---
 postgresql_service: postgresql
 
 postgresql_packages:
