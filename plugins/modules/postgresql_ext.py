@@ -267,10 +267,10 @@ def ext_get_versions(cursor, ext):
 
     # 1. Get the current extension version:
     query = ("SELECT extversion FROM pg_catalog.pg_extension "
-             "WHERE extname = %(ext)s")
+             "WHERE extname = '%s'" % ext)
 
     current_version = None
-    cursor.execute(query, {'ext': ext})
+    cursor.execute(query)
     res = cursor.fetchone()
     if res:
         current_version = res[0]
@@ -279,12 +279,14 @@ def ext_get_versions(cursor, ext):
     query = ("SELECT version FROM pg_available_extension_versions "
              "WHERE name = %(ext)s")
     cursor.execute(query, {'ext': ext})
-    available_versions = cursor.fetchall()
+
+    available_versions = [r[0] for r in cursor.fetchall()]
 
     if current_version is None:
         current_version = False
 
     return (current_version, available_versions)
+
 
 def ext_valid_update_path(cursor, ext, current_version, version):
     """
@@ -292,15 +294,15 @@ def ext_valid_update_path(cursor, ext, current_version, version):
     """
 
     valid_path = False
+    params = {}
     if version != 'latest':
         query = ("SELECT path FROM pg_extension_update_paths(%(ext)s)"
                   "WHERE source = %(current_version)s"
                   "AND target = %(version)s")
-        params = {}
 
         params['ext'] = ext
-        params['current_version'] = current_version
-        params['version'] = version
+        params['cv'] = current_version
+        params['ver'] = version
 
         cursor.execute(query, params)
         res = cursor.fetchone()
@@ -364,6 +366,7 @@ def main():
             if version:
                 # If extension is installed, update to passed version if a valid path exists
                 if curr_version:
+                    # Given version already installed
                     if curr_version == version:
                         changed = False
                     else:
@@ -386,28 +389,28 @@ def main():
                         if module.check_mode:
                             changed = True
                         else:
-                            changed = ext_create(cursor, ext, schema, cascade, version)
+                            changed = ext_create(cursor, ext, schema, cascade, 'latest')
 
             # If version is not passed:
             else:
                 # Extension exists, attempt to update to latest version defined in extension control file
-		# ALTER EXTENSION is actually run, so 'changed' is technically true even if nothing updated
+                # ALTER EXTENSION is actually run, so 'changed' is technically true even if nothing updated
                 if curr_version and version == 'latest':
                     if module.check_mode:
                         changed = True
                     else:
                         changed = ext_update_version(cursor, ext, version)
-		# Extension exists, no request to update so no change
-		elif curr_version:
-		    if module.check_mode:
-			changed = False
+                # Extension exists, no request to update so no change
+                elif curr_version:
+                    if module.check_mode:
+                      changed = False
                 else:
                     # If the ext doesn't exist and is available:
                     if available_versions:
                         if module.check_mode:
                             changed = True
                         else:
-                            changed = ext_create(cursor, ext, schema, cascade, version)
+                            changed = ext_create(cursor, ext, schema, cascade, 'latest')
 
                     # If the ext doesn't exist and is not available:
                     else:
