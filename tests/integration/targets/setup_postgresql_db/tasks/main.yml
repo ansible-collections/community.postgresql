@@ -28,7 +28,6 @@
 - name: Install python3-apt
   ansible.builtin.command:
     cmd: apt-get install -y --no-install-recommends python3-apt
-    creates: /usr/lib/python3/dist-packages/apt/__init__.py
   when: ansible_os_family == "Debian"
 
 - name: Ensure sudo is installed
