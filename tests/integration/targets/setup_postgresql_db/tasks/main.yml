@@ -25,10 +25,11 @@
       paths:
       - '{{ role_path }}/vars'
 
-- name: Ensure sudo is installed
-  ansible.builtin.package:
-    name: sudo
-    state: present
+- name: Install sudo
+  ansible.builtin.command:
+    cmd: apt-get install -y --no-install-recommends sudo
+    creates: /usr/bin/sudo
+  when: ansible_os_family == "Debian"
 
 - name: Make sure the dbus service is enabled under systemd
   shell: systemctl enable dbus || systemctl enable dbus-broker
