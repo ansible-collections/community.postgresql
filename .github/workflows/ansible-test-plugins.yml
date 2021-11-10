@@ -81,7 +81,7 @@ jobs:
         - devel
         # define the version of python we're testing the collection with
         python:
-        - 3.9
+        - 3.8
         include:
         #- python: 2.7   # MUST, FIXME NOT SUPPORTED YET by this GHA setup
           #ansible: stable-2.12
@@ -93,10 +93,6 @@ jobs:
           ansible: stable-2.12
         - python: 3.8
           ansible: stable-2.12
-        - python: 3.9
-          ansible: stable-2.12
-        - python: 3.10
-          ansible: devel
 
     steps:
 
