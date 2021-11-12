@@ -74,9 +74,8 @@ options:
     - "PostgreSQL user attributes string in the format: CREATEDB,CREATEROLE,SUPERUSER."
     - Note that '[NO]CREATEUSER' is deprecated.
     - To create a simple role for using it like a group, use C(NOLOGIN) flag.
+    - See the full list of supported flags in documentation for your PostgreSQL version.
     type: str
-    choices: [ '[NO]SUPERUSER', '[NO]CREATEROLE', '[NO]CREATEDB',
-               '[NO]INHERIT', '[NO]LOGIN', '[NO]REPLICATION', '[NO]BYPASSRLS' ]
   session_role:
     description:
     - Switch to session role after connecting.
