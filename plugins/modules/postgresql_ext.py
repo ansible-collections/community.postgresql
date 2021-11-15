@@ -72,9 +72,9 @@ options:
     description:
       - Extension version to add or update to. Has effect with I(state=present) only.
       - If not specified, the latest extension version will be created.
-      - It can't downgrade an extension version.
-        When version downgrade is needed, remove the extension and create new one with appropriate version.
-      - Set I(version=latest) to update the extension to the latest available version.
+      - Version downgrade is only supported if extension provides a downgrade path.
+        Otherwise extension must be removed and lower version of extension must be made available.
+      - Set I(version=latest) to always update the extension to the latest available version.
     type: str
   trust_input:
     description:
@@ -114,6 +114,7 @@ author:
 - Thomas O'Donnell (@andytom)
 - Sandro Santilli (@strk)
 - Andrew Klychkov (@Andersson007)
+- Keith Fiske (@keithf4)
 extends_documentation_fragment:
 - community.postgresql.postgres
 
@@ -147,13 +148,13 @@ EXAMPLES = r'''
     cascade: yes
     state: absent
 
-- name: Create extension foo of version 1.2 or update it if it's already created
+- name: Create extension foo of version 1.2 or update it to that version if it's already created and a valid update path exists
   community.postgresql.postgresql_ext:
     db: acme
     name: foo
     version: 1.2
 
-- name: Assuming extension foo is created, update it to the latest version
+- name: Create latest available version of extension foo. If already installed, update it to the latest version
   community.postgresql.postgresql_ext:
     db: acme
     name: foo
@@ -265,12 +266,16 @@ def ext_get_versions(cursor, ext):
       ext (str) -- extension name
     """
 
+    current_version = None
+    params = {}
+    params['ext'] = ext
+
     # 1. Get the current extension version:
     query = ("SELECT extversion FROM pg_catalog.pg_extension "
-             "WHERE extname = '%s'" % ext)
+             "WHERE extname = %(ext)s")
 
-    current_version = None
-    cursor.execute(query)
+    cursor.execute(query, params)
+
     res = cursor.fetchone()
     if res:
         current_version = res[0]
@@ -278,7 +283,8 @@ def ext_get_versions(cursor, ext):
     # 2. Get available versions:
     query = ("SELECT version FROM pg_available_extension_versions "
              "WHERE name = %(ext)s")
-    cursor.execute(query, {'ext': ext})
+
+    cursor.execute(query, params)
 
     available_versions = [r[0] for r in cursor.fetchall()]
 
@@ -297,8 +303,8 @@ def ext_valid_update_path(cursor, ext, current_version, version):
     params = {}
     if version != 'latest':
         query = ("SELECT path FROM pg_extension_update_paths(%(ext)s)"
-                  "WHERE source = %(current_version)s"
-                  "AND target = %(version)s")
+                  "WHERE source = %(cv)s"
+                  "AND target = %(ver)s")
 
         params['ext'] = ext
         params['cv'] = current_version
@@ -378,7 +384,7 @@ def main():
                                 changed = ext_update_version(cursor, ext, version)
                         else:
                             module.fail_json(msg="Passed version '%s' has no valid update path from "
-                                                 "the current created version '%s' or "
+                                                 "the currently installed version '%s' or "
                                                  "the passed version is not available" % (version, curr_version))
                 else:
                     # If not requesting latest version and passed version not available
@@ -402,7 +408,6 @@ def main():
                         changed = ext_update_version(cursor, ext, version)
                 # Extension exists, no request to update so no change
                 elif curr_version:
-                    if module.check_mode:
                       changed = False
                 else:
                     # If the ext doesn't exist and is available:
