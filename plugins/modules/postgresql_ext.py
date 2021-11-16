@@ -154,7 +154,7 @@ EXAMPLES = r'''
     name: foo
     version: 1.2
 
-- name: Create latest available version of extension foo. If already installed, update it to the latest version
+- name: Create the latest available version of extension foo. If already installed, update it to the latest version
   community.postgresql.postgresql_ext:
     db: acme
     name: foo
