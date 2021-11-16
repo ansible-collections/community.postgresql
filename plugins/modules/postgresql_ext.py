@@ -174,6 +174,7 @@ import traceback
 
 try:
     from psycopg2.extras import DictCursor
+    from psycopg2 import sql
 except ImportError:
     # psycopg2 is checked by connect_to_db()
     # from ansible.module_utils.postgres
@@ -200,11 +201,12 @@ executed_queries = []
 
 def ext_delete(cursor, ext, curr_version, cascade):
     if curr_version:
-        query = "DROP EXTENSION \"%s\"" % ext
+        query = sql.SQL("DROP EXTENSION {extension}").format(
+                extension=sql.Identifier(ext))
         if cascade:
-            query += " CASCADE"
+            query += sql.SQL(" CASCADE")
         cursor.execute(query)
-        executed_queries.append(query)
+        executed_queries.append(cursor.mogrify(query))
         return True
     else:
         return False
@@ -220,11 +222,12 @@ def ext_update_version(cursor, ext, version):
       ext (str) -- extension name
       version (str) -- extension version
     """
-    query = "ALTER EXTENSION \"%s\" UPDATE" % ext
+    query = sql.SQL("ALTER EXTENSION {extension} UPDATE").format(
+            extension=sql.Identifier(ext))
     params = {}
 
     if version != 'latest':
-        query += " TO %(ver)s"
+        query += sql.SQL( " TO %(ver)s")
         params['ver'] = version
 
     cursor.execute(query, params)
@@ -234,16 +237,18 @@ def ext_update_version(cursor, ext, version):
 
 
 def ext_create(cursor, ext, schema, cascade, version):
-    query = "CREATE EXTENSION \"%s\"" % ext
+    query = sql.SQL("CREATE EXTENSION {extension}").format(
+            extension=sql.Identifier(ext))
     params = {}
 
     if schema:
-        query += " WITH SCHEMA \"%s\"" % schema
+        query += sql.SQL(" WITH SCHEMA {ext_schema}").format(
+        ext_schema=sql.Identifier(schema))
     if version != 'latest':
-        query += " VERSION %(ver)s"
+        query += sql.SQL(" VERSION %(ver)s")
         params['ver'] = version
     if cascade:
-        query += " CASCADE"
+        query += sql.SQL(" CASCADE")
 
     cursor.execute(query, params)
     executed_queries.append(cursor.mogrify(query, params))
@@ -302,8 +307,8 @@ def ext_valid_update_path(cursor, ext, current_version, version):
     valid_path = False
     params = {}
     if version != 'latest':
-        query = ("SELECT path FROM pg_extension_update_paths(%(ext)s)"
-                 "WHERE source = %(cv)s"
+        query = ("SELECT path FROM pg_extension_update_paths(%(ext)s) "
+                 "WHERE source = %(cv)s "
                  "AND target = %(ver)s")
 
         params['ext'] = ext
@@ -311,6 +316,7 @@ def ext_valid_update_path(cursor, ext, current_version, version):
         params['ver'] = version
 
         cursor.execute(query, params)
+        executed_queries.append(cursor.mogrify(query, params))
         res = cursor.fetchone()
         if res is not None:
             valid_path = True
@@ -395,7 +401,7 @@ def main():
                         if module.check_mode:
                             changed = True
                         else:
-                            changed = ext_create(cursor, ext, schema, cascade, 'latest')
+                            changed = ext_create(cursor, ext, schema, cascade, version)
 
             # If version is not passed:
             else:
@@ -432,7 +438,7 @@ def main():
 
     except Exception as e:
         db_connection.close()
-        module.fail_json(msg="Database query failed: %s" % to_native(e), exception=traceback.format_exc())
+        module.fail_json(msg="Management of PostgreSQL extension failed: %s" % to_native(e), exception=traceback.format_exc())
 
     db_connection.close()
     module.exit_json(changed=changed, db=module.params["db"], ext=ext, queries=executed_queries)
