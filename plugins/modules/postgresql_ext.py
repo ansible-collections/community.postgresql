@@ -147,13 +147,14 @@ EXAMPLES = r'''
     cascade: yes
     state: absent
 
-- name: Create extension foo of version 1.2 or update it to that version if it's already created and a valid update path exists
-  community.postgresql.postgresql_ext:
+- name: Create extension foo of version 1.2 or update it to that version if it's already
+  created and a valid update path exists community.postgresql.postgresql_ext:
     db: acme
     name: foo
     version: 1.2
 
-- name: Create the latest available version of extension foo. If already installed, update it to the latest version
+- name: Create the latest available version of extension foo. If already installed,
+  update it to the latest version
   community.postgresql.postgresql_ext:
     db: acme
     name: foo
@@ -302,8 +303,8 @@ def ext_valid_update_path(cursor, ext, current_version, version):
     params = {}
     if version != 'latest':
         query = ("SELECT path FROM pg_extension_update_paths(%(ext)s)"
-                  "WHERE source = %(cv)s"
-                  "AND target = %(ver)s")
+                 "WHERE source = %(cv)s"
+                 "AND target = %(ver)s")
 
         params['ext'] = ext
         params['cv'] = current_version
@@ -311,11 +312,11 @@ def ext_valid_update_path(cursor, ext, current_version, version):
 
         cursor.execute(query, params)
         res = cursor.fetchone()
-        if res != None:
+        if res is not None:
             valid_path = True
     else:
         valid_path = True
-    
+
     return (valid_path)
 
 
@@ -407,7 +408,7 @@ def main():
                         changed = ext_update_version(cursor, ext, version)
                 # Extension exists, no request to update so no change
                 elif curr_version:
-                      changed = False
+                    changed = False
                 else:
                     # If the ext doesn't exist and is available:
                     if available_versions:
@@ -419,7 +420,6 @@ def main():
                     # If the ext doesn't exist and is not available:
                     else:
                         module.fail_json(msg="Extension %s is not available" % ext)
-
 
         elif state == "absent":
             if curr_version:
