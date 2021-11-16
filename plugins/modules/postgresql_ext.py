@@ -72,8 +72,7 @@ options:
     description:
       - Extension version to add or update to. Has effect with I(state=present) only.
       - If not specified, the latest extension version will be created.
-      - Version downgrade is only supported if extension provides a downgrade path.
-        Otherwise extension must be removed and lower version of extension must be made available.
+      - Downgrading is only supported if the extension provides a downgrade path otherwise the extension must be removed and a lower version of the extension must be made available.
       - Set I(version=latest) to always update the extension to the latest available version.
     type: str
   trust_input:
