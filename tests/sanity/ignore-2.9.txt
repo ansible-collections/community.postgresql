@@ -5,5 +5,4 @@ plugins/modules/postgresql_db.py validate-modules:parameter-type-not-in-doc
 plugins/modules/postgresql_db.py validate-modules:use-run-command-not-popen
 plugins/modules/postgresql_ext.py validate-modules:parameter-type-not-in-doc
 plugins/modules/postgresql_schema.py validate-modules:parameter-type-not-in-doc
-plugins/modules/postgresql_user.py validate-modules:doc-choices-do-not-match-spec
 plugins/modules/postgresql_user.py validate-modules:parameter-type-not-in-doc
