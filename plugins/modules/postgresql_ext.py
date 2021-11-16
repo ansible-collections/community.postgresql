@@ -201,8 +201,7 @@ executed_queries = []
 
 def ext_delete(cursor, ext, curr_version, cascade):
     if curr_version:
-        query = sql.SQL("DROP EXTENSION {extension}").format(
-                extension=sql.Identifier(ext))
+        query = sql.SQL("DROP EXTENSION {extension}").format(extension=sql.Identifier(ext))
         if cascade:
             query += sql.SQL(" CASCADE")
         cursor.execute(query)
@@ -222,12 +221,11 @@ def ext_update_version(cursor, ext, version):
       ext (str) -- extension name
       version (str) -- extension version
     """
-    query = sql.SQL("ALTER EXTENSION {extension} UPDATE").format(
-            extension=sql.Identifier(ext))
+    query = sql.SQL("ALTER EXTENSION {extension} UPDATE").format(extension=sql.Identifier(ext))
     params = {}
 
     if version != 'latest':
-        query += sql.SQL( " TO %(ver)s")
+        query += sql.SQL(" TO %(ver)s")
         params['ver'] = version
 
     cursor.execute(query, params)
@@ -237,13 +235,11 @@ def ext_update_version(cursor, ext, version):
 
 
 def ext_create(cursor, ext, schema, cascade, version):
-    query = sql.SQL("CREATE EXTENSION {extension}").format(
-            extension=sql.Identifier(ext))
+    query = sql.SQL("CREATE EXTENSION {extension}").format(extension=sql.Identifier(ext))
     params = {}
 
     if schema:
-        query += sql.SQL(" WITH SCHEMA {ext_schema}").format(
-        ext_schema=sql.Identifier(schema))
+        query += sql.SQL(" WITH SCHEMA {ext_schema}").format(ext_schema=sql.Identifier(schema))
     if version != 'latest':
         query += sql.SQL(" VERSION %(ver)s")
         params['ver'] = version
