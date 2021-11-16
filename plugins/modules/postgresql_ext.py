@@ -148,14 +148,13 @@ EXAMPLES = r'''
     cascade: yes
     state: absent
 
-- name: Create extension foo of version 1.2 or update it to that version if it's already
-  created and a valid update path exists community.postgresql.postgresql_ext:
+- name: Create extension foo of version 1.2 or update it to that version if it's already created and a valid update path exists
+  community.postgresql.postgresql_ext:
     db: acme
     name: foo
     version: 1.2
 
-- name: Create the latest available version of extension foo. If already installed,
-  update it to the latest version
+- name: Create the latest available version of extension foo. If already installed, update it to the latest version
   community.postgresql.postgresql_ext:
     db: acme
     name: foo
