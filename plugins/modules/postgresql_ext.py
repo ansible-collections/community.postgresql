@@ -174,7 +174,6 @@ import traceback
 
 try:
     from psycopg2.extras import DictCursor
-    from psycopg2 import sql
 except ImportError:
     # psycopg2 is checked by connect_to_db()
     # from ansible.module_utils.postgres
@@ -201,9 +200,9 @@ executed_queries = []
 
 def ext_delete(cursor, ext, curr_version, cascade):
     if curr_version:
-        query = sql.SQL("DROP EXTENSION {extension}").format(extension=sql.Identifier(ext))
+        query = "DROP EXTENSION \"%s\"" % ext
         if cascade:
-            query += sql.SQL(" CASCADE")
+            query += " CASCADE"
         cursor.execute(query)
         executed_queries.append(cursor.mogrify(query))
         return True
@@ -221,11 +220,11 @@ def ext_update_version(cursor, ext, version):
       ext (str) -- extension name
       version (str) -- extension version
     """
-    query = sql.SQL("ALTER EXTENSION {extension} UPDATE").format(extension=sql.Identifier(ext))
+    query = "ALTER EXTENSION \"%s\" UPDATE" % ext
     params = {}
 
     if version != 'latest':
-        query += sql.SQL(" TO %(ver)s")
+        query += " TO %(ver)s"
         params['ver'] = version
 
     cursor.execute(query, params)
@@ -235,16 +234,16 @@ def ext_update_version(cursor, ext, version):
 
 
 def ext_create(cursor, ext, schema, cascade, version):
-    query = sql.SQL("CREATE EXTENSION {extension}").format(extension=sql.Identifier(ext))
+    query = "CREATE EXTENSION \"%s\"" % ext
     params = {}
 
     if schema:
-        query += sql.SQL(" WITH SCHEMA {ext_schema}").format(ext_schema=sql.Identifier(schema))
+        query += " WITH SCHEMA \"%s\"" % schema
     if version != 'latest':
-        query += sql.SQL(" VERSION %(ver)s")
+        query += " VERSION %(ver)s"
         params['ver'] = version
     if cascade:
-        query += sql.SQL(" CASCADE")
+        query += " CASCADE"
 
     cursor.execute(query, params)
     executed_queries.append(cursor.mogrify(query, params))
