@@ -198,8 +198,20 @@ executed_queries = []
 #
 
 
-def ext_delete(cursor, ext, curr_version, cascade):
-    if curr_version:
+def ext_delete(cursor, ext, current_version, cascade):
+    """Remove the extension from the database
+
+    Return True if success.
+
+    Args:
+      cursor (cursor) -- cursor object of psycopg2 library
+      ext (str) -- extension name
+      current_version (str) -- installed version of the extension.
+        Value obtained from ext_get_versions and used to
+        determine if the extension was installed.
+      cascade (boolean) -- Pass the CASCADE flag to the DROP commmand
+    """
+    if current_version:
         query = "DROP EXTENSION \"%s\"" % ext
         if cascade:
             query += " CASCADE"
@@ -234,6 +246,17 @@ def ext_update_version(cursor, ext, version):
 
 
 def ext_create(cursor, ext, schema, cascade, version):
+    """
+    Create the extension objects inside the database
+
+    Return True if success.
+
+    Args:
+      cursor (cursor) -- cursor object of psycopg2 library
+      ext (str) -- extension name
+      schema (str) -- target schema for extension objects
+      version (str) -- extension version
+    """
     query = "CREATE EXTENSION \"%s\"" % ext
     params = {}
 
@@ -252,7 +275,9 @@ def ext_create(cursor, ext, schema, cascade, version):
 
 def ext_get_versions(cursor, ext):
     """
-    Get the current created extension version and available versions.
+    Get the currently created extension version if it is installed
+    in the database and versions that are available if it is
+    installed on the system.
 
     Return tuple (current_version, [list of available versions]).
 
@@ -296,7 +321,18 @@ def ext_get_versions(cursor, ext):
 
 def ext_valid_update_path(cursor, ext, current_version, version):
     """
-        Value of 'latest' is always a valid path.
+    Check to see if the installed extension version has a valid update
+    path to the given version. A version of 'latest' is always a valid path.
+
+    Return True if a valid path exists. Otherwise return False.
+
+    Args:
+      cursor (cursor) -- cursor object of psycopg2 library
+      ext (str) -- extension name
+      current_version (str) -- installed version of the extension.
+      version (str) -- target extension version to update to.
+        A value of 'latest' is always a valid path and will result
+        in the extension update command always being run.
     """
 
     valid_path = False
@@ -401,7 +437,7 @@ def main():
             # If version is not passed:
             else:
                 # Extension exists, attempt to update to latest version defined in extension control file
-                # ALTER EXTENSION is actually run, so 'changed' is technically true even if nothing updated
+                # ALTER EXTENSION is actually run, so 'changed' will be true even if nothing updated
                 if curr_version and version == 'latest':
                     if module.check_mode:
                         changed = True

@@ -327,7 +327,7 @@
       that:
       - result.rowcount == 1
 
-  - name: postgresql_ext_version - try to install non-existent version
+  - name: postgresql_ext_version - try to install non-existent extension
     <<: *task_parameters
     postgresql_ext:
       <<: *pg_parameters
@@ -338,7 +338,7 @@
   - assert:
       that:
       - result.failed == true
-      - result.msg == "Extension non_existent is not installed"
+      - result.msg == "Extension non_existent is not available"
 
   ######################################################################
   # https://github.com/ansible-collections/community.general/issues/1095
