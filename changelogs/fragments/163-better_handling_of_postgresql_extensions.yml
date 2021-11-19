@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_ext - Handle postgresql extension updates through path validation instead of version comparison (https://github.com/ansible-collections/community.postgresql/issues/129).
