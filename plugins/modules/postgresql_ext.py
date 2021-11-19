@@ -412,6 +412,8 @@ def main():
                     # Given version already installed
                     if curr_version == version:
                         changed = False
+                    # Attempt to update to given version or latest version defined in extension control file
+                    # ALTER EXTENSION is actually run if valid, so 'changed' will be true even if nothing updated
                     else:
                         valid_update_path = ext_valid_update_path(cursor, ext, curr_version, version)
                         if valid_update_path:
@@ -436,15 +438,8 @@ def main():
 
             # If version is not passed:
             else:
-                # Extension exists, attempt to update to latest version defined in extension control file
-                # ALTER EXTENSION is actually run, so 'changed' will be true even if nothing updated
-                if curr_version and version == 'latest':
-                    if module.check_mode:
-                        changed = True
-                    else:
-                        changed = ext_update_version(cursor, ext, version)
-                # Extension exists, no request to update so no change
-                elif curr_version:
+                ## Extension exists, no request to update so no change
+                if curr_version:
                     changed = False
                 else:
                     # If the ext doesn't exist and is available:
