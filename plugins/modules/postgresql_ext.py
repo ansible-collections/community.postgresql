@@ -438,7 +438,7 @@ def main():
 
             # If version is not passed:
             else:
-                ## Extension exists, no request to update so no change
+                # Extension exists, no request to update so no change
                 if curr_version:
                     changed = False
                 else:
