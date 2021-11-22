@@ -199,7 +199,7 @@ executed_queries = []
 
 
 def ext_delete(cursor, ext, current_version, cascade):
-    """Remove the extension from the database
+    """Remove the extension from the database.
 
     Return True if success.
 
@@ -247,7 +247,7 @@ def ext_update_version(cursor, ext, version):
 
 def ext_create(cursor, ext, schema, cascade, version):
     """
-    Create the extension objects inside the database
+    Create the extension objects inside the database.
 
     Return True if success.
 
