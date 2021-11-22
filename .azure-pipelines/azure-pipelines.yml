@@ -178,8 +178,8 @@ stages:
         parameters:
           testFormat: devel/{0}/1
           targets:
-            - name: RHEL 8.4
-              test: rhel/8.4
+            - name: RHEL 8.5
+              test: rhel/8.5
 
   - stage: Remote_2_12
     displayName: Remote 2.12
