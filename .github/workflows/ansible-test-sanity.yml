@@ -1,0 +1,22 @@
+---
+name: Sanity
+on:
+  pull_request:
+    paths:
+    - 'plugins/**'
+    - '.github/workflows/ansible-test-sanity.yml'
+  push:
+    paths:
+    - 'plugins/**'
+    - '.github/workflows/ansible-test-sanity.yml'
+  schedule:
+  # Every day at 3:14
+  - cron:  '14 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  sanity:
+    uses: data-bene/ansible-collection-gh-workflow/.github/workflows/workflow.yml@release/v1
+    with:
+      fail-fast: false
+      testing-type: sanity
