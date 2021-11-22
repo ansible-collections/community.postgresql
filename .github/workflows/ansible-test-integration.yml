@@ -1,0 +1,24 @@
+---
+name: Integration
+on:
+  push:
+    paths:
+    - 'plugins/**'
+    - 'tests/**'
+    - '.github/workflows/ansible-test-integration.yml'
+  pull_request:
+    paths:
+    - 'plugins/**'
+    - 'tests/**'
+    - '.github/workflows/ansible-test-integration.yml'
+
+jobs:
+  pg-14:
+    uses: data-bene/ansible-collection-gh-workflow/.github/workflows/workflow.yml@release/v1
+    with:
+      docker-image: '[ "ubuntu2004" ]'
+      docker-include: '[]'
+      fail-fast: false
+      pre-test-cmd: "sed -i 's/^pg_version:.*/pg_version: \"14\"/g' ./tests/integration/targets/setup_postgresql_db/defaults/main.yml"
+      test-python: false
+      testing-type: integration
