@@ -71,7 +71,10 @@ options:
   version:
     description:
       - Extension version to add or update to. Has effect with I(state=present) only.
-      - If not specified, the latest extension version will be created.
+      - If not specified and extension is not installed in the database,
+        the latest version available will be created.
+      - If extension is already installed, will update to the given version if a valid update
+        path exists.
       - Downgrading is only supported if the extension provides a downgrade path otherwise
         the extension must be removed and a lower version of the extension must be made available.
       - Set I(version=latest) to always update the extension to the latest available version.
@@ -311,7 +314,7 @@ def ext_get_versions(cursor, ext):
 
     cursor.execute(query, params)
 
-    available_versions = [r[0] for r in cursor.fetchall()]
+    available_versions = set(r[0] for r in cursor.fetchall())
 
     if current_version is None:
         current_version = False
@@ -347,7 +350,6 @@ def ext_valid_update_path(cursor, ext, current_version, version):
         params['ver'] = version
 
         cursor.execute(query, params)
-        executed_queries.append(cursor.mogrify(query, params))
         res = cursor.fetchone()
         if res is not None:
             valid_path = True
