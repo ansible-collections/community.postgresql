@@ -199,7 +199,7 @@
   - assert:
       that:
       - result is changed
-      - result.queries == ["ALTER EXTENSION \"{{ test_ext }}\" UPDATE TO '3.0'"]
+      - result.queries == ["ALTER EXTENSION \"{{ test_ext }}\" UPDATE"]
 
   - name: postgresql_ext_version - check
     <<: *task_parameters
@@ -211,7 +211,7 @@
       that:
       - result.rowcount == 1
 
-  - name: postgresql_ext_version - try to update the extension to the latest version again
+  - name: postgresql_ext_version - try to update the extension to the latest version again which always runs an update.
     <<: *task_parameters
     postgresql_ext:
       <<: *pg_parameters
@@ -222,7 +222,17 @@
 
   - assert:
       that:
-      - result is not changed
+      - result is changed
+
+  - name: postgresql_ext_version - check that version number did not change even though update ran
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '3.0'"
+
+  - assert:
+      that:
+      - result.rowcount == 1
 
   - name: postgresql_ext_version - try to downgrade the extension version, must fail
     <<: *task_parameters
@@ -317,7 +327,7 @@
       that:
       - result.rowcount == 1
 
-  - name: postgresql_ext_version - try to install non-existent version
+  - name: postgresql_ext_version - try to install non-existent extension
     <<: *task_parameters
     postgresql_ext:
       <<: *pg_parameters
@@ -328,7 +338,7 @@
   - assert:
       that:
       - result.failed == true
-      - result.msg == "Extension non_existent is not installed"
+      - result.msg == "Extension non_existent is not available"
 
   ######################################################################
   # https://github.com/ansible-collections/community.general/issues/1095
