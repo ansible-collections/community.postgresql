@@ -167,3 +167,18 @@ releases:
     - 145-postgresql_set_fix_wrong_value_conversion.yml
     - drop_db_with_force.yml
     release_date: '2021-09-30'
+  1.6.0:
+    changes:
+      bugfixes:
+      - postgresql_ext - Handle postgresql extension updates through path validation
+        instead of version comparison (https://github.com/ansible-collections/community.postgresql/issues/129).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.5.0.'
+    fragments:
+    - 1.6.0.yml
+    - 163-better_handling_of_postgresql_extensions.yml
+    release_date: '2021-11-24'
