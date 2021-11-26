@@ -17,5 +17,3 @@ on:
 jobs:
   sanity:
     uses: data-bene/ansible-collection-gh-workflow/.github/workflows/workflow-sanity.yml@release/v1
-    with:
-      fail-fast: false
