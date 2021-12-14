@@ -709,13 +709,11 @@ class PgClusterInfo(object):
                               "AND column_name = 'spcoptions'")
 
         if not opt:
-            query = ("SELECT s.spcname, a.rolname, s.spcacl "
-                     "FROM pg_tablespace AS s "
-                     "JOIN pg_authid AS a ON s.spcowner = a.oid")
+            query = ("SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl "
+                     "FROM pg_tablespace AS s ")
         else:
-            query = ("SELECT s.spcname, a.rolname, s.spcacl, s.spcoptions "
-                     "FROM pg_tablespace AS s "
-                     "JOIN pg_authid AS a ON s.spcowner = a.oid")
+            query = ("SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl, s.spcoptions "
+                     "FROM pg_tablespace AS s ")
 
         res = self.__exec_sql(query)
         ts_dict = {}
@@ -895,10 +893,9 @@ class PgClusterInfo(object):
         if not res[0][0]:
             return True
 
-        query = ("SELECT r.pid, a.rolname, r.application_name, r.client_addr, "
+        query = ("SELECT r.pid, pg_catalog.pg_get_userbyid(r.usesysid) AS rolname, r.application_name, r.client_addr, "
                  "r.client_hostname, r.backend_start::text, r.state "
-                 "FROM pg_stat_replication AS r "
-                 "JOIN pg_authid AS a ON r.usesysid = a.oid")
+                 "FROM pg_stat_replication AS r ")
         res = self.__exec_sql(query)
 
         # If there is no replication:
@@ -920,9 +917,8 @@ class PgClusterInfo(object):
 
     def get_lang_info(self):
         """Get information about current supported languages."""
-        query = ("SELECT l.lanname, a.rolname, l.lanacl "
-                 "FROM pg_language AS l "
-                 "JOIN pg_authid AS a ON l.lanowner = a.oid")
+        query = ("SELECT l.lanname, pg_catalog.pg_get_userbyid(l.lanowner) AS rolname, l.lanacl "
+                 "FROM pg_language AS l ")
         res = self.__exec_sql(query)
         lang_dict = {}
         for i in res:
@@ -935,9 +931,8 @@ class PgClusterInfo(object):
 
     def get_namespaces(self):
         """Get information about namespaces."""
-        query = ("SELECT n.nspname, a.rolname, n.nspacl "
-                 "FROM pg_catalog.pg_namespace AS n "
-                 "JOIN pg_authid AS a ON a.oid = n.nspowner")
+        query = ("SELECT n.nspname, pg_catalog.pg_get_userbyid(n.nspowner) AS rolname, n.nspacl "
+                 "FROM pg_catalog.pg_namespace AS n ")
         res = self.__exec_sql(query)
 
         nsp_dict = {}
