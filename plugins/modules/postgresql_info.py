@@ -553,8 +553,8 @@ class PgDbConn(object):
         conn_params = get_conn_params(self.module, self.module.params, warn_db_default=False)
         self.db_conn = connect_to_db(self.module, conn_params, fail_on_conn=fail_on_conn)
         if self.db_conn is None:
-          # only happens if fail_on_conn is False and there actually was an issue connecting to the DB
-          return None
+            # only happens if fail_on_conn is False and there actually was an issue connecting to the DB
+            return None
         return self.db_conn.cursor(cursor_factory=DictCursor)
 
     def reconnect(self, dbname):
@@ -564,7 +564,7 @@ class PgDbConn(object):
             dbname (string): Database name to connect to.
         """
         if self.db_conn is not None:
-          self.db_conn.close()
+            self.db_conn.close()
 
         # the lines below seem redudant but they are actually needed for connect to work as expected
         self.module.params['db'] = dbname
@@ -1020,12 +1020,12 @@ class PgClusterInfo(object):
         for datname in db_dict:
             self.cursor = self.db_obj.reconnect(datname)
             if self.cursor is None:
-              # that means we don't have permission to access these database
-              db_dict[datname]['namespaces'] = {}
-              db_dict[datname]['extensions'] = {}
-              db_dict[datname]['languages'] = {}
-              db_dict[datname]['error'] = "could not connect to the database (probably permission issue)"
-              continue
+                # that means we don't have permission to access these database
+                db_dict[datname]['namespaces'] = {}
+                db_dict[datname]['extensions'] = {}
+                db_dict[datname]['languages'] = {}
+                db_dict[datname]['error'] = "could not connect to the database (probably permission issue)"
+                continue
             db_dict[datname]['namespaces'] = self.get_namespaces()
             db_dict[datname]['extensions'] = self.get_ext_info()
             db_dict[datname]['languages'] = self.get_lang_info()
