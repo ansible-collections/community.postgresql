@@ -564,7 +564,7 @@ class PgDbConn(object):
             dbname (string): Database name to connect to.
         """
         if self.db_conn is not None:
-        self.db_conn.close()
+          self.db_conn.close()
 
         # the lines below seem redudant but they are actually needed for connect to work as expected
         self.module.params['db'] = dbname
