@@ -1,3 +1,2 @@
 bugfixes:
 - postgres_info - It now works on AWS RDS Postgres.
-
