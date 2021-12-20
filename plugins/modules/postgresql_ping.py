@@ -52,8 +52,8 @@ EXAMPLES = r'''
 # In the example below you need to generate certificates previously.
 # See https://www.postgresql.org/docs/current/libpq-ssl.html for more information.
 - name: >
-    Ping PostgreSQL server using not default credentials and SSL,
-    register return values into the result variable for future use
+    Ping PostgreSQL server using non-default credentials and SSL
+    registering the return values into the result variable for future use
   community.postgresql.postgresql_ping:
     db: protected_db
     login_host: dbsrv
