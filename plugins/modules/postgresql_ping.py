@@ -62,11 +62,9 @@ EXAMPLES = r'''
     ca_cert: /root/root.crt
     ssl_mode: verify-full
   register: result
-
-- name: Assert that the server is available, fail otherwise
-  assert:
-    that:
-    - result.is_available == yes
+  # If you need to fail when the server is not available,
+  # uncomment the following line:
+  #failed_when: not result.is_available
 
 # You can use the registered result with another task
 - name: This task should be executed only if the server is available
