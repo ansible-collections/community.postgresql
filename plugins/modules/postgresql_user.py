@@ -933,7 +933,7 @@ def main():
                     role_attr_flags, groups, comment, session_role)
 
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
-    db_connection = connect_to_db(module, conn_params)
+    db_connection, dummy = connect_to_db(module, conn_params)
     cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     try:

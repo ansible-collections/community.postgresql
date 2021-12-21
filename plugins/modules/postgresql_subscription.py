@@ -646,7 +646,7 @@ def main():
     # Connect to DB and make cursor object:
     pg_conn_params = get_conn_params(module, module.params)
     # We check subscription state without DML queries execution, so set autocommit:
-    db_connection = connect_to_db(module, pg_conn_params, autocommit=True)
+    db_connection, dummy = connect_to_db(module, pg_conn_params, autocommit=True)
     cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     # Check version:

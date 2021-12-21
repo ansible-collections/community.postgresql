@@ -83,6 +83,11 @@ server_version:
   returned: always
   type: dict
   sample: { major: 13, minor: 2, full: '13.2', raw: 'PostgreSQL 13.2 on x86_64-pc-linux-gnu' }
+conn_err_msg:
+  description: Connection error message.
+  returned: always
+  type: str
+  sample: ''
 '''
 
 try:
@@ -177,10 +182,13 @@ def main():
         changed=False,
         is_available=False,
         server_version=dict(),
+        conn_err_msg='',
     )
 
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
-    db_connection = connect_to_db(module, conn_params, fail_on_conn=False)
+    db_connection, err = connect_to_db(module, conn_params, fail_on_conn=False)
+    if err:
+        result['conn_err_msg'] = err
 
     if db_connection is not None:
         cursor = db_connection.cursor(cursor_factory=DictCursor)

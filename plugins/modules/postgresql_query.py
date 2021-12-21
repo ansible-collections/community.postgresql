@@ -413,7 +413,7 @@ def main():
         query_list.append(query)
 
     conn_params = get_conn_params(module, module.params)
-    db_connection = connect_to_db(module, conn_params, autocommit=autocommit)
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=autocommit)
     if encoding is not None:
         db_connection.set_client_encoding(encoding)
     cursor = db_connection.cursor(cursor_factory=DictCursor)

@@ -309,7 +309,7 @@ def main():
         check_input(module, lang, session_role, owner)
 
     conn_params = get_conn_params(module, module.params)
-    db_connection = connect_to_db(module, conn_params, autocommit=False)
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor()
 
     changed = False

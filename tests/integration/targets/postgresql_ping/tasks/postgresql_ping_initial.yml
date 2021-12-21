@@ -66,6 +66,7 @@
 - assert:
     that: 
     - result.is_available == true
+    - result.conn_err_msg == ''
   when:
   - ansible_os_family == 'Debian'
   - postgres_version_resp.stdout is version('9.4', '>=')
@@ -85,3 +86,18 @@
     that:
     - result is failed
     - result.msg is search('is potentially dangerous')
+
+# Check conn_err_msg return value
+- name: Try to connect to non-existent DB
+  become_user: "{{ pg_user }}"
+  become: yes
+  postgresql_ping:
+    db: blahblah
+    login_user: "{{ pg_user }}"
+  register: result
+
+- name: Check conn_err_msg return value
+  assert:
+    that:
+    - result is succeeded
+    - result.conn_err_msg is search("database \"blahblah\" does not exist")
