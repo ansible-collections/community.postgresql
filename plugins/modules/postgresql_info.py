@@ -1024,7 +1024,7 @@ class PgClusterInfo(object):
                 db_dict[datname]['namespaces'] = {}
                 db_dict[datname]['extensions'] = {}
                 db_dict[datname]['languages'] = {}
-                db_dict[datname]['error'] = "could not connect to the database (probably permission issue)"
+                db_dict[datname]['error'] = "Could not connect to the database."
                 continue
             db_dict[datname]['namespaces'] = self.get_namespaces()
             db_dict[datname]['extensions'] = self.get_ext_info()
