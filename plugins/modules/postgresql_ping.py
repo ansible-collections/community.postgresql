@@ -51,7 +51,9 @@ EXAMPLES = r'''
 
 # In the example below you need to generate certificates previously.
 # See https://www.postgresql.org/docs/current/libpq-ssl.html for more information.
-- name: PostgreSQL ping dbsrv server using not default credentials and ssl
+- name: >
+    Ping PostgreSQL server using non-default credentials and SSL
+    registering the return values into the result variable for future use
   community.postgresql.postgresql_ping:
     db: protected_db
     login_host: dbsrv
@@ -59,6 +61,15 @@ EXAMPLES = r'''
     login_password: secret_pass
     ca_cert: /root/root.crt
     ssl_mode: verify-full
+  register: result
+  # If you need to fail when the server is not available,
+  # uncomment the following line:
+  #failed_when: not result.is_available
+
+# You can use the registered result with another task
+- name: This task should be executed only if the server is available
+  # ...
+  when: result.is_available == yes
 '''
 
 RETURN = r'''
