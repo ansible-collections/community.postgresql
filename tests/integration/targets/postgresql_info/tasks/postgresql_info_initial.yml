@@ -53,6 +53,48 @@
       name: session_superuser
       role_attr_flags: SUPERUSER
 
+  - name: postgresql_info - create extra DBs for testing
+    <<: *task_parameters
+    postgresql_db:
+      login_user: '{{ pg_user }}'
+      maintenance_db: postgres
+      login_port: '{{ replica_port }}'
+      name: "{{ item }}"
+    loop:
+      - db1
+      - db2
+
+  - name: postgresql_info - create extra schemas for testing
+    <<: *task_parameters
+    postgresql_schema:
+      login_user: '{{ pg_user }}'
+      login_port: '{{ replica_port }}'
+      db:   '{{ item[0] }}'
+      name: "{{ item[1] }}"
+    loop:
+      - [ "db1", "db1_schema1"]
+      - [ "db1", "db1_schema2"]
+      - [ "db2", "db2_schema1"]
+      - [ "db2", "db2_schema2"]
+
+  - name: postgresql_table - create extra tables for testing
+    <<: *task_parameters
+    postgresql_table:
+      login_user: '{{ pg_user }}'
+      login_port: '{{ replica_port }}'
+      db:   '{{ item[0] }}'
+      name: "{{ item[1] }}.{{ item[2] }}"
+      columns: waste_id int
+    loop:
+      - [ "db1", "db1_schema1", "db1_schema1_table1"]
+      - [ "db1", "db1_schema1", "db1_schema1_table2"]
+      - [ "db1", "db1_schema2", "db1_schema2_table1"]
+      - [ "db1", "db1_schema2", "db1_schema2_table2"]
+      - [ "db2", "db2_schema1", "db2_schema1_table1"]
+      - [ "db2", "db2_schema1", "db2_schema1_table2"]
+      - [ "db2", "db2_schema2", "db2_schema2_table1"]
+      - [ "db2", "db2_schema2", "db2_schema2_table2"]
+
   - name: postgresql_info - test return values and session_role param
     <<: *task_parameters
     postgresql_info:
@@ -71,6 +113,12 @@
       - result.databases.{{ db_default }}.extensions
       - result.databases.{{ test_db }}.subscriptions.{{ test_subscription }}
       - result.databases.{{ test_db }}.subscriptions.{{ test_subscription2 }}
+
+      - result.databases.db1.namespaces.db1_schema1
+      - result.databases.db1.namespaces.db1_schema2
+      - result.databases.db2.namespaces.db2_schema1
+      - result.databases.db2.namespaces.db2_schema2
+
       - result.settings
       - result.tablespaces
       - result.roles
