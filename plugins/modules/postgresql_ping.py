@@ -88,6 +88,7 @@ conn_err_msg:
   returned: always
   type: str
   sample: ''
+  version_added: 1.7.0
 '''
 
 try:
