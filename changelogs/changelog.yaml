@@ -182,3 +182,24 @@ releases:
     - 1.6.0.yml
     - 163-better_handling_of_postgresql_extensions.yml
     release_date: '2021-11-24'
+  1.6.1:
+    changes:
+      bugfixes:
+      - Collection core functions - use vendored version of ``distutils.version``
+        instead of the deprecated Python standard library ``distutils`` (https://github.com/ansible-collections/community.postgresql/pull/179).
+      - postgres_info - It now works on AWS RDS Postgres.
+      - postgres_info - Specific info (namespaces, extensions, languages) of each
+        database was not being shown properly. Instead, the info from the DB that
+        was connected was always being shown (https://github.com/ansible-collections/community.postgresql/issues/172).
+      release_summary: 'This is the bugfix release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.6.1.'
+    fragments:
+    - 1.6.1.yml
+    - 171-postgres_info__was_not_working_on_aws_rds_postgres.yml
+    - 173-postgres_info_now_shows_the_info_of_each_specific_database.yml
+    - 178-prepare_for_distutils_be_removed.yml
+    release_date: '2022-01-17'

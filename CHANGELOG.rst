@@ -5,6 +5,23 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.6.1
+======
+
+Release Summary
+---------------
+
+This is the bugfix release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.6.1.
+
+Bugfixes
+--------
+
+- Collection core functions - use vendored version of ``distutils.version`` instead of the deprecated Python standard library ``distutils`` (https://github.com/ansible-collections/community.postgresql/pull/179).
+- postgres_info - It now works on AWS RDS Postgres.
+- postgres_info - Specific info (namespaces, extensions, languages) of each database was not being shown properly. Instead, the info from the DB that was connected was always being shown (https://github.com/ansible-collections/community.postgresql/issues/172).
+
 v1.6.0
 ======
 
