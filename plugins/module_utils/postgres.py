@@ -54,7 +54,7 @@ def ensure_required_libs(module):
 def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
     """Connect to a PostgreSQL database.
 
-    Return a dict containing a psycopg2 connection object and error message / None.
+    Return a tuple containing a psycopg2 connection object and error message / None.
 
     Args:
         module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule class
