@@ -398,7 +398,7 @@ def main():
         module.warn("Parameter version is ignored when state=absent")
 
     conn_params = get_conn_params(module, module.params)
-    db_connection = connect_to_db(module, conn_params, autocommit=True)
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     try:

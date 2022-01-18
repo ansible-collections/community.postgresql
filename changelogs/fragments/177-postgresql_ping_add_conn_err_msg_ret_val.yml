@@ -1,0 +1,2 @@
+minor_changes:
+- postgresql_ping - add the ``conn_err_msg`` return value (https://github.com/ansible-collections/community.postgresql/pull/177).

@@ -551,7 +551,7 @@ class PgDbConn(object):
         Note: connection parameters are passed by self.module object.
         """
         conn_params = get_conn_params(self.module, self.module.params, warn_db_default=False)
-        self.db_conn = connect_to_db(self.module, conn_params, fail_on_conn=fail_on_conn)
+        self.db_conn, dummy = connect_to_db(self.module, conn_params, fail_on_conn=fail_on_conn)
         if self.db_conn is None:
             # only happens if fail_on_conn is False and there actually was an issue connecting to the DB
             return None

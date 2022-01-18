@@ -636,7 +636,7 @@ def main():
     # Connect to DB and make cursor object:
     conn_params = get_conn_params(module, module.params)
     # We check publication state without DML queries execution, so set autocommit:
-    db_connection = connect_to_db(module, conn_params, autocommit=True)
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     # Check version:

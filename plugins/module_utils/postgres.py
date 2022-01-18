@@ -54,7 +54,7 @@ def ensure_required_libs(module):
 def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
     """Connect to a PostgreSQL database.
 
-    Return psycopg2 connection object.
+    Return a tuple containing a psycopg2 connection object and error message / None.
 
     Args:
         module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule class
@@ -67,6 +67,7 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
     ensure_required_libs(module)
 
     db_connection = None
+    conn_err = None
     try:
         db_connection = psycopg2.connect(**conn_params)
         if autocommit:
@@ -91,20 +92,19 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
             module.fail_json(msg='Postgresql server must be at least '
                                  'version 8.4 to support sslrootcert')
 
-        if fail_on_conn:
-            module.fail_json(msg="unable to connect to database: %s" % to_native(e))
-        else:
-            module.warn("PostgreSQL server is unavailable: %s" % to_native(e))
-            db_connection = None
+        conn_err = to_native(e)
 
     except Exception as e:
+        conn_err = to_native(e)
+
+    if conn_err is not None:
         if fail_on_conn:
-            module.fail_json(msg="unable to connect to database: %s" % to_native(e))
+            module.fail_json(msg="unable to connect to database: %s" % conn_err)
         else:
-            module.warn("PostgreSQL server is unavailable: %s" % to_native(e))
+            module.warn("PostgreSQL server is unavailable: %s" % conn_err)
             db_connection = None
 
-    return db_connection
+    return db_connection, conn_err
 
 
 def exec_sql(obj, query, query_params=None, return_bool=False, add_to_executed=True, dont_exec=False):

@@ -420,7 +420,7 @@ def main():
         check_input(module, new_owner, obj_name, reassign_owned_by, session_role)
 
     conn_params = get_conn_params(module, module.params)
-    db_connection = connect_to_db(module, conn_params, autocommit=False)
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     ##############

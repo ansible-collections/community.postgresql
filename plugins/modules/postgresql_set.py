@@ -366,7 +366,7 @@ def main():
         module.fail_json(msg="%s: at least one of value or reset param must be specified" % name)
 
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
-    db_connection = connect_to_db(module, conn_params, autocommit=True)
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     kw = {}
@@ -456,7 +456,7 @@ def main():
 
     # Reconnect and recheck current value:
     if context in ('sighup', 'superuser-backend', 'backend', 'superuser', 'user'):
-        db_connection = connect_to_db(module, conn_params, autocommit=True)
+        db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
         cursor = db_connection.cursor(cursor_factory=DictCursor)
 
         res = param_get(cursor, module, name)

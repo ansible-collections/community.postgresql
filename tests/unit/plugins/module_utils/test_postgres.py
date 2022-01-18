@@ -222,7 +222,7 @@ class TestConnectToDb():
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
-        db_connection = pg.connect_to_db(m_ansible_module, conn_params)
+        db_connection, dummy = pg.connect_to_db(m_ansible_module, conn_params)
         cursor = db_connection.cursor()
         # if errors, db_connection returned as None:
         assert type(db_connection) == DbConnection
@@ -238,7 +238,7 @@ class TestConnectToDb():
 
         m_ansible_module.params['session_role'] = 'test_role'
         conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
-        db_connection = pg.connect_to_db(m_ansible_module, conn_params)
+        db_connection, dummy = pg.connect_to_db(m_ansible_module, conn_params)
         cursor = db_connection.cursor()
         # if errors, db_connection returned as None:
         assert type(db_connection) == DbConnection
@@ -257,7 +257,7 @@ class TestConnectToDb():
         m_ansible_module.params['login_user'] = 'Exception'  # causes Exception
 
         conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
-        db_connection = pg.connect_to_db(m_ansible_module, conn_params, fail_on_conn=True)
+        db_connection, dummy = pg.connect_to_db(m_ansible_module, conn_params, fail_on_conn=True)
 
         assert 'unable to connect to database' in m_ansible_module.err_msg
         assert db_connection is None
@@ -272,7 +272,7 @@ class TestConnectToDb():
         m_ansible_module.params['login_user'] = 'Exception'  # causes Exception
 
         conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
-        db_connection = pg.connect_to_db(m_ansible_module, conn_params, fail_on_conn=False)
+        db_connection, dummy = pg.connect_to_db(m_ansible_module, conn_params, fail_on_conn=False)
 
         assert m_ansible_module.err_msg == ''
         assert 'PostgreSQL server is unavailable' in m_ansible_module.warn_msg
@@ -288,7 +288,7 @@ class TestConnectToDb():
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
-        db_connection = pg.connect_to_db(m_ansible_module, conn_params, autocommit=True)
+        db_connection, dummy = pg.connect_to_db(m_ansible_module, conn_params, autocommit=True)
         cursor = db_connection.cursor()
 
         # if errors, db_connection returned as None:
@@ -301,7 +301,7 @@ class TestConnectToDb():
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
-        db_connection = pg.connect_to_db(m_ansible_module, conn_params, autocommit=True)
+        db_connection, dummy = pg.connect_to_db(m_ansible_module, conn_params, autocommit=True)
         cursor = db_connection.cursor()
 
         # if errors, db_connection returned as None:
