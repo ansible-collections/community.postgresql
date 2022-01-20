@@ -683,9 +683,9 @@ class Connection(object):
         return self.cursor.fetchall()
 
     def get_default_privs(self, schema, *args):
-        if schema == None :
+        if schema is None:
             query = """SELECT defaclacl
-                       FROM pg_default_acl 
+                       FROM pg_default_acl
                        WHERE defaclnamespace = 0;"""
             self.cursor.execute(query)
         else:
