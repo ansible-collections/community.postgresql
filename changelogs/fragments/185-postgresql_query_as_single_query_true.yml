@@ -1,0 +1,2 @@
+major_changes:
+- postgresql_query - the default value of the ``as_single_query`` option changes to ``yes``. If the related behavior of your tasks where the module is involved has changed, please adjust the parameter's value correspondingly (https://github.com/ansible-collections/community.postgresql/issues/85).
