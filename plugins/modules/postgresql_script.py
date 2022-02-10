@@ -15,6 +15,7 @@ short_description: Run PostgreSQL statements from a file
 
 description:
 - Runs arbitrary PostgreSQL statements from a file.
+- The module always reports that the state has changed.
 - Does not run against backup files.
   Use M(community.postgresql.postgresql_db) with I(state=restore)
   to run queries on files made by pg_dump/pg_dumpall utilities.
@@ -345,12 +346,6 @@ def main():
     if args:
         args = convert_elements_to_pg_arrays(args)
 
-    # Set defaults:
-    changed = False
-
-    rowcount = 0
-    statusmessage = ''
-
     # Execute script content:
     try:
         cursor.execute(script_content, args)
@@ -361,8 +356,7 @@ def main():
 
     statusmessage = cursor.statusmessage
 
-    if cursor.rowcount > 0:
-        rowcount = cursor.rowcount
+    rowcount = cursor.rowcount
 
     query_result = []
     try:
@@ -387,7 +381,7 @@ def main():
         module.fail_json(msg="Cannot fetch rows from cursor: %s" % to_native(e))
 
     kw = dict(
-        changed=changed,
+        changed=True,
         query=cursor.query,
         statusmessage=statusmessage,
         query_result=query_result,
