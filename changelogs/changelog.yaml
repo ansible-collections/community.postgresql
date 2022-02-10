@@ -203,3 +203,17 @@ releases:
     - 173-postgres_info_now_shows_the_info_of_each_specific_database.yml
     - 178-prepare_for_distutils_be_removed.yml
     release_date: '2022-01-17'
+  1.7.0:
+    changes:
+      minor_changes:
+      - postgresql_ping - add the ``conn_err_msg`` return value (https://github.com/ansible-collections/community.postgresql/pull/177).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.6.0.'
+    fragments:
+    - 1.7.0.yml
+    - 177-postgresql_ping_add_conn_err_msg_ret_val.yml
+    release_date: '2022-02-10'

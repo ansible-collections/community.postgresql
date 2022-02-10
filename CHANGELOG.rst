@@ -5,6 +5,21 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.7.0
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.6.0.
+
+Minor Changes
+-------------
+
+- postgresql_ping - add the ``conn_err_msg`` return value (https://github.com/ansible-collections/community.postgresql/pull/177).
+
 v1.6.1
 ======
 
