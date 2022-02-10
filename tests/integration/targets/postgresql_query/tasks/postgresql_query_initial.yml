@@ -66,11 +66,10 @@
 - assert:
     that:
     - result is not changed
-    - result.query == "\n\nSELECT story FROM test_table\n  WHERE id = 1 OR story = 'Данные'"
+    - result.query == "SELECT version();\n\nSELECT story FROM test_table\n  WHERE id = 1 OR story = 'Данные';\n"
     - result.query_result[0].story == 'first'
-    - result.query_all_results[0][0].version is search('PostgreSQL')
-    - result.query_all_results[1][0].story == 'first'
-    - result.rowcount == 2
+    - result.query_all_results[0][0].story == 'first'
+    - result.rowcount == 1
     - result.statusmessage == 'SELECT 1' or result.statusmessage == 'SELECT'
   when: sql_file_created
 
