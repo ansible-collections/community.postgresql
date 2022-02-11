@@ -70,7 +70,7 @@ options:
     default: yes
   search_path:
     description:
-    - List of schema names to look in.
+    - Overrides the list of schemas to search for db objects in.
     type: list
     elements: str
 
