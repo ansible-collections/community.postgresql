@@ -147,28 +147,28 @@ EXAMPLES = r'''
     - app1
     - public
 
-# If you use a variable in positional_args/named_args that can
-# be undefined and you wish to set it as NULL, the constructions like
-# "{{ my_var if (my_var is defined) else none | default(none) }}"
-# will not work as expected substituting an empty string instead of NULL.
-# If possible, we suggest to use Ansible's DEFAULT_JINJA2_NATIVE configuration
-# (https://docs.ansible.com/ansible/latest/reference_appendices/config.html#default-jinja2-native).
-# Enabling it fixes this problem. If you cannot enable it, the following workaround
-# can be used.
-# You should precheck such a value and define it as NULL when undefined.
-# For example:
-- name: When undefined, set to NULL
-  set_fact:
-    my_var: NULL
-  when: my_var is undefined
-
-# Then, assuming that the file contains
-# INSERT INTO test_table (col1) VALUES (%s)
-- name: Insert a value using positional arguments
-  community.postgresql.postgresql_script:
-    path: /var/lib/pgsql/test.sql
-    positional_args:
-    - '{{ my_var }}'
+- block:
+    # If you use a variable in positional_args/named_args that can
+    # be undefined and you wish to set it as NULL, constructions like
+    # "{{ my_var if (my_var is defined) else none | default(none) }}"
+    # will not work as expected substituting an empty string instead of NULL.
+    # If possible, we suggest using Ansible's DEFAULT_JINJA2_NATIVE configuration
+    # (https://docs.ansible.com/ansible/latest/reference_appendices/config.html#default-jinja2-native).
+    # Enabling it fixes this problem. If you cannot enable it, the following workaround
+    # can be used.
+    # You should precheck such a value and define it as NULL when undefined.
+    # For example:
+    - name: When undefined, set to NULL
+      set_fact:
+        my_var: NULL
+      when: my_var is undefined
+    # Then, assuming that the file contains
+    # INSERT INTO test_table (col1) VALUES (%s)
+    - name: Insert a value using positional arguments
+      community.postgresql.postgresql_script:
+        path: /var/lib/pgsql/test.sql
+        positional_args:
+          - '{{ my_var }}'
 '''
 
 RETURN = r'''
