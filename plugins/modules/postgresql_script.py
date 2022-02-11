@@ -117,23 +117,23 @@ EXAMPLES = r'''
       id_val: 1
       story_val: test
 
-# Pass list and string vars as positional_args
-- name: Set vars
-  ansible.builtin.set_fact:
-    my_list:
-    - 1
-    - 2
-    - 3
-    my_arr: '{1, 2, 3}'
-
-# Assuming that the the file contains
-# SELECT * FROM test_array_table WHERE arr_col1 = %s AND arr_col2 = %s
-- name: Passing positional_args as arrays
-  community.postgresql.postgresql_script:
-    path: /var/lib/pgsql/test.sql
-    positional_args:
-    - '{{ my_list }}'
-    - '{{ my_arr|string }}'
+- block:
+  # Assuming that the the file contains
+  # SELECT * FROM test_array_table WHERE arr_col1 = %s AND arr_col2 = %s
+  # Pass list and string vars as positional_args
+  - name: Set vars
+    ansible.builtin.set_fact:
+      my_list:
+      - 1
+      - 2
+      - 3
+      my_arr: '{1, 2, 3}'
+  - name: Passing positional_args as arrays
+    community.postgresql.postgresql_script:
+      path: /var/lib/pgsql/test.sql
+      positional_args:
+        - '{{ my_list }}'
+        - '{{ my_arr|string }}'
 
 # Assuming that the the file contains
 # SELECT * FROM test_table,
