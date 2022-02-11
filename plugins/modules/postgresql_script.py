@@ -40,7 +40,7 @@ options:
   path:
     description:
     - Path to a SQL script on the target machine.
-    - To upload dumps or to execute other complex scripts, the preferable way
+    - To upload dumps, the preferable way
       is to use the M(community.postgresql.postgresql_db) module with I(state=restore).
     type: path
   session_role:
