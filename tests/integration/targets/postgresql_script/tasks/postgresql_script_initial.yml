@@ -1,4 +1,3 @@
-
 - vars:
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
@@ -7,9 +6,7 @@
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
       login_db: '{{ db_default }}'
-
   block:
-
   - name: Drop test table if exists
     <<: *task_parameters
     shell: psql postgres -U "{{ pg_user }}" -t -c "DROP TABLE IF EXISTS test_table;"
