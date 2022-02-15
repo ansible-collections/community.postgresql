@@ -162,6 +162,7 @@ EXAMPLES = r'''
       set_fact:
         my_var: NULL
       when: my_var is undefined
+
     # Then, assuming that the file contains
     # INSERT INTO test_table (col1) VALUES (%s)
     - name: Insert a value using positional arguments
