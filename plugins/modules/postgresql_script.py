@@ -233,10 +233,12 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 from ansible.module_utils._text import to_native
 from ansible.module_utils.six import iteritems
 
+TYPES_NEED_TO_CONVERT = (decimal.Decimal, datetime.timedelta)
 
 # ===========================================
 # Module execution.
 #
+
 
 def list_to_pg_array(elem):
     """Convert the passed list to PostgreSQL array
@@ -284,6 +286,23 @@ def set_search_path(cursor, search_path):
         search_path (str): String containing comma-separated schema names.
     """
     cursor.execute('SET search_path TO %s' % search_path)
+
+
+def convert_to_supported(val):
+    """Convert unsupported type to appropriate.
+
+    Args:
+        val (any) -- Any value fetched from database.
+
+    Returns value of appropriate type.
+    """
+    if isinstance(val, decimal.Decimal):
+        return float(val)
+
+    elif isinstance(val, datetime.timedelta):
+        return str(val)
+
+    return val  # By default returns the same value
 
 
 def main():
@@ -365,11 +384,8 @@ def main():
             # An explicit conversion is required on the module's side
             row = dict(row)
             for (key, val) in iteritems(row):
-                if isinstance(val, decimal.Decimal):
-                    row[key] = float(val)
-
-                elif isinstance(val, datetime.timedelta):
-                    row[key] = str(val)
+                if isinstance(val, TYPES_NEED_TO_CONVERT):
+                    row[key] = convert_to_supported(val)
 
             query_result.append(row)
 
