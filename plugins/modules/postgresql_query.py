@@ -14,7 +14,7 @@ module: postgresql_query
 short_description: Run PostgreSQL queries
 description:
 - Runs arbitrary PostgreSQL queries.
-- B(WARNING) The C(path_to_script) and C(as_single_query) options as well as 
+- B(WARNING) The C(path_to_script) and C(as_single_query) options as well as
   the C(query_list) and C(query_all_results) return values have been B(deprecated) and
   will be removed in community.postgresql 3.0.0, please use the
   M(community.postgresql.postgresql_script) module to execute statements from scripts.
