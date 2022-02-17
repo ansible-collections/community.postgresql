@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_query - cannot handle .sql file with \n at end of file (https://github.com/ansible-collections/community.postgresql/issues/180).

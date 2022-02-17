@@ -363,6 +363,14 @@ def set_search_path(cursor, search_path):
     cursor.execute('SET search_path TO %s' % search_path)
 
 
+def insane_query(string):
+    for c in string:
+        if c not in (' ', '\n', '', '\t', ','):
+            return False
+
+    return True
+
+
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
@@ -424,7 +432,11 @@ def main():
                     module.deprecate(msg=depr_msg, version="3.0.0", collection_name="community.postgresql")
 
                     if ';' in query:
-                        query_list = [q for q in query.split(';') if q != '\n']
+                        for q in query.split(';'):
+                            if insane_query(q):
+                                continue
+                            else:
+                                query_list.append(q)
                     else:
                         query_list.append(query)
                 else:
