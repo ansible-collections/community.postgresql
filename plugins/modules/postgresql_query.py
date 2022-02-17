@@ -14,7 +14,10 @@ module: postgresql_query
 short_description: Run PostgreSQL queries
 description:
 - Runs arbitrary PostgreSQL queries.
-- Can run queries from SQL script files.
+- B(WARNING) The C(path_to_script) and C(as_single_query) options as well as
+  the C(query_list) and C(query_all_results) return values have been B(deprecated) and
+  will be removed in community.postgresql 3.0.0, please use the
+  M(community.postgresql.postgresql_script) module to execute statements from scripts.
 - Does not run against backup files. Use M(community.postgresql.postgresql_db) with I(state=restore)
   to run queries on files made by pg_dump/pg_dumpall utilities.
 options:
@@ -38,6 +41,9 @@ options:
     type: dict
   path_to_script:
     description:
+    - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0,
+      please use the M(community.postgresql.postgresql_script) module to execute
+      statements from scripts.
     - Path to a SQL script on the target machine.
     - If the script contains several queries, they must be semicolon-separated.
     - To run scripts containing objects with semicolons
@@ -87,6 +93,9 @@ options:
     version_added: '1.0.0'
   as_single_query:
     description:
+    - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0,
+      please use the M(community.postgresql.postgresql_script) module to execute
+      statements from scripts.
     - If C(yes), when reading from the I(path_to_script) file,
       executes its whole content in a single query (not splitting it up
       into separate queries by semicolons). It brings the following changes in
@@ -102,6 +111,7 @@ options:
     default: yes
     version_added: '1.1.0'
 seealso:
+- module: community.postgresql.postgresql_script
 - module: community.postgresql.postgresql_db
 - name: PostgreSQL Schema reference
   description: Complete reference of the PostgreSQL schema documentation.
@@ -145,6 +155,10 @@ EXAMPLES = r'''
     db: test_db
     query: INSERT INTO test_table (id, story) VALUES (2, 'my_long_story')
 
+
+# WARNING: The path_to_script and as_single_query options have been deprecated
+# and will be removed in community.postgresql 3.0.0, please
+# use the community.postgresql.postgresql_script module instead.
 # If your script contains semicolons as parts of separate objects
 # like functions, procedures, and so on, use "as_single_query: yes"
 - name: Run queries from SQL script using UTF-8 client encoding for session
@@ -243,6 +257,8 @@ query_result:
     sample: [{"Column": "Value1"},{"Column": "Value2"}]
 query_list:
     description:
+    - This return value has been B(deprecated) and will be removed in
+      community.postgresql 3.0.0.
     - List of executed queries.
       Useful when reading several queries from a file.
     returned: always
@@ -251,6 +267,8 @@ query_list:
     sample: ['SELECT * FROM foo', 'SELECT * FROM bar']
 query_all_results:
     description:
+    - This return value has been B(deprecated) and will be removed in
+      community.postgresql 3.0.0.
     - List containing results of all queries executed (one sublist for every query).
       Useful when reading several queries from a file.
     returned: always
@@ -390,11 +408,21 @@ def main():
 
     query_list = []
     if path_to_script:
+        depr_msg = ("The 'path_to_script' option is deprecated. Please use the "
+                    "'community.postgresql.postgresql_script' module to execute "
+                    "statements from scripts")
+        module.deprecate(msg=depr_msg, version="3.0.0", collection_name="community.postgresql")
+
         try:
             with open(path_to_script, 'rb') as f:
                 query = to_native(f.read())
 
                 if not as_single_query:
+                    depr_msg = ("The 'as_single_query' option is deprecated. Please use the "
+                                "'community.postgresql.postgresql_script' module to execute "
+                                "statements from scripts")
+                    module.deprecate(msg=depr_msg, version="3.0.0", collection_name="community.postgresql")
+
                     if ';' in query:
                         query_list = [q for q in query.split(';') if q != '\n']
                     else:
