@@ -219,3 +219,25 @@ releases:
     - 185-postgresql_query_as_single_query_true.yml
     - 2.0.0.yml
     release_date: '2022-02-10'
+  2.1.0:
+    changes:
+      major_changes:
+      - postgresql_query - the ``path_to_script`` and ``as_single_query`` options
+        as well as the ``query_list`` and ``query_all_results`` return values have
+        been deprecated and will be removed in ``community.postgresql 3.0.0``. Please
+        use the ``community.postgresql.postgresql_script`` module to execute statements
+        from scripts (https://github.com/ansible-collections/community.postgresql/issues/189).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 2.0.0.'
+    fragments:
+    - 0_deprecation_announcement.yml
+    - 2.1.0.yml
+    modules:
+    - description: Run PostgreSQL statements from a file
+      name: postgresql_script
+      namespace: ''
+    release_date: '2022-02-17'
