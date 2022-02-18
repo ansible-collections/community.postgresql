@@ -365,7 +365,7 @@ def set_search_path(cursor, search_path):
 
 def insane_query(string):
     for c in string:
-        if c not in (' ', '\n', '', '\t', ','):
+        if c not in (' ', '\n', '', '\t'):
             return False
 
     return True
