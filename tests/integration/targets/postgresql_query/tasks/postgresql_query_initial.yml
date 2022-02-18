@@ -59,6 +59,7 @@
     positional_args:
     - 1
     encoding: UTF-8
+    as_single_query: no
   register: result
   ignore_errors: true
   when: sql_file_created
