@@ -314,12 +314,14 @@ class TestGetConnParams():
 
     """Namespace for testing get_conn_params() function."""
 
-    def test_get_conn_params_def(self, m_ansible_module):
+    def test_get_conn_params_def(self, m_ansible_module, m_psycopg2, monkeypatch):
         """Test get_conn_params(), warn_db_default kwarg is default."""
+        monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
         assert pg.get_conn_params(m_ansible_module, INPUT_DICT) == EXPECTED_DICT
         assert m_ansible_module.warn_msg == 'Database name has not been passed, used default database to connect to.'
 
-    def test_get_conn_params_warn_db_def_false(self, m_ansible_module):
+    def test_get_conn_params_warn_db_def_false(self, m_ansible_module, m_psycopg2, monkeypatch):
         """Test get_conn_params(), warn_db_default kwarg is False."""
+        monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
         assert pg.get_conn_params(m_ansible_module, INPUT_DICT, warn_db_default=False) == EXPECTED_DICT
         assert m_ansible_module.warn_msg == ''
