@@ -317,6 +317,7 @@ from ansible.module_utils.six import iteritems
 # Module execution.
 #
 
+
 def insane_query(string):
     for c in string:
         if c not in (' ', '\n', '', '\t'):
