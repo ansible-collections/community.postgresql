@@ -294,8 +294,6 @@ except ImportError:
     # ansible.module_utils.postgres
     pass
 
-import datetime
-import decimal
 import re
 
 from ansible.module_utils.basic import AnsibleModule
@@ -304,63 +302,20 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
+    convert_elements_to_pg_arrays,
+    convert_to_supported,
     get_conn_params,
+    list_to_pg_array,
     postgres_common_argument_spec,
+    set_search_path,
+    TYPES_NEED_TO_CONVERT,
 )
 from ansible.module_utils._text import to_native
 from ansible.module_utils.six import iteritems
 
-
 # ===========================================
 # Module execution.
 #
-
-def list_to_pg_array(elem):
-    """Convert the passed list to PostgreSQL array
-    represented as a string.
-
-    Args:
-        elem (list): List that needs to be converted.
-
-    Returns:
-        elem (str): String representation of PostgreSQL array.
-    """
-    elem = str(elem).strip('[]')
-    elem = '{' + elem + '}'
-    return elem
-
-
-def convert_elements_to_pg_arrays(obj):
-    """Convert list elements of the passed object
-    to PostgreSQL arrays represented as strings.
-
-    Args:
-        obj (dict or list): Object whose elements need to be converted.
-
-    Returns:
-        obj (dict or list): Object with converted elements.
-    """
-    if isinstance(obj, dict):
-        for (key, elem) in iteritems(obj):
-            if isinstance(elem, list):
-                obj[key] = list_to_pg_array(elem)
-
-    elif isinstance(obj, list):
-        for i, elem in enumerate(obj):
-            if isinstance(elem, list):
-                obj[i] = list_to_pg_array(elem)
-
-    return obj
-
-
-def set_search_path(cursor, search_path):
-    """Set session's search_path.
-
-    Args:
-        cursor (Psycopg2 cursor): Database cursor object.
-        search_path (str): String containing comma-separated schema names.
-    """
-    cursor.execute('SET search_path TO %s' % search_path)
 
 
 def insane_query(string):
@@ -491,11 +446,8 @@ def main():
                     # An explicit conversion is required on the module's side
                     row = dict(row)
                     for (key, val) in iteritems(row):
-                        if isinstance(val, decimal.Decimal):
-                            row[key] = float(val)
-
-                        elif isinstance(val, datetime.timedelta):
-                            row[key] = str(val)
+                        if isinstance(val, TYPES_NEED_TO_CONVERT):
+                            row[key] = convert_to_supported(val)
 
                     query_result.append(row)
 
