@@ -12,6 +12,9 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+from datetime import timedelta
+from decimal import Decimal
+
 psycopg2 = None  # This line needs for unit tests
 try:
     import psycopg2
@@ -23,6 +26,8 @@ from ansible.module_utils.basic import missing_required_lib
 from ansible.module_utils._text import to_native
 from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
+
+TYPES_NEED_TO_CONVERT = (Decimal, timedelta)
 
 
 def postgres_common_argument_spec():
@@ -315,3 +320,66 @@ class PgMembership(object):
         tmp = ["'" + x + "'" for x in roles]
         query = "SELECT rolname FROM pg_roles WHERE rolname IN (%s)" % ','.join(tmp)
         return [x[0] for x in exec_sql(self, query, add_to_executed=False)]
+
+
+def set_search_path(cursor, search_path):
+    """Set session's search_path.
+
+    Args:
+        cursor (Psycopg2 cursor): Database cursor object.
+        search_path (str): String containing comma-separated schema names.
+    """
+    cursor.execute('SET search_path TO %s' % search_path)
+
+
+def convert_elements_to_pg_arrays(obj):
+    """Convert list elements of the passed object
+    to PostgreSQL arrays represented as strings.
+
+    Args:
+        obj (dict or list): Object whose elements need to be converted.
+
+    Returns:
+        obj (dict or list): Object with converted elements.
+    """
+    if isinstance(obj, dict):
+        for (key, elem) in iteritems(obj):
+            if isinstance(elem, list):
+                obj[key] = list_to_pg_array(elem)
+
+    elif isinstance(obj, list):
+        for i, elem in enumerate(obj):
+            if isinstance(elem, list):
+                obj[i] = list_to_pg_array(elem)
+
+    return obj
+
+
+def list_to_pg_array(elem):
+    """Convert the passed list to PostgreSQL array
+    represented as a string.
+
+    Args:
+        elem (list): List that needs to be converted.
+
+    Returns:
+        elem (str): String representation of PostgreSQL array.
+    """
+    elem = str(elem).strip('[]')
+    elem = '{' + elem + '}'
+    return elem
+
+
+def convert_to_supported(val):
+    """Convert unsupported type to appropriate.
+    Args:
+        val (any) -- Any value fetched from database.
+    Returns value of appropriate type.
+    """
+    if isinstance(val, Decimal):
+        return float(val)
+
+    elif isinstance(val, timedelta):
+        return str(val)
+
+    return val  # By default returns the same value
