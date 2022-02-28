@@ -19,7 +19,7 @@ Bugfixes
 --------
 
 - module core functions - get rid of the deprecated psycopg2 connection alias ``database`` in favor of ``dbname`` when psycopg2 is 2.7+ (https://github.com/ansible-collections/community.postgresql/pull/196).
-- postgresql_query - cannot handle .sql file with \n at end of file (https://github.com/ansible-collections/community.postgresql/issues/180).
+- postgresql_query - cannot handle .sql file with \\n at end of file (https://github.com/ansible-collections/community.postgresql/issues/180).
 
 v1.7.0
 ======
