@@ -5,6 +5,22 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.7.1
+======
+
+Release Summary
+---------------
+
+This is the bugfix release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.7.0.
+
+Bugfixes
+--------
+
+- module core functions - get rid of the deprecated psycopg2 connection alias ``database`` in favor of ``dbname`` when psycopg2 is 2.7+ (https://github.com/ansible-collections/community.postgresql/pull/196).
+- postgresql_query - cannot handle .sql file with \n at end of file (https://github.com/ansible-collections/community.postgresql/issues/180).
+
 v1.7.0
 ======
 
