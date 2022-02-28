@@ -241,3 +241,18 @@ releases:
       name: postgresql_script
       namespace: ''
     release_date: '2022-02-17'
+  2.1.1:
+    changes:
+      bugfixes:
+      - module core functions - get rid of the deprecated psycopg2 connection alias
+        ``database`` in favor of ``dbname`` when psycopg2 is 2.7+ (https://github.com/ansible-collections/community.postgresql/pull/196).
+      - postgresql_query - cannot handle .sql file with \n at end of file (https://github.com/ansible-collections/community.postgresql/issues/180).
+      release_summary: 'This is the bugfix release of the community.postgresql collection.
+
+        This changelog contains all changes to the modules in this collection that
+        have been added after the release of community.postgresql 2.1.0.'
+    fragments:
+    - 0-postgresql_query_fix.yml
+    - 1-postgresq_connection_fix.yml
+    - 2.1.1.yml
+    release_date: '2022-02-28'
