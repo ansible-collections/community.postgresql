@@ -184,16 +184,28 @@ def get_conn_params(module, params_dict, warn_db_default=True):
     }
 
     # Might be different in the modules:
-    if params_dict.get('db'):
-        params_map['db'] = 'database'
-    elif params_dict.get('database'):
-        params_map['database'] = 'database'
-    elif params_dict.get('login_db'):
-        params_map['login_db'] = 'database'
+    if LooseVersion(psycopg2.__version__) >= LooseVersion('2.7.0'):
+        if params_dict.get('db'):
+            params_map['db'] = 'dbname'
+        elif params_dict.get('database'):
+            params_map['database'] = 'dbname'
+        elif params_dict.get('login_db'):
+            params_map['login_db'] = 'dbname'
+        else:
+            if warn_db_default:
+                module.warn('Database name has not been passed, '
+                            'used default database to connect to.')
     else:
-        if warn_db_default:
-            module.warn('Database name has not been passed, '
-                        'used default database to connect to.')
+        if params_dict.get('db'):
+            params_map['db'] = 'database'
+        elif params_dict.get('database'):
+            params_map['database'] = 'database'
+        elif params_dict.get('login_db'):
+            params_map['login_db'] = 'database'
+        else:
+            if warn_db_default:
+                module.warn('Database name has not been passed, '
+                            'used default database to connect to.')
 
     kw = dict((params_map[k], v) for (k, v) in iteritems(params_dict)
               if k in params_map and v != '' and v is not None)
