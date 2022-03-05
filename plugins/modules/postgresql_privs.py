@@ -17,7 +17,9 @@ description:
 - This module is basically a wrapper around most of the functionality of
   PostgreSQL's GRANT and REVOKE statements with detection of changes
   (GRANT/REVOKE I(privs) ON I(type) I(objs) TO/FROM I(roles)).
-- B{WARNING} The C(usage_on_types) option has been B(deprecated) and will be removed in community.postgresql 3.0.0, please use the C(type) option with value ``type`` to GRANT/REVOKE permissions on types explicitly.
+- B{WARNING} The C(usage_on_types) option has been B(deprecated) and will be removed in
+  community.postgresql 3.0.0, please use the C(type) option with value ``type`` to
+  GRANT/REVOKE permissions on types explicitly.
 options:
   database:
     description:
@@ -166,7 +168,9 @@ options:
     version_added: '0.2.0'
   usage_on_types:
     description:
-    - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0, please use the I(type) option with value C(type) to GRANT/REVOKE permissions on types explicitly.
+    - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0,
+      please use the I(type) option with value C(type) to GRANT/REVOKE permissions on types
+      explicitly.
     - When adding default privileges, the module always implicitly adds ``USAGE ON TYPES``.
     - To avoid this behavior, set I(usage_on_types) to C(no).
     - Added to save backwards compatibility.
