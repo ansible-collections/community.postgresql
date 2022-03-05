@@ -17,6 +17,7 @@ description:
 - This module is basically a wrapper around most of the functionality of
   PostgreSQL's GRANT and REVOKE statements with detection of changes
   (GRANT/REVOKE I(privs) ON I(type) I(objs) TO/FROM I(roles)).
+- B{WARNING} The C(usage_on_types) option has been B(deprecated) and will be removed in community.postgresql 3.0.0, please use the C(type) option with value ``type`` to GRANT/REVOKE permissions on types explicitly.
 options:
   database:
     description:
@@ -165,6 +166,7 @@ options:
     version_added: '0.2.0'
   usage_on_types:
     description:
+    - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0, please use the I(type) option with value C(type) to GRANT/REVOKE permissions on types explicitly.
     - When adding default privileges, the module always implicitly adds ``USAGE ON TYPES``.
     - To avoid this behavior, set I(usage_on_types) to C(no).
     - Added to save backwards compatibility.
@@ -702,6 +704,7 @@ class Connection(object):
 
     # Manipulating privileges
 
+    # WARNING: usage_on_types has been deprecated and will be removed in community.postgresql 3.0.0, please use an obj_type of 'type' instead.
     def manipulate_privs(self, obj_type, privs, objs, roles, target_roles,
                          state, grant_option, schema_qualifier=None, fail_on_role=True, usage_on_types=True):
         """Manipulate database object privileges.
@@ -946,6 +949,9 @@ class QueryBuilder(object):
             self.add_grant_option()
 
         if self._usage_on_types:
+            depr_msg = ("The 'usage_on_types' option is deprecated. Please use the 'type' option with value 'type' to GRANT/REVOKE permissions on types")
+            module.deprecate(msg=depr_msg, version="3.0.0", collection_name="community.postgresql")
+
             if self._as_who:
                 self.query.append(
                     'ALTER DEFAULT PRIVILEGES FOR ROLE {0} IN SCHEMA {1} GRANT USAGE ON TYPES TO {2}'.format(self._as_who,
