@@ -953,8 +953,6 @@ class QueryBuilder(object):
             self.add_grant_option()
 
         if self._usage_on_types:
-            depr_msg = ("The 'usage_on_types' option is deprecated. Please use the 'type' option with value 'type' to GRANT/REVOKE permissions on types")
-            self.module.deprecate(msg=depr_msg, version="3.0.0", collection_name="community.postgresql")
 
             if self._as_who:
                 self.query.append(
@@ -1024,7 +1022,7 @@ def main():
         password=dict(default='', aliases=['login_password'], no_log=True),
         fail_on_role=dict(type='bool', default=True),
         trust_input=dict(type='bool', default=True),
-        usage_on_types=dict(type='bool', default=True),
+        usage_on_types=dict(type='bool', default=True, removed_in_version='3.0.0', removed_from_collection='community.postgresql'),
     )
 
     module = AnsibleModule(
