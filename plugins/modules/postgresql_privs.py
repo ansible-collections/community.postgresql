@@ -17,8 +17,8 @@ description:
 - This module is basically a wrapper around most of the functionality of
   PostgreSQL's GRANT and REVOKE statements with detection of changes
   (GRANT/REVOKE I(privs) ON I(type) I(objs) TO/FROM I(roles)).
-- B{WARNING} The C(usage_on_types) option has been B(deprecated) and will be removed in
-  community.postgresql 3.0.0, please use the C(type) option with value ``type`` to
+- B(WARNING) The C(usage_on_types) option has been B(deprecated) and will be removed in
+  community.postgresql 3.0.0, please use the C(type) option with value C(type) to
   GRANT/REVOKE permissions on types explicitly.
 options:
   database:
@@ -954,7 +954,7 @@ class QueryBuilder(object):
 
         if self._usage_on_types:
             depr_msg = ("The 'usage_on_types' option is deprecated. Please use the 'type' option with value 'type' to GRANT/REVOKE permissions on types")
-            module.deprecate(msg=depr_msg, version="3.0.0", collection_name="community.postgresql")
+            self.module.deprecate(msg=depr_msg, version="3.0.0", collection_name="community.postgresql")
 
             if self._as_who:
                 self.query.append(
