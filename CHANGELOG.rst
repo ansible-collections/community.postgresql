@@ -11,7 +11,7 @@ v2.1.2
 Release Summary
 ---------------
 
-This is the minor release of the `community.postgresql` collection. This changelog contains all changes to the modules in this collection that have been added after the release of `community.postgresql` 2.1.1.
+This is the patch release of the `community.postgresql` collection. This changelog contains all changes to the modules in this collection that have been added after the release of `community.postgresql` 2.1.1.
 
 Major Changes
 -------------
