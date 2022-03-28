@@ -248,12 +248,16 @@ import subprocess
 import traceback
 
 try:
-    import psycopg2
-    import psycopg2.extras
-except ImportError:
-    HAS_PSYCOPG2 = False
-else:
+    import psycopg as psycopg2
+    from psycopg.rows import dict_row
     HAS_PSYCOPG2 = True
+except ImportError:
+    try:
+        import psycopg2
+        import psycopg2.extras
+        HAS_PSYCOPG2 = True
+    except ImportError:
+        HAS_PSYCOPG2 = False
 
 import ansible_collections.community.postgresql.plugins.module_utils.postgres as pgutils
 from ansible.module_utils.basic import AnsibleModule
@@ -367,7 +371,11 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
         if conn_limit:
             query_fragments.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
         query = ' '.join(query_fragments)
-        executed_commands.append(cursor.mogrify(query, params))
+        
+        if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+            executed_commands.append('')
+        else:
+            executed_commands.append(cursor.mogrify(query, params))
         cursor.execute(query, params)
         return True
     else:
@@ -702,7 +710,9 @@ def main():
 
     if not raw_connection:
         try:
-            if LooseVersion(psycopg2.__version__) >= LooseVersion('2.7.0'):
+            if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+                db_connection = psycopg2.connect(dbname=maintenance_db, row_factory=dict_row, **kw)
+            elif LooseVersion(psycopg2.__version__) >= LooseVersion('2.7.0'):
                 db_connection = psycopg2.connect(dbname=maintenance_db, **kw)
             else:
                 db_connection = psycopg2.connect(database=maintenance_db, **kw)
@@ -712,7 +722,11 @@ def main():
                 db_connection.autocommit = True
             else:
                 db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-            cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+                cursor = db_connection.cursor()
+            else:
+                cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         except TypeError as e:
             if 'sslrootcert' in e.args[0]:

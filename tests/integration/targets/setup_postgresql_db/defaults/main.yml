@@ -2,7 +2,7 @@ postgresql_service: postgresql
 
 postgresql_packages:
     - postgresql-server
-    - python-psycopg2
+    #- python-psycopg2
 
 pg_user: postgres
 pg_group: root

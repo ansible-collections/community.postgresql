@@ -17,10 +17,14 @@ from decimal import Decimal
 
 psycopg2 = None  # This line needs for unit tests
 try:
-    import psycopg2
+    import psycopg as psycopg2
     HAS_PSYCOPG2 = True
 except ImportError:
-    HAS_PSYCOPG2 = False
+    try:
+        import psycopg2
+        HAS_PSYCOPG2 = True
+    except ImportError:
+        HAS_PSYCOPG2 = False
 
 from ansible.module_utils.basic import missing_required_lib
 from ansible.module_utils._text import to_native
@@ -56,7 +60,7 @@ def ensure_required_libs(module):
         module.fail_json(msg='psycopg2 must be at least 2.4.3 in order to use the ca_cert parameter')
 
 
-def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
+def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True, row_factory=None):
     """Connect to a PostgreSQL database.
 
     Return a tuple containing a psycopg2 connection object and error message / None.
@@ -74,9 +78,20 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
     db_connection = None
     conn_err = None
     try:
-        db_connection = psycopg2.connect(**conn_params)
+        if row_factory:
+            if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+                db_connection = psycopg2.connect(**conn_params, row_factory=row_factory, autocommit=autocommit)
+            else:
+                db_connection = psycopg2.connect(**conn_params, row_factory=row_factory)
+        else:
+            if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+                db_connection = psycopg2.connect(**conn_params, autocommit=autocommit)
+            else:
+                db_connection = psycopg2.connect(**conn_params)
         if autocommit:
-            if LooseVersion(psycopg2.__version__) >= LooseVersion('2.4.2'):
+            if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+                pass
+            elif LooseVersion(psycopg2.__version__) >= LooseVersion('2.4.2'):
                 db_connection.set_session(autocommit=True)
             else:
                 db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)

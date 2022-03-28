@@ -274,12 +274,16 @@ import hmac
 from base64 import b64decode
 
 try:
-    import psycopg2
-    from psycopg2.extras import DictCursor
+    import psycopg as psycopg2
+    from psycopg.rows import dict_row
 except ImportError:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
+    try:
+        import psycopg2
+        from psycopg2.extras import DictCursor
+    except ImportError:
+        # psycopg2 is checked by connect_to_db()
+        # from ansible.module_utils.postgres
+        pass
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
@@ -297,6 +301,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils import saslprep
+from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 
 try:
     # pbkdf2_hmac is missing on python 2.6, we can safely assume,
@@ -358,20 +363,21 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
     """Create a new database user (role)."""
     # Note: role_attr_flags escaped by parse_role_attrs and encrypted is a
     # literal
-    query_password_data = dict(password=password, expires=expires)
+    # query_password_data = dict(password=password, expires=expires)
     query = ['CREATE USER "%(user)s"' %
              {"user": user}]
     if password is not None and password != '':
         query.append("WITH %(crypt)s" % {"crypt": encrypted})
-        query.append("PASSWORD %(password)s")
+        query.append("PASSWORD '%(password)s'" % {"password": password})
     if expires is not None:
-        query.append("VALID UNTIL %(expires)s")
+        query.append("VALID UNTIL '%(expires)s'" % {"expires": expires})
     if conn_limit is not None:
         query.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
     query.append(role_attr_flags)
     query = ' '.join(query)
     executed_queries.append(query)
-    cursor.execute(query, query_password_data)
+    # cursor.execute(query, query_password_data)
+    cursor.execute(query)
     return True
 
 
@@ -448,7 +454,10 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
     """Change user password and/or attributes. Return True if changed, False otherwise."""
     changed = False
 
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+        cursor = db_connection.cursor()
+    else:
+        cursor = db_connection.cursor(cursor_factory=DictCursor)
     # Note: role_attr_flags escaped by parse_role_attrs and encrypted is a
     # literal
     if user == 'PUBLIC':
@@ -932,8 +941,12 @@ def main():
                     role_attr_flags, groups, comment, session_role)
 
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
-    db_connection, dummy = connect_to_db(module, conn_params)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+        db_connection, dummy = connect_to_db(module, conn_params, row_factory=dict_row)
+        cursor = db_connection.cursor()
+    else:
+        db_connection, dummy = connect_to_db(module, conn_params)
+        cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     srv_version = get_server_version(db_connection)
 

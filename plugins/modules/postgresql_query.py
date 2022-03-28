@@ -286,13 +286,19 @@ rowcount:
 '''
 
 try:
-    from psycopg2 import ProgrammingError as Psycopg2ProgrammingError
-    from psycopg2.extras import DictCursor
+    import psycopg as psycopg2
+    from psycopg import ProgrammingError as Psycopg2ProgrammingError
+    from psycopg.rows import dict_row
 except ImportError:
-    # it is needed for checking 'no result to fetch' in main(),
-    # psycopg2 availability will be checked by connect_to_db() into
-    # ansible.module_utils.postgres
-    pass
+    try:
+        import psycopg2
+        from psycopg2 import ProgrammingError as Psycopg2ProgrammingError
+        from psycopg2.extras import DictCursor
+    except ImportError:
+        # it is needed for checking 'no result to fetch' in main(),
+        # psycopg2 availability will be checked by connect_to_db() into
+        # ansible.module_utils.postgres
+        pass
 
 import re
 
@@ -311,6 +317,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 )
 from ansible.module_utils._text import to_native
 from ansible.module_utils.six import iteritems
+from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 
 # ===========================================
 # Module execution.
@@ -402,10 +409,19 @@ def main():
         query_list.append(query)
 
     conn_params = get_conn_params(module, module.params)
-    db_connection, dummy = connect_to_db(module, conn_params, autocommit=autocommit)
-    if encoding is not None:
-        db_connection.set_client_encoding(encoding)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+
+    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+        db_connection, dummy = connect_to_db(module, conn_params, autocommit=autocommit, row_factory=dict_row)
+        cursor = db_connection.cursor()
+        if encoding is not None:
+            cursor.execute("SET client_encoding='%s'" % encoding)
+    else:
+        db_connection, dummy = connect_to_db(module, conn_params, autocommit=autocommit)
+        cursor = db_connection.cursor(cursor_factory=DictCursor)
+
+        if encoding is not None:
+            db_connection.set_client_encoding(encoding)
+
 
     if search_path:
         set_search_path(cursor, '%s' % ','.join([x.strip(' ') for x in search_path]))
@@ -452,7 +468,7 @@ def main():
 
             except Psycopg2ProgrammingError as e:
                 if to_native(e) == 'no results to fetch':
-                    query_result = {}
+                    query_result = []
 
             except Exception as e:
                 module.fail_json(msg="Cannot fetch rows from cursor: %s" % to_native(e))
@@ -490,9 +506,24 @@ def main():
         if not autocommit:
             db_connection.commit()
 
+    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+        # Psycopg3 does not provide the cursor.query attribute...
+        # It could look like the following:
+        # last_executed_query = (cursor._query.query, cursor._query.params)
+        # BUT https://www.psycopg.org/psycopg3/docs/api/cursors.html?highlight=cursor#psycopg.Cursor._query
+        # is said:
+        # "Warning: You shouldn’t consider it part of the public
+        # interface of the object: it might change without warnings.
+        # If you would like to build reliable features using this object,
+        # please get in touch so we can try and design an useful interface for it."
+        # As I wouldn't like to see anything unstable:
+        last_executed_query = ''
+    else:
+        last_executed_query = cursor.query
+
     kw = dict(
         changed=changed,
-        query=cursor.query,
+        query=last_executed_query,
         query_list=query_list,
         statusmessage=statusmessage,
         query_result=query_result,

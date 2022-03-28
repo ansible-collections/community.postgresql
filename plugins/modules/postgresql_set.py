@@ -166,11 +166,16 @@ context:
 '''
 
 try:
-    from psycopg2.extras import DictCursor
+    import psycopg as psycopg2
+    from psycopg.rows import dict_row
 except Exception:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
+    try:
+        import psycopg2
+        from psycopg2.extras import DictCursor
+    except Exception:
+        # psycopg2 is checked by connect_to_db()
+        # from ansible.module_utils.postgres
+        pass
 
 from copy import deepcopy
 
@@ -184,6 +189,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     postgres_common_argument_spec,
 )
 from ansible.module_utils._text import to_native
+from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 
 PG_REQ_VER = 90400
 
@@ -372,12 +378,22 @@ def main():
         module.fail_json(msg="%s: at least one of value or reset param must be specified" % name)
 
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
-    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+        db_connection, dummy = connect_to_db(module, conn_params, autocommit=True, row_factory=dict_row)
+        cursor = db_connection.cursor()
+    else:
+        db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
+        cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     kw = {}
+
     # Check server version (needs 9.4 or later):
-    ver = db_connection.server_version
+    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+        conn_info = db_connection.info
+        ver = conn_info.server_version
+    else:
+        ver = db_connection.server_version
+
     if ver < PG_REQ_VER:
         module.warn("PostgreSQL is %s version but %s or later is required" % (ver, PG_REQ_VER))
         kw = dict(
@@ -462,8 +478,12 @@ def main():
 
     # Reconnect and recheck current value:
     if context in ('sighup', 'superuser-backend', 'backend', 'superuser', 'user'):
-        db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
-        cursor = db_connection.cursor(cursor_factory=DictCursor)
+        if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+            db_connection, dummy = connect_to_db(module, conn_params, autocommit=True, row_factory=dict_row)
+            cursor = db_connection.cursor()
+        else:
+            db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
+            cursor = db_connection.cursor(cursor_factory=DictCursor)
 
         res = param_get(cursor, module, name)
         # f_ means 'final'

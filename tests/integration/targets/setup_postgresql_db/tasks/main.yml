@@ -13,6 +13,10 @@
     python_suffix: -py3
   when: ansible_python_version is version('3', '>=')
 
+- name: Install psycopg3
+  pip:
+    name: psycopg
+
 - name: Include distribution and Python version specific variables
   include_vars: '{{ lookup(''first_found'', params) }}'
   vars:
