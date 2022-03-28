@@ -264,6 +264,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 from ansible.module_utils.six import iteritems
 from ansible.module_utils.six.moves import shlex_quote
 from ansible.module_utils._text import to_native
+from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 
 executed_commands = []
 
@@ -701,10 +702,13 @@ def main():
 
     if not raw_connection:
         try:
-            db_connection = psycopg2.connect(database=maintenance_db, **kw)
+            if LooseVersion(psycopg2.__version__) >= LooseVersion('2.7.0'):
+                db_connection = psycopg2.connect(dbname=maintenance_db, **kw)
+            else:
+                db_connection = psycopg2.connect(database=maintenance_db, **kw)
 
             # Enable autocommit so we can create databases
-            if psycopg2.__version__ >= '2.4.2':
+            if LooseVersion(psycopg2.__version__) >= LooseVersion('2.4.2'):
                 db_connection.autocommit = True
             else:
                 db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
