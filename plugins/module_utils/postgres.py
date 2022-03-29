@@ -420,7 +420,7 @@ def get_server_version(conn):
 
     Returns server version (int).
     """
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+    if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
         return conn.info.server_version
     else:
         return conn.server_version
