@@ -760,7 +760,7 @@ def grant_privileges(cursor, user, privs):
     return changed
 
 
-def parse_role_attrs(cursor, role_attr_flags):
+def parse_role_attrs(role_attr_flags, srv_version):
     """
     Parse role attributes string for user creation.
     Format:
@@ -780,7 +780,7 @@ def parse_role_attrs(cursor, role_attr_flags):
     """
     flags = frozenset(role.upper() for role in role_attr_flags.split(',') if role)
 
-    valid_flags = frozenset(itertools.chain(FLAGS, get_valid_flags_by_version(cursor)))
+    valid_flags = frozenset(itertools.chain(FLAGS, get_valid_flags_by_version(srv_version)))
     valid_flags = frozenset(itertools.chain(valid_flags, ('NO%s' % flag for flag in valid_flags)))
 
     if not flags.issubset(valid_flags):
@@ -843,17 +843,15 @@ def parse_privs(privs, db):
     return o_privs
 
 
-def get_valid_flags_by_version(cursor):
+def get_valid_flags_by_version(srv_version):
     """
     Some role attributes were introduced after certain versions. We want to
     compile a list of valid flags against the current Postgres version.
     """
-    current_version = cursor.connection.server_version
-
     return [
         flag
         for flag, version_introduced in FLAGS_BY_VERSION.items()
-        if current_version >= version_introduced
+        if srv_version >= version_introduced
     ]
 
 
@@ -937,7 +935,8 @@ def main():
     cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     try:
-        role_attr_flags = parse_role_attrs(cursor, role_attr_flags)
+        role_attr_flags = parse_role_attrs(role_attr_flags,
+                                           db_connection.info.server_version)
     except InvalidFlagsError as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
