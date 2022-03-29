@@ -166,14 +166,14 @@ context:
 '''
 
 try:
-    import psycopg as psycopg2
+    import psycopg
     from psycopg.rows import dict_row
 except Exception:
     try:
-        import psycopg2
+        import psycopg2 as psycopg
         from psycopg2.extras import DictCursor
     except Exception:
-        # psycopg2 is checked by connect_to_db()
+        # psycopg is checked by connect_to_db()
         # from ansible.module_utils.postgres
         pass
 
@@ -378,7 +378,7 @@ def main():
         module.fail_json(msg="%s: at least one of value or reset param must be specified" % name)
 
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+    if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
         db_connection, dummy = connect_to_db(module, conn_params, autocommit=True, row_factory=dict_row)
         cursor = db_connection.cursor()
     else:
@@ -388,7 +388,7 @@ def main():
     kw = {}
 
     # Check server version (needs 9.4 or later):
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+    if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
         conn_info = db_connection.info
         ver = conn_info.server_version
     else:
@@ -478,7 +478,7 @@ def main():
 
     # Reconnect and recheck current value:
     if context in ('sighup', 'superuser-backend', 'backend', 'superuser', 'user'):
-        if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+        if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
             db_connection, dummy = connect_to_db(module, conn_params, autocommit=True, row_factory=dict_row)
             cursor = db_connection.cursor()
         else:
