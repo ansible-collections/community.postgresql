@@ -15,13 +15,13 @@ __metaclass__ = type
 from datetime import timedelta
 from decimal import Decimal
 
-psycopg2 = None  # This line needs for unit tests
+psycopg = None  # This line needs for unit tests
 try:
-    import psycopg as psycopg2
+    import psycopg
     HAS_PSYCOPG2 = True
 except ImportError:
     try:
-        import psycopg2
+        import psycopg2 as psycopg
         HAS_PSYCOPG2 = True
     except ImportError:
         HAS_PSYCOPG2 = False
@@ -54,16 +54,16 @@ def postgres_common_argument_spec():
 def ensure_required_libs(module):
     """Check required libraries."""
     if not HAS_PSYCOPG2:
-        module.fail_json(msg=missing_required_lib('psycopg2'))
+        module.fail_json(msg=missing_required_lib('psycopg2/psycopg3'))
 
-    if module.params.get('ca_cert') and LooseVersion(psycopg2.__version__) < LooseVersion('2.4.3'):
-        module.fail_json(msg='psycopg2 must be at least 2.4.3 in order to use the ca_cert parameter')
+    if module.params.get('ca_cert') and LooseVersion(psycopg.__version__) < LooseVersion('2.4.3'):
+        module.fail_json(msg='psycopg must be at least 2.4.3 in order to use the ca_cert parameter')
 
 
 def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True, row_factory=None):
     """Connect to a PostgreSQL database.
 
-    Return a tuple containing a psycopg2 connection object and error message / None.
+    Return a tuple containing a psycopg connection object and error message / None.
 
     Args:
         module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule class
@@ -79,26 +79,26 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True, row_
     conn_err = None
     try:
         if row_factory:
-            if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
-                db_connection = psycopg2.connect(**conn_params, row_factory=row_factory, autocommit=autocommit)
+            if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
+                db_connection = psycopg.connect(**conn_params, row_factory=row_factory, autocommit=autocommit)
             else:
-                db_connection = psycopg2.connect(**conn_params, row_factory=row_factory)
+                db_connection = psycopg.connect(**conn_params, row_factory=row_factory)
         else:
-            if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
-                db_connection = psycopg2.connect(**conn_params, autocommit=autocommit)
+            if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
+                db_connection = psycopg.connect(**conn_params, autocommit=autocommit)
             else:
-                db_connection = psycopg2.connect(**conn_params)
+                db_connection = psycopg.connect(**conn_params)
         if autocommit:
-            if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+            if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
                 pass
-            elif LooseVersion(psycopg2.__version__) >= LooseVersion('2.4.2'):
+            elif LooseVersion(psycopg.__version__) >= LooseVersion('2.4.2'):
                 db_connection.set_session(autocommit=True)
             else:
-                db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+                db_connection.set_isolation_level(psycopg.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 
         # Switch role, if specified:
         if module.params.get('session_role'):
-            cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cursor = db_connection.cursor(cursor_factory=psycopg.extras.DictCursor)
 
             try:
                 cursor.execute('SET ROLE "%s"' % module.params['session_role'])
@@ -204,7 +204,7 @@ def get_conn_params(module, params_dict, warn_db_default=True):
     }
 
     # Might be different in the modules:
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('2.7.0'):
+    if LooseVersion(psycopg.__version__) >= LooseVersion('2.7.0'):
         if params_dict.get('db'):
             params_map['db'] = 'dbname'
         elif params_dict.get('database'):

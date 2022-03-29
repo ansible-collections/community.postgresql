@@ -23,7 +23,7 @@ description:
 options:
   query:
     description:
-    - SQL query to run. Variables can be escaped with psycopg2 syntax
+    - SQL query to run. Variables can be escaped with psycopg syntax
       U(http://initd.org/psycopg/docs/usage.html).
     type: str
   positional_args:
@@ -286,12 +286,12 @@ rowcount:
 '''
 
 try:
-    import psycopg as psycopg2
+    import psycopg
     from psycopg import ProgrammingError as Psycopg2ProgrammingError
     from psycopg.rows import dict_row
 except ImportError:
     try:
-        import psycopg2
+        import psycopg2 as psycopg
         from psycopg2 import ProgrammingError as Psycopg2ProgrammingError
         from psycopg2.extras import DictCursor
     except ImportError:
@@ -410,7 +410,7 @@ def main():
 
     conn_params = get_conn_params(module, module.params)
 
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+    if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
         db_connection, dummy = connect_to_db(module, conn_params, autocommit=autocommit, row_factory=dict_row)
         cursor = db_connection.cursor()
         if encoding is not None:
@@ -506,7 +506,7 @@ def main():
         if not autocommit:
             db_connection.commit()
 
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+    if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
         # Psycopg3 does not provide the cursor.query attribute...
         # It could look like the following:
         # last_executed_query = (cursor._query.query, cursor._query.params)

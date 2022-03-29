@@ -274,14 +274,14 @@ import hmac
 from base64 import b64decode
 
 try:
-    import psycopg as psycopg2
+    import psycopg
     from psycopg.rows import dict_row
 except ImportError:
     try:
-        import psycopg2
+        import psycopg2 as psycopg
         from psycopg2.extras import DictCursor
     except ImportError:
-        # psycopg2 is checked by connect_to_db()
+        # psycopg is checked by connect_to_db()
         # from ansible.module_utils.postgres
         pass
 
@@ -454,7 +454,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
     """Change user password and/or attributes. Return True if changed, False otherwise."""
     changed = False
 
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+    if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
         cursor = db_connection.cursor()
     else:
         cursor = db_connection.cursor(cursor_factory=DictCursor)
@@ -476,7 +476,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             cursor.execute(select, {"user": user})
             # Grab current role attributes.
             current_role_attrs = cursor.fetchone()
-        except psycopg2.ProgrammingError:
+        except psycopg.ProgrammingError:
             current_role_attrs = None
             db_connection.rollback()
 
@@ -490,7 +490,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 cursor.execute(select, {"user": user})
                 # Grab current role attributes from pg_roles
                 current_role_attrs = cursor.fetchone()
-            except psycopg2.ProgrammingError as e:
+            except psycopg.ProgrammingError as e:
                 db_connection.rollback()
                 module.fail_json(msg="Failed to get role details for current user %s: %s" % (user, e))
 
@@ -538,7 +538,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
         try:
             cursor.execute(' '.join(alter), query_password_data)
             changed = True
-        except psycopg2.InternalError as e:
+        except psycopg.InternalError as e:
             if e.pgcode == '25006':
                 # Handle errors due to read-only transactions indicated by pgcode 25006
                 # ERROR:  cannot execute ALTER ROLE in a read-only transaction
@@ -546,8 +546,8 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 module.fail_json(msg=e.pgerror, exception=traceback.format_exc())
                 return changed
             else:
-                raise psycopg2.InternalError(e)
-        except psycopg2.NotSupportedError as e:
+                raise psycopg.InternalError(e)
+        except psycopg.NotSupportedError as e:
             module.fail_json(msg=e.pgerror, exception=traceback.format_exc())
 
     elif no_password_changes and role_attr_flags != '':
@@ -581,7 +581,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
         try:
             cursor.execute(' '.join(alter))
-        except psycopg2.InternalError as e:
+        except psycopg.InternalError as e:
             if e.pgcode == '25006':
                 # Handle errors due to read-only transactions indicated by pgcode 25006
                 # ERROR:  cannot execute ALTER ROLE in a read-only transaction
@@ -589,7 +589,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 module.fail_json(msg=e.pgerror, exception=traceback.format_exc())
                 return changed
             else:
-                raise psycopg2.InternalError(e)
+                raise psycopg.InternalError(e)
 
         # Grab new role attributes.
         cursor.execute(select, {"user": user})
@@ -941,7 +941,7 @@ def main():
                     role_attr_flags, groups, comment, session_role)
 
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+    if LooseVersion(psycopg.__version__) >= LooseVersion('3.0.0'):
         db_connection, dummy = connect_to_db(module, conn_params, row_factory=dict_row)
         cursor = db_connection.cursor()
     else:
@@ -970,7 +970,7 @@ def main():
             try:
                 changed = user_add(cursor, user, password,
                                    role_attr_flags, encrypted, expires, conn_limit)
-            except psycopg2.ProgrammingError as e:
+            except psycopg.ProgrammingError as e:
                 module.fail_json(msg="Unable to add user with given requirement "
                                      "due to : %s" % to_native(e),
                                  exception=traceback.format_exc())
