@@ -200,7 +200,7 @@ def param_get(cursor, module, name):
              "FROM pg_settings WHERE name = %(name)s")
     try:
         cursor.execute(query, {'name': name})
-        info = cursor.fetchall()
+        info = cursor.fetchone()
         cursor.execute("SHOW %s" % name)
         val = cursor.fetchone()
 
@@ -212,15 +212,15 @@ def param_get(cursor, module, name):
                              "Please check its spelling or presence in your PostgreSQL version "
                              "(https://www.postgresql.org/docs/current/runtime-config.html)" % name)
 
-    raw_val = info[0][1]
-    unit = info[0][2]
-    context = info[0][3]
-    boot_val = info[0][4]
+    raw_val = info['setting']
+    unit = info['unit']
+    context = info['context']
+    boot_val = info['boot_val']
 
-    if val[0] == 'True':
-        val[0] = 'on'
-    elif val[0] == 'False':
-        val[0] = 'off'
+    if val[name] == 'True':
+        val[name] = 'on'
+    elif val[name] == 'False':
+        val[name] = 'off'
 
     if unit == 'kB':
         if int(raw_val) > 0:
@@ -238,7 +238,13 @@ def param_get(cursor, module, name):
 
         unit = 'b'
 
-    return (val[0], raw_val, unit, boot_val, context)
+    return {
+        'current_val': val[name],
+        'raw_val': raw_val,
+        'unit': unit,
+        'boot_val': boot_val,
+        'context': context,
+    }
 
 
 def pretty_to_bytes(pretty_val):
@@ -393,18 +399,18 @@ def main():
 
     # Get info about param state:
     res = param_get(cursor, module, name)
-    current_value = res[0]
-    raw_val = res[1]
-    unit = res[2]
-    boot_val = res[3]
-    context = res[4]
+    current_val = res['current_val']
+    raw_val = res['raw_val']
+    unit = res['unit']
+    boot_val = res['boot_val']
+    context = res['context']
 
     if value == 'True':
         value = 'on'
     elif value == 'False':
         value = 'off'
 
-    kw['prev_val_pretty'] = current_value
+    kw['prev_val_pretty'] = current_val
     kw['value_pretty'] = deepcopy(kw['prev_val_pretty'])
     kw['context'] = context
 
@@ -418,7 +424,7 @@ def main():
 
     # If check_mode, just compare and exit:
     if module.check_mode:
-        if pretty_to_bytes(value) == pretty_to_bytes(current_value):
+        if pretty_to_bytes(value) == pretty_to_bytes(current_val):
             kw['changed'] = False
 
         else:
@@ -434,7 +440,7 @@ def main():
         module.exit_json(**kw)
 
     # Set param (value can be an empty string):
-    if value is not None and value != current_value:
+    if value is not None and value != current_val:
         changed = param_set(cursor, module, name, value, context)
 
         kw['value_pretty'] = value
@@ -461,8 +467,8 @@ def main():
 
         res = param_get(cursor, module, name)
         # f_ means 'final'
-        f_value = res[0]
-        f_raw_val = res[1]
+        f_value = res['current_val']
+        f_raw_val = res['raw_val']
 
         if raw_val == f_raw_val:
             changed = False
