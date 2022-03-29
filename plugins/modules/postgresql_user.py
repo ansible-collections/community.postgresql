@@ -376,6 +376,8 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
     query.append(role_attr_flags)
     query = ' '.join(query)
     executed_queries.append(query)
+    # FIXME This below doesn't work any more, at least, with
+    # the query building process that we used before.
     # cursor.execute(query, query_password_data)
     cursor.execute(query)
     return True
