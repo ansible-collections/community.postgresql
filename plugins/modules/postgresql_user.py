@@ -290,6 +290,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     get_conn_params,
+    get_server_version,
     PgMembership,
     postgres_common_argument_spec,
 )
@@ -934,9 +935,10 @@ def main():
     db_connection, dummy = connect_to_db(module, conn_params)
     cursor = db_connection.cursor(cursor_factory=DictCursor)
 
+    srv_version = get_server_version(db_connection)
+
     try:
-        role_attr_flags = parse_role_attrs(role_attr_flags,
-                                           db_connection.info.server_version)
+        role_attr_flags = parse_role_attrs(role_attr_flags, srv_version)
     except InvalidFlagsError as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 

@@ -395,3 +395,17 @@ def convert_to_supported(val):
         return str(val)
 
     return val  # By default returns the same value
+
+
+def get_server_version(conn):
+    """Get server version.
+
+    Args:
+        conn (psycopg.Connection) -- Psycopg connection object.
+
+    Returns server version (int).
+    """
+    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+        return conn.info.server_version
+    else:
+        return conn.server_version
