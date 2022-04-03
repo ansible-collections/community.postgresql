@@ -156,10 +156,16 @@
     loop_control:
       loop_var: locale
 
-  - name: Reinstall internationalization files
-    shell: yum -y reinstall glibc-common || yum -y install glibc-common
-    args:
-      warn: false
+  - block:
+      - name: Reinstall internationalization files
+        command: yum -y reinstall glibc-common
+        args:
+          warn: false
+    rescue:
+      - name: Install internationalization files
+        yum:
+          name: glibc-common
+          state: present
     when: locale_present is failed
 
   - name: Generate locale (RedHat)
