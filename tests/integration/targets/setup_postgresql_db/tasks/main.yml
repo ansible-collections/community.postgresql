@@ -159,8 +159,6 @@
   - block:
       - name: Reinstall internationalization files
         command: yum -y reinstall glibc-common
-        args:
-          warn: false
     rescue:
       - name: Install internationalization files
         yum:
