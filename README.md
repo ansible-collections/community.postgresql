@@ -65,8 +65,6 @@ The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) Pos
 
 ## Tested with Ansible
 
-- 2.9
-- 2.10
 - 2.11
 - devel
 
