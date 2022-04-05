@@ -92,29 +92,6 @@ stages:
             - name: Units
               test: '2.11/units/1'
 
-  - stage: Ansible_2_10
-    displayName: Sanity & Units 2.10
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          targets:
-            - name: Sanity
-              test: '2.10/sanity/1'
-            - name: Units
-              test: '2.10/units/1'
-
-  - stage: Ansible_2_9
-    displayName: Sanity & Units 2.9
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          targets:
-            - name: Sanity
-              test: '2.9/sanity/1'
-            - name: Units
-              test: '2.9/units/1'
 ### Docker
   - stage: Docker_devel
     displayName: Docker devel
@@ -174,28 +151,6 @@ stages:
             - name: Ubuntu 20.04
               test: ubuntu2004
 
-  - stage: Docker_2_10
-    displayName: Docker 2.10
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.10/linux/{0}/1
-          targets:
-            - name: CentOS 7
-              test: centos7
-
-  - stage: Docker_2_9
-    displayName: Docker 2.9
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.9/linux/{0}/1
-          targets:
-            - name: CentOS 7
-              test: centos7
-
 ### Remote
   - stage: Remote_devel
     displayName: Remote devel
@@ -241,30 +196,6 @@ stages:
             - name: RHEL 8.3
               test: rhel/8.3
 
-  - stage: Remote_2_10
-    displayName: Remote 2.10
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          nameFormat: RHEL 8.2 {0}
-          testFormat: 2.10/{0}/1
-          targets:
-            - name: RHEL 8.2
-              test: rhel/8.2
-
-  - stage: Remote_2_9
-    displayName: Remote 2.9
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          nameFormat: RHEL 8.2 {0}
-          testFormat: 2.9/{0}/1
-          targets:
-            - name: RHEL 8.2
-              test: rhel/8.2
-
   - stage: Summary
     condition: succeededOrFailed()
     dependsOn:
@@ -272,19 +203,13 @@ stages:
       - Ansible_2_13
       - Ansible_2_12
       - Ansible_2_11
-      - Ansible_2_10
-      - Ansible_2_9
       - Docker_devel
       - Docker_2_13
       - Docker_2_12
       - Docker_2_11
-      - Docker_2_10
-      - Docker_2_9
       - Remote_devel
       - Remote_2_13
       - Remote_2_12
       - Remote_2_11
-      - Remote_2_10
-      - Remote_2_9
     jobs:
       - template: templates/coverage.yml

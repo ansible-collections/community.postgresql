@@ -63,11 +63,11 @@ Every voice is important and every idea is valuable. If you have something on yo
 
 The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) PostgreSQL database adapter.
 
-## Tested with Ansible
+## Tested with ansible-core
 
-- 2.9
-- 2.10
 - 2.11
+- 2.12
+- 2.13
 - devel
 
 Our AZP CI includes testing with the following docker images / PostgreSQL versions:
