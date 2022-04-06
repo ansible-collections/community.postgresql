@@ -72,7 +72,8 @@ fi
 
 # START: HACK install dependencies for integration tests
 if [ "${script}" != "units" ] && [ "${script}" != "sanity" ] && [ "${ansible_version}" != "2.9" ]; then
-    retry ansible-galaxy -vvv collection install community.general
+    git clone --depth=1 --single-branch https://github.com/ansible-collections/community.general \
+    "${ANSIBLE_COLLECTIONS_PATHS}/ansible_collections/community/general"
 fi
 # END: HACK
 
