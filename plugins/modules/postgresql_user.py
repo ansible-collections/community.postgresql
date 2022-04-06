@@ -21,7 +21,8 @@ description:
 - Set I(fail_on_user) to C(no) to make the module ignore failures when trying to remove a user.
   In this case, the module reports if changes happened as usual and separately reports
   whether the user has been removed or not.
-- B(WARNING) The C(priv) option has been B(deprecated) and will be removed in community.postgresql 3.0.0. Please use the I(postgresql_privs) module instead.
+- B(WARNING) The I(priv) option has been B(deprecated) and will be removed in community.postgresql 3.0.0. Please use the
+  M(community.postgresql.postgresql_privs) module instead.
 options:
   name:
     description:
@@ -60,7 +61,7 @@ options:
   priv:
     description:
     - This option has been B(deprecated) and will be removed in
-      community.postgresql 3.0.0. Please use the I(postgresql_privs) module to
+      community.postgresql 3.0.0. Please use the M(community.postgresql.postgresql_privs) module to
       GRANT/REVOKE permissions instead.
     - "Slash-separated PostgreSQL privileges string: C(priv1/priv2), where
       you can define the user's privileges for the database ( allowed options - 'CREATE',
