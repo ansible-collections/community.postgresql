@@ -234,3 +234,21 @@ releases:
     - 1-postgresq_connection_fix.yml
     - 1.7.1.yml
     release_date: '2022-02-28'
+  1.7.2:
+    changes:
+      bugfixes:
+      - postgresql_db - get rid of the deprecated psycopg2 connection alias ``database``
+        in favor of ``dbname`` when psycopg2 is 2.7+ is used (https://github.com/ansible-collections/community.postgresql/issues/194,
+        https://github.com/ansible-collections/community.postgresql/pull/196).
+      major_changes:
+      - postgresql_user - the ``priv`` argument has been deprecated and will be removed
+        in ``community.postgresql 3.0.0``. Please use the ``postgresql_privs`` module
+        to grant/revoke privileges instead (https://github.com/ansible-collections/community.postgresql/issues/212).
+      release_summary: This is the minor release of the community.postgresql collection.
+        This changelog contains all changes to the modules in this collection that
+        have been added after the release of community.postgresql 1.7.1.
+    fragments:
+    - 0-postgresql_db_deprecated_alias.yml
+    - 0-postgresql_user_depraction_of_privs.yml
+    - 1.7.2.yml
+    release_date: '2022-04-12'
