@@ -5,6 +5,26 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v2.1.3
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 2.1.2.
+
+Major Changes
+-------------
+
+- postgresql_user - the ``priv`` argument has been deprecated and will be removed in ``community.postgresql 3.0.0``. Please use the ``postgresql_privs`` module to grant/revoke privileges instead (https://github.com/ansible-collections/community.postgresql/issues/212).
+
+Bugfixes
+--------
+
+- postgresql_db - get rid of the deprecated psycopg2 connection alias ``database`` in favor of ``dbname`` when psycopg2 is 2.7+ is used (https://github.com/ansible-collections/community.postgresql/issues/194, https://github.com/ansible-collections/community.postgresql/pull/196).
+
 v2.1.2
 ======
 
