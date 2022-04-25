@@ -114,7 +114,7 @@ stages:
     jobs:
       - template: templates/matrix.yml
         parameters:
-          testFormat: devel/linux/{0}/1
+          testFormat: 2.13/linux/{0}/1
           targets:
             - name: CentOS 7
               test: centos7
