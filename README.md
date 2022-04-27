@@ -65,11 +65,13 @@ The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) Pos
 
 ## Tested with ansible-core
 
+Tested with the following Ansible releases:
 - 2.11
 - 2.12
 - 2.13
-- devel
+- current development version
 
+Ansible-core versions before 2.11.0 are not supported, in particular, ansible-base 2.10 and Ansible 2.9.
 Our AZP CI includes testing with the following docker images / PostgreSQL versions:
 
 - CentOS 7: 9.2
