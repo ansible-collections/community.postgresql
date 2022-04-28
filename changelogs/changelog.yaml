@@ -252,3 +252,23 @@ releases:
     - 0-postgresql_user_depraction_of_privs.yml
     - 1.7.2.yml
     release_date: '2022-04-12'
+  1.7.3:
+    changes:
+      major_changes:
+      - The community.postgresql collection no longer supports ``Ansible 2.9`` and
+        ``ansible-base 2.10``. While we take no active measures to prevent usage and
+        there are no plans to introduce incompatible code to the modules, we will
+        stop testing against ``Ansible 2.9`` and ``ansible-base 2.10``. Both will
+        very soon be End of Life and if you are still using them, you should consider
+        upgrading to the ``latest Ansible / ansible-core 2.11 or later`` as soon as
+        possible (https://github.com/ansible-collections/community.postgresql/pull/245).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.7.2.'
+    fragments:
+    - 1.7.3.yml
+    - remove-2.9-2.10-compatability.yml
+    release_date: '2022-04-28'
