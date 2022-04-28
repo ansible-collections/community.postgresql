@@ -5,7 +5,7 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
-v1.7.2
+v1.7.3
 ======
 
 Release Summary
@@ -13,7 +13,20 @@ Release Summary
 
 This is the minor release of the ``community.postgresql`` collection.
 This changelog contains all changes to the modules in this collection that
-have been added after the release of ``community.postgresql`` 1.7.1.
+have been added after the release of ``community.postgresql`` 1.7.2.
+
+Major Changes
+-------------
+
+- The community.postgresql collection no longer supports ``Ansible 2.9`` and ``ansible-base 2.10``. While we take no active measures to prevent usage and there are no plans to introduce incompatible code to the modules, we will stop testing against ``Ansible 2.9`` and ``ansible-base 2.10``. Both will very soon be End of Life and if you are still using them, you should consider upgrading to the ``latest Ansible / ansible-core 2.11 or later`` as soon as possible (https://github.com/ansible-collections/community.postgresql/pull/245).
+
+v1.7.2
+======
+
+Release Summary
+---------------
+
+This is the minor release of the community.postgresql collection. This changelog contains all changes to the modules in this collection that have been added after the release of community.postgresql 1.7.1.
 
 Major Changes
 -------------
