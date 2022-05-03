@@ -312,6 +312,8 @@ def main():
     if not module.params["trust_input"]:
         check_input(module, module.params['session_role'])
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     # Connect to DB and make cursor object:
     pg_conn_params = get_conn_params(module, module.params)
     # We don't need to commit anything, so, set it to False:

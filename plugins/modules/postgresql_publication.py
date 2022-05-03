@@ -633,6 +633,8 @@ def main():
     if state == 'present' and cascade:
         module.warn('parameter "cascade" is ignored when "state=present"')
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     # Connect to DB and make cursor object:
     conn_params = get_conn_params(module, module.params)
     # We check publication state without DML queries execution, so set autocommit:

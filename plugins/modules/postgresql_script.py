@@ -279,6 +279,8 @@ def main():
     except Exception as e:
         module.fail_json(msg="Cannot read file '%s' : %s" % (path, to_native(e)))
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     if encoding is not None:

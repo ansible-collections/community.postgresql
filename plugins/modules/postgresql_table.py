@@ -530,6 +530,8 @@ def main():
     if including and not like:
         module.fail_json(msg="%s: including param needs like param specified" % table)
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor(cursor_factory=DictCursor)

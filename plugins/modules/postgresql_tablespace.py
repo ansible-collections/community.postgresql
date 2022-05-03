@@ -427,6 +427,8 @@ def main():
         check_input(module, tablespace, location, owner,
                     rename_to, session_role, settings_list)
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     cursor = db_connection.cursor(cursor_factory=DictCursor)

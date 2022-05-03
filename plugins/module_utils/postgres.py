@@ -178,8 +178,6 @@ def get_conn_params(module, params_dict, warn_db_default=True):
         warn_db_default (bool) -- warn that the default DB is used (default True)
     """
 
-    ensure_required_libs(module)
-
     # To use defaults values, keyword arguments must be absent, so
     # check which values are empty and don't include in the return dictionary
     params_map = {

@@ -184,6 +184,8 @@ def main():
         # Check input for potentially dangerous elements:
         check_input(module, groups, target_roles, session_role)
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor(cursor_factory=DictCursor)
