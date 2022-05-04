@@ -38,7 +38,7 @@ options:
     description:
     - The list of role names. The ownership of all the objects within the current database,
       and of all shared objects (databases, tablespaces), owned by this role(s) will be reassigned to I(owner).
-    - Pay attention - it reassigns all objects owned by this role(s) in the I(db)!
+    - Pay attention - it reassigns all objects owned by this role(s) in the I(instance)!
     - If role(s) exists, always returns changed True.
     - Cannot reassign ownership of objects that are required by the database system.
     - Mutually exclusive with C(obj_type).
