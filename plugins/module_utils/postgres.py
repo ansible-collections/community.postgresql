@@ -69,7 +69,6 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
         autocommit (bool) -- commit automatically (default False)
         fail_on_conn (bool) -- fail if connection failed or just warn and return None (default True)
     """
-    ensure_required_libs(module)
 
     db_connection = None
     conn_err = None
