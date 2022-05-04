@@ -227,6 +227,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     connect_to_db,
     convert_elements_to_pg_arrays,
     convert_to_supported,
+    ensure_required_libs,
     get_conn_params,
     list_to_pg_array,
     postgres_common_argument_spec,

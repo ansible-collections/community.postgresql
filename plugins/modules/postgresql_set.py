@@ -180,6 +180,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
+    ensure_required_libs,
     get_conn_params,
     postgres_common_argument_spec,
 )
