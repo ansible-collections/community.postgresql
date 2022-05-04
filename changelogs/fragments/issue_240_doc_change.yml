@@ -1,2 +1,0 @@
-minor_changes:
-- postgresql_owner - Change documentation to specify that ``REASSIGNED OWNED BY`` will impact the entire cluster/instance and not just a single database. 
