@@ -186,6 +186,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     exec_sql,
+    ensure_required_libs,
     get_conn_params,
     postgres_common_argument_spec,
 )
@@ -633,6 +634,8 @@ def main():
     if state == 'present' and cascade:
         module.warn('parameter "cascade" is ignored when "state=present"')
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     # Connect to DB and make cursor object:
     conn_params = get_conn_params(module, module.params)
     # We check publication state without DML queries execution, so set autocommit:

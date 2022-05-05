@@ -187,6 +187,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
+    ensure_required_libs,
     get_conn_params,
     postgres_common_argument_spec,
 )
@@ -308,6 +309,8 @@ def main():
         # Check input for potentially dangerous elements:
         check_input(module, lang, session_role, owner)
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor()

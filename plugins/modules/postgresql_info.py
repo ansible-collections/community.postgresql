@@ -521,6 +521,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
+    ensure_required_libs,
     get_conn_params,
     postgres_common_argument_spec,
 )
@@ -550,6 +551,8 @@ class PgDbConn(object):
 
         Note: connection parameters are passed by self.module object.
         """
+        # Ensure psycopg2 libraries are available before connecting to DB:
+        ensure_required_libs(self.module)
         conn_params = get_conn_params(self.module, self.module.params, warn_db_default=False)
         self.db_conn, dummy = connect_to_db(self.module, conn_params, fail_on_conn=fail_on_conn)
         if self.db_conn is None:
