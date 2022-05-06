@@ -119,13 +119,13 @@ EXAMPLES = r'''
     obj_name: ssd
     obj_type: tablespace
 
-- name: Reassign all object in database bar owned by bob to alice
+- name: Reassign all databases owned by bob to alice and all objects in database bar owned by bob to alice
   community.postgresql.postgresql_owner:
     db: bar
     new_owner: alice
     reassign_owned_by: bob
 
-- name: Reassign all object in database bar owned by bob and bill to alice
+- name: Reassign all databases owned by bob or bill to alice and all objects in database bar owned by bob or bill to alice
   community.postgresql.postgresql_owner:
     db: bar
     new_owner: alice
