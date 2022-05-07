@@ -69,7 +69,6 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
         autocommit (bool) -- commit automatically (default False)
         fail_on_conn (bool) -- fail if connection failed or just warn and return None (default True)
     """
-    ensure_required_libs(module)
 
     db_connection = None
     conn_err = None
@@ -177,6 +176,7 @@ def get_conn_params(module, params_dict, warn_db_default=True):
     Kwargs:
         warn_db_default (bool) -- warn that the default DB is used (default True)
     """
+
     # To use defaults values, keyword arguments must be absent, so
     # check which values are empty and don't include in the return dictionary
     params_map = {

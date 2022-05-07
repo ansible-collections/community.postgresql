@@ -38,7 +38,7 @@ options:
     description:
     - The list of role names. The ownership of all the objects within the current database,
       and of all shared objects (databases, tablespaces), owned by this role(s) will be reassigned to I(owner).
-    - Pay attention - it reassigns all objects owned by this role(s) in the I(db)!
+    - Pay attention - it reassigns all objects owned by this role(s) in the I(instance)!
     - If role(s) exists, always returns changed True.
     - Cannot reassign ownership of objects that are required by the database system.
     - Mutually exclusive with C(obj_type).
@@ -157,6 +157,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     exec_sql,
+    ensure_required_libs,
     get_conn_params,
     postgres_common_argument_spec,
 )
@@ -419,6 +420,8 @@ def main():
         # Check input for potentially dangerous elements:
         check_input(module, new_owner, obj_name, reassign_owned_by, session_role)
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor(cursor_factory=DictCursor)

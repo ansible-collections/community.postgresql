@@ -227,6 +227,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     connect_to_db,
     convert_elements_to_pg_arrays,
     convert_to_supported,
+    ensure_required_libs,
     get_conn_params,
     list_to_pg_array,
     postgres_common_argument_spec,
@@ -279,6 +280,8 @@ def main():
     except Exception as e:
         module.fail_json(msg="Cannot read file '%s' : %s" % (path, to_native(e)))
 
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     if encoding is not None:

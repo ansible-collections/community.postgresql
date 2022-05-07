@@ -309,6 +309,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     exec_sql,
+    ensure_required_libs,
     get_conn_params,
     postgres_common_argument_spec,
 )
@@ -532,6 +533,8 @@ def main():
 
     # Change autocommit to False if check_mode:
     autocommit = not module.check_mode
+    # Ensure psycopg2 libraries are available before connecting to DB:
+    ensure_required_libs(module)
     # Connect to DB and make cursor object:
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=autocommit)

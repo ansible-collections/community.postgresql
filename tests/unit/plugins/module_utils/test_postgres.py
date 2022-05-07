@@ -296,19 +296,6 @@ class TestConnectToDb():
         assert type(cursor) == Cursor
         assert m_ansible_module.err_msg == ''
 
-        # case 2: psycopg2.__version < 2.4.2
-        m_psycopg2.__version__ = '2.4.1'
-        monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
-
-        conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
-        db_connection, dummy = pg.connect_to_db(m_ansible_module, conn_params, autocommit=True)
-        cursor = db_connection.cursor()
-
-        # if errors, db_connection returned as None:
-        assert type(db_connection) == DbConnection
-        assert type(cursor) == Cursor
-        assert 'psycopg2 must be at least 2.4.3' in m_ansible_module.err_msg
-
 
 class TestGetConnParams():
 

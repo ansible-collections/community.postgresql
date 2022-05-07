@@ -32,7 +32,7 @@ extra_links:
 communication:
   matrix_rooms:
     - topic: General usage and support questions
-      room: '#users:ansible.im'
+      room: '#postgresql:ansible.com'
   irc_channels:
     - topic: General usage and support questions
       network: Libera
