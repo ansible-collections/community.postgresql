@@ -168,6 +168,9 @@ notes:
   the current and desired C(password). In this case, the module assumes that the passwords are
   different and changes it reporting that the state has been changed.
   To skip all password related checks for existing users, use I(no_password_changes=yes).
+- On some systems (such as AWS RDS), C(SUPERUSER) is unavailable. This means the C(SUPERUSER) and
+  C(NOSUPERUSER) I(role_attr_flags) should not be specified to preserve idempotency and avoid
+  InsufficientPrivilege errors.
 - Supports ``check_mode``.
 seealso:
 - module: community.postgresql.postgresql_privs
