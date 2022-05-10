@@ -38,8 +38,8 @@ options:
     description:
     - Caution - the ownership of all the objects within the specified I(db),
       owned by this role(s) will be reassigned to I(new_owner).
-    - REASSIGN OWNED is often used to prepare for the removal of one or more roles. 
-    - REASSIGN OWNED does not affect objects within other databases. 
+    - REASSIGN OWNED is often used to prepare for the removal of one or more roles.
+    - REASSIGN OWNED does not affect objects within other databases.
     - Execute this command in each database that contains objects owned by a role that is to be removed.
     - If role(s) exists, always returns changed True.
     - Cannot reassign ownership of objects that are required by the database system.
