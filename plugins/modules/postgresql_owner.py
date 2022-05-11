@@ -36,9 +36,11 @@ options:
     - type
   reassign_owned_by:
     description:
-    - The list of role names. The ownership of all the objects within the current database,
-      and of all shared objects (databases, tablespaces), owned by this role(s) will be reassigned to I(owner).
-    - Pay attention - it reassigns all objects owned by this role(s) in the I(instance)!
+    - Caution - the ownership of all the objects within the specified I(db),
+      owned by this role(s) will be reassigned to I(new_owner).
+    - REASSIGN OWNED is often used to prepare for the removal of one or more roles.
+    - REASSIGN OWNED does not affect objects within other databases.
+    - Execute this command in each database that contains objects owned by a role that is to be removed.
     - If role(s) exists, always returns changed True.
     - Cannot reassign ownership of objects that are required by the database system.
     - Mutually exclusive with C(obj_type).
@@ -119,13 +121,13 @@ EXAMPLES = r'''
     obj_name: ssd
     obj_type: tablespace
 
-- name: Reassign all object in database bar owned by bob to alice
+- name: Reassign all databases owned by bob to alice and all objects in database bar owned by bob to alice
   community.postgresql.postgresql_owner:
     db: bar
     new_owner: alice
     reassign_owned_by: bob
 
-- name: Reassign all object in database bar owned by bob and bill to alice
+- name: Reassign all databases owned by bob or bill to alice and all objects in database bar owned by bob or bill to alice
   community.postgresql.postgresql_owner:
     db: bar
     new_owner: alice
