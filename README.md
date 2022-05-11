@@ -65,7 +65,7 @@ The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) Pos
 
 ## Tested with ansible-core
 
-Tested with the following Ansible releases:
+Tested with the following `ansible-core` releases:
 - 2.11
 - 2.12
 - 2.13
