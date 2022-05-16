@@ -272,3 +272,17 @@ releases:
     - 1.7.3.yml
     - remove-2.9-2.10-compatability.yml
     release_date: '2022-04-28'
+  1.7.4:
+    changes:
+      bugfixes:
+      - Include ``PSF-license.txt`` file for ``plugins/module_utils/_version.py``.
+      release_summary: 'This is the bugfix release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.7.3'
+    fragments:
+    - 1.7.4.yml
+    - psf-license.yml
+    release_date: '2022-05-16'
