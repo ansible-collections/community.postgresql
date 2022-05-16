@@ -1,2 +1,0 @@
-bugfixes:
-- collection core functions - fix attribute error `nonetype` by always calling `ensure_required_libs` (https://github.com/ansible-collections/community.postgresql/issues/252). 
