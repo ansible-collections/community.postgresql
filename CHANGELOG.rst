@@ -5,6 +5,21 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.7.4
+======
+
+Release Summary
+---------------
+
+This is the bugfix release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.7.3
+
+Bugfixes
+--------
+
+- Include ``PSF-license.txt`` file for ``plugins/module_utils/_version.py``.
+
 v1.7.3
 ======
 
