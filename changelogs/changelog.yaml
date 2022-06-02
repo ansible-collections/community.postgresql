@@ -311,3 +311,20 @@ releases:
     - 2.1.4.yml
     - remove-2.9-2.10-compatability.yml
     release_date: '2022-04-28'
+  2.1.5:
+    changes:
+      bugfixes:
+      - Include ``PSF-license.txt`` file for ``plugins/module_utils/_version.py``.
+      - collection core functions - fix attribute error `nonetype` by always calling
+        `ensure_required_libs` (https://github.com/ansible-collections/community.postgresql/issues/252).
+      release_summary: 'This is the bugfix release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 2.1.4'
+    fragments:
+    - 2.1.5.yml
+    - 252-fix-none-attribute-error.yml
+    - psf-license.yml
+    release_date: '2022-05-16'
