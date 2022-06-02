@@ -1,0 +1,2 @@
+bugfixes:
+  - Add functionallity to postgresql_privs.py when the PostgreSQL version is 9.0.0 or greater to incorporate `ALL x IN SCHEMA` syntax. Please see the official documentation for details regarding grants (https://www.postgresql.org/docs/9.0/sql-grant.html).
