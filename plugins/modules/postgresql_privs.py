@@ -795,8 +795,7 @@ class Connection(object):
             if orig_objs is not None:
                 set_what = '%s ON %s %s' % (','.join(privs), orig_objs, schema_qualifier)
             else:
-                set_what = '%s ON %s %s' % (','.join(privs), obj_type.replace('_', ' '),
-                                        ','.join(obj_ids))
+                set_what = '%s ON %s %s' % (','.join(privs), obj_type.replace('_', ' '), ','.join(obj_ids))
 
         # for_whom: SQL-fragment specifying for whom to set the above
         if roles == 'PUBLIC':
