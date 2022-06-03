@@ -331,10 +331,7 @@ class PgSubscription():
         if subscr_info.get('subconninfo'):
             for param in subscr_info['subconninfo'].split(' '):
                 tmp = param.split('=')
-                try:
-                    self.attrs['conninfo'][tmp[0]] = int(tmp[1])
-                except ValueError:
-                    self.attrs['conninfo'][tmp[0]] = tmp[1]
+                self.attrs['conninfo'][tmp[0]] = tmp[1]
 
         return True
 
