@@ -719,7 +719,7 @@ class Connection(object):
                       or None if type is "group".
         :param objs: List of database objects to grant/revoke
                      privileges for.
-        :param orig_objs: ALL_IN_SCHEMA or null
+        :param orig_objs: ALL_IN_SCHEMA or None
         :param roles: Either a list of role names or "PUBLIC"
                       for the implicitly defined "PUBLIC" group
         :param target_roles: List of role names to grant/revoke
