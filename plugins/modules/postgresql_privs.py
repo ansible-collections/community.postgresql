@@ -1096,6 +1096,7 @@ def main():
         else:
             privs = None
         # objs:
+        orig_objs = None
         if p.objs == 'ALL_IN_SCHEMA':
             if p.type == 'table':
                 objs = conn.get_all_tables_in_schema(p.schema)
