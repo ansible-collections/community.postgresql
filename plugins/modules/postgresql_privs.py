@@ -1167,7 +1167,7 @@ def main():
             obj_type=p.type,
             privs=privs,
             objs=objs,
-            orig_objs=orig_objs,
+            orig_objs=objs,
             roles=roles,
             target_roles=target_roles,
             state=p.state,
