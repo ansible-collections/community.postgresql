@@ -1115,8 +1115,6 @@ def main():
                     orig_objs = 'ALL FUNCTIONS IN SCHEMA'
                 elif p.type == 'procedure':
                     orig_objs = 'ALL PROCEDURES IN SCHEMA'
-            else:
-                orig_objs = None
 
         elif p.type == 'default_privs':
             if p.objs == 'ALL_DEFAULT':
