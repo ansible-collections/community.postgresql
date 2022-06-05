@@ -702,7 +702,8 @@ class Connection(object):
 
     # Manipulating privileges
 
-    def manipulate_privs(self, obj_type, privs, objs, roles, target_roles,
+    # WARNING: usage_on_types has been deprecated and will be removed in community.postgresql 3.0.0, please use an obj_type of 'type' instead.
+    def manipulate_privs(self, obj_type, privs, objs, orig_objs, roles, target_roles,
                          state, grant_option, schema_qualifier=None, fail_on_role=True, usage_on_types=True):
         """Manipulate database object privileges.
 
@@ -712,6 +713,7 @@ class Connection(object):
                       or None if type is "group".
         :param objs: List of database objects to grant/revoke
                      privileges for.
+        :param orig_objs: ALL_IN_SCHEMA or None
         :param roles: Either a list of role names or "PUBLIC"
                       for the implicitly defined "PUBLIC" group
         :param target_roles: List of role names to grant/revoke
@@ -784,8 +786,10 @@ class Connection(object):
             # Note: obj_type has been checked against a set of string literals
             # and privs was escaped when it was parsed
             # Note: Underscores are replaced with spaces to support multi-word obj_type
-            set_what = '%s ON %s %s' % (','.join(privs), obj_type.replace('_', ' '),
-                                        ','.join(obj_ids))
+            if orig_objs is not None:
+                set_what = '%s ON %s %s' % (','.join(privs), orig_objs, schema_qualifier)
+            else:
+                set_what = '%s ON %s %s' % (','.join(privs), obj_type.replace('_', ' '), ','.join(obj_ids))
 
         # for_whom: SQL-fragment specifying for whom to set the above
         if roles == 'PUBLIC':
@@ -1085,14 +1089,27 @@ def main():
         else:
             privs = None
         # objs:
-        if p.type == 'table' and p.objs == 'ALL_IN_SCHEMA':
-            objs = conn.get_all_tables_in_schema(p.schema)
-        elif p.type == 'sequence' and p.objs == 'ALL_IN_SCHEMA':
-            objs = conn.get_all_sequences_in_schema(p.schema)
-        elif p.type == 'function' and p.objs == 'ALL_IN_SCHEMA':
-            objs = conn.get_all_functions_in_schema(p.schema)
-        elif p.type == 'procedure' and p.objs == 'ALL_IN_SCHEMA':
-            objs = conn.get_all_procedures_in_schema(p.schema)
+        orig_objs = None
+        if p.objs == 'ALL_IN_SCHEMA':
+            if p.type == 'table':
+                objs = conn.get_all_tables_in_schema(p.schema)
+            elif p.type == 'sequence':
+                objs = conn.get_all_sequences_in_schema(p.schema)
+            elif p.type == 'function':
+                objs = conn.get_all_functions_in_schema(p.schema)
+            elif p.type == 'procedure':
+                objs = conn.get_all_procedures_in_schema(p.schema)
+
+            if conn.pg_version >= 90000:
+                if p.type == 'table':
+                    orig_objs = 'ALL TABLES IN SCHEMA'
+                elif p.type == 'sequence':
+                    orig_objs = 'ALL SEQUENCES IN SCHEMA'
+                elif p.type == 'function':
+                    orig_objs = 'ALL FUNCTIONS IN SCHEMA'
+                elif p.type == 'procedure':
+                    orig_objs = 'ALL PROCEDURES IN SCHEMA'
+
         elif p.type == 'default_privs':
             if p.objs == 'ALL_DEFAULT':
                 objs = frozenset(VALID_DEFAULT_OBJS.keys())
@@ -1142,6 +1159,7 @@ def main():
             obj_type=p.type,
             privs=privs,
             objs=objs,
+            orig_objs=orig_objs,
             roles=roles,
             target_roles=target_roles,
             state=p.state,
