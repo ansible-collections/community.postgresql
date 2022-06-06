@@ -264,7 +264,7 @@ def convert_subscr_params(params_dict):
 
     return ', '.join(params_list)
 
- def cast_connparams(connparams):
+def cast_connparams(connparams):
     """Cast the passed connparams dictionary
 
     Returns:
