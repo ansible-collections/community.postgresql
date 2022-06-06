@@ -265,19 +265,19 @@ def convert_subscr_params(params_dict):
     return ', '.join(params_list)
 
 
-def cast_connparams(connparams):
-    """Cast the passed connparams dictionary
+def cast_connparams(connparams_dict):
+    """Cast the passed connparams_dict dictionary
 
     Returns:
         Dictionary
     """
-    for (param, val) in iteritems(connparams):
+    for (param, val) in iteritems(connparams_dict):
         try:
-            connparams[param] = int(val)
+            connparams_dict[param] = int(val)
         except ValueError:
-            connparams[param] = val
+            connparams_dict[param] = val
 
-    return connparams
+    return connparams_dict
 
 
 class PgSubscription():
@@ -698,7 +698,10 @@ def main():
                                           check_mode=module.check_mode)
 
         else:
-            changed = subscription.update(cast_connparams(connparams),
+            if connparams:
+                connparams = cast_connparams(connparams)
+
+            changed = subscription.update(connparams,
                                           publications,
                                           subsparams,
                                           check_mode=module.check_mode)
