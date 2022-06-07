@@ -265,6 +265,21 @@ def convert_subscr_params(params_dict):
     return ', '.join(params_list)
 
 
+def cast_connparams(connparams_dict):
+    """Cast the passed connparams_dict dictionary
+
+    Returns:
+        Dictionary
+    """
+    for (param, val) in iteritems(connparams_dict):
+        try:
+            connparams_dict[param] = int(val)
+        except ValueError:
+            connparams_dict[param] = val
+
+    return connparams_dict
+
+
 class PgSubscription():
     """Class to work with PostgreSQL subscription.
 
@@ -368,7 +383,7 @@ class PgSubscription():
         """Update the subscription.
 
         Args:
-            connparams (str): Connection string in libpq style.
+            connparams (dict): Connection dict in libpq style.
             publications (list): Publications on the primary to use.
             subsparams (dict): Dictionary of optional parameters.
 
@@ -683,6 +698,9 @@ def main():
                                           check_mode=module.check_mode)
 
         else:
+            if connparams:
+                connparams = cast_connparams(connparams)
+
             changed = subscription.update(connparams,
                                           publications,
                                           subsparams,
