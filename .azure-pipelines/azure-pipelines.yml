@@ -171,7 +171,7 @@ stages:
     jobs:
       - template: templates/matrix.yml
         parameters:
-          testFormat: devel/{0}/1
+          testFormat: 2.13/{0}/1
           targets:
             - name: RHEL 8.5
               test: rhel/8.5
