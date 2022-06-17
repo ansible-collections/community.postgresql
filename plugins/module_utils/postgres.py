@@ -226,6 +226,29 @@ def get_conn_params(module, params_dict, warn_db_default=True):
     return kw
 
 
+class PgRole():
+    def __init__(self, module, cursor, name):
+        self.module = module
+        self.cursor = cursor
+        self.name = name
+        self.memberof = self.__fetch_members()
+
+    def __fetch_members(self):
+        query = ("SELECT ARRAY(SELECT b.rolname FROM "
+                 "pg_catalog.pg_auth_members m "
+                 "JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) "
+                 "WHERE m.member = r.oid) "
+                 "FROM pg_catalog.pg_roles r "
+                 "WHERE r.rolname = %(dst_role)s")
+
+        res = exec_sql(self, query, query_params={'dst_role': self.name},
+                       add_to_executed=False)
+        if res:
+            return res[0][0]
+        else:
+            return []
+
+
 class PgMembership(object):
     def __init__(self, module, cursor, groups, target_roles, fail_on_role=True):
         self.module = module
@@ -245,8 +268,9 @@ class PgMembership(object):
             self.granted[group] = []
 
             for role in self.target_roles:
+                role_obj = PgRole(self.module, self.cursor, role)
                 # If role is in a group now, pass:
-                if self.__check_membership(group, role):
+                if group in role_obj.memberof:
                     continue
 
                 query = 'GRANT "%s" TO "%s"' % (group, role)
@@ -262,8 +286,9 @@ class PgMembership(object):
             self.revoked[group] = []
 
             for role in self.target_roles:
+                role_obj = PgRole(self.module, self.cursor, role)
                 # If role is not in a group now, pass:
-                if not self.__check_membership(group, role):
+                if group not in role_obj.memberof:
                     continue
 
                 query = 'REVOKE "%s" FROM "%s"' % (group, role)
@@ -273,27 +298,6 @@ class PgMembership(object):
                     self.revoked[group].append(role)
 
         return self.changed
-
-    def __check_membership(self, src_role, dst_role):
-        query = ("SELECT ARRAY(SELECT b.rolname FROM "
-                 "pg_catalog.pg_auth_members m "
-                 "JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) "
-                 "WHERE m.member = r.oid) "
-                 "FROM pg_catalog.pg_roles r "
-                 "WHERE r.rolname = %(dst_role)s")
-
-        res = exec_sql(self, query, query_params={'dst_role': dst_role}, add_to_executed=False)
-        membership = []
-        if res:
-            membership = res[0][0]
-
-        if not membership:
-            return False
-
-        if src_role in membership:
-            return True
-
-        return False
 
     def __check_roles_exist(self):
         existent_groups = self.__roles_exist(self.groups)
