@@ -50,9 +50,11 @@ options:
     - Membership state.
     - I(state=present) implies the I(groups)must be granted to I(target_roles).
     - I(state=absent) implies the I(groups) must be revoked from I(target_roles).
+    - I(state=exact) implies that I(target_roles) will be members of only the I(groups).
+      Any other groups will be revoked from I(target_roles).
     type: str
     default: present
-    choices: [ absent, present ]
+    choices: [ absent, exact, present ]
   db:
     description:
     - Name of database to connect to.
@@ -164,7 +166,7 @@ def main():
         groups=dict(type='list', elements='str', required=True, aliases=['group', 'source_role', 'source_roles']),
         target_roles=dict(type='list', elements='str', required=True, aliases=['target_role', 'user', 'users']),
         fail_on_role=dict(type='bool', default=True),
-        state=dict(type='str', default='present', choices=['absent', 'present']),
+        state=dict(type='str', default='present', choices=['absent', 'exact', 'present']),
         db=dict(type='str', aliases=['login_db']),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
@@ -198,6 +200,9 @@ def main():
 
     if state == 'present':
         pg_membership.grant()
+
+    elif state == 'exact':
+        pg_membership.match()
 
     elif state == 'absent':
         pg_membership.revoke()

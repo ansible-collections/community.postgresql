@@ -388,3 +388,22 @@
     that:
     - result is failed
     - result.msg == 'Role {{ dangerous_name }} does not exist'
+
+########################
+# Tests for match method
+- name: Revoke all groups from a role
+  become_user: "{{ pg_user }}"
+  become: yes
+  postgresql_membership:
+    login_user: "{{ pg_user }}"
+    db: postgres
+    groups: []
+    user: "{{ test_user1 }}"
+    state: exact
+  register: result
+
+- assert:
+    that:
+    - result is changed
+
+# TODO add more checks

@@ -299,18 +299,48 @@ class PgMembership(object):
 
         return self.changed
 
-    def __check_roles_exist(self):
-        existent_groups = self.__roles_exist(self.groups)
-        existent_roles = self.__roles_exist(self.target_roles)
+    def match(self):
+        for role in self.target_roles:
+            role_obj = PgRole(self.module, self.cursor, role)
 
-        for group in self.groups:
-            if group not in existent_groups:
-                if self.fail_on_role:
-                    self.module.fail_json(msg="Role %s does not exist" % group)
+            desired_groups = set(self.groups)
+            current_groups = set(role_obj.memberof)
+            # 1. Get groups that the role is member of but not in self.groups and revoke them
+            groups_to_revoke = current_groups - desired_groups
+            for group in groups_to_revoke:
+                query = 'REVOKE "%s" FROM "%s"' % (group, role)
+                self.changed = exec_sql(self, query, return_bool=True)
+                if group in self.revoked:
+                    self.revoked[group].append(role)
                 else:
-                    self.module.warn("Role %s does not exist, pass" % group)
-                    self.non_existent_roles.append(group)
+                    self.revoked[group] = [role]
 
+            # 2. Filter out groups that in self.groups and
+            # the role is already member of and grant the rest
+            groups_to_grant = desired_groups - current_groups
+            for group in groups_to_grant:
+                query = 'GRANT "%s" TO "%s"' % (group, role)
+                self.changed = exec_sql(self, query, return_bool=True)
+                if group in self.granted:
+                    self.granted[group].append(role)
+                else:
+                    self.granted[group] = [role]
+
+        return self.changed
+
+    def __check_roles_exist(self):
+        if self.groups:
+            existent_groups = self.__roles_exist(self.groups)
+
+            for group in self.groups:
+                if group not in existent_groups:
+                    if self.fail_on_role:
+                        self.module.fail_json(msg="Role %s does not exist" % group)
+                    else:
+                        self.module.warn("Role %s does not exist, pass" % group)
+                        self.non_existent_roles.append(group)
+
+        existent_roles = self.__roles_exist(self.target_roles)
         for role in self.target_roles:
             if role not in existent_roles:
                 if self.fail_on_role:
@@ -328,7 +358,8 @@ class PgMembership(object):
                         self.module.warn("Role role '%s' is a member of role '%s', pass" % (role, role))
 
         # Update role lists, excluding non existent roles:
-        self.groups = [g for g in self.groups if g not in self.non_existent_roles]
+        if self.groups:
+            self.groups = [g for g in self.groups if g not in self.non_existent_roles]
 
         self.target_roles = [r for r in self.target_roles if r not in self.non_existent_roles]
 
