@@ -1,0 +1,2 @@
+major_changes:
+  - postgresql_user - the ``groups`` argument has been deprecated and will be removed in ``community.postgresql 3.0.0``. Please use the ``postgresql_membership`` module to specify group/role memberships instead (https://github.com/ansible-collections/community.postgresql/issues/277).
