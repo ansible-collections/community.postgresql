@@ -50,7 +50,8 @@ options:
     - Membership state.
     - I(state=present) implies the I(groups)must be granted to I(target_roles).
     - I(state=absent) implies the I(groups) must be revoked from I(target_roles).
-    - I(state=exact) implies that I(target_roles) will be members of only the I(groups).
+    - I(state=exact) implies that I(target_roles) will be members of only the I(groups)
+      (available since community.postgresql 2.2.0).
       Any other groups will be revoked from I(target_roles).
     type: str
     default: present
@@ -113,6 +114,26 @@ EXAMPLES = r'''
     target_role: bob
     fail_on_role: no
     state: absent
+
+- name: >
+    Make sure alice and bob are members only of marketing and sales.
+    If they are members of other groups, they will be removed from those groups
+  community.postgresql.postgresql_membership:
+    group:
+    - marketing
+    - sales
+    target_roles:
+    - alice
+    - bob
+    state: exact
+
+- name: Make sure alice and bob do not belong to any groups
+  community.postgresql.postgresql_membership:
+    group: []
+    target_roles:
+    - alice
+    - bob
+    state: exact
 '''
 
 RETURN = r'''
@@ -228,6 +249,9 @@ def main():
     if state == 'present':
         return_dict['granted'] = pg_membership.granted
     elif state == 'absent':
+        return_dict['revoked'] = pg_membership.revoked
+    elif state == 'exact':
+        return_dict['granted'] = pg_membership.granted
         return_dict['revoked'] = pg_membership.revoked
 
     module.exit_json(**return_dict)
