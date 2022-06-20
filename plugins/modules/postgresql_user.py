@@ -925,7 +925,7 @@ def main():
         conn_limit=dict(type='int', default=None),
         session_role=dict(type='str'),
         # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
-        groups=dict(type='list', elements='str'),
+        groups=dict(type='list', elements='str', removed_in_version='3.0.0', removed_from_collection='community.postgreql'),
         comment=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
     )
