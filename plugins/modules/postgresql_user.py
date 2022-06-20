@@ -23,6 +23,8 @@ description:
   whether the user has been removed or not.
 - B(WARNING) The I(priv) option has been B(deprecated) and will be removed in community.postgresql 3.0.0. Please use the
   M(community.postgresql.postgresql_privs) module instead.
+- B(WARNING) The I(groups) option has been B(deprecated) ans will be removed in community.postgresql 3.0.0.
+  Please use the M(community.postgresql.postgresql_membership) module instead.
 options:
   name:
     description:
@@ -139,6 +141,9 @@ options:
     aliases: [ ssl_rootcert ]
   groups:
     description:
+    - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0.
+      Please use the I(postgresql_membership) module to GRANT/REVOKE group/role memberships
+      instead.
     - The list of groups (roles) that you want to grant to the user.
     type: list
     elements: str
@@ -252,6 +257,8 @@ EXAMPLES = r'''
     user: test
     password: ""
 
+# This example uses the `group` argument which is deprecated.
+# You should use the `postgresql_membership` module instead.
 - name: Create user test and grant group user_ro and user_rw to it
   community.postgresql.postgresql_user:
     name: test
@@ -927,7 +934,8 @@ def main():
         expires=dict(type='str', default=None),
         conn_limit=dict(type='int', default=None),
         session_role=dict(type='str'),
-        groups=dict(type='list', elements='str'),
+        # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
+        groups=dict(type='list', elements='str', removed_in_version='3.0.0', removed_from_collection='community.postgreql'),
         comment=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
     )
@@ -953,6 +961,7 @@ def main():
     expires = module.params["expires"]
     conn_limit = module.params["conn_limit"]
     role_attr_flags = module.params["role_attr_flags"]
+    # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
     groups = module.params["groups"]
     if groups:
         groups = [e.strip() for e in groups]
@@ -962,6 +971,7 @@ def main():
     trust_input = module.params['trust_input']
     if not trust_input:
         # Check input for potentially dangerous elements:
+        # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
         check_input(module, user, password, privs, expires,
                     role_attr_flags, groups, comment, session_role)
 
@@ -1005,6 +1015,7 @@ def main():
         except SQLParseError as e:
             module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
+        # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
         if groups:
             target_roles = []
             target_roles.append(user)
