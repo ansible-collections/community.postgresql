@@ -50,9 +50,12 @@ options:
     - Membership state.
     - I(state=present) implies the I(groups)must be granted to I(target_roles).
     - I(state=absent) implies the I(groups) must be revoked from I(target_roles).
+    - I(state=exact) implies that I(target_roles) will be members of only the I(groups)
+      (available since community.postgresql 2.2.0).
+      Any other groups will be revoked from I(target_roles).
     type: str
     default: present
-    choices: [ absent, present ]
+    choices: [ absent, exact, present ]
   db:
     description:
     - Name of database to connect to.
@@ -111,6 +114,26 @@ EXAMPLES = r'''
     target_role: bob
     fail_on_role: no
     state: absent
+
+- name: >
+    Make sure alice and bob are members only of marketing and sales.
+    If they are members of other groups, they will be removed from those groups
+  community.postgresql.postgresql_membership:
+    group:
+    - marketing
+    - sales
+    target_roles:
+    - alice
+    - bob
+    state: exact
+
+- name: Make sure alice and bob do not belong to any groups
+  community.postgresql.postgresql_membership:
+    group: []
+    target_roles:
+    - alice
+    - bob
+    state: exact
 '''
 
 RETURN = r'''
@@ -164,7 +187,7 @@ def main():
         groups=dict(type='list', elements='str', required=True, aliases=['group', 'source_role', 'source_roles']),
         target_roles=dict(type='list', elements='str', required=True, aliases=['target_role', 'user', 'users']),
         fail_on_role=dict(type='bool', default=True),
-        state=dict(type='str', default='present', choices=['absent', 'present']),
+        state=dict(type='str', default='present', choices=['absent', 'exact', 'present']),
         db=dict(type='str', aliases=['login_db']),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
@@ -199,6 +222,9 @@ def main():
     if state == 'present':
         pg_membership.grant()
 
+    elif state == 'exact':
+        pg_membership.match()
+
     elif state == 'absent':
         pg_membership.revoke()
 
@@ -223,6 +249,9 @@ def main():
     if state == 'present':
         return_dict['granted'] = pg_membership.granted
     elif state == 'absent':
+        return_dict['revoked'] = pg_membership.revoked
+    elif state == 'exact':
+        return_dict['granted'] = pg_membership.granted
         return_dict['revoked'] = pg_membership.revoked
 
     module.exit_json(**return_dict)
