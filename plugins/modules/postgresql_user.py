@@ -190,6 +190,8 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database, create django user, and grant access to database and products table
   community.postgresql.postgresql_user:
     db: acme
@@ -212,6 +214,8 @@ EXAMPLES = r'''
     password: md59543f1d82624df2b31672ec0f7050460
     role_attr_flags: CREATEDB,NOSUPERUSER
 
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database and remove test user privileges from there
   community.postgresql.postgresql_user:
     db: acme
@@ -220,6 +224,8 @@ EXAMPLES = r'''
     state: absent
     fail_on_user: no
 
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Connect to test database, remove test user from cluster
   community.postgresql.postgresql_user:
     db: test
@@ -227,6 +233,8 @@ EXAMPLES = r'''
     priv: ALL
     state: absent
 
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database and set user's password with no expire date
   community.postgresql.postgresql_user:
     db: acme
@@ -260,6 +268,8 @@ EXAMPLES = r'''
   environment:
     PGOPTIONS: "-c password_encryption=scram-sha-256"
 
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Create a user, grant SELECT on pg_catalog.pg_stat_database
   community.postgresql.postgresql_user:
     name: monitoring
