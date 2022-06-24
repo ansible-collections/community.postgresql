@@ -779,17 +779,22 @@ def main():
             single_rule[key] = module.params[key]
         rules = [single_rule]
     else:
-        # handle aliases
         new_rules = []
         for index, rule in enumerate(rules):
             # alias handling
-            source_keys = [key for key in rule.keys() if key in ('address', 'source', 'src')]
-            if len(source_keys) > 1:
+            address_keys = [key for key in rule.keys() if key in ('address', 'source', 'src')]
+            if len(address_keys) > 1:
                 module.fail_json(msg='rule number {} of the "rules" argument ({}) uses ambiguous settings: '
-                                     '{} are aliases, only one is allowed'.format(index, source_keys, rule))
-            address = rule[source_keys[0]]
-            del rule[source_keys[0]]
+                                     '{} are aliases, only one is allowed'.format(index, address_keys, rule))
+            address = rule[address_keys[0]]
+            del rule[address_keys[0]]
             rule['address'] = address
+
+            # module defaults handling
+            for key in rule_keys:
+                if key not in rule:
+                    rule[key] = argument_spec[key].get('default', None)
+            new_rules.append(rule)
         rules = new_rules
 
         if rules_behavior == 'conflict':
@@ -810,7 +815,7 @@ def main():
             rules = new_rules
 
     for rule in rules:
-        if 'contype' not in rule:
+        if rule.get('contype', None) is None:
             continue
 
         try:
