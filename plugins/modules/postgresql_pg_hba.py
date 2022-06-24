@@ -90,6 +90,11 @@ options:
     type: str
     default: sdu
     choices: [ sdu, sud, dsu, dus, usd, uds ]
+  overwrite:
+    description:
+      - Remove all existing rules before adding rules. (Like C(state: absent) for all pre-existing rules.)
+    type: bool
+    default: false
   keep_comments_at_rules:
     description:
       - If C(true), comments that stand together with a rule in one line are kept behind that line.
@@ -97,6 +102,23 @@ options:
     type: bool
     default: false
     version_added: '1.5.0'
+  rules:
+    description:
+      - A list of objects, specifying rules for the pg_hba.conf. Use this to manage multiple rules at once. 
+        Each object can have the following keys (the "rule-specific arguments"), which are treated the same as if they
+        were arguments of this module:
+      - C(address), C(comment), C(contype), C(databases), C(method), C(netmask), C(options), C(state), C(users)
+      - See also C(rules_behavior).
+    type: list
+  rules_behavior:
+    description:
+      - Configure how the C(rules) argument works with the rule-specific arguments outside the C(rules) argument
+        together: If C(conflict), don't. Fail if C(rules) and e.g. C(address) are set. If C(combine), the normal
+        rule-specific arguments are not defining a rule, but are used as defaults for the arguments in the C(rules)
+        argument.
+    type: str
+    choices: [ conflict, combine ]
+    default: conflict
   state:
     description:
       - The lines will be added/modified when C(state=present) and removed when C(state=absent).
