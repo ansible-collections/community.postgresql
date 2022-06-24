@@ -221,6 +221,7 @@ except ImportError:
 import tempfile
 import shutil
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+
 # from ansible.module_utils.postgres import postgres_common_argument_spec
 
 PG_HBA_METHODS = ["trust", "reject", "md5", "password", "gss", "sspi", "krb5", "ident", "peer",
@@ -267,6 +268,7 @@ class PgHba(object):
     PgHba object to read/write entries to/from.
     pg_hba_file - the pg_hba file almost always /etc/pg_hba
     """
+
     def __init__(self, pg_hba_file=None, order="sdu", backup=False, create=False, keep_comments_at_rules=False):
         if order not in PG_HBA_ORDERS:
             msg = "invalid order setting {0} (should be one of '{1}')."
@@ -777,19 +779,35 @@ def main():
             single_rule[key] = module.params[key]
         rules = [single_rule]
     else:
+        # handle aliases
+        new_rules = []
+        for index, rule in enumerate(rules):
+            # alias handling
+            source_keys = [key for key in rule.keys() if key in ('address', 'source', 'src')]
+            if len(source_keys) > 1:
+                module.fail_json(msg='rule number {} of the "rules" argument ({}) uses ambiguous settings: '
+                                     '{} are aliases, only one is allowed'.format(index, source_keys, rule))
+            address = rule[source_keys[0]]
+            del rule[source_keys[0]]
+            rule['address'] = address
+        rules = new_rules
+
         if rules_behavior == 'conflict':
             used_rule_keys = [key for key in rule_keys if module.params[key] is not None]
             if len(used_rule_keys) > 0:
                 module.fail_json(msg='conflict: either argument "rules_behavior" needs to be changed or "rules" must'
                                      ' not be set or {0} must not be set'.format(used_rule_keys))
-        else:
+
+        else:  # rules_behavior == 'combine'
             new_rules = []
             for rule in rules:
                 for key in rule_keys:
+                    # use the normal argument as default when it's missing in the "rules" item
                     if key not in rule and key in module.params:
                         rule[key] = module.params[key]
                 new_rules.append(rule)
             rules = new_rules
+
     for rule in rules:
         if 'contype' not in rule:
             continue
@@ -797,8 +815,8 @@ def main():
         try:
             for database in rule['databases'].split(','):
                 for user in rule['users'].split(','):
-                    pg_hba_rule = PgHbaRule(rule['contype'], database, user, rule['source'], rule['netmask'],
-                                     rule['method'], rule['options'], comment=rule['comment'])
+                    pg_hba_rule = PgHbaRule(rule['contype'], database, user, rule['address'], rule['netmask'],
+                                            rule['method'], rule['options'], comment=rule['comment'])
                     if rule['state'] == "present":
                         ret['msgs'].append('Adding rule {}'.format(pg_hba_rule))
                         pg_hba.add_rule(pg_hba_rule)
