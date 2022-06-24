@@ -793,7 +793,8 @@ def main():
         rules = new_rules
 
         if rules_behavior == 'conflict':
-            used_rule_keys = [key for key in rule_keys if module.params[key] is not None]
+            # it's ok if the module default is set
+            used_rule_keys = [key for key in rule_keys if module.params[key] != argument_spec[key].get('default', None)]
             if len(used_rule_keys) > 0:
                 module.fail_json(msg='conflict: either argument "rules_behavior" needs to be changed or "rules" must'
                                      ' not be set or {0} must not be set'.format(used_rule_keys))
