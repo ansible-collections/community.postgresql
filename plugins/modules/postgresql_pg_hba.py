@@ -801,6 +801,13 @@ def main():
             single_rule[key] = module.params[key]
         rules = [single_rule]
     else:
+        if rules_behavior == 'conflict':
+            # it's ok if the module default is set
+            used_rule_keys = [key for key in rule_keys if module.params[key] != argument_spec[key].get('default', None)]
+            if len(used_rule_keys) > 0:
+                module.fail_json(msg='conflict: either argument "rules_behavior" needs to be changed or "rules" must'
+                                     ' not be set or {0} must not be set'.format(used_rule_keys))
+
         new_rules = []
         for index, rule in enumerate(rules):
             # alias handling
@@ -812,29 +819,16 @@ def main():
             del rule[address_keys[0]]
             rule['address'] = address
 
-            # module defaults handling
             for key in rule_keys:
                 if key not in rule:
-                    rule[key] = argument_spec[key].get('default', None)
+                    if rules_behavior == 'combine':
+                        # use user-supplied defaults or module defaults
+                        rule[key] = module.params[key]
+                    else:
+                        # use module defaults
+                        rule[key] = argument_spec[key].get('default', None)
             new_rules.append(rule)
         rules = new_rules
-
-        if rules_behavior == 'conflict':
-            # it's ok if the module default is set
-            used_rule_keys = [key for key in rule_keys if module.params[key] != argument_spec[key].get('default', None)]
-            if len(used_rule_keys) > 0:
-                module.fail_json(msg='conflict: either argument "rules_behavior" needs to be changed or "rules" must'
-                                     ' not be set or {0} must not be set'.format(used_rule_keys))
-
-        else:  # rules_behavior == 'combine'
-            new_rules = []
-            for rule in rules:
-                for key in rule_keys:
-                    # use the normal argument as default when it's missing in the "rules" item
-                    if key not in rule and key in module.params:
-                        rule[key] = module.params[key]
-                new_rules.append(rule)
-            rules = new_rules
 
     for rule in rules:
         if rule.get('contype', None) is None:
