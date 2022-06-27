@@ -196,6 +196,29 @@ EXAMPLES = '''
     source: ::/0
     keep_comments_at_rules: true
     comment: "this rule is an example"
+
+- name: Replace everything with a new set of rules
+  community.postgresql.postgresql_pg_hba:
+    dest: /var/lib/postgres/data/pg_hba.conf
+    overwrite: true # remove preexisting rules
+
+    # custom defaults
+    rules_behavior: combine
+    contype: hostssl
+    address: 2001:db8::/64
+    comment: added in bulk
+
+    rules:
+    - users: user1
+      databases: db1
+      # contype, address and comment come from custom default
+    - users: user2
+      databases: db2
+      comment: added with love # overwrite custom default for this rule
+      # contype and address come from custom default
+    - users: user3
+      databases: db3
+      # contype, address and comment come from custom default
 '''
 
 RETURN = r'''
