@@ -423,6 +423,11 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
         if password == '':
             if current_role_attrs['rolpassword'] is not None:
                 pwchanging = True
+        
+        # If the provided password is a SCRAM hash, compare it directly to the current password
+        elif re.match(SCRAM_SHA256_REGEX, password):
+            if password != current_role_attrs['rolpassword']:
+                pwchanging = True
 
         # SCRAM hashes are represented as a special object, containing hash data:
         # `SCRAM-SHA-256$<iteration count>:<salt>$<StoredKey>:<ServerKey>`
