@@ -776,7 +776,7 @@ def main():
         keep_comments_at_rules=dict(type='bool', default=False),
         state=dict(type='str', default="present", choices=["absent", "present"]),
         users=dict(type='str', default='all'),
-        rules=dict(type='list'),
+        rules=dict(type='list', elements='dict'),
         rules_behavior=dict(type='str', default='conflict', choices=['combine', 'conflict']),
         overwrite=dict(type='bool', default=False),
     )
