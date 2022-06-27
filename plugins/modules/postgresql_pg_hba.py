@@ -815,9 +815,10 @@ def main():
             if len(address_keys) > 1:
                 module.fail_json(msg='rule number {} of the "rules" argument ({}) uses ambiguous settings: '
                                      '{} are aliases, only one is allowed'.format(index, address_keys, rule))
-            address = rule[address_keys[0]]
-            del rule[address_keys[0]]
-            rule['address'] = address
+            if len(address_keys) == 1:
+                address = rule[address_keys[0]]
+                del rule[address_keys[0]]
+                rule['address'] = address
 
             for key in rule_keys:
                 if key not in rule:
