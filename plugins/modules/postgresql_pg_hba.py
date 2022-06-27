@@ -111,6 +111,7 @@ options:
       - C(address), C(comment), C(contype), C(databases), C(method), C(netmask), C(options), C(state), C(users)
       - See also C(rules_behavior).
     type: list
+    elements: dict
   rules_behavior:
     description:
       - >-
