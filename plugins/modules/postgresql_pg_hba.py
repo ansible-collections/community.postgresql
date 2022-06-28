@@ -810,7 +810,7 @@ def main():
     if overwrite:
         pg_hba.clear_rules()
 
-    rule_keys = {
+    rule_keys = [
         'address',
         'comment',
         'contype',
@@ -820,7 +820,7 @@ def main():
         'options',
         'state',
         'users'
-    }
+    ]
     if rules is None:
         single_rule = dict()
         for key in rule_keys:
