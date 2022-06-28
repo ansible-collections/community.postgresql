@@ -182,6 +182,11 @@
     - 'not netmask_sameas_prefix_check is changed'
     - 'pg_hba_options is changed'
 
+- name: ensure test file is empty
+  copy:
+    content: ''
+    dest: /tmp/pg_hba2.conf
+
 - name: Create a rule with the comment 'comment1'
   postgresql_pg_hba:
     contype: host
