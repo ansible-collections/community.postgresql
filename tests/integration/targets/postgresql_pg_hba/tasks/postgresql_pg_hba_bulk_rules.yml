@@ -73,6 +73,7 @@
 - name: get jinja2 version
   shell: '/usr/bin/pip --disable-pip-version-check --no-cache-dir show Jinja2 2>/dev/null | grep -oPm 1 "(?<=^Version: )\d+\.\d+"'
   register: jinja2_version
+  ignore_errors: true
 - assert:
     that:
       - result.failed
@@ -80,7 +81,7 @@
       - "result.results|selectattr('changed')|length == 0"
       - "result.results|rejectattr('failed')|length == 0"
       # the 'in' test was added in jinja 2.10
-      - "jinja2_version.stdout|trim is version('2.10', '<') or result.results|selectattr('msg', 'in', 'conflict')|length == 0"
+      - "jinja2_version.rc == 0 and jinja2_version.stdout|trim is version('2.10', '<') or result.results|selectattr('msg', 'in', 'conflict')|length == 0"
 
 - name: test rules with module defaults
   community.postgresql.postgresql_pg_hba:
