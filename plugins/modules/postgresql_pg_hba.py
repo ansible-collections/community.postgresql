@@ -92,7 +92,7 @@ options:
     choices: [ sdu, sud, dsu, dus, usd, uds ]
   overwrite:
     description:
-      - "Remove all existing rules before adding rules. (Like C(state: absent) for all pre-existing rules.)"
+      - Remove all existing rules before adding rules. (Like I(state=absent) for all pre-existing rules.)
     type: bool
     default: false
   keep_comments_at_rules:
