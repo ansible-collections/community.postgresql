@@ -112,9 +112,9 @@ options:
     elements: dict
   rules_behavior:
     description:
-      - Configure how the I(rules) argument works with the rule-specific arguments outside the I(rules) argument
-        together: If C(conflict), don't.
-      - Fail if I(rules) and, for example, I(address) are set.
+      - "Configure how the I(rules) argument works together with the rule-specific arguments outside the I(rules) argument."
+      - See I(rules) for the complete list of rule-specific arguments.
+      - When set to C(conflict), fail if I(rules) and, for example, I(address) are set.
       - If C(combine), the normal rule-specific arguments are not defining a rule, but are used as defaults for the arguments in the I(rules) argument.
     type: str
     choices: [ conflict, combine ]
