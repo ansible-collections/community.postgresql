@@ -104,10 +104,8 @@ options:
     version_added: '1.5.0'
   rules:
     description:
-      - >-
-        A list of objects, specifying rules for the pg_hba.conf. Use this to manage multiple rules at once.
-        Each object can have the following keys (the "rule-specific arguments"), which are treated the same as if they
-        were arguments of this module:
+      - A list of objects, specifying rules for the pg_hba.conf. Use this to manage multiple rules at once.
+      - "Each object can have the following keys (the 'rule-specific arguments'), which are treated the same as if they were arguments of this module:"
       - C(address), C(comment), C(contype), C(databases), C(method), C(netmask), C(options), C(state), C(users)
       - See also C(rules_behavior).
     type: list
