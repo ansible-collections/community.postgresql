@@ -3,6 +3,8 @@
 https://dev.azure.com/ansible/community.postgres/_apis/build/status/CI?branchName=main)](https://dev.azure.com/ansible/community.postgres/_build?definitionId=28)
 [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)
 
+![](https://img.shields.io/matrix/postgresql:ansible.com.svg?server_fqdn=ansible-accounts.ems.host&label=Discuss%20at%20%23postgresql:ansible.com&logo=matrix)
+
 This collection is a part of the Ansible package.
 
 ## Code of Conduct
