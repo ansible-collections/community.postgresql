@@ -116,6 +116,7 @@ options:
       - See I(rules) for the complete list of rule-specific arguments.
       - When set to C(conflict), fail if I(rules) and, for example, I(address) are set.
       - If C(combine), the normal rule-specific arguments are not defining a rule, but are used as defaults for the arguments in the I(rules) argument.
+      - Is used only when I(rules) is specified, ignored otherwise.
     type: str
     choices: [ conflict, combine ]
     default: conflict
