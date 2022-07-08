@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_user - add ``alter user``-statements in the return value ``queries`` (https://github.com/ansible-collections/community.postgresql/issues/307).
