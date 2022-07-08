@@ -552,8 +552,10 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
         query_password_data = dict(password=password, expires=expires)
         try:
-            cursor.execute(' '.join(alter), query_password_data)
+            statement = ' '.join(alter)
+            cursor.execute(statement, query_password_data)
             changed = True
+            executed_queries.append(statement)
         except psycopg2.InternalError as e:
             if e.pgcode == '25006':
                 # Handle errors due to read-only transactions indicated by pgcode 25006
@@ -596,7 +598,9 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             alter.append('WITH %s' % role_attr_flags)
 
         try:
-            cursor.execute(' '.join(alter))
+            statement = ' '.join(alter)
+            cursor.execute(statement)
+            executed_queries.append(statement)
         except psycopg2.InternalError as e:
             if e.pgcode == '25006':
                 # Handle errors due to read-only transactions indicated by pgcode 25006
