@@ -5,3 +5,4 @@
 
 # Initial CI tests of postgresql_pg_hba module
 - import_tasks: postgresql_pg_hba_initial.yml
+- import_tasks: postgresql_pg_hba_bulk_rules.yml

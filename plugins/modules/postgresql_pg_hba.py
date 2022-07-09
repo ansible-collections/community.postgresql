@@ -90,6 +90,11 @@ options:
     type: str
     default: sdu
     choices: [ sdu, sud, dsu, dus, usd, uds ]
+  overwrite:
+    description:
+      - Remove all existing rules before adding rules. (Like I(state=absent) for all pre-existing rules.)
+    type: bool
+    default: false
   keep_comments_at_rules:
     description:
       - If C(true), comments that stand together with a rule in one line are kept behind that line.
@@ -97,6 +102,24 @@ options:
     type: bool
     default: false
     version_added: '1.5.0'
+  rules:
+    description:
+      - A list of objects, specifying rules for the pg_hba.conf. Use this to manage multiple rules at once.
+      - "Each object can have the following keys (the 'rule-specific arguments'), which are treated the same as if they were arguments of this module:"
+      - C(address), C(comment), C(contype), C(databases), C(method), C(netmask), C(options), C(state), C(users)
+      - See also C(rules_behavior).
+    type: list
+    elements: dict
+  rules_behavior:
+    description:
+      - "Configure how the I(rules) argument works together with the rule-specific arguments outside the I(rules) argument."
+      - See I(rules) for the complete list of rule-specific arguments.
+      - When set to C(conflict), fail if I(rules) and, for example, I(address) are set.
+      - If C(combine), the normal rule-specific arguments are not defining a rule, but are used as defaults for the arguments in the I(rules) argument.
+      - Is used only when I(rules) is specified, ignored otherwise.
+    type: str
+    choices: [ conflict, combine ]
+    default: conflict
   state:
     description:
       - The lines will be added/modified when C(state=present) and removed when C(state=absent).
@@ -174,6 +197,29 @@ EXAMPLES = '''
     source: ::/0
     keep_comments_at_rules: true
     comment: "this rule is an example"
+
+- name: Replace everything with a new set of rules
+  community.postgresql.postgresql_pg_hba:
+    dest: /var/lib/postgres/data/pg_hba.conf
+    overwrite: true # remove preexisting rules
+
+    # custom defaults
+    rules_behavior: combine
+    contype: hostssl
+    address: 2001:db8::/64
+    comment: added in bulk
+
+    rules:
+    - users: user1
+      databases: db1
+      # contype, address and comment come from custom default
+    - users: user2
+      databases: db2
+      comment: added with love # overwrite custom default for this rule
+      # contype and address come from custom default
+    - users: user3
+      databases: db3
+      # contype, address and comment come from custom default
 '''
 
 RETURN = r'''
@@ -221,6 +267,7 @@ except ImportError:
 import tempfile
 import shutil
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+
 # from ansible.module_utils.postgres import postgres_common_argument_spec
 
 PG_HBA_METHODS = ["trust", "reject", "md5", "password", "gss", "sspi", "krb5", "ident", "peer",
@@ -267,6 +314,7 @@ class PgHba(object):
     PgHba object to read/write entries to/from.
     pg_hba_file - the pg_hba file almost always /etc/pg_hba
     """
+
     def __init__(self, pg_hba_file=None, order="sdu", backup=False, create=False, keep_comments_at_rules=False):
         if order not in PG_HBA_ORDERS:
             msg = "invalid order setting {0} (should be one of '{1}')."
@@ -290,6 +338,9 @@ class PgHba(object):
         self.users = set(['postgres'])
 
         self.read()
+
+    def clear_rules(self):
+        self.rules = {}
 
     def unchanged(self):
         '''
@@ -722,7 +773,10 @@ def main():
                    removed_in_version='3.0.0', removed_from_collection='community.postgresql'),
         keep_comments_at_rules=dict(type='bool', default=False),
         state=dict(type='str', default="present", choices=["absent", "present"]),
-        users=dict(type='str', default='all')
+        users=dict(type='str', default='all'),
+        rules=dict(type='list', elements='dict'),
+        rules_behavior=dict(type='str', default='conflict', choices=['combine', 'conflict']),
+        overwrite=dict(type='bool', default=False),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -732,25 +786,18 @@ def main():
     if IPADDRESS_IMP_ERR is not None:
         module.fail_json(msg=missing_required_lib('ipaddress'), exception=IPADDRESS_IMP_ERR)
 
-    contype = module.params["contype"]
     create = bool(module.params["create"] or module.check_mode)
     if module.check_mode:
         backup = False
     else:
         backup = module.params['backup']
         backup_file = module.params['backup_file']
-    databases = module.params["databases"]
     dest = module.params["dest"]
-
-    method = module.params["method"]
-    netmask = module.params["netmask"]
-    options = module.params["options"]
     order = module.params["order"]
-    source = module.params["address"]
-    state = module.params["state"]
-    users = module.params["users"]
     keep_comments_at_rules = module.params["keep_comments_at_rules"]
-    comment = module.params["comment"]
+    rules = module.params["rules"]
+    rules_behavior = module.params["rules_behavior"]
+    overwrite = module.params["overwrite"]
 
     ret = {'msgs': []}
     try:
@@ -758,35 +805,89 @@ def main():
     except PgHbaError as error:
         module.fail_json(msg='Error reading file:\n{0}'.format(error))
 
-    if contype:
-        try:
-            for database in databases.split(','):
-                for user in users.split(','):
-                    rule = PgHbaRule(contype, database, user, source, netmask, method, options, comment=comment)
-                    if state == "present":
-                        ret['msgs'].append('Adding')
-                        pg_hba.add_rule(rule)
+    if overwrite:
+        pg_hba.clear_rules()
+
+    rule_keys = [
+        'address',
+        'comment',
+        'contype',
+        'databases',
+        'method',
+        'netmask',
+        'options',
+        'state',
+        'users'
+    ]
+    if rules is None:
+        single_rule = dict()
+        for key in rule_keys:
+            single_rule[key] = module.params[key]
+        rules = [single_rule]
+    else:
+        if rules_behavior == 'conflict':
+            # it's ok if the module default is set
+            used_rule_keys = [key for key in rule_keys if module.params[key] != argument_spec[key].get('default', None)]
+            if len(used_rule_keys) > 0:
+                module.fail_json(msg='conflict: either argument "rules_behavior" needs to be changed or "rules" must'
+                                     ' not be set or {0} must not be set'.format(used_rule_keys))
+
+        new_rules = []
+        for index, rule in enumerate(rules):
+            # alias handling
+            address_keys = [key for key in rule.keys() if key in ('address', 'source', 'src')]
+            if len(address_keys) > 1:
+                module.fail_json(msg='rule number {0} of the "rules" argument ({1}) uses ambiguous settings: '
+                                     '{2} are aliases, only one is allowed'.format(index, address_keys, rule))
+            if len(address_keys) == 1:
+                address = rule[address_keys[0]]
+                del rule[address_keys[0]]
+                rule['address'] = address
+
+            for key in rule_keys:
+                if key not in rule:
+                    if rules_behavior == 'combine':
+                        # use user-supplied defaults or module defaults
+                        rule[key] = module.params[key]
                     else:
-                        ret['msgs'].append('Removing')
-                        pg_hba.remove_rule(rule)
+                        # use module defaults
+                        rule[key] = argument_spec[key].get('default', None)
+            new_rules.append(rule)
+        rules = new_rules
+
+    for rule in rules:
+        if rule.get('contype', None) is None:
+            continue
+
+        try:
+            for database in rule['databases'].split(','):
+                for user in rule['users'].split(','):
+                    pg_hba_rule = PgHbaRule(rule['contype'], database, user, rule['address'], rule['netmask'],
+                                            rule['method'], rule['options'], comment=rule['comment'])
+                    if rule['state'] == "present":
+                        ret['msgs'].append('Adding rule {0}'.format(pg_hba_rule))
+                        pg_hba.add_rule(pg_hba_rule)
+                    else:
+                        ret['msgs'].append('Removing rule {0}'.format(pg_hba_rule))
+                        pg_hba.remove_rule(pg_hba_rule)
         except PgHbaError as error:
             module.fail_json(msg='Error modifying rules:\n{0}'.format(error))
-        file_args = module.load_file_common_arguments(module.params)
-        ret['changed'] = changed = pg_hba.changed()
-        if changed:
-            ret['msgs'].append('Changed')
-            ret['diff'] = pg_hba.diff
+    file_args = module.load_file_common_arguments(module.params)
+    ret['changed'] = changed = pg_hba.changed()
+    if changed:
+        ret['msgs'].append('Changed')
+        ret['diff'] = pg_hba.diff
 
-            if not module.check_mode:
-                ret['msgs'].append('Writing')
-                try:
-                    if pg_hba.write(backup_file):
-                        module.set_fs_attributes_if_different(file_args, True, pg_hba.diff,
-                                                              expand=False)
-                except PgHbaError as error:
-                    module.fail_json(msg='Error writing file:\n{0}'.format(error))
-                if pg_hba.last_backup:
-                    ret['backup_file'] = pg_hba.last_backup
+        if not module.check_mode:
+            ret['msgs'].append('Writing')
+            try:
+                if pg_hba.write(backup_file):
+                    module.set_fs_attributes_if_different(file_args, True, pg_hba.diff,
+                                                          expand=False)
+            except PgHbaError as error:
+                module.fail_json(msg='Error writing file:\n{0}'.format(error))
+            if pg_hba.last_backup:
+                ret['backup_file'] = pg_hba.last_backup
 
     ret['pg_hba'] = list(pg_hba.get_rules())
     module.exit_json(**ret)
