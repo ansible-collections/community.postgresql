@@ -1,7 +1,0 @@
-minor_changes:
-  - "postgresql_pg_hba - add argument ``rules`` to specify a list of rules using the normal rule-specific argument in each item (https://github.com/ansible-collections/community.postgresql/issues/297)."
-  - >-
-    postgresql_pg_hba - add argument ``rules_behavior`` (choices: conflict (default), combine) to fail when ``rules``
-    and normal rule-specific arguments are given or, when ``combine``, use them as defaults for the ``rules`` items
-    (https://github.com/ansible-collections/community.postgresql/issues/297).
-  - "postgresql_pg_hba - add argument ``overwrite`` (bool, default: false) to remove unmanaged rules (https://github.com/ansible-collections/community.postgresql/issues/297)."

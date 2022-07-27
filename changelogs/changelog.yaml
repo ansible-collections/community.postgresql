@@ -328,3 +328,47 @@ releases:
     - 252-fix-none-attribute-error.yml
     - psf-license.yml
     release_date: '2022-05-16'
+  2.2.0:
+    changes:
+      bugfixes:
+      - Include ``simplified_bsd.txt`` license file for various module utils.
+      - postgresql_info - fix pg version parsing (https://github.com/ansible-collections/community.postgresql/issues/315).
+      - postgresql_ping - fix pg version parsing (https://github.com/ansible-collections/community.postgresql/issues/315).
+      - postgresql_privs.py - add functionality when the PostgreSQL version is 9.0.0
+        or greater to incorporate ``ALL x IN SCHEMA`` syntax (https://github.com/ansible-collections/community.postgresql/pull/282).
+        Please see the official documentation for details regarding grants (https://www.postgresql.org/docs/9.0/sql-grant.html).
+      - postgresql_subscription - fix idempotence by casting the ``connparams`` dict
+        variable (https://github.com/ansible-collections/community.postgresql/issues/280).
+      - postgresql_user - add ``alter user``-statements in the return value ``queries``
+        (https://github.com/ansible-collections/community.postgresql/issues/307).
+      major_changes:
+      - postgresql_user - the ``groups`` argument has been deprecated and will be
+        removed in ``community.postgresql 3.0.0``. Please use the ``postgresql_membership``
+        module to specify group/role memberships instead (https://github.com/ansible-collections/community.postgresql/issues/277).
+      minor_changes:
+      - postgresql_membership - add the ``exact`` state value to be able to specify
+        a list of only groups a user must be a member of (https://github.com/ansible-collections/community.postgresql/issues/277).
+      - 'postgresql_pg_hba - add argument ``overwrite`` (bool, default: false) to
+        remove unmanaged rules (https://github.com/ansible-collections/community.postgresql/issues/297).'
+      - 'postgresql_pg_hba - add argument ``rules_behavior`` (choices: conflict (default),
+        combine) to fail when ``rules`` and normal rule-specific arguments are given
+        or, when ``combine``, use them as defaults for the ``rules`` items (https://github.com/ansible-collections/community.postgresql/issues/297).'
+      - postgresql_pg_hba - add argument ``rules`` to specify a list of rules using
+        the normal rule-specific argument in each item (https://github.com/ansible-collections/community.postgresql/issues/297).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 2.1.5.'
+    fragments:
+    - 0-postgresql_user-deprecate-privs-manipulation.yml
+    - 2.2.0.yml
+    - 285-postgresql_subscription_fix_idempontece.yml
+    - 293-postgresql_membership_exact_value.yml
+    - 303-postgresql_pg_hba_add_bulk_rule_arguments.yml
+    - 308-postgresql_user_alter_statements_return.yml
+    - 316-postgresql_ping_fix_pg_version_parsing.yml
+    - all_in_schema.yml
+    - simplified-bsd-license.yml
+    release_date: '2022-07-27'
