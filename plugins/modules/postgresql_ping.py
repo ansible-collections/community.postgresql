@@ -91,6 +91,8 @@ conn_err_msg:
   version_added: 1.7.0
 '''
 
+import re
+
 try:
     from psycopg2.extras import DictCursor
 except ImportError:
@@ -136,13 +138,13 @@ class PgPing(object):
         self.is_available = True
 
         full = raw.split()[1]
-        tmp = full.split('.')
+        m = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", full)
 
-        major = int(tmp[0])
-        minor = int(tmp[1].rstrip(','))
+        major = int(m.group(1))
+        minor = int(m.group(2))
         patch = None
-        if len(tmp) >= 3:
-            patch = int(tmp[2].rstrip(','))
+        if m.group(3) is not None:
+            patch = int(m.group(3))
 
         self.version = dict(
             major=major,
