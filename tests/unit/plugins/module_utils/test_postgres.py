@@ -34,6 +34,7 @@ EXPECTED_DICT = dict(
         choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
     ),
     sslrootcert=dict(aliases=['ssl_rootcert']),
+    dsn=dict(default=''),
 )
 
 
@@ -113,7 +114,7 @@ def m_psycopg2():
             self.extras = Extras()
             self.extensions = Extensions()
 
-        def connect(self, host=None, port=None, user=None,
+        def connect(self, dsn=None, host=None, port=None, user=None,
                     password=None, sslmode=None, sslrootcert=None):
             if user == 'Exception':
                 raise Exception()
