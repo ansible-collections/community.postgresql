@@ -44,6 +44,7 @@ def postgres_common_argument_spec():
         port=dict(type='int', default=5432, aliases=['login_port']),
         ssl_mode=dict(default='prefer', choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']),
         ca_cert=dict(aliases=['ssl_rootcert']),
+        dsn=dict(default=''),
     )
 
 
@@ -185,7 +186,8 @@ def get_conn_params(module, params_dict, warn_db_default=True):
         "login_password": "password",
         "port": "port",
         "ssl_mode": "sslmode",
-        "ca_cert": "sslrootcert"
+        "ca_cert": "sslrootcert",
+        "dsn": "dsn"
     }
 
     # Might be different in the modules:
