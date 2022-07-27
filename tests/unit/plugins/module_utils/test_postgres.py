@@ -21,6 +21,7 @@ INPUT_DICT = dict(
         choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
     ),
     ca_cert=dict(aliases=['ssl_rootcert']),
+    dsn=dict(default=''),
 )
 
 EXPECTED_DICT = dict(
@@ -61,6 +62,7 @@ class TestPostgresCommonArgSpec():
                 choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
             ),
             ca_cert=dict(aliases=['ssl_rootcert']),
+            dsn=dict(default=''),
         )
         assert pg.postgres_common_argument_spec() == expected_dict
 
