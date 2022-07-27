@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_subscription - fix idempotence by casting the ``connparams`` dict variable (https://github.com/ansible-collections/community.postgresql/issues/280).
