@@ -1,0 +1,2 @@
+minor_changes:
+  - postgresql_* - added ``dsn`` field to allow additional connection parameters as a libpg string
