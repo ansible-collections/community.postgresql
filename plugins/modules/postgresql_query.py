@@ -150,6 +150,15 @@ EXAMPLES = r'''
       id_val: 1
       story_val: test
 
+- name: Use dsn to add any connection parameters as a libpg string
+  community.postgresql.postgresql_query:
+    dsn: "target_session_attrs=read-write"
+    login_host: "host1,host2"
+    login_user: "test"
+    login_password: "test1234"
+    db: 'test'
+    query: 'insert into test (test) values (now())'
+
 - name: Insert query to test_table in db test_db
   community.postgresql.postgresql_query:
     db: test_db
