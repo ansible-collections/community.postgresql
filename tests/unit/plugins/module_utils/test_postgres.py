@@ -61,6 +61,7 @@ class TestPostgresCommonArgSpec():
                 choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
             ),
             ca_cert=dict(aliases=['ssl_rootcert']),
+            connect_params=dict(default={}, type='dict'),
         )
         assert pg.postgres_common_argument_spec() == expected_dict
 
@@ -112,7 +113,7 @@ def m_psycopg2():
             self.extensions = Extensions()
 
         def connect(self, host=None, port=None, user=None,
-                    password=None, sslmode=None, sslrootcert=None):
+                    password=None, sslmode=None, sslrootcert=None, connect_params={}):
             if user == 'Exception':
                 raise Exception()
 
