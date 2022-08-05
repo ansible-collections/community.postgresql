@@ -189,7 +189,14 @@ def m_ansible_module():
     """Return an object of dummy AnsibleModule class."""
     class DummyAnsibleModule():
         def __init__(self):
-            self.params = pg.postgres_common_argument_spec()
+
+            # take default params from argument spec
+            spec = pg.postgres_common_argument_spec()
+            params = dict()
+            for k in spec.keys():
+                params[k] = spec[k].get('default')
+
+            self.params = params
             self.err_msg = ''
             self.warn_msg = ''
 
