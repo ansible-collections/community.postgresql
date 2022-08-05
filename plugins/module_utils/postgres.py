@@ -225,8 +225,8 @@ def get_conn_params(module, params_dict, warn_db_default=True):
         kw["host"] = params_dict["login_unix_socket"]
 
     # If connect_params is specified, merge it together
-    if params_dict["connect_params"]:
-        kw = {**kw, **params_dict["connect_params"]}
+    if params_dict.get("connect_params"):
+        kw.update(params_dict["connect_params"])
 
     return kw
 
