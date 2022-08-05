@@ -44,7 +44,7 @@ def postgres_common_argument_spec():
         port=dict(type='int', default=5432, aliases=['login_port']),
         ssl_mode=dict(default='prefer', choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']),
         ca_cert=dict(aliases=['ssl_rootcert']),
-        connect_params=dict(type='dict'),
+        connect_params=dict(default={}, type='dict'),
     )
 
 
