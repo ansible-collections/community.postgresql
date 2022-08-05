@@ -113,7 +113,7 @@ def m_psycopg2():
             self.extensions = Extensions()
 
         def connect(self, host=None, port=None, user=None,
-                    password=None, sslmode=None, sslrootcert=None, connect_params={}):
+                    password=None, sslmode=None, sslrootcert=None, connect_params=None):
             if user == 'Exception':
                 raise Exception()
 

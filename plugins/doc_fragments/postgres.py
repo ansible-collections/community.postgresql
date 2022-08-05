@@ -48,6 +48,10 @@ options:
       - If the file exists, the server's certificate will be verified to be signed by one of these authorities.
     type: str
     aliases: [ ssl_rootcert ]
+  connect_params:
+    description:
+      - Any additional parameters to be passed to libpg as kwargs.
+    type: dict
 notes:
 - The default authentication assumes that you are either logging in as or sudo'ing to the C(postgres) account on the host.
 - To avoid "Peer authentication failed for user postgres" error,
