@@ -1,2 +1,2 @@
 minor_changes:
-  postgresql_* - Add ``connect_params`` parameter dict to allow any additional libpg connection parameters.
+- postgresql_* - Add ``connect_params`` parameter dict to allow any additional libpg connection parameters.
