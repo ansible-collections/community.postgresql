@@ -155,6 +155,17 @@ EXAMPLES = r'''
     db: test_db
     query: INSERT INTO test_table (id, story) VALUES (2, 'my_long_story')
 
+- name: Use connect_params to add any additional connection parameters that libpg supports
+  community.postgresql.postgresql_query:
+    connect_params:
+      target_session_attrs: read-write
+      connect_timeout: 10
+    login_host: "host1,host2"
+    login_user: "test"
+    login_password: "test1234"
+    db: 'test'
+    query: 'insert into test (test) values (now())'
+
 
 # WARNING: The path_to_script and as_single_query options have been deprecated
 # and will be removed in community.postgresql 3.0.0, please

@@ -1,0 +1,2 @@
+minor_changes:
+- postgresql_* - add the ``connect_params`` parameter dict to allow any additional ``libpg`` connection parameters (https://github.com/ansible-collections/community.postgresql/pull/329).

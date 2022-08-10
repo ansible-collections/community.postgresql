@@ -10,6 +10,8 @@
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
       login_db: '{{ test_db }}'
+      connect_params:
+        connect_timeout: 30
 
   block:
   - name: Create test db
