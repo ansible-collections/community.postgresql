@@ -158,7 +158,7 @@ EXAMPLES = r'''
 - name: Use connect_params to add any additional connection parameters that libpg supports
   community.postgresql.postgresql_query:
     connect_params:
-      target_session_attrs: "read-write"
+      target_session_attrs: read-write
       connect_timeout: 10
     login_host: "host1,host2"
     login_user: "test"
