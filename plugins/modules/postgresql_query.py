@@ -159,7 +159,7 @@ EXAMPLES = r'''
   community.postgresql.postgresql_query:
     connect_params:
       target_session_attrs: "read-write"
-      connect_timeout: "10"
+      connect_timeout: 10
     login_host: "host1,host2"
     login_user: "test"
     login_password: "test1234"
