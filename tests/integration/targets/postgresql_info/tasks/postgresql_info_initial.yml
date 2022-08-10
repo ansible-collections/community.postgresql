@@ -9,6 +9,9 @@
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
       login_db: '{{ db_default }}'
+      connect_params:
+        connect_timeout: 30
+
 
   block:
 
