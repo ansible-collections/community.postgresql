@@ -51,6 +51,7 @@ options:
   connect_params:
     description:
       - Any additional parameters to be passed to libpg.
+      - These parameters take precedence.
     type: dict
     version_added: '2.3.0'
 notes:
