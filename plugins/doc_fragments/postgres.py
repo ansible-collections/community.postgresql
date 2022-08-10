@@ -52,6 +52,7 @@ options:
     description:
       - Any additional parameters to be passed to libpg as kwargs.
     type: dict
+    version_added: '2.3.0'
 notes:
 - The default authentication assumes that you are either logging in as or sudo'ing to the C(postgres) account on the host.
 - To avoid "Peer authentication failed for user postgres" error,
