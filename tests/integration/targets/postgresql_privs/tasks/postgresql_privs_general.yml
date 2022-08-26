@@ -1476,6 +1476,24 @@
     that:
     - result is not changed
 
+##############
+# Issue https://github.com/ansible-collections/community.postgresql/issues/332
+- name: Test community.postgresql issue 332
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: schemas
+    type: default_privs
+    privs: usage
+  register: result
+
+- assert:
+    that:
+    - result is changed
+
 # Cleanup
 - name: Remove privs
   become: yes
