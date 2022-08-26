@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_privs - add support for alter default privileges grant usage on schemas (https://github.com/ansible-collections/community.postgresql/issues/332).
