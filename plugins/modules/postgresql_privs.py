@@ -75,6 +75,7 @@ options:
       or C(default_privs). Defaults to C(public) in these cases.
     - Pay attention, for embedded types when I(type=type)
       I(schema) can be C(pg_catalog) or C(information_schema) respectively.
+    - If not specified, uses C(public). To avoid this, use C(not-specified).
     type: str
   roles:
     description:
@@ -430,6 +431,14 @@ EXAMPLES = r'''
     objs: numeric
     schema: pg_catalog
     db: acme
+
+- name: Alter default privileges grant usage on schemas to datascience
+  community.postgresql.postgresql_privs:
+    database: test
+    type: default_privs
+    privs: usage
+    objs: schemas
+    role: datascience
 '''
 
 RETURN = r'''
