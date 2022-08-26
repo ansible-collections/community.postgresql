@@ -1478,7 +1478,7 @@
 
 ##############
 # Issue https://github.com/ansible-collections/community.postgresql/issues/332
-- name: Test community.postgresql issue 332
+- name: Test community.postgresql issue 332 grant usage
   become: yes
   become_user: "{{ pg_user }}"
   postgresql_privs:
@@ -1520,6 +1520,13 @@
   loop:
   - "{{ db_user2 }}"
   - "{{ db_user3 }}"
+
+- name: Drop a role for which the default privileges have been altered
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_query:
+    login_db: "{{ db_name }}"
+    query: "DROP OWNED BY {{ db_user3 }};"
 
 - name: Remove user given permissions
   become: yes
