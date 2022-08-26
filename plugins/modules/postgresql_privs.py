@@ -75,7 +75,7 @@ options:
       or C(default_privs). Defaults to C(public) in these cases.
     - Pay attention, for embedded types when I(type=type)
       I(schema) can be C(pg_catalog) or C(information_schema) respectively.
-    - If not specified, uses C(public). To avoid this, use C(not-specified).
+    - If not specified, uses C(public). Not to pass any schema, use C(not-specified).
     type: str
   roles:
     description:
