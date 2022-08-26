@@ -1494,6 +1494,56 @@
     that:
     - result is changed
 
+- name: Test community.postgresql issue 332 grant usage, run again
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: schemas
+    type: default_privs
+    privs: usage
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+
+- name: Test community.postgresql issue 333 grant usage
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: tables
+    type: default_privs
+    schema: not-specified
+    privs: select
+  register: result
+
+- assert:
+    that:
+    - result is changed
+
+- name: Test community.postgresql issue 333 grant usage, run again
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: tables
+    type: default_privs
+    schema: not-specified
+    privs: select
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+
 # Cleanup
 - name: Remove privs
   become: yes
