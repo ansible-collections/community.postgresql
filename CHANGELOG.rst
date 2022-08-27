@@ -5,6 +5,31 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.7.5
+======
+
+Release Summary
+---------------
+
+This is the bugfix release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.7.4
+
+Major Changes
+-------------
+
+- postgresql_user - the ``groups`` argument has been deprecated and will be removed in ``community.postgresql 3.0.0``. Please use the ``postgresql_membership`` module to specify group/role memberships instead (https://github.com/ansible-collections/community.postgresql/issues/277).
+
+Bugfixes
+--------
+
+- Include ``simplified_bsd.txt`` license file for various module utils.
+- postgresql_info - fix pg version parsing (https://github.com/ansible-collections/community.postgresql/issues/315).
+- postgresql_ping - fix pg version parsing (https://github.com/ansible-collections/community.postgresql/issues/315).
+- postgresql_privs.py - add functionality when the PostgreSQL version is 9.0.0 or greater to incorporate ``ALL x IN SCHEMA`` syntax (https://github.com/ansible-collections/community.postgresql/pull/282). Please see the official documentation for details regarding grants (https://www.postgresql.org/docs/9.0/sql-grant.html).
+- postgresql_subscription - fix idempotence by casting the ``connparams`` dict variable (https://github.com/ansible-collections/community.postgresql/issues/280).
+- postgresql_user - add ``alter user``-statements in the return value ``queries`` (https://github.com/ansible-collections/community.postgresql/issues/307).
+
 v1.7.4
 ======
 

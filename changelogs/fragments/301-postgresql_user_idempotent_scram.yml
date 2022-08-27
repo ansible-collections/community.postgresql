@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_user - make the module idempotent when password is scram hashed (https://github.com/ansible-collections/community.postgresql/issues/301).

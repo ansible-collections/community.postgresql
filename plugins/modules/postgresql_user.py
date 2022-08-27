@@ -23,6 +23,8 @@ description:
   whether the user has been removed or not.
 - B(WARNING) The I(priv) option has been B(deprecated) and will be removed in community.postgresql 3.0.0. Please use the
   M(community.postgresql.postgresql_privs) module instead.
+- B(WARNING) The I(groups) option has been B(deprecated) ans will be removed in community.postgresql 3.0.0.
+  Please use the M(community.postgresql.postgresql_membership) module instead.
 options:
   name:
     description:
@@ -139,6 +141,9 @@ options:
     aliases: [ ssl_rootcert ]
   groups:
     description:
+    - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0.
+      Please use the I(postgresql_membership) module to GRANT/REVOKE group/role memberships
+      instead.
     - The list of groups (roles) that you want to grant to the user.
     type: list
     elements: str
@@ -190,6 +195,8 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database, create django user, and grant access to database and products table
   community.postgresql.postgresql_user:
     db: acme
@@ -212,6 +219,8 @@ EXAMPLES = r'''
     password: md59543f1d82624df2b31672ec0f7050460
     role_attr_flags: CREATEDB,NOSUPERUSER
 
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database and remove test user privileges from there
   community.postgresql.postgresql_user:
     db: acme
@@ -220,6 +229,8 @@ EXAMPLES = r'''
     state: absent
     fail_on_user: no
 
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Connect to test database, remove test user from cluster
   community.postgresql.postgresql_user:
     db: test
@@ -227,6 +238,8 @@ EXAMPLES = r'''
     priv: ALL
     state: absent
 
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database and set user's password with no expire date
   community.postgresql.postgresql_user:
     db: acme
@@ -244,6 +257,8 @@ EXAMPLES = r'''
     user: test
     password: ""
 
+# This example uses the `group` argument which is deprecated.
+# You should use the `postgresql_membership` module instead.
 - name: Create user test and grant group user_ro and user_rw to it
   community.postgresql.postgresql_user:
     name: test
@@ -260,6 +275,8 @@ EXAMPLES = r'''
   environment:
     PGOPTIONS: "-c password_encryption=scram-sha-256"
 
+# This example uses the 'priv' argument which is deprecated.
+# You should use the 'postgresql_privs' module instead.
 - name: Create a user, grant SELECT on pg_catalog.pg_stat_database
   community.postgresql.postgresql_user:
     name: monitoring
@@ -404,6 +421,10 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
         if password == '':
             if current_role_attrs['rolpassword'] is not None:
                 pwchanging = True
+        # If the provided password is a SCRAM hash, compare it directly to the current password
+        elif re.match(SCRAM_SHA256_REGEX, password):
+            if password != current_role_attrs['rolpassword']:
+                pwchanging = True
 
         # SCRAM hashes are represented as a special object, containing hash data:
         # `SCRAM-SHA-256$<iteration count>:<salt>$<StoredKey>:<ServerKey>`
@@ -535,8 +556,10 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
         query_password_data = dict(password=password, expires=expires)
         try:
-            cursor.execute(' '.join(alter), query_password_data)
+            statement = ' '.join(alter)
+            cursor.execute(statement, query_password_data)
             changed = True
+            executed_queries.append(statement)
         except psycopg2.InternalError as e:
             if e.pgcode == '25006':
                 # Handle errors due to read-only transactions indicated by pgcode 25006
@@ -579,7 +602,9 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             alter.append('WITH %s' % role_attr_flags)
 
         try:
-            cursor.execute(' '.join(alter))
+            statement = ' '.join(alter)
+            cursor.execute(statement)
+            executed_queries.append(statement)
         except psycopg2.InternalError as e:
             if e.pgcode == '25006':
                 # Handle errors due to read-only transactions indicated by pgcode 25006
@@ -916,7 +941,8 @@ def main():
         expires=dict(type='str', default=None),
         conn_limit=dict(type='int', default=None),
         session_role=dict(type='str'),
-        groups=dict(type='list', elements='str'),
+        # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
+        groups=dict(type='list', elements='str', removed_in_version='3.0.0', removed_from_collection='community.postgreql'),
         comment=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
     )
@@ -942,6 +968,7 @@ def main():
     expires = module.params["expires"]
     conn_limit = module.params["conn_limit"]
     role_attr_flags = module.params["role_attr_flags"]
+    # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
     groups = module.params["groups"]
     if groups:
         groups = [e.strip() for e in groups]
@@ -951,6 +978,7 @@ def main():
     trust_input = module.params['trust_input']
     if not trust_input:
         # Check input for potentially dangerous elements:
+        # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
         check_input(module, user, password, privs, expires,
                     role_attr_flags, groups, comment, session_role)
 
@@ -990,6 +1018,7 @@ def main():
         except SQLParseError as e:
             module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
+        # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
         if groups:
             target_roles = []
             target_roles.append(user)
