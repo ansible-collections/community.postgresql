@@ -20,7 +20,7 @@ options:
     description:
     - Role (user/group) to set as an I(obj_name) owner.
     type: str
-    required: yes
+    required: true
   obj_name:
     description:
     - Name of a database object to change ownership.
@@ -48,10 +48,10 @@ options:
     elements: str
   fail_on_role:
     description:
-    - If C(yes), fail when I(reassign_owned_by) role does not exist.
+    - If C(true), fail when I(reassign_owned_by) role does not exist.
       Otherwise just warn and continue.
     - Mutually exclusive with I(obj_name) and I(obj_type).
-    default: yes
+    default: true
     type: bool
   db:
     description:
@@ -68,11 +68,11 @@ options:
     type: str
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(new_owner), I(obj_name),
+    - If C(false), check whether values of parameters I(new_owner), I(obj_name),
       I(reassign_owned_by), I(session_role) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via the parameters are possible.
+    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 seealso:
 - module: community.postgresql.postgresql_user

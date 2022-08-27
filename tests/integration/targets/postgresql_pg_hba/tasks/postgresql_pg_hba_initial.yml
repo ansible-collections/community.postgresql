@@ -13,7 +13,7 @@
     backup: 'True'
     order: sud
     state: "{{item}}"
-  check_mode: yes
+  check_mode: true
   with_items:
   - present
   - absent
@@ -150,7 +150,7 @@
     source: all
     state: present
   register: pg_hba_fail_src_all_with_netmask
-  ignore_errors: yes
+  ignore_errors: true
 
 - debug:
     var: pg_hba.pg_hba
@@ -202,7 +202,7 @@
   fetch:
     src: /tmp/pg_hba2.conf
     dest: /tmp/pg_hba2.conf
-    flat: yes
+    flat: true
 - name: Read pg_hba2.conf
   set_fact:
     content: "{{ lookup('file', '/tmp/pg_hba2.conf') }}"
@@ -226,7 +226,7 @@
   fetch:
     src: /tmp/pg_hba2.conf
     dest: /tmp/pg_hba2.conf
-    flat: yes
+    flat: true
 - name: Read pg_hba2.conf
   set_fact:
     content: "{{ lookup('file', '/tmp/pg_hba2.conf') }}"
@@ -251,7 +251,7 @@
   fetch:
     src: /tmp/pg_hba2.conf
     dest: /tmp/pg_hba2.conf
-    flat: yes
+    flat: true
 - name: Read pg_hba2.conf
   set_fact:
     content: "{{ lookup('file', '/tmp/pg_hba2.conf') }}"

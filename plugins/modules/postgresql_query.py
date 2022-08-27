@@ -47,7 +47,7 @@ options:
     - Path to a SQL script on the target machine.
     - If the script contains several queries, they must be semicolon-separated.
     - To run scripts containing objects with semicolons
-      (for example, function and procedure definitions), use I(as_single_query=yes).
+      (for example, function and procedure definitions), use I(as_single_query=true).
     - To upload dumps or to execute other complex scripts, the preferable way
       is to use the M(community.postgresql.postgresql_db) module with I(state=restore).
     - Mutually exclusive with I(query).
@@ -71,7 +71,7 @@ options:
       (e.g., VACUUM).
     - Mutually exclusive with I(check_mode).
     type: bool
-    default: no
+    default: false
   encoding:
     description:
     - Set the client encoding for the current session (e.g. C(UTF-8)).
@@ -80,10 +80,10 @@ options:
     version_added: '0.2.0'
   trust_input:
     description:
-    - If C(no), check whether a value of I(session_role) is potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via I(session_role) are possible.
+    - If C(false), check whether a value of I(session_role) is potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections via I(session_role) are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
   search_path:
     description:
@@ -96,19 +96,19 @@ options:
     - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0,
       please use the M(community.postgresql.postgresql_script) module to execute
       statements from scripts.
-    - If C(yes), when reading from the I(path_to_script) file,
+    - If C(true), when reading from the I(path_to_script) file,
       executes its whole content in a single query (not splitting it up
       into separate queries by semicolons). It brings the following changes in
       the module's behavior.
-    - When C(yes), the C(query_all_results) return value
+    - When C(true), the C(query_all_results) return value
       contains only the result of the last statement.
     - Whether the state is reported as changed or not
       is determined by the last statement of the file.
     - Used only when I(path_to_script) is specified, otherwise ignored.
-    - If set to C(no), the script can contain only semicolon-separated queries.
+    - If set to C(false), the script can contain only semicolon-separated queries.
       (see the I(path_to_script) option documentation).
     type: bool
-    default: yes
+    default: true
     version_added: '1.1.0'
 seealso:
 - module: community.postgresql.postgresql_script
@@ -171,7 +171,7 @@ EXAMPLES = r'''
 # and will be removed in community.postgresql 3.0.0, please
 # use the community.postgresql.postgresql_script module instead.
 # If your script contains semicolons as parts of separate objects
-# like functions, procedures, and so on, use "as_single_query: yes"
+# like functions, procedures, and so on, use "as_single_query: true"
 - name: Run queries from SQL script using UTF-8 client encoding for session
   community.postgresql.postgresql_query:
     db: test_db
@@ -184,7 +184,7 @@ EXAMPLES = r'''
   community.postgresql.postgresql_query:
     db: test_db
     query: VACUUM
-    autocommit: yes
+    autocommit: true
 
 - name: >
     Insert data to the column of array type using positional_args.

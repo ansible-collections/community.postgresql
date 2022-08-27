@@ -1,7 +1,7 @@
 - name: set test variables
   set_fact:
     pghba_defaults: &pghba_defaults
-      create: yes
+      create: true
       dest: "/tmp/pg_hba_bulk_test.conf"
     test_rule0: &test_rule0
       contype: host

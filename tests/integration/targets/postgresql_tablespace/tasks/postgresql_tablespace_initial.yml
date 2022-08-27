@@ -201,7 +201,7 @@
     login_user: '{{ pg_user }}'
     name: foo
     rename_to: '{{ dangerous_name }}'
-    trust_input: no
+    trust_input: false
   register: result
   ignore_errors: true
 
@@ -218,7 +218,7 @@
     login_user: '{{ pg_user }}'
     name: foo
     state: absent
-    trust_input: yes
+    trust_input: true
   register: result
   ignore_errors: true
 

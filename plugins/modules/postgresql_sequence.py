@@ -85,7 +85,7 @@ options:
       has reached its maximum value will return an error. False (NO CYCLE) is
       the default.
     type: bool
-    default: no
+    default: false
   cascade:
     description:
     - Automatically drop objects that depend on the sequence, and in turn all
@@ -93,7 +93,7 @@ options:
     - Ignored if I(state=present).
     - Only used with I(state=absent).
     type: bool
-    default: no
+    default: false
   rename_to:
     description:
     - The new name for the I(sequence).
@@ -131,11 +131,11 @@ options:
     - login_db
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(sequence), I(schema), I(rename_to),
+    - If C(false), check whether values of parameters I(sequence), I(schema), I(rename_to),
       I(owner), I(newschema), I(session_role) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via the parameters are possible.
+    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 notes:
 - Supports C(check_mode).
@@ -186,7 +186,7 @@ EXAMPLES = r'''
 - name: Create an ascending sequence called foobar, which cycle between 1 to 10
   community.postgresql.postgresql_sequence:
     name: foobar
-    cycle: yes
+    cycle: true
     min: 1
     max: 10
 
@@ -219,7 +219,7 @@ EXAMPLES = r'''
 - name: Drop a sequence called foobar with cascade
   community.postgresql.postgresql_sequence:
     name: foobar
-    cascade: yes
+    cascade: true
     state: absent
 '''
 
@@ -275,7 +275,7 @@ cycle:
     description: Shows if the sequence cycle or not.
     returned: always
     type: str
-    sample: 'NO'
+    sample: 'false'
 owner:
     description: Shows the current owner of the sequence
                  after the successful run of the task.

@@ -19,7 +19,7 @@ options:
     description:
     - Name of the replication slot to add or remove.
     type: str
-    required: yes
+    required: true
     aliases:
     - slot_name
   slot_type:
@@ -38,14 +38,14 @@ options:
     choices: [ absent, present ]
   immediately_reserve:
     description:
-    - Optional parameter that when C(yes) specifies that the LSN for this replication slot be reserved
-      immediately, otherwise the default, C(no), specifies that the LSN is reserved on the first connection
+    - Optional parameter that when C(true) specifies that the LSN for this replication slot be reserved
+      immediately, otherwise the default, C(false), specifies that the LSN is reserved on the first connection
       from a streaming replication client.
     - Is available from PostgreSQL version 9.6.
     - Uses only with I(slot_type=physical).
     - Mutually exclusive with I(slot_type=logical).
     type: bool
-    default: no
+    default: false
   output_plugin:
     description:
     - All logical slots must indicate which output plugin decoder they're using.
@@ -68,10 +68,10 @@ options:
     type: str
   trust_input:
     description:
-    - If C(no), check the value of I(session_role) is potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via I(session_role) are possible.
+    - If C(false), check the value of I(session_role) is potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections via I(session_role) are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 
 notes:

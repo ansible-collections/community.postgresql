@@ -25,7 +25,7 @@
       <<: *pg_parameters
       name: '{{ db_source_name }}'
       state: rename
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -39,7 +39,7 @@
       name: '{{ db_source_name }}'
       state: rename
       target: '{{ db_source_name }}'
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -53,7 +53,7 @@
       name: postgres
       state: rename
       target: '{{ db_source_name }}'
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -68,7 +68,7 @@
       name: '{{ db_source_name }}'
       state: rename
       target: '{{ db_target_name}}'
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -82,8 +82,8 @@
       name: '{{ db_source_name }}'
       state: rename
       target: '{{ db_target_name}}'
-    ignore_errors: yes
-    check_mode: yes
+    ignore_errors: true
+    check_mode: true
 
   - assert:
       that:
@@ -108,7 +108,7 @@
       name: '{{ db_source_name }}'
       state: rename
       target: '{{ db_target_name}}'
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -122,7 +122,7 @@
       name: '{{ db_source_name }}'
       state: rename
       target: '{{ db_target_name}}'
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -145,7 +145,7 @@
       name: '{{ db_source_name }}'
       state: rename
       target: '{{ db_target_name }}'
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:
@@ -212,7 +212,7 @@
       name: '{{ db_source_name }}'
       state: rename
       target: '{{ db_target_name}}'
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:

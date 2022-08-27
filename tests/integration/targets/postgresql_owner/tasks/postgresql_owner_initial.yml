@@ -196,7 +196,7 @@
     db: acme
     new_owner: alice
     reassign_owned_by: bob
-    trust_input: yes
+    trust_input: true
   register: result
 
 - assert:
@@ -221,7 +221,7 @@
 ###########################
 # Test trust_inpt parameter
 
-- name: postgresql_owner - reassign_owned_by, trust_input no
+- name: postgresql_owner - reassign_owned_by, trust_input false
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -229,16 +229,16 @@
     db: acme
     new_owner: '{{ dangerous_name }}'
     reassign_owned_by: alice
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
     - result is failed
     - result.msg == 'Passed input \'{{ dangerous_name }}\' is potentially dangerous'
 
-- name: postgresql_owner - reassign_owned_by, trust_input yes by default
+- name: postgresql_owner - reassign_owned_by, trust_input true by default
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -247,7 +247,7 @@
     new_owner: '{{ dangerous_name }}'
     reassign_owned_by: alice
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:

@@ -13,7 +13,7 @@
     test_db: acme_db
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
-      become: yes
+      become: true
       register: result
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
@@ -64,8 +64,8 @@
     postgresql_publication: 
       <<: *pg_parameters
       name: '{{ test_pub }}'
-      trust_input: no
-    check_mode: yes
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -90,7 +90,7 @@
     postgresql_publication: 
       <<: *pg_parameters
       name: '{{ test_pub }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -122,8 +122,8 @@
       <<: *pg_parameters
       name: '{{ test_pub }}'
       state: absent
-      trust_input: no
-    check_mode: yes
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -153,7 +153,7 @@
       <<: *pg_parameters
       name: '{{ test_pub }}'
       state: absent
-      cascade: yes
+      cascade: true
 
   - assert:
       that:
@@ -184,7 +184,7 @@
       - '{{ test_schema }}.{{ test_table2 }}'
       parameters:
         publish: 'insert'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -238,8 +238,8 @@
       name: '{{ test_pub }}'
       session_role: '{{ dangerous_name }}'
       owner: '{{ dangerous_name }}'
-      trust_input: no
-    ignore_errors: yes
+      trust_input: false
+    ignore_errors: true
 
   - assert:
       that:
@@ -257,8 +257,8 @@
       - '{{ test_table1 }}'
       - '{{ test_schema }}.{{ test_table2 }}'
       - '{{ test_table3 }}'
-      trust_input: no
-    check_mode: yes
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -301,7 +301,7 @@
       - '{{ test_table1 }}'
       - '{{ test_schema }}.{{ test_table2 }}'
       - '{{ test_table3 }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -343,8 +343,8 @@
       - '{{ test_schema }}.{{ test_table2 }}'
       parameters:
         publish: 'insert'
-      trust_input: no
-    check_mode: yes
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -385,7 +385,7 @@
       - '{{ test_schema }}.{{ test_table2 }}'
       parameters:
         publish: 'delete'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:

@@ -7,12 +7,12 @@
 # Create test roles:
 - name: postgresql_membership - create test roles
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_user:
     login_user: "{{ pg_user }}"
     db: postgres
     name: "{{ item }}"
-  ignore_errors: yes
+  ignore_errors: true
   with_items:
   - "{{ test_group1 }}"
   - "{{ test_group2 }}"
@@ -27,7 +27,7 @@
 # Grant test_group1 to test_user1 in check_mode:
 - name: postgresql_membership - grant test_group1 to test_user1 in check_mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -35,8 +35,8 @@
     user: "{{ test_user1 }}"
     state: present
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -51,7 +51,7 @@
 # nothing actually changed in check_mode at the previous step:
 - name: postgresql_membership - try to revoke test_group1 from test_user1 for checking check_mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -59,8 +59,8 @@
     user: "{{ test_user1 }}"
     state: absent
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -75,7 +75,7 @@
 # Grant test_group1 to test_user1:
 - name: postgresql_membership - grant test_group1 to test_user1
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -83,7 +83,7 @@
     user: "{{ test_user1 }}"
     state: present
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -97,7 +97,7 @@
 # Grant test_group1 to test_user1 again to check that nothing changes:
 - name: postgresql_membership - grant test_group1 to test_user1 again
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -105,7 +105,7 @@
     user: "{{ test_user1 }}"
     state: present
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -119,7 +119,7 @@
 # Revoke test_group1 from test_user1:
 - name: postgresql_membership - revoke test_group1 from test_user1
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -127,7 +127,7 @@
     user: "{{ test_user1 }}"
     state: absent
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -141,7 +141,7 @@
 # Revoke test_group1 from test_user1 again to check that nothing changes:
 - name: postgresql_membership - revoke test_group1 from test_user1 again
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -149,7 +149,7 @@
     user: "{{ test_user1 }}"
     state: absent
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -163,7 +163,7 @@
 # Grant test_group1 and test_group2 to test_user1 and test_user2:
 - name: postgresql_membership - grant two groups to two users
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -175,7 +175,7 @@
     - "{{ test_user2 }}"
     state: present
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -190,7 +190,7 @@
 # Grant test_group1 and test_group2 to test_user1 and test_user2 again to check that nothing changes:
 - name: postgresql_membership - grant two groups to two users again
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -202,7 +202,7 @@
     - "{{ test_user2 }}"
     state: present
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -217,7 +217,7 @@
 # Revoke only test_group1 from test_user1:
 - name: postgresql_membership - revoke one group from one user
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -225,7 +225,7 @@
     user: "{{ test_user1 }}"
     state: absent
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -240,7 +240,7 @@
 # to check that nothing changes with test_user2:
 - name: postgresql_membership - grant two groups to two users again
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -252,7 +252,7 @@
     - "{{ test_user2 }}"
     state: present
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -267,19 +267,19 @@
 #####################
 # Check fail_on_role:
 
-# Try to grant non existent group to non existent role with fail_on_role=yes:
+# Try to grant non existent group to non existent role with fail_on_role=true:
 - name: postgresql_membership - revoke non existen group from non existen role
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
     group: fake_group
     user: fake_user
     state: present
-    fail_on_role: yes
+    fail_on_role: true
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -288,16 +288,16 @@
 # Try to grant non existent group to non existent role with fail_on_role=no:
 - name: postgresql_membership - revoke non existen group from non existen role
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
     group: fake_group
     user: fake_user
     state: present
-    fail_on_role: no
+    fail_on_role: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -310,16 +310,16 @@
 # Try to revoke non existent group from non existent role with fail_on_role=no:
 - name: postgresql_membership - revoke non existen group from non existen role
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
     group: fake_group
     user: fake_user
     state: absent
-    fail_on_role: no
+    fail_on_role: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -332,7 +332,7 @@
 # Grant test_group3 with a name containing dots to test_user1.
 - name: postgresql_membership - grant test_group3 with dots to test_user1
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -351,7 +351,7 @@
 
 - name: postgresql_membership - try to use dangerous input, don't trust
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -360,9 +360,9 @@
     - "{{ dangerous_name }}"
     user: "{{ test_user1 }}"
     state: present
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -371,7 +371,7 @@
 
 - name: postgresql_membership - try to use dangerous input, trust explicitly
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -380,9 +380,9 @@
     - "{{ dangerous_name }}"
     user: "{{ test_user1 }}"
     state: present
-    trust_input: yes
+    trust_input: true
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -393,7 +393,7 @@
 # Tests for match method
 - name: Revoke all groups from a role check mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -401,7 +401,7 @@
     user: "{{ test_user1 }}"
     state: exact
   register: result
-  check_mode: yes
+  check_mode: true
 
 - assert:
     that:
@@ -415,7 +415,7 @@
 
 - name: Check result of prev task
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -428,7 +428,7 @@
 
 - name: Revoke all groups from a role actual mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -449,7 +449,7 @@
 
 - name: Check result of prev task
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -462,7 +462,7 @@
 
 - name: Grant all groups to a role check mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -473,7 +473,7 @@
     user: "{{ test_user1 }}"
     state: exact
   register: result
-  check_mode: yes
+  check_mode: true
 
 - assert:
     that:
@@ -487,7 +487,7 @@
 
 - name: Check result of prev task
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -500,7 +500,7 @@
 
 - name: Grant all groups to a role real mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -524,7 +524,7 @@
 
 - name: Check result of prev task
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -537,7 +537,7 @@
 
 - name: Change groups 1
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -558,7 +558,7 @@
 
 - name: Check result of prev task
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -571,7 +571,7 @@
 
 - name: Change groups 2
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -592,7 +592,7 @@
 
 - name: Check result of prev task
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -605,7 +605,7 @@
 
 - name: Change groups 2 again
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -626,7 +626,7 @@
 
 - name: Check result of prev task
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -639,7 +639,7 @@
 
 - name: Change groups for two users
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -663,7 +663,7 @@
 
 - name: Check result of prev task for {{ test_user1 }}
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -676,7 +676,7 @@
 
 - name: Check result of prev task for {{ test_user2 }}
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -689,7 +689,7 @@
 
 - name: Change groups for two users 2
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -711,7 +711,7 @@
 
 - name: Check result of prev task for {{ test_user1 }}
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
@@ -724,7 +724,7 @@
 
 - name: Check result of prev task for {{ test_user2 }}
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres

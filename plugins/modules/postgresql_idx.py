@@ -75,19 +75,19 @@ options:
   concurrent:
     description:
     - Enable or disable concurrent mode (CREATE / DROP INDEX CONCURRENTLY).
-    - Pay attention, if I(concurrent=no), the table will be locked (ACCESS EXCLUSIVE) during the building process.
+    - Pay attention, if I(concurrent=false), the table will be locked (ACCESS EXCLUSIVE) during the building process.
       For more information about the lock levels see U(https://www.postgresql.org/docs/current/explicit-locking.html).
-    - If the building process was interrupted for any reason when I(cuncurrent=yes), the index becomes invalid.
+    - If the building process was interrupted for any reason when I(cuncurrent=true), the index becomes invalid.
       In this case it should be dropped and created again.
-    - Mutually exclusive with I(cascade=yes).
+    - Mutually exclusive with I(cascade=true).
     type: bool
-    default: yes
+    default: true
   unique:
     description:
     - Enable unique index.
     - Only btree currently supports unique indexes.
     type: bool
-    default: no
+    default: false
     version_added: '0.2.0'
   tablespace:
     description:
@@ -105,17 +105,17 @@ options:
     - Automatically drop objects that depend on the index,
       and in turn all objects that depend on those objects.
     - It used only with I(state=absent).
-    - Mutually exclusive with I(concurrent=yes).
+    - Mutually exclusive with I(concurrent=true).
     type: bool
-    default: no
+    default: false
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(idxname), I(session_role),
+    - If C(false), check whether values of parameters I(idxname), I(session_role),
       I(schema), I(table), I(columns), I(tablespace), I(storage_params),
       I(cond) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via the parameters are possible.
+    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 
 seealso:
@@ -137,7 +137,7 @@ seealso:
 notes:
 - Supports C(check_mode).
 - The index building process can affect database performance.
-- To avoid table locks on production databases, use I(concurrent=yes) (default behavior).
+- To avoid table locks on production databases, use I(concurrent=true) (default behavior).
 
 author:
 - Andrew Klychkov (@Andersson007)
@@ -182,7 +182,7 @@ EXAMPLES = r'''
     idxname: gin0_idx
     table: test
     columns: comment gin_trgm_ops
-    concurrent: no
+    concurrent: false
     idxtype: gin
 
 - name: Drop btree test_idx concurrently
@@ -196,8 +196,8 @@ EXAMPLES = r'''
     db: mydb
     idxname: test_idx
     state: absent
-    cascade: yes
-    concurrent: no
+    cascade: true
+    concurrent: false
 
 - name: Create btree index test_idx concurrently on columns id,comment where column id > 1
   community.postgresql.postgresql_idx:
@@ -213,8 +213,8 @@ EXAMPLES = r'''
     table: products
     columns: name
     name: test_unique_idx
-    unique: yes
-    concurrent: no
+    unique: true
+    concurrent: false
 '''
 
 RETURN = r'''
