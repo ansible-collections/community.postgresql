@@ -245,7 +245,7 @@
       - result.increment == '-1'
       - result.minvalue == '1'
       - result.maxvalue == '1000'
-      - result.cycle == 'true'
+      - result.cycle == 'YES'
       - result.queries == ["CREATE SEQUENCE \"public\".\"foobar_desc\" INCREMENT BY -1 MINVALUE 1 MAXVALUE 1000 START WITH 101 CYCLE"]
 
 # Real SQL check
