@@ -25,15 +25,14 @@
       paths:
       - '{{ role_path }}/vars'
 
-- name: Make sure the dbus service is enabled under systemd
-  shell: systemctl enable dbus || systemctl enable dbus-broker
-  ignore_errors: yes
-  when: ansible_service_mgr == 'systemd' and ansible_distribution == 'Fedora'
-
-- name: Make sure the dbus service is started under systemd
-  systemd:
-    name: dbus
-    state: started
+- block:
+    - name: Make sure the dbus service is enabled under systemd
+      shell: systemctl enable dbus || systemctl enable dbus-broker
+      ignore_errors: yes
+    - name: Make sure the dbus service is started under systemd
+      systemd:
+        name: dbus
+        state: started
   when: ansible_service_mgr == 'systemd' and ansible_distribution == 'Fedora'
 
 - name: Kill all postgres processes
@@ -46,19 +45,11 @@
   service: name={{ postgresql_service }} state=stopped
   ignore_errors: true
 
-- name: remove old db (RedHat)
-  file:
-    path: '{{ pg_dir }}'
-    state: absent
-  ignore_errors: true
-  when: ansible_os_family == "RedHat"
-
-- name: remove old db config and files (debian)
+- name: remove old db config and files
   file:
     path: '{{ loop_item }}'
     state: absent
   ignore_errors: true
-  when: ansible_os_family == "Debian"
   loop:
   - /etc/postgresql
   - /var/lib/postgresql
@@ -66,52 +57,50 @@
     loop_var: loop_item
 
 #
-# Install PostgreSQL 14 on Ubuntu 20.04
-- name: Install wget
-  package:
-    name: wget
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-
-- name: Add a repository
-  shell: echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-
-- name: Add a repository
-  shell: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-
-- name: Add a repository
-  shell: apt -y update
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-
-- name: Install locale needed
-  shell: 'locale-gen {{ item }}'
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-  loop:
-  - es_ES
-  - pt_BR
-
-- name: Update locale
-  shell: 'update-locale'
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
+## Install PGDG repo on Ubuntu
+- block:
+    - name: Install wget
+      package:
+        name: wget
+    - name: Add a repository
+      shell: echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    - name: Add a repository
+      shell: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+    - name: Add a repository
+      shell: apt -y update
+    - name: Install locale needed
+      shell: 'locale-gen {{ item }}'
+      loop:
+      - es_ES
+      - pt_BR
+    - name: Update locale
+      shell: 'update-locale'
+  when: ansible_facts.distribution == 'Ubuntu'
 ##
 #
 
-- name: install dependencies for postgresql test
-  package:
-    name: '{{ postgresql_package_item }}'
-    state: present
-  with_items: '{{ postgresql_packages }}'
+#
+## Install PGDG repo on RedHat family
+- name: Add a repository
+  shell: 'yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-{{ansible_facts.distribution_major_version}}-x86_64/pgdg-redhat-repo-latest.noarch.rpm'
+  when: ansible_facts.os_family == 'RedHat'
+
+##
+#
+
+- include_tasks: install_deps.yml
+  with_sequence: start=10 count=5
   loop_control:
-    loop_var: postgresql_package_item
+    loop_var: pg_ver
 
 - name: Initialize postgres (RedHat systemd)
-  command: postgresql-setup initdb
-  when: ansible_os_family == "RedHat" and ansible_service_mgr == "systemd"
-
-- name: Initialize postgres (RedHat sysv)
-  command: /sbin/service postgresql initdb
-  when: ansible_os_family == "RedHat" and ansible_service_mgr != "systemd"
+  command: 'postgresql-{{ pg_ver }}-setup initdb'
+  when:
+    - ansible_service_mgr == "systemd"
+    - ansible_os_family == "RedHat"
+  with_sequence: start=10 count=5
+  loop_control:
+    loop_var: pg_ver
 
 - name: Initialize postgres (Debian)
   shell: . /usr/share/postgresql-common/maintscripts-functions && set_system_locale && /usr/bin/pg_createcluster -u postgres {{ pg_ver }} main
@@ -126,6 +115,9 @@
     owner: '{{ pg_user }}'
     group: '{{ pg_group }}'
     mode: '0644'
+  with_sequence: start=10 count=5
+  loop_control:
+    loop_var: pg_ver
 
 - name: Generate locales (Debian)
   locale_gen:
@@ -145,7 +137,6 @@
       - glibc-all-langpacks
       state: present
     when: ansible_distribution_major_version is version('8', '>=')
-
   - name: Check if locales need to be generated (RedHat)
     shell: localedef --list-archive | grep -a -q '^{{ locale }}$'
     register: locale_present
@@ -155,7 +146,6 @@
     - pt_BR
     loop_control:
       loop_var: locale
-
   - block:
       - name: Reinstall internationalization files
         command: yum -y reinstall glibc-common
@@ -165,7 +155,6 @@
           name: glibc-common
           state: present
     when: locale_present is failed
-
   - name: Generate locale (RedHat)
     command: localedef -f ISO-8859-1 -i {{ item.locale }} {{ item.locale }}
     when: item is failed
@@ -181,72 +170,85 @@
   - glibc-langpack-pt
   when: ansible_distribution == 'Fedora' and ansible_distribution_major_version is version('24', '>=')
 
-- name: start postgresql service
-  service: name={{ postgresql_service }} state=started
+- name: Correct the port
+  lineinfile:
+    path: '{{pg_dir}}/postgresql.conf'
+    regexp: '^port '
+    insertafter: '^#port '
+    line: 'port = 54{{ pg_ver }}'
+  with_sequence: start=10 count=5
+  loop_control:
+    loop_var: pg_ver
+
+- name: start postgresql service (RedHat)
+  become_user: '{{ pg_user }}'
+  become: true
+  command: '/usr/pgsql-{{ pg_ver }}/bin/pg_ctl -D {{pg_dir}} start'
+  with_sequence: start=10 count=5
+  when: ansible_facts.os_family == 'RedHat'
+  loop_control:
+    loop_var: pg_ver
+
+- name: start postgresql service (Debian)
+  become_user: '{{ pg_user }}'
+  become: true
+  command: '/usr/lib/postgresql/{{ pg_ver }}/bin/pg_ctl -D {{pg_dir}} start'
+  with_sequence: start=10 count=5
+  when: ansible_facts.os_family == 'Debian'
+  loop_control:
+    loop_var: pg_ver
 
 - name: Pause between start and stop
   pause:
     seconds: 5
 
-- name: Kill all postgres processes
-  shell: 'pkill -u {{ pg_user }}'
-  become: yes
-  when: ansible_facts.distribution == 'CentOS' and ansible_facts.distribution_major_version == '8'
-  ignore_errors: yes
-  register: terminate
+- name: stop postgresql service (RedHat)
+  become_user: '{{ pg_user }}'
+  become: true
+  command: '/usr/pgsql-{{ pg_ver }}/bin/pg_ctl -D {{pg_dir}} stop'
+  with_sequence: start=10 count=5
+  when: ansible_facts.os_family == 'RedHat'
+  loop_control:
+    loop_var: pg_ver
 
-- name: Stop postgresql service
-  service: name={{ postgresql_service }} state=stopped
-  when: terminate is not succeeded
+- name: stop postgresql service (Debian)
+  become_user: '{{ pg_user }}'
+  become: true
+  command: '/usr/lib/postgresql/{{ pg_ver }}/bin/pg_ctl -D {{pg_dir}} stop'
+  with_sequence: start=10 count=5
+  when: ansible_facts.os_family == 'Debian'
+  loop_control:
+    loop_var: pg_ver
 
 - name: Pause between stop and start
   pause:
     seconds: 5
 
-- name: Start postgresql service
-  service: name={{ postgresql_service }} state=started
-
-- name: copy control file for dummy ext
-  copy:
-    src: dummy.control
-    dest: /usr/share/postgresql/{{ pg_ver }}/extension/dummy.control
-    mode: '0444'
-  when: ansible_os_family == 'Debian'
-
-- name: copy version files for dummy ext
-  copy:
-    src: '{{ item }}'
-    dest: /usr/share/postgresql/{{ pg_ver }}/extension/{{ item }}
-    mode: '0444'
-  with_items:
-  - dummy--0.sql
-  - dummy--1.0.sql
-  - dummy--2.0.sql
-  - dummy--3.0.sql
-  when: ansible_os_family == 'Debian'
-
-- name: add update paths
-  file:
-    path: /usr/share/postgresql/{{ pg_ver }}/extension/{{ item }}
-    mode: '0444'
-    state: touch
-  with_items:
-  - dummy--0--1.0.sql
-  - dummy--1.0--2.0.sql
-  - dummy--2.0--3.0.sql
-  when: ansible_os_family == 'Debian'
-
-- name: Get PostgreSQL version
+- name: start postgresql service (RedHat)
   become_user: '{{ pg_user }}'
   become: true
-  shell: echo 'SHOW SERVER_VERSION' | psql --tuples-only --no-align --dbname postgres
-  register: postgres_version_resp
+  command: '/usr/pgsql-{{ pg_ver }}/bin/pg_ctl -D {{pg_dir}} start'
+  with_sequence: start=10 count=5
+  when: ansible_facts.os_family == 'RedHat'
+  loop_control:
+    loop_var: pg_ver
 
-- name: Print PostgreSQL server version
-  debug:
-    msg: '{{ postgres_version_resp.stdout }}'
+- name: start postgresql service (Debian)
+  become_user: '{{ pg_user }}'
+  become: true
+  command: '/usr/lib/postgresql/{{ pg_ver }}/bin/pg_ctl -D {{pg_dir}} start'
+  with_sequence: start=10 count=5
+  when: ansible_facts.os_family == 'Debian'
+  loop_control:
+    loop_var: pg_ver
+
+- name: set up dummy extension (Debian)
+  include_tasks: dummy_ext.yml
+  with_sequence: start=10 count=5
+  loop_control:
+    loop_var: pg_ver
+  when: ansible_os_family == 'Debian'
 
 - import_tasks: ssl.yml
   when:
   - ansible_os_family == 'Debian'
-  - postgres_version_resp.stdout is version('9.4', '>=')

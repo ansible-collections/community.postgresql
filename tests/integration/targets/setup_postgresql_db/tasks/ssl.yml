@@ -58,9 +58,20 @@
     db: postgres
     name: ssl
     value: true
+    port: '54{{ pg_ver }}'
+  with_sequence: start=10 count=5
+  loop_control:
+    loop_var: pg_ver
 
-- name: postgresql SSL - reload PostgreSQL to enable ssl on
+- name: reload postgresql to turn SSL on
+  become_user: '{{ pg_user }}'
   become: true
-  service:
-    name: '{{ postgresql_service }}'
-    state: reloaded
+  postgresql_query:
+    autocommit: yes
+    db: postgres
+    login_user: '{{ pg_user }}'
+    port: '54{{ pg_ver }}'
+    query: 'SELECT pg_reload_conf()'
+  with_sequence: start=10 count=5
+  loop_control:
+    loop_var: pg_ver

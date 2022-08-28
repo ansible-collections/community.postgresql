@@ -1,0 +1,14 @@
+---
+- name: disable PG module (RH8+)
+  command: dnf -y module disable postgresql
+  when:
+    - ansible_facts.os_family == 'RedHat'
+    - ansible_facts.distribution_major_version is version('8', '>=')
+
+- name: install dependencies for postgresql test
+  package:
+    name: '{{ postgresql_package_item }}'
+    state: present
+  with_nested: '{{ postgresql_packages }}'
+  loop_control:
+    loop_var: postgresql_package_item

@@ -1,8 +1,8 @@
 postgresql_packages:
-  - "postgresql-server"
+  - "postgresql{{ pg_ver }}-server"
   - "python3-psycopg2"
   - "bzip2"
   - "xz"
 
-pg_hba_location: "/var/lib/pgsql/data/pg_hba.conf"
-pg_dir: "/var/lib/pgsql/data"
+pg_hba_location: "{{pg_dir}}/pg_hba.conf"
+pg_dir: "/var/lib/pgsql/{{ pg_ver }}/data"
