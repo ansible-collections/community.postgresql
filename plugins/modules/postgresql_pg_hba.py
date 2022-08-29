@@ -563,7 +563,7 @@ class PgHbaRule(dict):
                 ipaddress.ip_address(u'{0}'.format(self['src']))
             except ValueError:
                 raise PgHbaValueError('Mask was specified, but source "{0}" '
-                                      'is no valid ip'.format(self['src']))
+                                      'is not valid ip'.format(self['src']))
             # ipaddress module cannot work with ipv6 netmask, so lets convert it to prefixlen
             # furthermore ipv4 with bad netmask throws 'Rule {} doesn't seem to be an ip, but has a
             # mask error that doesn't seem to describe what is going on.
@@ -580,7 +580,7 @@ class PgHbaRule(dict):
             try:
                 return ipaddress.ip_network(u'{0}'.format(sourcenw), strict=False)
             except ValueError:
-                raise PgHbaValueError('{0} is no valid address range'.format(sourcenw))
+                raise PgHbaValueError('{0} is not valid address range'.format(sourcenw))
 
         try:
             return ipaddress.ip_network(u'{0}'.format(self['src']), strict=False)

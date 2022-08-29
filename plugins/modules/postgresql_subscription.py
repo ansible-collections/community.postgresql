@@ -21,14 +21,14 @@ options:
     description:
     - Name of the subscription to add, update, or remove.
     type: str
-    required: yes
+    required: true
   db:
     description:
     - Name of the database to connect to and where
       the subscription state will be changed.
     aliases: [ login_db ]
     type: str
-    required: yes
+    required: true
   state:
     description:
     - The subscription state.
@@ -86,11 +86,11 @@ options:
     version_added: '0.2.0'
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(name), I(publications), I(owner),
+    - If C(false), check whether values of parameters I(name), I(publications), I(owner),
       I(session_role), I(connparams), I(subsparams) are potentially dangerous.
-    - It makes sense to use C(yes) only when SQL injections via the parameters are possible.
+    - It makes sense to use C(true) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 
 notes:
@@ -153,12 +153,12 @@ EXAMPLES = r'''
     name: acme
     state: refresh
 
-- name: Drop acme subscription from mydb with dependencies (cascade=yes)
+- name: Drop acme subscription from mydb with dependencies (cascade=true)
   community.postgresql.postgresql_subscription:
     db: mydb
     name: acme
     state: absent
-    cascade: yes
+    cascade: true
 
 - name: Assuming that acme subscription exists and enabled, disable the subscription
   community.postgresql.postgresql_subscription:
@@ -166,7 +166,7 @@ EXAMPLES = r'''
     name: acme
     state: present
     subsparams:
-      enabled: no
+      enabled: false
 '''
 
 RETURN = r'''

@@ -42,10 +42,10 @@ options:
     type: str
   trust_input:
     description:
-    - If C(no), check the value of I(session_role) is potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via I(session_role) are possible.
+    - If C(false), check the value of I(session_role) is potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections via I(session_role) are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 
 notes:

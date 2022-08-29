@@ -10,7 +10,7 @@
 - vars:
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
-      become: yes
+      become: true
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
       login_db: postgres
@@ -19,11 +19,11 @@
   - name: postgresql_set - preparation to the next step
     <<: *task_parameters
     become_user: "{{ pg_user }}"
-    become: yes
+    become: true
     postgresql_set:
       <<: *pg_parameters
       name: work_mem
-      reset: yes
+      reset: true
 
   #####################
   # Testing check_mode:
@@ -41,7 +41,7 @@
       name: work_mem
       value: 12MB
     register: set_wm
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:
@@ -100,7 +100,7 @@
     postgresql_set:
       <<: *pg_parameters
       name: work_mem
-      reset: yes
+      reset: true
     register: reset_wm
 
   - assert:
@@ -129,7 +129,7 @@
     postgresql_set:
       <<: *pg_parameters
       name: work_mem
-      reset: yes
+      reset: true
     register: reset_wm2
 
   - assert:
@@ -226,7 +226,7 @@
       name: autovacuum
       value: on
     register: set_aut
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:
@@ -243,7 +243,7 @@
       name: autovacuum
       value: off
     register: set_aut
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:
@@ -265,7 +265,7 @@
       - result.query_result[0].autovacuum == 'off'
 
   # Test check_mode, step 3. It is different from
-  # the prev test - it runs without check_mode: yes.
+  # the prev test - it runs without check_mode: true.
   # Before the check_mode tests autovacuum was off
   - name: postgresql - check that autovacuum wasn't actually changed after change in check_mode
     <<: *task_parameters
@@ -288,7 +288,7 @@
     <<: *task_parameters
     postgresql_set:
       <<: *pg_parameters
-      trust_input: yes
+      trust_input: true
       name: archive_command
       value: 'test ! -f /mnt/postgres/mb/%f && cp %p /mnt/postgres/mb/%f'
 
@@ -312,10 +312,10 @@
       <<: *pg_parameters
       name: shared_buffers
       value: 111MB
-      trust_input: no
+      trust_input: false
       session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
     register: result
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -332,7 +332,7 @@
       value: 'on'
 
   - name: Restart PostgreSQL
-    become: yes
+    become: true
     service:
       name: "{{ postgresql_service }}"
       state: restarted
@@ -368,7 +368,7 @@
       name: archive_command
       value: ''
     register: result
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:
@@ -381,7 +381,7 @@
       name: Timezone
       value: utc
     register: result
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -397,7 +397,7 @@
       name: archive_command
       value: '/usr/bin/touch %f'
     register: result
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:
@@ -422,7 +422,7 @@
       name: track_activity_query_size
       value: '4096B'
     register: result
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:
@@ -435,7 +435,7 @@
       name: track_activity_query_size
       value: '2048b'
     register: result
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:

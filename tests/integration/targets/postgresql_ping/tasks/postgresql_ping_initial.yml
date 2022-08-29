@@ -4,12 +4,12 @@
 
 - name: postgresql_ping - test return values
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_ping:
     db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -33,12 +33,12 @@
 
 - name: postgresql_ping - check ping of non-existing database doesn't return anything
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_ping:
     db: "{{ db_name_nonexist }}"
     login_user: "{{ pg_user }}"
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -48,7 +48,7 @@
 
 - name: postgresql_ping - ping DB with SSL
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_ping:
     db: "{{ ssl_db }}"
     login_user: "{{ ssl_user }}"
@@ -57,7 +57,7 @@
     login_port: 5432
     ssl_mode: require
     ca_cert: '{{ ssl_rootcert }}'
-    trust_input: yes
+    trust_input: true
   register: result
   when:
   - ansible_os_family == 'Debian'
@@ -73,14 +73,14 @@
 
 - name: postgresql_ping - check trust_input
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_ping:
     db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
     session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -90,7 +90,7 @@
 # Check conn_err_msg return value
 - name: Try to connect to non-existent DB
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_ping:
     db: blahblah
     login_user: "{{ pg_user }}"

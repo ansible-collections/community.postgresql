@@ -67,10 +67,10 @@ options:
     aliases: [ ssl_rootcert ]
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(schema), I(owner), I(session_role) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via the parameters are possible.
+    - If C(false), check whether values of parameters I(schema), I(owner), I(session_role) are potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 seealso:
 - name: PostgreSQL schemas
@@ -109,7 +109,7 @@ EXAMPLES = r'''
   community.postgresql.postgresql_schema:
     name: acme
     state: absent
-    cascade_drop: yes
+    cascade_drop: true
 '''
 
 RETURN = r'''

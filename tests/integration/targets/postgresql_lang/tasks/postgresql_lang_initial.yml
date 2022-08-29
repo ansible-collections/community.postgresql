@@ -3,7 +3,7 @@
 
 # Preparation for tests:
 - name: Install PostgreSQL support packages
-  become: yes
+  become: true
   action: "{{ ansible_facts.pkg_mgr }}"
   args:
     name: "{{ postgresql_lang_packages }}"
@@ -16,14 +16,14 @@
 # Create language in check_mode:
 - name: postgresql_lang - create plperl in check_mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_lang:
     db: postgres
     login_user: "{{ pg_user }}"
     name: plperl
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -32,7 +32,7 @@
 
 - name: postgresql_lang - check that lang doesn't exist after previous step, rowcount must be 0
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -46,13 +46,13 @@
 # Create language:
 - name: postgresql_lang - create plperl
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_lang:
     db: postgres
     login_user: "{{ pg_user }}"
     name: plperl
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -61,7 +61,7 @@
 
 - name: postgresql_lang - check that lang exists after previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -75,15 +75,15 @@
 # Drop language in check_mode:
 - name: postgresql_lang - drop plperl in check_mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_lang:
     db: postgres
     login_user: "{{ pg_user }}"
     name: plperl
     state: absent
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -92,7 +92,7 @@
 
 - name: postgresql_lang - check that lang exists after previous step, rowcount must be 1
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -106,14 +106,14 @@
 # Drop language:
 - name: postgresql_lang - drop plperl
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_lang:
     db: postgres
     login_user: "{{ pg_user }}"
     name: plperl
     state: absent
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -122,7 +122,7 @@
 
 - name: postgresql_lang - check that lang doesn't exist after previous step, rowcount must be 0
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -133,18 +133,18 @@
     that:
     - result.rowcount == 0
 
-# Check fail_on_drop yes
-- name: postgresql_lang - drop c language to check fail_on_drop yes
+# Check fail_on_drop true
+- name: postgresql_lang - drop c language to check fail_on_drop true
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_lang:
     db: postgres
     login_user: "{{ pg_user }}"
     name: c
     state: absent
-    fail_on_drop: yes
+    fail_on_drop: true
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -153,15 +153,15 @@
 # Check fail_on_drop no
 - name: postgresql_lang - drop c language to check fail_on_drop no
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_lang:
     db: postgres
     login_user: "{{ pg_user }}"
     name: c
     state: absent
-    fail_on_drop: no
+    fail_on_drop: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -170,15 +170,15 @@
 # Create trusted language:
 - name: postgresql_lang - create plpythonu
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_lang:
     db: postgres
     login_user: "{{ pg_user }}"
     name: plpythonu
-    trust: yes
-    force_trust: yes
+    trust: true
+    force_trust: true
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -187,7 +187,7 @@
 
 - name: postgresql_lang - check that lang exists and it's trusted after previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -201,16 +201,16 @@
 # Drop language cascade, tests of aliases:
 - name: postgresql_lang - drop plpythonu cascade
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_lang:
     login_db: postgres
     login_user: "{{ pg_user }}"
     login_port: 5432
     lang: plpythonu
     state: absent
-    cascade: yes
+    cascade: true
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -219,7 +219,7 @@
 
 - name: postgresql_lang - check that lang doesn't exist after previous step, rowcount must be 0
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"

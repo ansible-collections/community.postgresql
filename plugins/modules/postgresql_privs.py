@@ -21,7 +21,7 @@ options:
   database:
     description:
     - Name of database to connect to.
-    required: yes
+    required: true
     type: str
     aliases:
     - db
@@ -79,14 +79,14 @@ options:
     - The special value C(PUBLIC) can be provided instead to set permissions
       for the implicitly defined PUBLIC group.
     type: str
-    required: yes
+    required: true
     aliases:
     - role
   fail_on_role:
     description:
-    - If C(yes), fail when target role (for whom privs need to be granted) does not exist.
+    - If C(true), fail when target role (for whom privs need to be granted) does not exist.
       Otherwise just warn and continue.
-    default: yes
+    default: true
     type: bool
   session_role:
     description:
@@ -103,7 +103,7 @@ options:
   grant_option:
     description:
     - Whether C(role) may grant/revoke the specified privileges/group memberships to others.
-    - Set to C(no) to revoke GRANT OPTION, leave unspecified to make no changes.
+    - Set to C(false) to revoke GRANT OPTION, leave unspecified to make no changes.
     - I(grant_option) only has an effect if I(state) is C(present).
     type: bool
     aliases:
@@ -157,20 +157,20 @@ options:
     - ssl_rootcert
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(roles), I(target_roles), I(session_role),
+    - If C(false), check whether values of parameters I(roles), I(target_roles), I(session_role),
       I(schema) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via the parameters are possible.
+    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
   usage_on_types:
     description:
     - When adding default privileges, the module always implicitly adds ``USAGE ON TYPES``.
-    - To avoid this behavior, set I(usage_on_types) to C(no).
+    - To avoid this behavior, set I(usage_on_types) to C(false).
     - Added to save backwards compatibility.
     - Used only when adding default privileges, ignored otherwise.
     type: bool
-    default: yes
+    default: true
     version_added: '1.2.0'
 
 notes:
@@ -178,7 +178,7 @@ notes:
 - Parameters that accept comma separated lists (I(privs), I(objs), I(roles))
   have singular alias names (I(priv), I(obj), I(role)).
 - To revoke only C(GRANT OPTION) for a specific object, set I(state) to
-  C(present) and I(grant_option) to C(no) (see examples).
+  C(present) and I(grant_option) to C(false) (see examples).
 - Note that when revoking privileges from a role R, this role  may still have
   access via privileges granted to any role R is a member of including C(PUBLIC).
 - Note that when you use C(PUBLIC) role, the module always reports that the state has been changed.
@@ -223,7 +223,7 @@ EXAMPLES = r'''
     objs: books,authors
     schema: public
     roles: librarian,reader
-    grant_option: yes
+    grant_option: true
 
 - name: Same as above leveraging default values
   community.postgresql.postgresql_privs:
@@ -231,7 +231,7 @@ EXAMPLES = r'''
     privs: SELECT,INSERT,UPDATE
     objs: books,authors
     roles: librarian,reader
-    grant_option: yes
+    grant_option: true
 
 # REVOKE GRANT OPTION FOR INSERT ON TABLE books FROM reader
 # Note that role "reader" will be *granted* INSERT privilege itself if this
@@ -243,7 +243,7 @@ EXAMPLES = r'''
     priv: INSERT
     obj: books
     role: reader
-    grant_option: no
+    grant_option: false
 
 # "public" is the default schema. This also works for PostgreSQL 8.x.
 - name: REVOKE INSERT, UPDATE ON ALL TABLES IN SCHEMA public FROM reader
@@ -280,7 +280,7 @@ EXAMPLES = r'''
     type: group
     objs: librarian,reader
     roles: alice,bob
-    admin_option: yes
+    admin_option: true
 
 # Note that here "db: postgres" specifies the database to connect to, not the
 # database to grant privileges on (which is specified via the "objs" param)
@@ -312,7 +312,7 @@ EXAMPLES = r'''
     privs: ALL
     type: default_privs
     role: librarian
-    grant_option: yes
+    grant_option: true
 
 # Available since version 2.7
 # Objs must be set, ALL_DEFAULT to TABLES/SEQUENCES/TYPES/FUNCTIONS

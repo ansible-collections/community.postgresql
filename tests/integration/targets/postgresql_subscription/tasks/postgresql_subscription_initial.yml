@@ -5,7 +5,7 @@
     dangerous_name: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
-      become: yes
+      become: true
       register: result
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
@@ -41,7 +41,7 @@
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -83,8 +83,8 @@
       login_port: '{{ replica_port }}'
       name: '{{ test_subscription }}'
       state: absent
-      trust_input: no
-    check_mode: yes
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -147,7 +147,7 @@
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -163,7 +163,7 @@
       state: present
       publications: '{{ test_pub }}'
       owner: '{{ test_role1 }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -194,8 +194,8 @@
       state: present
       publications: '{{ test_pub }}'
       owner: '{{ test_role2 }}'
-      trust_input: no
-    check_mode: yes
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -227,7 +227,7 @@
       state: present
       publications: '{{ test_pub }}'
       owner: '{{ test_role2 }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -264,14 +264,14 @@
       publications: '{{ test_pub }}'
       session_role: '{{ dangerous_name }}'
       owner: '{{ test_role1 }}'
-      trust_input: no
+      trust_input: false
       connparams:
         host: 127.0.0.1
         port: '{{ primary_port }}'
         user: '{{ replication_role }}'
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -289,9 +289,9 @@
       login_port: '{{ replica_port }}'
       name: '{{ test_subscription }}'
       state: absent
-      cascade: yes
-      trust_input: no
-    check_mode: yes
+      cascade: true
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -317,7 +317,7 @@
       login_port: '{{ replica_port }}'
       name: '{{ test_subscription }}'
       state: absent
-      cascade: yes
+      cascade: true
 
   - assert:
       that:
@@ -355,9 +355,9 @@
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
       subsparams:
-        enabled: no
-        synchronous_commit: no
-      trust_input: no
+        enabled: false
+        synchronous_commit: false
+      trust_input: false
 
   - assert:
       that:
@@ -389,9 +389,9 @@
       name: '{{ test_subscription }}'
       publications: '{{ test_pub }}'
       subsparams:
-        enabled: yes
-        synchronous_commit: yes
-      trust_input: no
+        enabled: true
+        synchronous_commit: true
+      trust_input: false
 
   - assert:
       that:
@@ -423,9 +423,9 @@
       name: '{{ test_subscription }}'
       publications: '{{ test_pub }}'
       subsparams:
-        enabled: yes
-        synchronous_commit: yes
-      trust_input: no
+        enabled: true
+        synchronous_commit: true
+      trust_input: false
 
   - assert:
       that:
@@ -451,8 +451,8 @@
       publications:
       - '{{ test_pub }}'
       - '{{ test_pub2 }}'
-      trust_input: no
-    check_mode: yes
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -485,7 +485,7 @@
       publications:
       - '{{ test_pub }}'
       - '{{ test_pub2 }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -518,7 +518,7 @@
       publications:
       - '{{ test_pub }}'
       - '{{ test_pub2 }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -559,8 +559,8 @@
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
         connect_timeout: '{{ conn_timeout }}'
-      trust_input: no
-    check_mode: yes
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -583,7 +583,7 @@
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
         connect_timeout: '{{ conn_timeout }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -617,7 +617,7 @@
         password: '{{ replication_pass }}'
         dbname: '{{ test_db }}'
         connect_timeout: '{{ conn_timeout }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -638,7 +638,7 @@
       login_port: '{{ replica_port }}'
       name: '{{ test_subscription }}'
       state: refresh
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:
