@@ -18,7 +18,7 @@ description:
 - A user is a role with login privilege.
 - You can also use it to grant or revoke user's privileges in a particular database.
 - You cannot remove a user while it still has any privileges granted to it in any database.
-- Set I(fail_on_user) to C(no) to make the module ignore failures when trying to remove a user.
+- Set I(fail_on_user) to C(false) to make the module ignore failures when trying to remove a user.
   In this case, the module reports if changes happened as usual and separately reports
   whether the user has been removed or not.
 - B(WARNING) The I(priv) option has been B(deprecated) and will be removed in community.postgresql 3.0.0. Please use the
@@ -55,8 +55,8 @@ options:
     - login_db
   fail_on_user:
     description:
-    - If C(yes), fails when the user (role) cannot be removed. Otherwise just log and continue.
-    default: yes
+    - If C(true), fails when the user (role) cannot be removed. Otherwise just log and continue.
+    default: true
     type: bool
     aliases:
     - fail_on_role
@@ -100,12 +100,12 @@ options:
     description:
     - Whether the password is stored hashed in the database.
     - You can specify an unhashed password, and PostgreSQL ensures
-      the stored password is hashed when I(encrypted=yes) is set.
+      the stored password is hashed when I(encrypted=true) is set.
       If you specify a hashed password, the module uses it as-is,
       regardless of the setting of I(encrypted).
     - "Note: Postgresql 10 and newer does not support unhashed passwords."
-    - Previous to Ansible 2.6, this was C(no) by default.
-    default: yes
+    - Previous to Ansible 2.6, this was C(false) by default.
+    default: true
     type: bool
   expires:
     description:
@@ -115,11 +115,11 @@ options:
     type: str
   no_password_changes:
     description:
-    - If C(yes), does not inspect the database for password changes.
+    - If C(true), does not inspect the database for password changes.
       If the user already exists, skips all password related checks.
       Useful when C(pg_authid) is not accessible (such as in AWS RDS).
       Otherwise, makes password changes as necessary.
-    default: no
+    default: false
     type: bool
   conn_limit:
     description:
@@ -154,11 +154,11 @@ options:
     version_added: '0.2.0'
   trust_input:
     description:
-    - If C(no), checks whether values of options I(name), I(password), I(privs), I(expires),
+    - If C(false), checks whether values of options I(name), I(password), I(privs), I(expires),
       I(role_attr_flags), I(groups), I(comment), I(session_role) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections through the options are possible.
+    - It makes sense to use C(false) only when SQL injections through the options are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 notes:
 - The module creates a user (role) with login privilege by default.
@@ -172,7 +172,7 @@ notes:
 - On some systems (such as AWS RDS), C(pg_authid) is not accessible, thus, the module cannot compare
   the current and desired C(password). In this case, the module assumes that the passwords are
   different and changes it reporting that the state has been changed.
-  To skip all password related checks for existing users, use I(no_password_changes=yes).
+  To skip all password related checks for existing users, use I(no_password_changes=true).
 - On some systems (such as AWS RDS), C(SUPERUSER) is unavailable. This means the C(SUPERUSER) and
   C(NOSUPERUSER) I(role_attr_flags) should not be specified to preserve idempotency and avoid
   InsufficientPrivilege errors.
@@ -227,7 +227,7 @@ EXAMPLES = r'''
     name: test
     priv: "ALL/products:ALL"
     state: absent
-    fail_on_user: no
+    fail_on_user: false
 
 # This example uses the 'priv' argument which is deprecated.
 # You should use the 'postgresql_privs' module instead.

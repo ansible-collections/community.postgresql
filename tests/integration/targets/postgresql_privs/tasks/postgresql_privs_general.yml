@@ -1,7 +1,7 @@
 # Setup
 - name: Create DB
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_db:
     state: present
     name: "{{ db_name }}"
@@ -11,7 +11,7 @@
   postgresql_user:
     name: "{{ db_user3 }}"
     state: present
-    encrypted: yes
+    encrypted: true
     password: password
     role_attr_flags: CREATEDB,LOGIN
     db: "{{ db_name }}"
@@ -21,7 +21,7 @@
   postgresql_user:
     name: "{{ db_user2 }}"
     state: present
-    encrypted: yes
+    encrypted: true
     password: password
     role_attr_flags: LOGIN
     db: "{{ db_name }}"
@@ -32,7 +32,7 @@
 #############################
 - name: Create DB with hyphen in the name
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_db:
     state: present
     name: "{{ db_name_with_hyphens }}"
@@ -47,7 +47,7 @@
   postgresql_user:
     name: "{{ db_user_with_hyphens }}"
     state: present
-    encrypted: yes
+    encrypted: true
     password: password
     role_attr_flags: CREATEDB,LOGIN
     db: "{{ db_name_with_hyphens }}"
@@ -83,9 +83,9 @@
      obj: TABLES
      privs: all
      state: present
-     usage_on_types: yes
+     usage_on_types: true
   register: result
-  check_mode: yes
+  check_mode: true
 
 - assert:
     that:
@@ -104,7 +104,7 @@
      obj: TABLES
      privs: all
      state: present
-     usage_on_types: no
+     usage_on_types: false
   register: result
 
 - assert:
@@ -146,7 +146,7 @@
   postgresql_user:
     name: "{{ db_user_with_hyphens }}"
     state: absent
-    encrypted: yes
+    encrypted: true
     password: password
     role_attr_flags: CREATEDB,LOGIN
     db: "{{ db_name_with_hyphens }}"
@@ -159,7 +159,7 @@
 
 - name: Delete DB with hyphen in the name
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_db:
     state: absent
     name: "{{ db_name_with_hyphens }}"
@@ -176,7 +176,7 @@
 
 # Create the test table and view:
 - name: Create table
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     login_user: "{{ pg_user }}"
@@ -186,7 +186,7 @@
     - id int
 
 - name: Create view
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -195,7 +195,7 @@
 
 # Test check_mode:
 - name: Grant SELECT on test_view, check_mode
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     login_user: "{{ pg_user }}"
@@ -205,8 +205,8 @@
     type: table
     objs: test_view
     roles: "{{ db_user2 }}"
-    trust_input: no
-  check_mode: yes
+    trust_input: false
+  check_mode: true
   register: result
 
 - assert:
@@ -215,7 +215,7 @@
 
 # Check:
 - name: Check that nothing was changed after the prev step
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -229,7 +229,7 @@
 
 # Test true mode:
 - name: Grant SELECT on test_view
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     login_user: "{{ pg_user }}"
@@ -239,7 +239,7 @@
     type: table
     objs: test_view
     roles: "{{ db_user2 }}"
-    trust_input: no
+    trust_input: false
   register: result
 
 - assert:
@@ -248,7 +248,7 @@
 
 # Check:
 - name: Check that nothing was changed after the prev step
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -262,7 +262,7 @@
 
 # Test true mode:
 - name: Try to grant SELECT again
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     login_user: "{{ pg_user }}"
@@ -272,7 +272,7 @@
     type: table
     objs: test_view
     roles: "{{ db_user2 }}"
-    trust_input: no
+    trust_input: false
   register: result
 
 - assert:
@@ -281,7 +281,7 @@
 
 # Cleanup:
 - name: Drop test view
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -289,7 +289,7 @@
     query: "DROP VIEW test_view"
 
 - name: Drop test table
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     login_user: "{{ pg_user }}"
@@ -303,17 +303,17 @@
 
 # Foreign data wrapper setup
 - name: Create foreign data wrapper extension
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "CREATE EXTENSION postgres_fdw" | psql -d "{{ db_name }}"
 
 - name: Create dummy foreign data wrapper
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "CREATE FOREIGN DATA WRAPPER dummy" | psql -d "{{ db_name }}"
 
 - name: Create foreign server
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "CREATE SERVER dummy_server FOREIGN DATA WRAPPER dummy" | psql -d "{{ db_name }}"
 
@@ -327,9 +327,9 @@
     objs: dummy
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -337,7 +337,7 @@
       - result is changed
 
 - name: Get foreign data wrapper privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "{{ fdw_query }}" | psql -d "{{ db_name }}"
   vars:
@@ -361,9 +361,9 @@
     objs: dummy
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -380,9 +380,9 @@
     objs: dummy
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -390,7 +390,7 @@
       - result is changed
 
 - name: Get foreign data wrapper privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "{{ fdw_query }}" | psql -d "{{ db_name }}"
   vars:
@@ -414,9 +414,9 @@
     objs: dummy
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -433,9 +433,9 @@
     objs: dummy_server
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -443,7 +443,7 @@
       - result is changed
 
 - name: Get foreign server privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "{{ fdw_query }}" | psql -d "{{ db_name }}"
   vars:
@@ -467,9 +467,9 @@
     objs: dummy_server
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -486,9 +486,9 @@
     objs: dummy_server
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -496,7 +496,7 @@
       - result is changed
 
 - name: Get foreign server privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "{{ fdw_query }}" | psql -d "{{ db_name }}"
   vars:
@@ -520,9 +520,9 @@
     objs: dummy_server
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -531,17 +531,17 @@
 
 # Foreign data wrapper cleanup
 - name: Drop foreign server
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "DROP SERVER dummy_server" | psql -d "{{ db_name }}"
 
 - name: Drop dummy foreign data wrapper
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "DROP FOREIGN DATA WRAPPER dummy" | psql -d "{{ db_name }}"
 
 - name: Drop foreign data wrapper extension
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: echo "DROP EXTENSION postgres_fdw" | psql -d "{{ db_name }}"
 
@@ -569,16 +569,16 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
     that: result is changed
 
 - name: Check that all functions have execute privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   shell: psql {{ db_name }} -c "SELECT proacl FROM pg_proc WHERE proname = 'a'" -t
   register: result
@@ -598,9 +598,9 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -618,9 +618,9 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Checks
 - assert:
@@ -638,9 +638,9 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that: result is not changed
@@ -855,11 +855,11 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
   when: postgres_version_resp.stdout is version('10', '>=')
-  check_mode: yes
+  check_mode: true
 
 # Checks
 - name: Check that all partitioned tables don't have select privileges after the check mode task
@@ -870,7 +870,7 @@
     login_password: password
     named_args:
         grantuser: '{{ db_user2 }}'
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -890,9 +890,9 @@
     db: "{{ db_name }}"
     roles: "{{ db_user2 }}"
     login_user: "{{ pg_user }}"
-    grant_option: yes
+    grant_option: true
     state: present
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
 
@@ -906,7 +906,7 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user2 }}"
     login_password: password
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
 
@@ -924,7 +924,7 @@
     roles: "{{ db_user2 }}"
     login_user: "{{ pg_user }}"
     state: present
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
 
@@ -938,7 +938,7 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user2 }}"
     login_password: password
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
 
@@ -955,9 +955,9 @@
     db: "{{ db_name }}"
     roles: "{{ db_user2 }}"
     login_user: "{{ pg_user }}"
-    grant_option: no
+    grant_option: false
     state: present
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
 
@@ -971,7 +971,7 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user2 }}"
     login_password: password
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
 
@@ -989,7 +989,7 @@
     roles: "{{ db_user2 }}"
     login_user: "{{ pg_user }}"
     state: absent
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
 
@@ -1003,7 +1003,7 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user2 }}"
     login_password: password
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
 
@@ -1022,9 +1022,9 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
   when: postgres_version_resp.stdout is version('10', '>=')
 
 # Checks
@@ -1040,7 +1040,7 @@
     login_password: password
     named_args:
         grantuser: '{{ db_user2 }}'
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -1062,9 +1062,9 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
   when: postgres_version_resp.stdout is version('10', '>=')
 
 # Checks
@@ -1084,9 +1084,9 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
   when: postgres_version_resp.stdout is version('10', '>=')
 
 # Checks
@@ -1102,7 +1102,7 @@
     login_password: password
     named_args:
         grantuser: '{{ db_user2 }}'
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -1124,9 +1124,9 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - assert:
@@ -1140,8 +1140,8 @@
     db: "{{ db_name }}"
     login_user: "{{ db_user3 }}"
     login_password: password
-    trust_input: no
-  ignore_errors: yes
+    trust_input: false
+  ignore_errors: true
   when: postgres_version_resp.stdout is version('10', '>=')
 
 ###########################################
@@ -1150,7 +1150,7 @@
 
 # Test
 - name: Grant type privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     state: present
@@ -1161,7 +1161,7 @@
     schema: pg_catalog
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
 
@@ -1172,7 +1172,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Get type privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -1187,7 +1187,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Grant type privileges again using check_mode
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     state: present
@@ -1198,9 +1198,9 @@
     schema: pg_catalog
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  check_mode: yes
+  check_mode: true
   when: postgres_version_resp.stdout is version('10', '>=')
 
 # Checks
@@ -1210,7 +1210,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Get type privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -1225,7 +1225,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Grant type privileges again
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     state: present
@@ -1236,7 +1236,7 @@
     schema: pg_catalog
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
 
@@ -1247,7 +1247,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Get type privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -1262,7 +1262,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Revoke type privileges in check_mode
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     state: absent
@@ -1273,9 +1273,9 @@
     schema: pg_catalog
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  check_mode: yes
+  check_mode: true
   when: postgres_version_resp.stdout is version('10', '>=')
 
 # Checks
@@ -1285,7 +1285,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Get type privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -1300,7 +1300,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Revoke type privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     state: absent
@@ -1311,7 +1311,7 @@
     schema: pg_catalog
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
 
@@ -1322,7 +1322,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Get type privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -1338,7 +1338,7 @@
 
 # type with default schema (public):
 - name: Create custom type in schema public
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -1348,7 +1348,7 @@
 
 # Test
 - name: Grant type privileges with default schema
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     state: present
@@ -1358,7 +1358,7 @@
     objs: compfoo
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
 
@@ -1369,7 +1369,7 @@
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Get type privileges
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_user: "{{ pg_user }}"
@@ -1388,7 +1388,7 @@
 ######################################################################
 # https://github.com/ansible-collections/community.general/issues/1058
 - name: Create user for test
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_user:
     login_user: "{{ pg_user }}"
@@ -1397,7 +1397,7 @@
     role_attr_flags: "NOLOGIN,NOSUPERUSER,INHERIT,NOCREATEDB,NOCREATEROLE,NOREPLICATION"
 
 - name: Test community.general/issue/1058 GRANT with hyphen
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     login_user: "{{ pg_user }}"
@@ -1413,7 +1413,7 @@
     - result.queries == ["GRANT \"{{ pg_user }}\" TO \"test-role\";"]
 
 - name: Test community.general/issue/1058 REVOKE
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     login_user: "{{ pg_user }}"
@@ -1430,7 +1430,7 @@
     - result.queries == ["REVOKE \"{{ pg_user }}\" FROM \"test-role\";"]
 
 - name: Test community.general/issue/1058 GRANT without hyphen
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     login_user: "{{ pg_user }}"
@@ -1446,7 +1446,7 @@
     - result.queries == ["GRANT \"{{ pg_user }}\" TO \"{{ db_user3 }}\";"]
 
 - name: Test community.general/issue/1058 GRANT with hyphen as an object
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     login_user: "{{ pg_user }}"
@@ -1462,7 +1462,7 @@
     - result.queries == ["GRANT \"test-role\",\"{{ db_user2 }}\" TO \"{{ db_user3 }}\";"]
 
 - name: Test community.general/issue/1058 GRANT with hyphen as an object
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     login_user: "{{ pg_user }}"
@@ -1478,7 +1478,7 @@
 
 # Cleanup
 - name: Remove privs
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_privs:
     state: absent
@@ -1488,12 +1488,12 @@
     objs: compfoo
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: Reassign ownership
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_owner:
     login_user: "{{ pg_user }}"
     db: "{{ db_name }}"
@@ -1504,7 +1504,7 @@
   - "{{ db_user3 }}"
 
 - name: Remove user given permissions
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_user:
     name: "{{ db_user2 }}"
@@ -1513,7 +1513,7 @@
     login_user: "{{ pg_user }}"
 
 - name: Remove user owner of objects
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_user:
     name: "{{ item }}"
@@ -1526,7 +1526,7 @@
 
 - name: Destroy DB
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_db:
     state: absent
     name: "{{ db_name }}"

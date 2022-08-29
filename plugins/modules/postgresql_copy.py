@@ -51,7 +51,7 @@ options:
     - Mark I(src)/I(dst) as a program. Data will be copied to/from a program.
     - See block Examples and PROGRAM arg description U(https://www.postgresql.org/docs/current/sql-copy.html).
     type: bool
-    default: no
+    default: false
   options:
     description:
     - Options of COPY command.
@@ -71,17 +71,17 @@ options:
     type: str
   trust_input:
     description:
-    - If C(no), check whether values of parameters are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections are possible.
+    - If C(false), check whether values of parameters are potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 notes:
 - Supports PostgreSQL version 9.4+.
 - COPY command is only allowed to database superusers.
-- If I(check_mode=yes), we just check the src/dst table availability
+- If I(check_mode=true), we just check the src/dst table availability
   and return the COPY query that actually has not been executed.
-- If i(check_mode=yes) and the source has been passed as SQL, the module
+- If i(check_mode=true) and the source has been passed as SQL, the module
   will execute it and rolled the transaction back but pay attention
   it can affect database performance (e.g., if SQL collects a lot of data).
 
@@ -137,7 +137,7 @@ EXAMPLES = r'''
   community.postgresql.postgresql_copy:
     src: my_table
     copy_to: 'gzip > /tmp/data.csv.gz'
-    program: yes
+    program: true
     options:
       format: csv
 

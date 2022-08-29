@@ -23,7 +23,7 @@ options:
   groups:
     description:
     - The list of groups (roles) that need to be granted to or revoked from I(target_roles).
-    required: yes
+    required: true
     type: list
     elements: str
     aliases:
@@ -33,7 +33,7 @@ options:
   target_roles:
     description:
     - The list of target roles (groups will be granted to them).
-    required: yes
+    required: true
     type: list
     elements: str
     aliases:
@@ -42,8 +42,8 @@ options:
     - user
   fail_on_role:
     description:
-      - If C(yes), fail when group or target_role doesn't exist. If C(no), just warn and continue.
-    default: yes
+      - If C(true), fail when group or target_role doesn't exist. If C(false), just warn and continue.
+    default: true
     type: bool
   state:
     description:
@@ -71,11 +71,11 @@ options:
     type: str
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(groups),
+    - If C(false), check whether values of parameters I(groups),
       I(target_roles), I(session_role) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via the parameters are possible.
+    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 seealso:
 - module: community.postgresql.postgresql_user
@@ -112,7 +112,7 @@ EXAMPLES = r'''
     - read_only
     - exec_func
     target_role: bob
-    fail_on_role: no
+    fail_on_role: false
     state: absent
 
 - name: >

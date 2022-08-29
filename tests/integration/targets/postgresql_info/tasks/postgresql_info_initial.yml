@@ -4,7 +4,7 @@
 - vars:
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
-      become: yes
+      become: true
       register: result
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
@@ -207,7 +207,7 @@
       <<: *pg_parameters
       login_db: '{{ test_db }}'
       login_port: '{{ primary_port }}'
-      trust_input: yes
+      trust_input: true
 
   - assert:
       that:
@@ -229,10 +229,10 @@
       <<: *pg_parameters
       login_db: '{{ test_db }}'
       login_port: '{{ primary_port }}'
-      trust_input: no
+      trust_input: false
       session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
     register: result
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:

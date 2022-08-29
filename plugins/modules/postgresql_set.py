@@ -18,7 +18,7 @@ description:
    - It can be more convenient and safe than the traditional method of manually editing the postgresql.conf file.
    - ALTER SYSTEM writes the given parameter setting to the $PGDATA/postgresql.auto.conf file,
      which is read in addition to postgresql.conf.
-   - The module allows to reset parameter to boot_val (cluster initial value) by I(reset=yes) or remove parameter
+   - The module allows to reset parameter to boot_val (cluster initial value) by I(reset=true) or remove parameter
      string from postgresql.auto.conf and reload I(value=default) (for settings with postmaster context restart is required).
    - After change you can see in the ansible output the previous and
      the new parameter value and other information using returned values and M(ansible.builtin.debug) module.
@@ -55,10 +55,10 @@ options:
     - login_db
   trust_input:
     description:
-    - If C(no), check whether values of parameters are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections are possible.
+    - If C(false), check whether values of parameters are potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 notes:
 - Supported version of PostgreSQL is 9.4 and later.
@@ -93,7 +93,7 @@ EXAMPLES = r'''
 - name: Restore wal_keep_segments parameter to initial state
   community.postgresql.postgresql_set:
     name: wal_keep_segments
-    reset: yes
+    reset: true
 
 # Set work_mem parameter to 32MB and show what's been changed and restart is required or not
 # (output example: "msg": "work_mem 4MB >> 64MB restart_req: False")

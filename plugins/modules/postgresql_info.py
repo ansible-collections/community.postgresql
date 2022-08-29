@@ -42,10 +42,10 @@ options:
     type: str
   trust_input:
     description:
-    - If C(no), check whether a value of I(session_role) is potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via I(session_role) are possible.
+    - If C(false), check whether a value of I(session_role) is potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections via I(session_role) are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 seealso:
 - module: community.postgresql.postgresql_ping
@@ -72,13 +72,13 @@ EXAMPLES = r'''
 # ansible databases -m postgresql_info -a 'filter=!settings'
 
 - name: Collect PostgreSQL version and extensions
-  become: yes
+  become: true
   become_user: postgres
   community.postgresql.postgresql_info:
     filter: ver*,ext*
 
 - name: Collect all info except settings and roles
-  become: yes
+  become: true
   become_user: postgres
   community.postgresql.postgresql_info:
     filter: "!settings,!roles"
@@ -86,7 +86,7 @@ EXAMPLES = r'''
 # On FreeBSD with PostgreSQL 9.5 version and lower use pgsql user to become
 # and pass "postgres" as a database to connect to
 - name: Collect tablespaces and repl_slots info
-  become: yes
+  become: true
   become_user: pgsql
   community.postgresql.postgresql_info:
     db: postgres
@@ -95,7 +95,7 @@ EXAMPLES = r'''
     - repl_sl*
 
 - name: Collect all info except databases
-  become: yes
+  become: true
   become_user: postgres
   community.postgresql.postgresql_info:
     filter:

@@ -27,7 +27,7 @@
 
 - name: Make sure the dbus service is enabled under systemd
   shell: systemctl enable dbus || systemctl enable dbus-broker
-  ignore_errors: yes
+  ignore_errors: true
   when: ansible_service_mgr == 'systemd' and ansible_distribution == 'Fedora'
 
 - name: Make sure the dbus service is started under systemd
@@ -38,9 +38,9 @@
 
 - name: Kill all postgres processes
   shell: 'pkill -u {{ pg_user }}'
-  become: yes
+  become: true
   when: ansible_facts.distribution == 'CentOS' and ansible_facts.distribution_major_version == '8'
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: stop postgresql service
   service: name={{ postgresql_service }} state=stopped
@@ -190,9 +190,9 @@
 
 - name: Kill all postgres processes
   shell: 'pkill -u {{ pg_user }}'
-  become: yes
+  become: true
   when: ansible_facts.distribution == 'CentOS' and ansible_facts.distribution_major_version == '8'
-  ignore_errors: yes
+  ignore_errors: true
   register: terminate
 
 - name: Stop postgresql service

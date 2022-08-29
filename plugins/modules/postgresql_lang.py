@@ -18,11 +18,11 @@ description:
   relationship with a PostgreSQL database.
 - The module can be used on the machine where executed or on a remote host.
 - When removing a language from a database, it is possible that dependencies prevent
-  the database from being removed. In that case, you can specify I(cascade=yes) to
+  the database from being removed. In that case, you can specify I(cascade=true) to
   automatically drop objects that depend on the language (such as functions in the
   language).
 - In case the language can't be deleted because it is required by the
-  database system, you can specify I(fail_on_drop=no) to ignore the error.
+  database system, you can specify I(fail_on_drop=false) to ignore the error.
 - Be careful when marking a language as trusted since this could be a potential
   security breach. Untrusted languages allow only users with the PostgreSQL superuser
   privilege to use this language to create new functions.
@@ -38,7 +38,7 @@ options:
     description:
     - Make this language trusted for the selected db.
     type: bool
-    default: 'no'
+    default: 'false'
   db:
     description:
     - Name of database to connect to and where the language will be added, removed or changed.
@@ -51,20 +51,20 @@ options:
     - Marks the language as trusted, even if it's marked as untrusted in pg_pltemplate.
     - Use with care!
     type: bool
-    default: 'no'
+    default: 'false'
   fail_on_drop:
     description:
-    - If C(yes), fail when removing a language. Otherwise just log and continue.
+    - If C(true), fail when removing a language. Otherwise just log and continue.
     - In some cases, it is not possible to remove a language (used by the db-system).
     - When dependencies block the removal, consider using I(cascade).
     type: bool
-    default: 'yes'
+    default: 'true'
   cascade:
     description:
     - When dropping a language, also delete object that depend on this language.
     - Only used when I(state=absent).
     type: bool
-    default: 'no'
+    default: 'false'
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -104,11 +104,11 @@ options:
     version_added: '0.2.0'
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(lang), I(session_role),
+    - If C(false), check whether values of parameters I(lang), I(session_role),
       I(owner) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via the parameters are possible.
+    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 seealso:
 - name: PostgreSQL languages
@@ -145,8 +145,8 @@ EXAMPLES = r'''
     db: testdb
     lang: pltclu
     state: present
-    trust: yes
-    force_trust: yes
+    trust: true
+    force_trust: true
 
 - name: Remove language pltclu from database testdb
   community.postgresql.postgresql_lang:
@@ -159,14 +159,14 @@ EXAMPLES = r'''
     db: testdb
     lang: pltclu
     state: absent
-    cascade: yes
+    cascade: true
 
 - name: Remove language c from database testdb but ignore errors if something prevents the removal
   community.postgresql.postgresql_lang:
     db: testdb
     lang: pltclu
     state: absent
-    fail_on_drop: no
+    fail_on_drop: false
 
 - name: In testdb change owner of mylang to alice
   community.postgresql.postgresql_lang:
@@ -280,13 +280,13 @@ def main():
         db=dict(type="str", required=True, aliases=["login_db"]),
         lang=dict(type="str", required=True, aliases=["name"]),
         state=dict(type="str", default="present", choices=["absent", "present"]),
-        trust=dict(type="bool", default="no"),
-        force_trust=dict(type="bool", default="no"),
-        cascade=dict(type="bool", default="no"),
-        fail_on_drop=dict(type="bool", default="yes"),
+        trust=dict(type="bool", default="false"),
+        force_trust=dict(type="bool", default="false"),
+        cascade=dict(type="bool", default="false"),
+        fail_on_drop=dict(type="bool", default="true"),
         session_role=dict(type="str"),
         owner=dict(type="str"),
-        trust_input=dict(type="bool", default="yes")
+        trust_input=dict(type="bool", default="true")
     )
 
     module = AnsibleModule(
@@ -343,7 +343,7 @@ def main():
                 changed = lang_drop(cursor, lang, cascade)
                 if fail_on_drop and not changed:
                     msg = ("unable to drop language, use cascade "
-                           "to delete dependencies or fail_on_drop=no to ignore")
+                           "to delete dependencies or fail_on_drop=false to ignore")
                     module.fail_json(msg=msg)
                 kw['lang_dropped'] = changed
 

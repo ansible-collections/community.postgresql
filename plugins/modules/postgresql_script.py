@@ -63,11 +63,11 @@ options:
     type: str
   trust_input:
     description:
-    - If C(no), check whether a value of I(session_role) is potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections
+    - If C(false), check whether a value of I(session_role) is potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections
       via I(session_role) are possible.
     type: bool
-    default: yes
+    default: true
   search_path:
     description:
     - Overrides the list of schemas to search for db objects in.

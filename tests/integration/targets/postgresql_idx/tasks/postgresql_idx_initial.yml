@@ -92,7 +92,7 @@
     table: test_table
     columns: id, story
     idxname: Test0_idx
-    trust_input: no
+    trust_input: false
   register: result
   ignore_errors: true
 
@@ -159,7 +159,7 @@
     idxname: foo_test_idx
     tablespace: ssd
     storage_params: fillfactor=90
-    trust_input: no
+    trust_input: false
   register: result
   ignore_errors: true
   when: tablespace.rc == 0
@@ -190,7 +190,7 @@
     columns: id
     idxname: test_brin_idx
     concurrent: false
-    trust_input: no
+    trust_input: false
   register: result
   ignore_errors: true
 
@@ -217,7 +217,7 @@
     columns: id
     idxname: test1_idx
     cond: id > 1 AND id != 10
-    trust_input: no
+    trust_input: false
   register: result
   ignore_errors: true
 
@@ -243,7 +243,7 @@
     columns: story
     idxname: test_unique0_idx
     unique: true
-    trust_input: no
+    trust_input: false
   register: result
   ignore_errors: true
 
@@ -290,7 +290,7 @@
     cascade: true
     state: absent
     concurrent: false
-    trust_input: yes
+    trust_input: true
   check_mode: true
   register: result
   ignore_errors: true

@@ -5,7 +5,7 @@
 - vars:
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
-      become: yes
+      become: true
       register: result
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
@@ -64,12 +64,12 @@
   # To avoid CI timeouts
   - name: Kill all postgres processes
     shell: 'pkill -u {{ pg_user }}'
-    become: yes
+    become: true
     when: ansible_facts.distribution == 'CentOS' and ansible_facts.distribution_major_version == '8'
-    ignore_errors: yes
+    ignore_errors: true
 
   - name: Stop PostgreSQL
-    become: yes
+    become: true
     service:
       name: "{{ postgresql_service }}"
       state: stopped
@@ -80,7 +80,7 @@
       seconds: 5
 
   - name: Start PostgreSQL
-    become: yes
+    become: true
     service:
       name: "{{ postgresql_service }}"
       state: started
@@ -168,7 +168,7 @@
     postgresql_user_obj_stat_info:
       <<: *pg_parameters
       schema: nonexistent
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -181,8 +181,8 @@
     postgresql_user_obj_stat_info:
       <<: *pg_parameters
       session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
-      trust_input: no
-    ignore_errors: yes
+      trust_input: false
+    ignore_errors: true
 
   - assert:
       that:
@@ -198,7 +198,7 @@
       <<: *pg_parameters
       name: '{{ test_schema1 }}'
       state: absent
-      cascade_drop: yes
+      cascade_drop: true
 
   - name: Drop test tables
     <<: *task_parameters
@@ -219,4 +219,4 @@
     - '{{ test_func1 }}'
     - '{{ test_func2 }}'
     - '{{ test_schema1 }}.{{ test_func3 }}'
-    ignore_errors: yes
+    ignore_errors: true
