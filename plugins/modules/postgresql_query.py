@@ -365,7 +365,7 @@ def main():
         encoding=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         search_path=dict(type='list', elements='str'),
-        as_single_query=dict(type='bool'),
+        as_single_query=dict(type='bool', default=True),
     )
 
     module = AnsibleModule(
