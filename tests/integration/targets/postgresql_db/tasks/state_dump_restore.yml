@@ -25,7 +25,7 @@
   postgresql_user:
     name: "{{ db_user1 }}"
     state: "present"
-    encrypted: 'true'
+    encrypted: true
     password: "password"
     role_attr_flags: "CREATEDB,LOGIN,CREATEROLE"
     login_user: "{{ pg_user }}"

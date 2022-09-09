@@ -69,7 +69,7 @@ EXAMPLES = r'''
 # You can use the registered result with another task
 - name: This task should be executed only if the server is available
   # ...
-  when: result.is_available == true
+  when: result.is_available
 '''
 
 RETURN = r'''

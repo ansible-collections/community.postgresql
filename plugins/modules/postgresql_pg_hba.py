@@ -580,7 +580,7 @@ class PgHbaRule(dict):
             try:
                 return ipaddress.ip_network(u'{0}'.format(sourcenw), strict=False)
             except ValueError:
-                raise PgHbaValueError('{0} is not valid address range'.format(sourcenw))
+                raise PgHbaValueError('{0} is not a valid address range'.format(sourcenw))
 
         try:
             return ipaddress.ip_network(u'{0}'.format(self['src']), strict=False)

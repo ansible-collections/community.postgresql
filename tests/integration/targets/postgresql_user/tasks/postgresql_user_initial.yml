@@ -46,7 +46,7 @@
   postgresql_user:
     name: "{{ db_user1 }}"
     state: "present"
-    encrypted: 'true'
+    encrypted: true
     password: "password"
     role_attr_flags: "CREATEDB,LOGIN,CREATEROLE"
     login_user: "{{ pg_user }}"
@@ -75,7 +75,7 @@
   postgresql_user:
     name: "{{ db_user2 }}"
     state: "present"
-    encrypted: 'true'
+    encrypted: true
     password: "md55c8ccfd9d6711fc69a7eae647fc54f51"
     db: "{{ db_name }}"
     login_user: "{{ db_user1 }}"

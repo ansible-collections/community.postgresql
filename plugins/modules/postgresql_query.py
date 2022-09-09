@@ -87,13 +87,8 @@ options:
     version_added: '1.0.0'
   as_single_query:
     description:
-    - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0,
-      please use the M(community.postgresql.postgresql_script) module to execute
-      statements from scripts.
     - If C(true), when reading from the I(path_to_script) file,
-      executes its whole content in a single query (not splitting it up
-      into separate queries by semicolons). It brings the following changes in
-      the module's behavior.
+      executes its whole content in a single query.
     - When C(true), the C(query_all_results) return value
       contains only the result of the last statement.
     - Whether the state is reported as changed or not
@@ -370,7 +365,7 @@ def main():
         encoding=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         search_path=dict(type='list', elements='str'),
-        as_single_query=dict(type='bool', default=True),
+        as_single_query=dict(type='bool'),
     )
 
     module = AnsibleModule(

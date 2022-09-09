@@ -232,7 +232,7 @@
   become: true
   postgresql_user:
     name: "{{ item }}"
-    encrypted: 'true'
+    encrypted: true
     password: "md55c8ccfd9d6711fc69a7eae647fc54f51"
     login_user: "{{ pg_user }}"
     db: postgres

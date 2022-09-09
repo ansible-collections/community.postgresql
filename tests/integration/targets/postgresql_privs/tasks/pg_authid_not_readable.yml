@@ -3,7 +3,7 @@
   become: true
   postgresql_user:
     name: "{{ db_user1 }}"
-    encrypted: 'true'
+    encrypted: true
     password: "md5{{ (db_password ~ db_user1) | hash('md5')}}"
     db: "{{ db_name }}"
     priv: 'test_table1:INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER/test_table2:INSERT/CREATE,CONNECT,TEMP'
@@ -34,7 +34,7 @@
   become: true
   postgresql_user:
     name: "{{ db_user1 }}"
-    encrypted: 'true'
+    encrypted: true
     password: "md5{{ (db_password ~ db_user1) | hash('md5')}}"
     db: "{{ db_name }}"
     priv: 'test_table1:INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER/test_table2:INSERT/CREATE,CONNECT,TEMP'
