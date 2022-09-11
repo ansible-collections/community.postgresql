@@ -17,17 +17,17 @@
   ignore_errors: true
 
 - name: Copy script files
-  become: yes
+  become: true
   copy:
     src: '{{ item }}'
     dest: '~{{ pg_user }}/{{ item }}'
     owner: '{{ pg_user }}'
-    force: yes
+    force: true
   loop:
   - test0.sql
   - test1.sql
   register: sql_file_created
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: postgresql_query - analyze test_table
   become_user: '{{ pg_user }}'
@@ -59,7 +59,7 @@
     positional_args:
     - 1
     encoding: UTF-8
-    as_single_query: no
+    as_single_query: false
   register: result
   ignore_errors: true
   when: sql_file_created
@@ -410,7 +410,7 @@
     query: SELECT * FROM test_array_table WHERE arr_col = %s
     positional_args:
     - '{{ my_arr|string }}'
-    trust_input: yes
+    trust_input: true
   register: result
   when: postgres_version_resp.stdout is version('9.4', '>=')
 
@@ -429,8 +429,8 @@
     login_db: postgres
     session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
     query: SELECT version()
-    trust_input: no
-  ignore_errors: yes
+    trust_input: false
+  ignore_errors: true
   register: result
 
 - assert:
@@ -513,7 +513,7 @@
     login_db: postgres
     query: 'SELECT id FROM test1'
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -530,7 +530,7 @@
     positional_args:
     - 1
     encoding: UTF-8
-    as_single_query: yes
+    as_single_query: true
   register: result
 
 - name: >

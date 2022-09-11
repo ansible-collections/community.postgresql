@@ -6,4 +6,4 @@
   postgresql_db:
     name: mydb
     state: absent
-    force: yes
+    force: true

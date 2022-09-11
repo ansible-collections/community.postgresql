@@ -40,7 +40,7 @@ options:
     description:
     - Create an unlogged table.
     type: bool
-    default: no
+    default: false
   like:
     description:
     - Create a table like another table (with similar DDL).
@@ -66,7 +66,7 @@ options:
     - Truncate a table. Mutually exclusive with I(tablespace), I(owner), I(unlogged),
       I(like), I(including), I(columns), I(rename), and I(storage_params).
     type: bool
-    default: no
+    default: false
   storage_params:
     description:
     - Storage parameters like fillfactor, autovacuum_vacuum_treshold, etc.
@@ -91,13 +91,13 @@ options:
     - Automatically drop objects that depend on the table (such as views).
       Used with I(state=absent) only.
     type: bool
-    default: no
+    default: false
   trust_input:
     description:
-    - If C(no), check whether values of parameters are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections are possible.
+    - If C(false), check whether values of parameters are potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 notes:
 - Supports C(check_mode).
@@ -190,7 +190,7 @@ EXAMPLES = r'''
 - name: Truncate table foo
   community.postgresql.postgresql_table:
     name: foo
-    truncate: yes
+    truncate: true
 
 - name: Drop table foo from schema acme
   community.postgresql.postgresql_table:
@@ -201,7 +201,7 @@ EXAMPLES = r'''
   community.postgresql.postgresql_table:
     name: bar
     state: absent
-    cascade: yes
+    cascade: true
 '''
 
 RETURN = r'''

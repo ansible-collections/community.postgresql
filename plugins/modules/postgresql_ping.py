@@ -30,10 +30,10 @@ options:
     version_added: '0.2.0'
   trust_input:
     description:
-    - If C(no), check whether a value of I(session_role) is potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via I(session_role) are possible.
+    - If C(false), check whether a value of I(session_role) is potentially dangerous.
+    - It makes sense to use C(false) only when SQL injections via I(session_role) are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 seealso:
 - module: community.postgresql.postgresql_info
@@ -69,7 +69,7 @@ EXAMPLES = r'''
 # You can use the registered result with another task
 - name: This task should be executed only if the server is available
   # ...
-  when: result.is_available == yes
+  when: result.is_available
 '''
 
 RETURN = r'''

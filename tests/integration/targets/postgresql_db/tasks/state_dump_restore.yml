@@ -20,12 +20,12 @@
 # ============================================================
 
 - name: Create a test user
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_user:
     name: "{{ db_user1 }}"
     state: "present"
-    encrypted: 'yes'
+    encrypted: true
     password: "password"
     role_attr_flags: "CREATEDB,LOGIN,CREATEROLE"
     login_user: "{{ pg_user }}"
@@ -81,7 +81,7 @@
     dump_extra_args: --exclude-table=fake
   register: result
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
 
 - name: assert output message backup the database
   assert:
@@ -123,7 +123,7 @@
     state: restore
   register: result
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
 
 - name: assert output message restore the database
   assert:
@@ -145,31 +145,31 @@
 # 2. Test db name containing dots
 
 - name: state dump/restore - create database, trust_input no
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_db:
     state: present
     name: "{{ suspicious_db_name }}"
     owner: "{{ db_user1 }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
     - result is failed
     - result.msg == 'Passed input \'{{ suspicious_db_name }}\' is potentially dangerous'
 
-- name: state dump/restore - create database, trust_input yes explicitly
-  become: yes
+- name: state dump/restore - create database, trust_input true explicitly
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_db:
     state: present
     name: "{{ suspicious_db_name }}"
     owner: "{{ db_user1 }}"
     login_user: "{{ pg_user }}"
-    trust_input: yes
+    trust_input: true
   register: result
 
 - assert:
@@ -177,7 +177,7 @@
     - result is changed
 
 - name: test state=restore to restore the database (expect changed=true)
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_db:
     name: "{{ db_name_with_dot }}"
@@ -196,14 +196,14 @@
     - result is changed
 
 - name: state dump/restore - remove databases
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_db:
     state: absent
     name: "{{ db_name_with_dot }}"
     owner: "{{ db_user1 }}"
     login_user: "{{ pg_user }}"
-    trust_input: yes
+    trust_input: true
   register: result
 
 - assert:
@@ -226,7 +226,7 @@
   file: name={{ db_file_name }}  state=absent
 
 - name: Remove the test user
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_user:
     name: "{{ db_user1 }}"

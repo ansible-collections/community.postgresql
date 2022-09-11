@@ -7,7 +7,7 @@
 #
 - name: Create db
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_db:
     name: "{{ db_name }}"
     state: "present"
@@ -15,11 +15,11 @@
 
 - name: Create some tables on the db
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "create table test_table1 (field text);" | psql {{ db_name }}
 
 - become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "create table test_table2 (field text);" | psql {{ db_name }}
 
 - vars:
@@ -27,10 +27,10 @@
   block:
     - name: Create a user with some permissions on the db
       become_user: "{{ pg_user }}"
-      become: yes
+      become: true
       postgresql_user:
         name: "{{ db_user1 }}"
-        encrypted: 'yes'
+        encrypted: true
         password: "md5{{ (db_password ~ db_user1) | hash('md5')}}"
         db: "{{ db_name }}"
         priv: 'test_table1:INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER/test_table2:INSERT/CREATE,CONNECT,TEMP'
@@ -40,19 +40,19 @@
 
 - name: Check that the user has the requested permissions (table1)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1';" | psql {{ db_name }}
   register: result_table1
 
 - name: Check that the user has the requested permissions (table2)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
   register: result_table2
 
 - name: Check that the user has the requested permissions (database)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select datacl from pg_database where datname='{{ db_name }}';" | psql {{ db_name }}
   register: result_database
 
@@ -73,10 +73,10 @@
 
 - name: Add another permission for the user
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_user:
     name: "{{ db_user1 }}"
-    encrypted: 'yes'
+    encrypted: true
     password: "md55c8ccfd9d6711fc69a7eae647fc54f51"
     db: "{{ db_name }}"
     priv: 'test_table2:select'
@@ -90,7 +90,7 @@
 
 - name: Check that the user has the requested permissions (table2)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
   register: result_table2
 
@@ -107,7 +107,7 @@
 
 - name: Revoke a privilege
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_privs:
     type: "table"
     state: "absent"
@@ -116,7 +116,7 @@
     objs: "test_table2"
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
 
 - name: Check that ansible reports it changed the user
@@ -126,7 +126,7 @@
 
 - name: Check that the user has the requested permissions (table2)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
   register: result_table2
 
@@ -137,7 +137,7 @@
 
 - name: Revoke many privileges on multiple tables
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_privs:
     state: "absent"
     roles: "{{ db_user1 }}"
@@ -145,7 +145,7 @@
     objs: "test_table2,test_table1"
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
 
 - name: Check that ansible reports it changed the user
@@ -155,13 +155,13 @@
 
 - name: Check that permissions were revoked (table1)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1';" | psql {{ db_name }}
   register: result_table1
 
 - name: Check that permissions were revoked (table2)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
   register: result_table2
 
@@ -172,7 +172,7 @@
 
 - name: Revoke database privileges
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_privs:
     type: "database"
     state: "absent"
@@ -181,11 +181,11 @@
     objs: "{{ db_name }}"
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
 
 - name: Check that the user has the requested permissions (database)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select datacl from pg_database where datname='{{ db_name }}';" | psql {{ db_name }}
   register: result_database
 
@@ -196,7 +196,7 @@
 
 - name: Grant database privileges
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_privs:
     type: "database"
     state: "present"
@@ -205,7 +205,7 @@
     objs: "{{ db_name }}"
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
   register: result
 
 - name: Check that ansible reports it changed the user
@@ -215,7 +215,7 @@
 
 - name: Check that the user has the requested permissions (database)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select datacl from pg_database where datname='{{ db_name }}';" | psql {{ db_name }}
   register: result_database
 
@@ -226,7 +226,7 @@
 
 - name: Grant a single privilege on a table
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_privs:
     state: "present"
     roles: "{{ db_user1 }}"
@@ -234,11 +234,11 @@
     objs: "test_table1"
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
 
 - name: Check that permissions were added (table1)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1';" | psql {{ db_name }}
   register: result_table1
 
@@ -249,7 +249,7 @@
 
 - name: Grant many privileges on multiple tables
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_privs:
     state: "present"
     roles: "{{ db_user1 }}"
@@ -257,17 +257,17 @@
     objs: "test_table2,test_table1"
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
 
 - name: Check that permissions were added (table1)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1';" | psql {{ db_name }}
   register: result_table1
 
 - name: Check that permissions were added (table2)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
   register: result_table2
 
@@ -294,7 +294,7 @@
 # https://github.com/ansible/ansible/issues/63204
 - name: Create roles for further tests
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_user:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -305,7 +305,7 @@
 
 - name: Pass role with dots in its name to roles parameter
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_privs:
     state: "present"
     roles: "{{ db_user_with_dots1 }}"
@@ -313,11 +313,11 @@
     objs: "test_table1"
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    trust_input: no
+    trust_input: false
 
 - name: Check that permissions were added (table1)
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -331,7 +331,7 @@
 # We don't need to check anything here, only that nothing failed
 - name: Pass role with dots in its name to target_roles parameter
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_privs:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -341,12 +341,12 @@
     objs: TABLES
     type: default_privs
     target_roles: "{{ db_user_with_dots2 }}"
-    trust_input: no
+    trust_input: false
 
 # Bugfix for https://github.com/ansible-collections/community.general/issues/857
 - name: Test passing lowercase PUBLIC role
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_privs:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -365,7 +365,7 @@
 #
 - name: Cleanup db
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_db:
     name: "{{ db_name }}"
     state: "absent"
@@ -373,7 +373,7 @@
 
 - name: Check that database was destroyed
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select datname from pg_database where datname = '{{ db_name }}';" | psql -d postgres
   register: result
 
@@ -383,7 +383,7 @@
 
 - name: Cleanup test user
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_user:
     name: "{{ item }}"
     state: 'absent'
@@ -398,7 +398,7 @@
 
 - name: Check that they were removed
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   shell: echo "select * from pg_user where usename='{{ db_user1 }}';" | psql -d postgres
   register: result
 

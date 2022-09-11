@@ -49,7 +49,7 @@ options:
     - Automatically install/remove any extensions that this extension depends on
       that are not already installed/removed (supported since PostgreSQL 9.6).
     type: bool
-    default: no
+    default: false
   login_unix_socket:
     description:
       - Path to a Unix domain socket for local connections.
@@ -81,11 +81,11 @@ options:
     type: str
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(ext), I(schema),
+    - If C(false), check whether values of parameters I(ext), I(schema),
       I(version), I(session_role) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via the parameters are possible.
+    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 seealso:
 - name: PostgreSQL extensions
@@ -148,7 +148,7 @@ EXAMPLES = r'''
   community.postgresql.postgresql_ext:
     name: cube
     db: acme
-    cascade: yes
+    cascade: true
     state: absent
 
 - name: Create extension foo of version 1.2 or update it to that version if it's already created and a valid update path exists

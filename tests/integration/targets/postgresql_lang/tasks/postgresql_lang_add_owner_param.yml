@@ -8,7 +8,7 @@
     non_existent_role: fake_role
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
-      become: yes
+      become: true
       register: result
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
@@ -30,8 +30,8 @@
       <<: *pg_parameters
       name: '{{ test_lang }}'
       owner: '{{ test_user1 }}'
-      trust_input: no
-    check_mode: yes
+      trust_input: false
+    check_mode: true
 
   - assert:
       that:
@@ -58,7 +58,7 @@
       <<: *pg_parameters
       name: '{{ test_lang }}'
       owner: '{{ test_user1 }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -85,8 +85,8 @@
       <<: *pg_parameters
       name: '{{ test_lang }}'
       owner: '{{ test_user2 }}'
-      trust_input: yes
-    check_mode: yes
+      trust_input: true
+    check_mode: true
 
   - assert:
       that:

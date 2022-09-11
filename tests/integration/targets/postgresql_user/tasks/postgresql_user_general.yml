@@ -12,7 +12,7 @@
     test_comment2: 'comment2'
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
-      become: yes
+      become: true
       register: result
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
@@ -24,11 +24,11 @@
   #
   - name: Create role in check_mode
     <<: *task_parameters
-    check_mode: yes
+    check_mode: true
     postgresql_user:
       <<: *pg_parameters
       name: '{{ test_user }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -97,7 +97,7 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       comment: '{{ test_comment1 }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -130,7 +130,7 @@
 
   - name: Try to create role again in check_mode
     <<: *task_parameters
-    check_mode: yes
+    check_mode: true
     postgresql_user:
       <<: *pg_parameters
       name: '{{ test_user }}'
@@ -173,7 +173,7 @@
 
   - name: Drop role in check_mode
     <<: *task_parameters
-    check_mode: yes
+    check_mode: true
     postgresql_user:
       <<: *pg_parameters
       name: '{{ test_user }}'
@@ -218,7 +218,7 @@
 
   - name: Try to drop role in check mode again
     <<: *task_parameters
-    check_mode: yes
+    check_mode: true
     postgresql_user:
       <<: *pg_parameters
       name: '{{ test_user }}'
@@ -273,7 +273,7 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       password: u123
-      no_password_changes: yes
+      no_password_changes: true
 
   - assert:
       that:
@@ -298,7 +298,7 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       password: myunencryptedpass
-      encrypted: no
+      encrypted: false
     when: postgres_version_resp.stdout is version('10', '<')
 
   - assert:
@@ -319,13 +319,13 @@
       - result.rowcount == 1
     when: postgres_version_resp.stdout is version('10', '<')
 
-  - name: Change password, explicit encrypted=yes
+  - name: Change password, explicit encrypted=true
     <<: *task_parameters
     postgresql_user:
       <<: *pg_parameters
       name: '{{ test_user }}'
       password: myunencryptedpass
-      encrypted: yes
+      encrypted: true
 
   - assert:
       that:
@@ -348,7 +348,7 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       expires: 'Jan 31 2020'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -400,7 +400,7 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       role_attr_flags: CREATEROLE,CREATEDB
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -507,7 +507,7 @@
       login_user: '{{ pg_user }}'
       session_role: '{{ test_user }}'
       query: 'SELECT * FROM {{ test_table }}'
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -520,7 +520,7 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       priv: '{{ test_table }}:SELECT'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -578,7 +578,7 @@
       <<: *pg_parameters
       name: '{{ test_user2 }}'
       state: absent
-    ignore_errors: yes
+    ignore_errors: true
 
   - assert:
       that:
@@ -590,7 +590,7 @@
     postgresql_user:
       <<: *pg_parameters
       name: '{{ test_user }}'
-      fail_on_user: no
+      fail_on_user: false
       
   - assert:
       that:
@@ -613,7 +613,7 @@
       name: '{{ test_group1 }}'
       groups: '{{ test_group2 }}'
       role_attr_flags: NOLOGIN
-    check_mode: yes
+    check_mode: true
 
   - assert:
       that:
@@ -648,7 +648,7 @@
       name: '{{ test_group1 }}'
       groups: '{{ test_group2 }}'
       role_attr_flags: NOLOGIN
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -706,7 +706,7 @@
       groups:
       - '{{ test_group1 }}'
       - '{{ test_group2 }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -732,8 +732,8 @@
     postgresql_user:
       <<: *pg_parameters
       name: '{{ dangerous_name }}'
-      trust_input: no
-    ignore_errors: yes
+      trust_input: false
+    ignore_errors: true
 
   - assert:
       that:

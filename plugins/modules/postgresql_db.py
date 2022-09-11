@@ -121,11 +121,11 @@ options:
     version_added: '0.2.0'
   trust_input:
     description:
-    - If C(no), check whether values of parameters I(owner), I(conn_limit), I(encoding),
+    - If C(false), check whether values of parameters I(owner), I(conn_limit), I(encoding),
       I(db), I(template), I(tablespace), I(session_role) are potentially dangerous.
-    - It makes sense to use C(no) only when SQL injections via the parameters are possible.
+    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
-    default: yes
+    default: true
     version_added: '0.2.0'
 seealso:
 - name: CREATE DATABASE reference

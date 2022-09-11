@@ -5,11 +5,11 @@
 # Preparation for tests.
 - name: postgresql_sequence - create a user to be owner of a database
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_user:
     name: "{{ db_user1 }}"
     state: present
-    encrypted: yes
+    encrypted: true
     password: password
     role_attr_flags: LOGIN
     db: "{{ db_default }}"
@@ -17,7 +17,7 @@
 
 - name: postgresql_sequence - create DB
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_db:
     state: present
     name: "{{ db_name }}"
@@ -26,11 +26,11 @@
 
 - name: Create a user to be owner of a sequence
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_user:
     name: "{{ db_user2 }}"
     state: present
-    encrypted: yes
+    encrypted: true
     password: password
     role_attr_flags: LOGIN
     db: "{{ db_name }}"
@@ -38,7 +38,7 @@
 
 - name: postgresql_sequence - create a schema
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_schema:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -48,8 +48,8 @@
 # Test: create sequence in checkmode
 - name: postgresql_sequence - create a new sequence with name "foobar" in check_mode
   become_user: "{{ pg_user }}"
-  become: yes
-  check_mode: yes
+  become: true
+  check_mode: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -66,7 +66,7 @@
 
 # Real SQL check
 - name: postgresql_sequence - check that the new sequence "foobar" not exists
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
     db: "{{ db_name }}"
@@ -84,7 +84,7 @@
 # Test: create sequence
 - name: postgresql_sequence - create a new sequence with name "foobar"
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -102,7 +102,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the new sequence "foobar" exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -118,8 +118,8 @@
 # Test: drop sequence in checkmode
 - name: postgresql_sequence - drop a sequence called foobar
   become_user: "{{ pg_user }}"
-  become: yes
-  check_mode: yes
+  become: true
+  check_mode: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -138,7 +138,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "foobar" still exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -154,7 +154,7 @@
 # Test: drop sequence
 - name: postgresql_sequence - drop a sequence called foobar
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -173,7 +173,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "foobar" not exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -189,7 +189,7 @@
 # Test: drop nonexistent sequence
 - name: postgresql_sequence - drop a sequence called foobar which does not exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -208,7 +208,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "foobar" not exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -224,7 +224,7 @@
 # Test: create sequence with options
 - name: postgresql_sequence - create an descending sequence called foobar_desc, starting at 101 and which cycle between 1 to 1000
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -233,7 +233,7 @@
     start: 101
     minvalue: 1
     maxvalue: 1000
-    cycle: yes
+    cycle: true
   register: result
 
 # Checks
@@ -265,8 +265,8 @@
 # Test: rename a sequence in checkmode
 - name: postgresql_sequence - rename an existing sequence named foobar_desc to foobar_with_options
   become_user: "{{ pg_user }}"
-  become: yes
-  check_mode: yes
+  become: true
+  check_mode: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -286,7 +286,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "foobar_desc" still exists and is not renamed
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -302,7 +302,7 @@
 # Test: rename a sequence
 - name: postgresql_sequence - rename an existing sequence named foobar_desc to foobar_with_options
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -322,7 +322,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the renamed sequence "foobar_with_options" exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -338,8 +338,8 @@
 # Test: change schema of a sequence in checkmode
 - name: postgresql_sequence - change schema of an existing sequence from public to foobar_schema
   become_user: "{{ pg_user }}"
-  become: yes
-  check_mode: yes
+  become: true
+  check_mode: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -360,7 +360,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "foobar_with_options" still exists in the old schema
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -376,7 +376,7 @@
 # Test: change schema of a sequence
 - name: postgresql_sequence - change schema of an existing sequence from public to foobar_schema
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -397,7 +397,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "foobar_with_options" exists in new schema
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -413,8 +413,8 @@
 # Test: change owner of a sequence in checkmode
 - name: postgresql_sequence - change owner of an existing sequence from "{{ pg_user }}" to "{{ db_user1 }}"
   become_user: "{{ pg_user }}"
-  become: yes
-  check_mode: yes
+  become: true
+  check_mode: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -435,7 +435,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "foobar_with_options" has still the old owner
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -458,7 +458,7 @@
 # Test: change owner of a sequence
 - name: postgresql_sequence - change owner of an existing sequence from "{{ pg_user }}" to "{{ db_user1 }}"
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -479,7 +479,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "foobar_with_options" has a new owner
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -506,7 +506,7 @@
 # DROP SEQUENCE seq1 CASCADE;
 - name: postgresql_sequence - create sequence for drop cascade test
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -514,7 +514,7 @@
 
 - name: postgresql_sequence - create table which use sequence for drop cascade test
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -526,14 +526,14 @@
 # Test: drop sequence with cascade in checkmode
 - name: postgresql_sequence - drop with cascade a sequence called seq1
   become_user: "{{ pg_user }}"
-  become: yes
-  check_mode: yes
+  become: true
+  check_mode: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: seq1
     state: absent
-    cascade: yes
+    cascade: true
   register: result
 
 # Checks
@@ -547,7 +547,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "seq1" still exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -563,13 +563,13 @@
 # Test: drop sequence with cascade
 - name: postgresql_sequence - drop with cascade a sequence called seq1
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: seq1
     state: absent
-    cascade: yes
+    cascade: true
   register: result
 
 # Checks
@@ -583,7 +583,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the sequence "seq1" not exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -599,8 +599,8 @@
 # Test: create sequence with owner in checkmode
 - name: postgresql_sequence - create a new sequence with name "foobar2" with owner "{{ db_user2 }}"
   become_user: "{{ pg_user }}"
-  become: yes
-  check_mode: yes
+  become: true
+  check_mode: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -619,7 +619,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the new sequence "foobar2" does not exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -635,7 +635,7 @@
 # Test: create sequence with owner
 - name: postgresql_sequence - create a new sequence with name "foobar2" with owner "{{ db_user2 }}"
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -654,7 +654,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the new sequence "foobar2" exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -668,7 +668,7 @@
 
 - name: postgresql_sequence - check that the sequence "foobar2" has owner "{{ db_user2 }}"
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
@@ -691,14 +691,14 @@
 # Test: create sequence with trust_input
 - name: postgresql_sequence - check that trust_input works as expected
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_sequence:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: 'just_a_name"; SELECT * FROM information_schema.tables; --'
-    trust_input: no
+    trust_input: false
     owner: "{{ db_user2 }}"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
 
 # Checks
@@ -711,7 +711,7 @@
 # Cleanup
 - name: postgresql_sequence - destroy DB
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_db:
     state: absent
     name: "{{ db_name }}"
@@ -719,7 +719,7 @@
 
 - name: remove test roles
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_user:
     state: absent
     login_db: "{{ db_default }}"

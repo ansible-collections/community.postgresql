@@ -8,7 +8,7 @@
     data_file_csv: /tmp/data.csv
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
-      become: yes
+      become: true
       register: result
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
@@ -46,13 +46,13 @@
 
   # check_mode - if it's OK, must always return changed=True:
   - name: postgresql_copy - check_mode, copy test table content to data_file_txt
-    check_mode: yes
+    check_mode: true
     <<: *task_parameters
     postgresql_copy:
       <<: *pg_parameters
       copy_to: '{{ data_file_txt }}'
       src: '{{ test_table }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -61,7 +61,7 @@
   # check that nothing changed after the previous step:
   - name: postgresql_copy - check that data_file_txt doesn't exist
     <<: *task_parameters
-    ignore_errors: yes
+    ignore_errors: true
     shell: head -n 1 '{{ data_file_txt }}'
 
   - assert:
@@ -71,13 +71,13 @@
 
   # check_mode - if it's OK, must always return changed=True:
   - name: postgresql_copy - check_mode, copy test table content from data_file_txt
-    check_mode: yes
+    check_mode: true
     <<: *task_parameters
     postgresql_copy:
       <<: *pg_parameters
       copy_from: '{{ data_file_txt }}'
       dst: '{{ test_table }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -96,14 +96,14 @@
 
   # check_mode - test must fail because test table doesn't exist:
   - name: postgresql_copy - check_mode, copy non existent table to data_file_txt
-    check_mode: yes
-    ignore_errors: yes
+    check_mode: true
+    ignore_errors: true
     <<: *task_parameters
     postgresql_copy:
       <<: *pg_parameters
       copy_to: '{{ data_file_txt }}'
       src: non_existent_table
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -117,8 +117,8 @@
       copy_to: '{{ data_file_txt }}'
       src: '{{ test_table }}'
       session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
-      trust_input: no
-    ignore_errors: yes
+      trust_input: false
+    ignore_errors: true
 
   - assert:
       that:
@@ -131,7 +131,7 @@
       <<: *pg_parameters
       copy_to: '{{ data_file_txt }}'
       src: '{{ test_table }}'
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -161,7 +161,7 @@
       - name
       options:
         format: csv
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -190,7 +190,7 @@
       - name
       options:
         format: csv
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:
@@ -215,11 +215,11 @@
       <<: *pg_parameters
       src: '{{ test_table }}'
       copy_to: '/bin/true'
-      program: yes
+      program: true
       columns: id, name
       options:
         delimiter: '|'
-      trust_input: no
+      trust_input: false
     when: ansible_distribution != 'FreeBSD'
 
   - assert:
@@ -236,11 +236,11 @@
       <<: *pg_parameters
       dst: '{{ test_table }}'
       copy_from: 'echo 1,first'
-      program: yes
+      program: true
       columns: id, name
       options:
         delimiter: ','
-      trust_input: no
+      trust_input: false
 
   - assert:
       that:

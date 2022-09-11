@@ -6,7 +6,7 @@
 # Create a role for tests:
 - name: postgresql_table - create a role for tests
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_user:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -14,7 +14,7 @@
 
 - name: postgresql_table - create test schema
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_schema:
     database: postgres
     login_user: "{{ pg_user }}"
@@ -27,7 +27,7 @@
 # Create a simple table in check_mode:
 - name: postgresql_table - create table in check_mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     login_db: postgres
     login_port: 5432
@@ -36,8 +36,8 @@
     owner: alice
     columns: id int
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -49,12 +49,12 @@
 # Check that the table doesn't exist after the previous step, rowcount must be 0
 - name: postgresql_table - check that table doesn't exist after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test1'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -64,7 +64,7 @@
 # Create a simple table:
 - name: postgresql_table - create table
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     login_db: postgres
     login_port: 5432
@@ -73,7 +73,7 @@
     owner: alice
     columns: id int
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -88,12 +88,12 @@
 # Check that the table exists after the previous step, rowcount must be 1
 - name: postgresql_table - check that table exists after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test1'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -103,12 +103,12 @@
 # Check that the tableowner is alice
 - name: postgresql_table - check that table owner is alice
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_tables WHERE tablename = 'test1' AND tableowner = 'alice'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -122,15 +122,15 @@
 # Create a table LIKE another table without any additional parameters in check_mode:
 - name: postgresql_table - create table like in check_mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test2
     like: test1
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -142,12 +142,12 @@
 # Check that the table doesn't exist after the previous step, rowcount must be 0
 - name: postgresql_table - check that table doesn't exist after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test2'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -157,14 +157,14 @@
 # Create a table LIKE another table without any additional parameters:
 - name: postgresql_table - create table like
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test2
     like: test1
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -179,12 +179,12 @@
 # Check that the table exists after the previous step, rowcount must be 1
 - name: postgresql_table - check that table exists after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test2'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -198,15 +198,15 @@
 # Drop a table in check_mode:
 - name: postgresql_table - drop table in check_mode
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test2
     state: absent
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -220,12 +220,12 @@
 # Check that the table exists after the previous step, rowcount must be 1
 - name: postgresql_table - check that table exists after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test2'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -235,14 +235,14 @@
 # Drop a table:
 - name: postgresql_table - drop table
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test2
     state: absent
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -253,12 +253,12 @@
 # Check that the table doesn't exist after the previous step, rowcount must be 0
 - name: postgresql_table - check that table doesn't exist after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test2'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
 
 - assert:
@@ -268,7 +268,7 @@
 # Create a table like another table including:
 - name: postgresql_table - create table like with including indexes
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -276,7 +276,7 @@
     like: test1
     including: indexes
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -290,7 +290,7 @@
 # Check to create table if it exists:
 - name: postgresql_table - try to create existing table again
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -298,7 +298,7 @@
     like: test1
     including: indexes
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -307,26 +307,26 @@
 # Drop the table to prepare for the next step:
 - name: postgresql_table - drop table
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test2
     state: absent
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 # Try to drop non existing table:
 - name: postgresql_table - try drop dropped table again
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test2
     state: absent
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -338,18 +338,18 @@
 
 # Create user to prepare for the next step:
 - name: postgresql_table - create the new user test_user
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_user:
     login_user: "{{ pg_user }}"
     db: postgres
     name: test_user
     state: present
-  ignore_errors: yes
+  ignore_errors: true
 
 # Try to change owner to test_user in check_mode
 - name: postgresql_table - change table ownership to test_user in check_mode
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
@@ -357,8 +357,8 @@
     name: test1
     owner: test_user
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -370,12 +370,12 @@
 # Check that the tableowner was not changed to test_user
 - name: postgresql_table - check that table owner was not changed
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_tables WHERE tablename = 'test1' AND tableowner = 'test_user'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -384,7 +384,7 @@
 
 # Try to change owner to test_user
 - name: postgresql_table - change table ownership to test_user
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
@@ -392,7 +392,7 @@
     name: test1
     owner: test_user
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -404,12 +404,12 @@
 # Check that the tableowner was changed to test_user
 - name: postgresql_table - check that table owner was changed
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_tables WHERE tablename = 'test1' AND tableowner = 'test_user'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -422,7 +422,7 @@
 
 # Create a table with additional storage parameters:
 - name: postgresql_table - create table with storage_params
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
@@ -435,7 +435,7 @@
     - fillfactor=10
     - autovacuum_analyze_threshold=1
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -447,12 +447,12 @@
 # Check storage parameters
 - name: postgresql_table - check storage parameters
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT reloptions FROM pg_class WHERE relname = 'test3'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -465,7 +465,7 @@
 # Insert a row to test table:
 - name: postgresql_table - insert a row
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -473,16 +473,16 @@
 
 # Truncate a table in check_mode:
 - name: postgresql_table - truncate table
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test3
-    truncate: yes
+    truncate: true
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -493,12 +493,12 @@
 # Check the row exists:
 - name: postgresql_table - check that row exists after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT * FROM test3 WHERE id = '1'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -508,15 +508,15 @@
 # Truncate a table. It always returns changed == true
 # because it always creates a new table with the same schema and drop the old table:
 - name: postgresql_table - truncate table
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test3
-    truncate: yes
+    truncate: true
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -527,12 +527,12 @@
 # Check the row exists:
 - name: postgresql_table - check that row doesn't exist after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT * FROM test3 WHERE id = '1'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -547,7 +547,7 @@
 # In check_mode test4 won't be exist after the following playbook,
 # so result.changed == 'absent' for the table with this name
 - name: postgresql_table - rename table in check_mode
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
@@ -555,8 +555,8 @@
     name: test3
     rename: test4
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -567,12 +567,12 @@
 # Check that the table exists after the previous step, rowcount must be 1
 - name: postgresql_table - check that table exists after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test3'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -581,7 +581,7 @@
 
 # Rename a table:
 - name: postgresql_table - rename table
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
@@ -589,7 +589,7 @@
     name: test3
     rename: test4
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -600,12 +600,12 @@
 # Check that the table test 3 doesn't exist after the previous step, rowcount must be - 0
 - name: postgresql_table - check that table exists after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test3'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -615,12 +615,12 @@
 # Check that the table test 4 exists after the previous step, rowcount must be - 1
 - name: postgresql_table - check that table exists after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test4'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -633,16 +633,16 @@
 
 # Create unlogged table in check_mode:
 - name: postgresql_table - create unlogged table in check_mode
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test5
-    unlogged: yes
+    unlogged: true
   register: result
-  ignore_errors: yes
-  check_mode: yes
+  ignore_errors: true
+  check_mode: true
 
 - assert:
     that:
@@ -653,12 +653,12 @@
 # Check that the table doesn't exist after the previous step, rowcount must be - 0
 - name: postgresql_table - check that table doesn't exist after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test5'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -667,15 +667,15 @@
 
 # Create unlogged table:
 - name: postgresql_table - create unlogged table
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test5
-    unlogged: yes
+    unlogged: true
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -686,12 +686,12 @@
 # Check that the table exists after the previous step, rowcount must be - 1
 - name: postgresql_table - check that table exists after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test5'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('9.1', '>=')
  
@@ -702,16 +702,16 @@
 
 # Drop table CASCADE:
 - name: postgresql_table - drop table cascade
-  become: yes
+  become: true
   become_user: "{{ pg_user }}"
   postgresql_table:
     db: postgres
     login_user: "{{ pg_user }}"
     name: test5
     state: absent
-    cascade: yes
+    cascade: true
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -722,12 +722,12 @@
 # Check that the table doesn't exist after the previous step, rowcount must be - 0
 - name: postgresql_table - check that table doesn't exist after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test5'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('9.1', '>=')
  
@@ -753,12 +753,12 @@
 
 - name: postgresql_table - check that table exists after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test_schema_table' and schemaname = 'acme'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -802,12 +802,12 @@
 
 - name: postgresql_table - check that the table doesn't exist after the previous step
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test_schema_table' and schemaname = 'acme'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -828,12 +828,12 @@
 
 - name: postgresql_table - check that the table with the same name in schema public exists
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_query:
     db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test_schema_table' and schemaname = 'public'"
-  ignore_errors: yes
+  ignore_errors: true
   register: result
  
 - assert:
@@ -846,7 +846,7 @@
     login_user: "{{ pg_user }}"
     name: public.test_schema_table
     rename: new_test_schema_table
-    trust_input: yes
+    trust_input: true
   register: result
 
 - assert:
@@ -862,10 +862,10 @@
     login_user: "{{ pg_user }}"
     name: postgres.acme.test_schema_table
     state: absent
-    trust_input: no
+    trust_input: false
     session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
   register: result
-  ignore_errors: yes
+  ignore_errors: true
 
 - assert:
     that:
@@ -877,17 +877,17 @@
 #
 - name: postgresql_table - drop test schema
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_schema:
     database: postgres
     login_user: "{{ pg_user }}"
     name: acme
     state: absent
-    cascade_drop: yes
+    cascade_drop: true
 
 - name: postgresql_table - drop test role
   become_user: "{{ pg_user }}"
-  become: yes
+  become: true
   postgresql_user:
     db: postgres
     login_user: "{{ pg_user }}"
@@ -896,4 +896,4 @@
   loop:
   - test_user
   - alice
-  ignore_errors: yes
+  ignore_errors: true

@@ -5,7 +5,7 @@
 - vars:
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
-      become: yes
+      become: true
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
       login_db: postgres
@@ -37,7 +37,7 @@
       <<: *pg_parameters
       name: '{{ item.key }}'
       value: '{{ item.value }}'
-    check_mode: yes
+    check_mode: true
     with_dict: '{{ setting_map }}'
 
   # Actual mode:
