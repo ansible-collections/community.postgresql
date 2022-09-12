@@ -1,2 +1,2 @@
 bugfixes:
-- postgresql_info - make arguments passed to SHOW command properly quoted to prevent the interpreter evaluating them for reserved keywords (https://github.com/ansible-collections/community.postgresql/issues/314).
+- postgresql_info - make arguments passed to SHOW command properly quoted to prevent the interpreter evaluating them (https://github.com/ansible-collections/community.postgresql/issues/314).
