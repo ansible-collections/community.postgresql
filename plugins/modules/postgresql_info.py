@@ -1033,7 +1033,7 @@ class PgClusterInfo(object):
 
     def __get_pretty_val(self, setting):
         """Get setting's value represented by SHOW command."""
-        return self.__exec_sql("SHOW %s" % setting)[0][0]
+        return self.__exec_sql('SHOW "%s"' % setting)[0][0]
 
     def __exec_sql(self, query):
         """Execute SQL and return the result."""
