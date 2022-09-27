@@ -41,6 +41,53 @@ resources:
 pool: Standard
 
 stages:
+## Sanity & units
+  - stage: Ansible_devel
+    displayName: Sanity & Units devel
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: 'devel/sanity/1'
+            - name: Sanity Extra # Only on devel
+              test: 'devel/sanity/extra'
+            - name: Units
+              test: 'devel/units/1'
+  - stage: Ansible_2_13
+    displayName: Sanity & Units 2.13
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: '2.13/sanity/1'
+            - name: Units
+              test: '2.13/units/1'
+  - stage: Ansible_2_12
+    displayName: Sanity & Units 2.12
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: '2.12/sanity/1'
+            - name: Units
+              test: '2.12/units/1'
+  - stage: Ansible_2_11
+    displayName: Sanity & Units 2.11
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: '2.11/sanity/1'
+            - name: Units
+              test: '2.11/units/1'
 
 ## Docker
   - stage: Docker_devel
