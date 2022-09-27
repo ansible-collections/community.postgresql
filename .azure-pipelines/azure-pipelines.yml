@@ -55,6 +55,7 @@ stages:
               test: 'devel/sanity/extra'
             - name: Units
               test: 'devel/units/1'
+
   - stage: Ansible_2_14
     displayName: Sanity & Units 2.14
     dependsOn: []
@@ -66,6 +67,7 @@ stages:
               test: '2.14/sanity/1'
             - name: Units
               test: '2.14/units/1'
+
   - stage: Ansible_2_13
     displayName: Sanity & Units 2.13
     dependsOn: []
@@ -77,6 +79,7 @@ stages:
               test: '2.13/sanity/1'
             - name: Units
               test: '2.13/units/1'
+
   - stage: Ansible_2_12
     displayName: Sanity & Units 2.12
     dependsOn: []
@@ -88,6 +91,7 @@ stages:
               test: '2.12/sanity/1'
             - name: Units
               test: '2.12/units/1'
+
   - stage: Ansible_2_11
     displayName: Sanity & Units 2.11
     dependsOn: []
@@ -115,6 +119,7 @@ stages:
               test: fedora36
             - name: Ubuntu 20.04
               test: ubuntu2004
+
   - stage: Docker_2_13
     displayName: Docker 2.13
     dependsOn: []
@@ -129,6 +134,7 @@ stages:
               test: fedora35
             - name: Ubuntu 20.04
               test: ubuntu2004
+
   - stage: Docker_2_12
     displayName: Docker 2.12
     dependsOn: []
@@ -143,6 +149,7 @@ stages:
               test: fedora34
             - name: Ubuntu 20.04
               test: ubuntu2004
+
   - stage: Docker_2_11
     displayName: Docker 2.11
     dependsOn: []
@@ -167,6 +174,18 @@ stages:
           targets:
             - name: RHEL 8.6
               test: rhel/8.6
+
+  - stage: Remote_2_14
+    displayName: Remote 2.14
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.14/{0}/1
+          targets:
+            - name: RHEL 8.5
+              test: rhel/8.5
+
   - stage: Remote_2_13
     displayName: Remote 2.13
     dependsOn: []
@@ -177,6 +196,7 @@ stages:
           targets:
             - name: RHEL 8.5
               test: rhel/8.5
+
   - stage: Remote_2_12
     displayName: Remote 2.12
     dependsOn: []
@@ -187,6 +207,7 @@ stages:
           targets:
             - name: RHEL 8.4
               test: rhel/8.4
+
   - stage: Remote_2_11
     displayName: Remote 2.11
     dependsOn: []
@@ -212,6 +233,7 @@ stages:
       - Docker_2_12
       - Docker_2_11
       - Remote_devel
+      - Remote_2_14
       - Remote_2_13
       - Remote_2_12
       - Remote_2_11
