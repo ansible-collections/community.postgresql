@@ -120,6 +120,21 @@ stages:
             - name: Ubuntu 20.04
               test: ubuntu2004
 
+  - stage: Docker_2_14
+    displayName: Docker 2.14
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.14/linux/{0}/1
+          targets:
+            - name: CentOS 7
+              test: centos7
+            - name: Fedora 36
+              test: fedora36
+            - name: Ubuntu 20.04
+              test: ubuntu2004
+
   - stage: Docker_2_13
     displayName: Docker 2.13
     dependsOn: []
@@ -230,6 +245,7 @@ stages:
       - Ansible_2_12
       - Ansible_2_11
       - Docker_devel
+      - Docker_2_14
       - Docker_2_13
       - Docker_2_12
       - Docker_2_11
