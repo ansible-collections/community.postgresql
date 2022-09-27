@@ -23,7 +23,7 @@ schedules:
 
 variables:
   - name: checkoutPath
-    value: ansible_collections/ansible/posix
+    value: ansible_collections/community/postgresql
   - name: coverageBranches
     value: main
   - name: pipelinesCoverage
