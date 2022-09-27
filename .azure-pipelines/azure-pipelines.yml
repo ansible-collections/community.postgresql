@@ -225,6 +225,7 @@ stages:
     condition: succeededOrFailed()
     dependsOn:
       - Ansible_devel
+      - Ansible_2_14
       - Ansible_2_13
       - Ansible_2_12
       - Ansible_2_11
