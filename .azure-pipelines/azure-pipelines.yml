@@ -55,6 +55,17 @@ stages:
               test: 'devel/sanity/extra'
             - name: Units
               test: 'devel/units/1'
+  - stage: Ansible_2_14
+    displayName: Sanity & Units 2.14
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: '2.14/sanity/1'
+            - name: Units
+              test: '2.14/units/1'
   - stage: Ansible_2_13
     displayName: Sanity & Units 2.13
     dependsOn: []
