@@ -41,7 +41,7 @@ resources:
 pool: Standard
 
 stages:
-### Sanity & units
+## Sanity & units
   - stage: Ansible_devel
     displayName: Sanity & Units devel
     dependsOn: []
@@ -55,6 +55,18 @@ stages:
               test: 'devel/sanity/extra'
             - name: Units
               test: 'devel/units/1'
+
+  - stage: Ansible_2_14
+    displayName: Sanity & Units 2.14
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: '2.14/sanity/1'
+            - name: Units
+              test: '2.14/units/1'
 
   - stage: Ansible_2_13
     displayName: Sanity & Units 2.13
@@ -92,7 +104,7 @@ stages:
             - name: Units
               test: '2.11/units/1'
 
-### Docker
+## Docker
   - stage: Docker_devel
     displayName: Docker devel
     dependsOn: []
@@ -100,6 +112,21 @@ stages:
       - template: templates/matrix.yml
         parameters:
           testFormat: devel/linux/{0}/1
+          targets:
+            - name: CentOS 7
+              test: centos7
+            - name: Fedora 36
+              test: fedora36
+            - name: Ubuntu 20.04
+              test: ubuntu2004
+
+  - stage: Docker_2_14
+    displayName: Docker 2.14
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.14/linux/{0}/1
           targets:
             - name: CentOS 7
               test: centos7
@@ -151,7 +178,7 @@ stages:
             - name: Ubuntu 20.04
               test: ubuntu2004
 
-### Remote
+## Remote
   - stage: Remote_devel
     displayName: Remote devel
     dependsOn: []
@@ -159,6 +186,17 @@ stages:
       - template: templates/matrix.yml
         parameters:
           testFormat: devel/{0}/1
+          targets:
+            - name: RHEL 8.6
+              test: rhel/8.6
+
+  - stage: Remote_2_14
+    displayName: Remote 2.14
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.14/{0}/1
           targets:
             - name: RHEL 8.6
               test: rhel/8.6
@@ -196,18 +234,23 @@ stages:
             - name: RHEL 8.3
               test: rhel/8.3
 
+## Finally
+
   - stage: Summary
     condition: succeededOrFailed()
     dependsOn:
       - Ansible_devel
+      - Ansible_2_14
       - Ansible_2_13
       - Ansible_2_12
       - Ansible_2_11
       - Docker_devel
+      - Docker_2_14
       - Docker_2_13
       - Docker_2_12
       - Docker_2_11
       - Remote_devel
+      - Remote_2_14
       - Remote_2_13
       - Remote_2_12
       - Remote_2_11
