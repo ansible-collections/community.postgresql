@@ -21,3 +21,9 @@ pg_hba_test_ips:
 - source: '172.16.0.0'
   netmask: '255.255.0.0'
   method: trust
+- contype: hostgssenc
+  users: postgres
+  source: '::1/128'
+- contype: hostnogssenc
+  users: all
+  source: '::1/128'
