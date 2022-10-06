@@ -23,7 +23,7 @@ pg_hba_test_ips:
   method: trust
 - contype: hostgssenc
   users: postgres
-  source: '::1/128'
+  source: '2001:db8::1/128'
 - contype: hostnogssenc
   users: all
-  source: '::1/128'
+  source: '2001:db8::1/128'
