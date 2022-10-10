@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_pg_hba - support the connection types ``hostgssenc`` and ``hostnogssenc`` (https://github.com/ansible-collections/community.postgresql/pull/351).
