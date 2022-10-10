@@ -50,7 +50,7 @@ options:
     description:
       - Type of the rule. If not set, C(postgresql_pg_hba) will only return contents.
     type: str
-    choices: [ local, host, hostnossl, hostssl ]
+    choices: [ local, host, hostnossl, hostssl, hostgssenc, hostnogssenc ]
   comment:
     description:
       - A comment that will be placed in the same line behind the rule. See also the I(keep_comments_at_rules) parameter.
@@ -225,7 +225,7 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 PG_HBA_METHODS = ["trust", "reject", "md5", "password", "gss", "sspi", "krb5", "ident", "peer",
                   "ldap", "radius", "cert", "pam", "scram-sha-256"]
-PG_HBA_TYPES = ["local", "host", "hostssl", "hostnossl"]
+PG_HBA_TYPES = ["local", "host", "hostssl", "hostnossl", "hostgssenc", "hostnogssenc"]
 PG_HBA_ORDERS = ["sdu", "sud", "dsu", "dus", "usd", "uds"]
 PG_HBA_HDR = ['type', 'db', 'usr', 'src', 'mask', 'method', 'options']
 
