@@ -75,6 +75,7 @@ options:
       or C(default_privs). Defaults to C(public) in these cases.
     - Pay attention, for embedded types when I(type=type)
       I(schema) can be C(pg_catalog) or C(information_schema) respectively.
+    - If not specified, uses C(public). Not to pass any schema, use C(not-specified).
     type: str
   roles:
     description:
@@ -430,6 +431,14 @@ EXAMPLES = r'''
     objs: numeric
     schema: pg_catalog
     db: acme
+
+- name: Alter default privileges grant usage on schemas to datascience
+  community.postgresql.postgresql_privs:
+    database: test
+    type: default_privs
+    privs: usage
+    objs: schemas
+    role: datascience
 '''
 
 RETURN = r'''
@@ -461,11 +470,12 @@ from ansible.module_utils._text import to_native
 
 VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
                          'REFERENCES', 'TRIGGER', 'CREATE', 'CONNECT',
-                         'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'USAGE'))
+                         'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL'))
 VALID_DEFAULT_OBJS = {'TABLES': ('ALL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'),
                       'SEQUENCES': ('ALL', 'SELECT', 'UPDATE', 'USAGE'),
                       'FUNCTIONS': ('ALL', 'EXECUTE'),
-                      'TYPES': ('ALL', 'USAGE')}
+                      'TYPES': ('ALL', 'USAGE'),
+                      'SCHEMAS': ('CREATE', 'USAGE'), }
 
 executed_queries = []
 
@@ -561,53 +571,70 @@ class Connection(object):
         return self.cursor.fetchone()[0] > 0
 
     def get_all_tables_in_schema(self, schema):
-        if not self.schema_exists(schema):
-            raise Error('Schema "%s" does not exist.' % schema)
-        query = """SELECT relname
-                   FROM pg_catalog.pg_class c
-                   JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-                   WHERE nspname = %s AND relkind in ('r', 'v', 'm', 'p')"""
-        self.cursor.execute(query, (schema,))
+        if schema:
+            if not self.schema_exists(schema):
+                raise Error('Schema "%s" does not exist.' % schema)
+
+            query = """SELECT relname
+                       FROM pg_catalog.pg_class c
+                       JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                       WHERE nspname = %s AND relkind in ('r', 'v', 'm', 'p')"""
+            self.cursor.execute(query, (schema,))
+        else:
+            query = ("SELECT relname FROM pg_catalog.pg_class "
+                     "WHERE relkind in ('r', 'v', 'm', 'p')")
+            self.cursor.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_all_sequences_in_schema(self, schema):
-        if not self.schema_exists(schema):
-            raise Error('Schema "%s" does not exist.' % schema)
-        query = """SELECT relname
-                   FROM pg_catalog.pg_class c
-                   JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-                   WHERE nspname = %s AND relkind = 'S'"""
-        self.cursor.execute(query, (schema,))
+        if schema:
+            if not self.schema_exists(schema):
+                raise Error('Schema "%s" does not exist.' % schema)
+            query = """SELECT relname
+                       FROM pg_catalog.pg_class c
+                       JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                       WHERE nspname = %s AND relkind = 'S'"""
+            self.cursor.execute(query, (schema,))
+        else:
+            self.cursor.execute("SELECT relname FROM pg_catalog.pg_class WHERE relkind = 'S'")
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_all_functions_in_schema(self, schema):
-        if not self.schema_exists(schema):
-            raise Error('Schema "%s" does not exist.' % schema)
+        if schema:
+            if not self.schema_exists(schema):
+                raise Error('Schema "%s" does not exist.' % schema)
 
-        query = ("SELECT p.proname, oidvectortypes(p.proargtypes) "
-                 "FROM pg_catalog.pg_proc p "
-                 "JOIN pg_namespace n ON n.oid = p.pronamespace "
-                 "WHERE nspname = %s")
+            query = ("SELECT p.proname, oidvectortypes(p.proargtypes) "
+                     "FROM pg_catalog.pg_proc p "
+                     "JOIN pg_namespace n ON n.oid = p.pronamespace "
+                     "WHERE nspname = %s")
 
-        if self.pg_version >= 110000:
-            query += " and p.prokind = 'f'"
+            if self.pg_version >= 110000:
+                query += " and p.prokind = 'f'"
 
-        self.cursor.execute(query, (schema,))
+            self.cursor.execute(query, (schema,))
+        else:
+            self.cursor.execute("SELECT p.proname, oidvectortypes(p.proargtypes) FROM pg_catalog.pg_proc p")
         return ["%s(%s)" % (t[0], t[1]) for t in self.cursor.fetchall()]
 
     def get_all_procedures_in_schema(self, schema):
         if self.pg_version < 110000:
             raise Error("PostgreSQL verion must be >= 11 for type=procedure. Exit")
 
-        if not self.schema_exists(schema):
-            raise Error('Schema "%s" does not exist.' % schema)
+        if schema:
+            if not self.schema_exists(schema):
+                raise Error('Schema "%s" does not exist.' % schema)
 
-        query = ("SELECT p.proname, oidvectortypes(p.proargtypes) "
-                 "FROM pg_catalog.pg_proc p "
-                 "JOIN pg_namespace n ON n.oid = p.pronamespace "
-                 "WHERE nspname = %s and p.prokind = 'p'")
+            query = ("SELECT p.proname, oidvectortypes(p.proargtypes) "
+                     "FROM pg_catalog.pg_proc p "
+                     "JOIN pg_namespace n ON n.oid = p.pronamespace "
+                     "WHERE nspname = %s and p.prokind = 'p'")
 
-        self.cursor.execute(query, (schema,))
+            self.cursor.execute(query, (schema,))
+        else:
+            query = ("SELECT p.proname, oidvectortypes(p.proargtypes) "
+                     "FROM pg_catalog.pg_proc p WHERE p.prokind = 'p'")
+            self.cursor.execute(query)
         return ["%s(%s)" % (t[0], t[1]) for t in self.cursor.fetchall()]
 
     # Methods for getting access control lists and group membership info
@@ -619,31 +646,47 @@ class Connection(object):
     # The same should apply to group membership information.
 
     def get_table_acls(self, schema, tables):
-        query = """SELECT relacl
-                   FROM pg_catalog.pg_class c
-                   JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-                   WHERE nspname = %s AND relkind in ('r','p','v','m') AND relname = ANY (%s)
-                   ORDER BY relname"""
-        self.cursor.execute(query, (schema, tables))
+        if schema:
+            query = """SELECT relacl
+                       FROM pg_catalog.pg_class c
+                       JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                       WHERE nspname = %s AND relkind in ('r','p','v','m') AND relname = ANY (%s)
+                       ORDER BY relname"""
+            self.cursor.execute(query, (schema, tables))
+        else:
+            query = ("SELECT relacl FROM pg_catalog.pg_class "
+                     "WHERE relkind in ('r','p','v','m') AND relname = ANY (%s) "
+                     "ORDER BY relname")
+            self.cursor.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_sequence_acls(self, schema, sequences):
-        query = """SELECT relacl
-                   FROM pg_catalog.pg_class c
-                   JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-                   WHERE nspname = %s AND relkind = 'S' AND relname = ANY (%s)
-                   ORDER BY relname"""
-        self.cursor.execute(query, (schema, sequences))
+        if schema:
+            query = """SELECT relacl
+                       FROM pg_catalog.pg_class c
+                       JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                       WHERE nspname = %s AND relkind = 'S' AND relname = ANY (%s)
+                       ORDER BY relname"""
+            self.cursor.execute(query, (schema, sequences))
+        else:
+            query = ("SELECT relacl FROM pg_catalog.pg_class "
+                     "WHERE  relkind = 'S' AND relname = ANY (%s) ORDER BY relname")
+            self.cursor.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_function_acls(self, schema, function_signatures):
         funcnames = [f.split('(', 1)[0] for f in function_signatures]
-        query = """SELECT proacl
-                   FROM pg_catalog.pg_proc p
-                   JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
-                   WHERE nspname = %s AND proname = ANY (%s)
-                   ORDER BY proname, proargtypes"""
-        self.cursor.execute(query, (schema, funcnames))
+        if schema:
+            query = """SELECT proacl
+                       FROM pg_catalog.pg_proc p
+                       JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+                       WHERE nspname = %s AND proname = ANY (%s)
+                       ORDER BY proname, proargtypes"""
+            self.cursor.execute(query, (schema, funcnames))
+        else:
+            query = ("SELECT proacl FROM pg_catalog.pg_proc WHERE proname = ANY (%s) "
+                     "ORDER BY proname, proargtypes")
+            self.cursor.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_schema_acls(self, schemas):
@@ -680,11 +723,14 @@ class Connection(object):
         return self.cursor.fetchall()
 
     def get_default_privs(self, schema, *args):
-        query = """SELECT defaclacl
-                   FROM pg_default_acl a
-                   JOIN pg_namespace b ON a.defaclnamespace=b.oid
-                   WHERE b.nspname = %s;"""
-        self.cursor.execute(query, (schema,))
+        if schema:
+            query = """SELECT defaclacl
+                       FROM pg_default_acl a
+                       JOIN pg_namespace b ON a.defaclnamespace=b.oid
+                       WHERE b.nspname = %s;"""
+            self.cursor.execute(query, (schema,))
+        else:
+            self.cursor.execute("SELECT defaclacl FROM pg_default_acl;")
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_foreign_data_wrapper_acls(self, fdws):
@@ -700,10 +746,14 @@ class Connection(object):
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_type_acls(self, schema, types):
-        query = """SELECT t.typacl FROM pg_catalog.pg_type t
-                   JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
-                   WHERE n.nspname = %s AND t.typname = ANY (%s) ORDER BY typname"""
-        self.cursor.execute(query, (schema, types))
+        if schema:
+            query = """SELECT t.typacl FROM pg_catalog.pg_type t
+                       JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+                       WHERE n.nspname = %s AND t.typname = ANY (%s) ORDER BY typname"""
+            self.cursor.execute(query, (schema, types))
+        else:
+            query = "SELECT typacl FROM pg_catalog.pg_type WHERE typname = ANY (%s) ORDER BY typname"
+            self.cursor.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     # Manipulating privileges
@@ -875,7 +925,7 @@ class QueryBuilder(object):
         return self
 
     def for_schema(self, schema):
-        self._schema = schema
+        self._schema = ' IN SCHEMA %s' % schema if schema is not None else ''
         return self
 
     def with_grant_option(self, option):
@@ -915,13 +965,13 @@ class QueryBuilder(object):
         for obj in self._objs:
             if self._as_who:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES FOR ROLE {0} IN SCHEMA {1} REVOKE ALL ON {2} FROM {3};'.format(self._as_who,
-                                                                                                             self._schema, obj,
-                                                                                                             self._for_whom))
+                    'ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} REVOKE ALL ON {2} FROM {3};'.format(self._as_who,
+                                                                                                  self._schema, obj,
+                                                                                                  self._for_whom))
             else:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES IN SCHEMA {0} REVOKE ALL ON {1} FROM {2};'.format(self._schema, obj,
-                                                                                                self._for_whom))
+                    'ALTER DEFAULT PRIVILEGES{0} REVOKE ALL ON {1} FROM {2};'.format(self._schema, obj,
+                                                                                     self._for_whom))
 
     def add_grant_option(self):
         if self._grant_option:
@@ -942,29 +992,29 @@ class QueryBuilder(object):
         for obj in self._objs:
             if self._as_who:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES FOR ROLE {0} IN SCHEMA {1} GRANT {2} ON {3} TO {4}'.format(self._as_who,
-                                                                                                         self._schema,
-                                                                                                         self._set_what,
-                                                                                                         obj,
-                                                                                                         self._for_whom))
+                    'ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} GRANT {2} ON {3} TO {4}'.format(self._as_who,
+                                                                                              self._schema,
+                                                                                              self._set_what,
+                                                                                              obj,
+                                                                                              self._for_whom))
             else:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES IN SCHEMA {0} GRANT {1} ON {2} TO {3}'.format(self._schema,
-                                                                                            self._set_what,
-                                                                                            obj,
-                                                                                            self._for_whom))
+                    'ALTER DEFAULT PRIVILEGES{0} GRANT {1} ON {2} TO {3}'.format(self._schema,
+                                                                                 self._set_what,
+                                                                                 obj,
+                                                                                 self._for_whom))
             self.add_grant_option()
 
         if self._usage_on_types:
 
             if self._as_who:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES FOR ROLE {0} IN SCHEMA {1} GRANT USAGE ON TYPES TO {2}'.format(self._as_who,
-                                                                                                             self._schema,
-                                                                                                             self._for_whom))
+                    'ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} GRANT USAGE ON TYPES TO {2}'.format(self._as_who,
+                                                                                                  self._schema,
+                                                                                                  self._for_whom))
             else:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES IN SCHEMA {0} GRANT USAGE ON TYPES TO {1}'.format(self._schema, self._for_whom))
+                    'ALTER DEFAULT PRIVILEGES{0} GRANT USAGE ON TYPES TO {1}'.format(self._schema, self._for_whom))
         self.add_grant_option()
 
     def build_present(self):
@@ -981,13 +1031,13 @@ class QueryBuilder(object):
             for obj in ['TABLES', 'SEQUENCES', 'TYPES']:
                 if self._as_who:
                     self.query.append(
-                        'ALTER DEFAULT PRIVILEGES FOR ROLE {0} IN SCHEMA {1} REVOKE ALL ON {2} FROM {3};'.format(self._as_who,
-                                                                                                                 self._schema, obj,
-                                                                                                                 self._for_whom))
+                        'ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} REVOKE ALL ON {2} FROM {3};'.format(self._as_who,
+                                                                                                      self._schema, obj,
+                                                                                                      self._for_whom))
                 else:
                     self.query.append(
-                        'ALTER DEFAULT PRIVILEGES IN SCHEMA {0} REVOKE ALL ON {1} FROM {2};'.format(self._schema, obj,
-                                                                                                    self._for_whom))
+                        'ALTER DEFAULT PRIVILEGES{0} REVOKE ALL ON {1} FROM {2};'.format(self._schema, obj,
+                                                                                         self._for_whom))
         else:
             self.query.append('REVOKE {0} FROM {1};'.format(self._set_what, self._for_whom))
 
@@ -1040,7 +1090,10 @@ def main():
     p = type('Params', (), module.params)
     # param "schema": default, allowed depends on param "type"
     if p.type in ['table', 'sequence', 'function', 'procedure', 'type', 'default_privs']:
-        p.schema = p.schema or 'public'
+        if p.objs == 'schemas' or p.schema == 'not-specified':
+            p.schema = None
+        else:
+            p.schema = p.schema or 'public'
     elif p.schema:
         module.fail_json(msg='Argument "schema" is not allowed '
                              'for type "%s".' % p.type)

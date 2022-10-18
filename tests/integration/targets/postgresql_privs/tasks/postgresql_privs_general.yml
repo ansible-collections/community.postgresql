@@ -1476,6 +1476,74 @@
     that:
     - result is not changed
 
+##############
+# Issue https://github.com/ansible-collections/community.postgresql/issues/332
+- name: Test community.postgresql issue 332 grant usage
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: schemas
+    type: default_privs
+    privs: usage
+  register: result
+
+- assert:
+    that:
+    - result is changed
+
+- name: Test community.postgresql issue 332 grant usage, run again
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: schemas
+    type: default_privs
+    privs: usage
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+
+- name: Test community.postgresql issue 333 grant usage
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: tables
+    type: default_privs
+    schema: not-specified
+    privs: select
+  register: result
+
+- assert:
+    that:
+    - result is changed
+
+- name: Test community.postgresql issue 333 grant usage, run again
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: tables
+    type: default_privs
+    schema: not-specified
+    privs: select
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+
 # Cleanup
 - name: Remove privs
   become: true
@@ -1502,6 +1570,13 @@
   loop:
   - "{{ db_user2 }}"
   - "{{ db_user3 }}"
+
+- name: Drop a role for which the default privileges have been altered
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_query:
+    login_db: "{{ db_name }}"
+    query: "DROP OWNED BY {{ db_user3 }};"
 
 - name: Remove user given permissions
   become: true
