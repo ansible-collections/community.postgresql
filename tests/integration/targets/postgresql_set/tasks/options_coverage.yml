@@ -29,6 +29,7 @@
         wal_level: replica
         log_statement: mod
         track_functions: none
+        shared_preload_libraries: 'pg_stat_statements, pgaudit'
 
   # Check mode:
   - name: Set settings in check mode
@@ -48,3 +49,13 @@
       name: '{{ item.key }}'
       value: '{{ item.value }}'
     with_dict: '{{ setting_map }}'
+
+  # https://github.com/ansible-collections/community.postgresql/issues/78
+  - name: Test param with comma containing values
+    <<: *task_parameters
+    shell: "grep shared_preload_libraries {{ pg_auto_conf }}"
+    register: result
+
+  - assert:
+      that:
+      - result.stdout = "shared_preload_libraries = 'pg_stat_statements, pgaudit'"
