@@ -16,7 +16,7 @@
   - '{{ replica_data_dir }}'
   notify: cleanup postgresql
 - name: Find initdb
-  shell: find /usr/lib -type f -name "initdb"
+  shell: find /usr/lib -type f -name "initdb" | head -n 1
   register: result
 - name: Set path to initdb
   set_fact:
