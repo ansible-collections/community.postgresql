@@ -1,3 +1,8 @@
+- name: Remova preinstalled packages
+  apt:
+    name: '{{ pg_package_list }}'
+    state: absent
+
 - name: Install packages
   apt:
     name: '{{ pg_package_list }}'
@@ -69,15 +74,15 @@
     port: '{{ replica_port }}'
   notify: stop postgresql
   # For debugging
-  ignore_errors: yes
+  #ignore_errors: yes
 
-- name: Show log content
-  become: true
-  become_user: '{{ pg_user }}'
-  shell: 'cat {{ item }}/server.log'
-  loop:
-  - '{{ primary_data_dir }}'
-  - '{{ replica_data_dir }}'
+#- name: Show log content
+#  become: true
+#  become_user: '{{ pg_user }}'
+#  shell: 'cat {{ item }}/server.log'
+#  loop:
+#  - '{{ primary_data_dir }}'
+#  - '{{ replica_data_dir }}'
   # End debugging
 
 - name: Check connectivity to the primary and get PostgreSQL version
