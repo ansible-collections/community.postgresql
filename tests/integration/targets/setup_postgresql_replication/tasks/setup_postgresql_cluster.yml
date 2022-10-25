@@ -2,6 +2,7 @@
   apt:
     name: '{{ pg_package_list }}'
   notify: cleanup postgresql
+
 - name: Create root dirs
   file:
     state: directory
@@ -15,12 +16,15 @@
   - '{{ replica_root_dir }}'
   - '{{ replica_data_dir }}'
   notify: cleanup postgresql
+
 - name: Find initdb
   shell: find /usr/lib -type f -name "initdb" | head -n 1
   register: result
+
 - name: Set path to initdb
   set_fact:
     initdb: '{{ result.stdout }}'
+
 - name: Initialize databases
   become: true
   become_user: '{{ pg_user }}'
@@ -28,6 +32,7 @@
   loop:
   - '{{ primary_data_dir }}'
   - '{{ replica_data_dir }}'
+
 - name: Copy config templates
   template:
     src: '{{ item.conf_templ }}'
@@ -44,22 +49,34 @@
     conf_dest: '{{ primary_pg_hba_conf }}'
   - conf_templ: pg_hba.conf.j2
     conf_dest: '{{ replica_pg_hba_conf }}'
+
 - name: Find pg_ctl
   shell: find /usr/lib -type f -name "pg_ctl" | head -n 1
   register: result
+
 - name: Set path to initdb
   set_fact:
     pg_ctl: '{{ result.stdout }}'
+
 - name: Start servers
   become: true
   become_user: '{{ pg_user }}'
-  shell: '{{ pg_ctl }} -D {{ item.datadir }} -o "-p {{ item.port }}" start'
+  shell: '{{ pg_ctl }} -D {{ item.datadir }} -l {{ item.datadir}}/server.log -o "-p {{ item.port }}" start'
   loop:
   - datadir: '{{ primary_data_dir }}'
     port: '{{ primary_port }}'
   - datadir: '{{ replica_data_dir }}'
     port: '{{ replica_port }}'
   notify: stop postgresql
+  # For debugging
+  ignore_errors: yes
+
+- name: Show log content
+  become: true
+  become_user: '{{ pg_user }}'
+  shell: 'cat {{ item.datadir}}/server.log'
+  # End debugging
+
 - name: Check connectivity to the primary and get PostgreSQL version
   become: true
   become_user: '{{ pg_user }}'
@@ -68,6 +85,7 @@
     login_user: '{{ pg_user }}'
     login_port: '{{ primary_port }}'
   register: result
+
 - name: Check connectivity to the replica and get PostgreSQL version
   become: true
   become_user: '{{ pg_user }}'
@@ -75,10 +93,12 @@
     db: '{{ db_default }}'
     login_user: '{{ pg_user }}'
     login_port: '{{ replica_port }}'
+
 - name: Define server version
   set_fact:
     pg_major_version: '{{ result.server_version.major }}'
     pg_minor_version: '{{ result.server_version.minor }}'
+
 - name: Print PostgreSQL version
   debug:
     msg: PostgreSQL version is {{ pg_major_version }}.{{ pg_minor_version }}
