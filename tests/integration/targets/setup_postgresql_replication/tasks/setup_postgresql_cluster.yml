@@ -18,7 +18,7 @@
   notify: cleanup postgresql
 
 - name: Find initdb
-  shell: find /usr/lib -type f -name "initdb" | head -n 1
+  shell: find /usr/lib -type f -name "initdb" | tail -n 1
   register: result
 
 - name: Set path to initdb
@@ -51,7 +51,7 @@
     conf_dest: '{{ replica_pg_hba_conf }}'
 
 - name: Find pg_ctl
-  shell: find /usr/lib -type f -name "pg_ctl" | head -n 1
+  shell: find /usr/lib -type f -name "pg_ctl" | tail -n 1
   register: result
 
 - name: Set path to initdb
@@ -74,7 +74,10 @@
 - name: Show log content
   become: true
   become_user: '{{ pg_user }}'
-  shell: 'cat {{ item.datadir}}/server.log'
+  shell: 'cat {{ item }}/server.log'
+  loop:
+  - '{{ primary_data_dir }}'
+  - '{{ replica_data_dir }}'
   # End debugging
 
 - name: Check connectivity to the primary and get PostgreSQL version
