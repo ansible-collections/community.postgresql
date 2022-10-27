@@ -4,7 +4,7 @@ db_default: postgres
 
 pg_package_list:
 - apt-utils
-  - postgresql-14
+- postgresql-14
 - postgresql-contrib
 - python3-psycopg2
 
