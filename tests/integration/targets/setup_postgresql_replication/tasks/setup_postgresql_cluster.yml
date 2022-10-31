@@ -50,17 +50,6 @@
 - name: Add a repository
   shell: apt -y update
   when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-
-- name: Install locale needed
-  shell: 'locale-gen {{ item }}'
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-  loop:
-  - es_ES
-  - pt_BR
-
-- name: Update locale
-  shell: 'update-locale'
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
 #=================
 
 - name: Install packages
