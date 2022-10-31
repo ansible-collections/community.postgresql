@@ -93,7 +93,7 @@
   notify: cleanup postgresql
 
 - name: Find initdb
-  shell: find /usr/lib -type f -name "initdb" | tail -n 1
+  shell: find /usr/lib -type f -name "initdb"
   register: result
 
 - name: Set path to initdb
@@ -126,7 +126,7 @@
     conf_dest: '{{ replica_pg_hba_conf }}'
 
 - name: Find pg_ctl
-  shell: find /usr/lib -type f -name "pg_ctl" | tail -n 1
+  shell: find /usr/lib -type f -name "pg_ctl"
   register: result
 
 - name: Set path to initdb
