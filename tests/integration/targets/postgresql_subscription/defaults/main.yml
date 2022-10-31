@@ -1,6 +1,5 @@
 pg_user: postgres
 db_default: postgres
-replica_port: 5434
 
 test_table1: acme1
 test_pub: first_publication
