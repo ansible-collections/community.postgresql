@@ -136,14 +136,13 @@
 - name: Start servers
   become: true
   become_user: '{{ pg_user }}'
-  shell: '{{ pg_ctl }} -D {{ item.datadir }} -l /tmp/server-{{ item.port }}.log -o "-p {{ item.port }}" start'
+  shell: '{{ pg_ctl }} -D {{ item.datadir }} -o "-p {{ item.port }}" start'
   loop:
   - datadir: '{{ primary_data_dir }}'
     port: '{{ primary_port }}'
   - datadir: '{{ replica_data_dir }}'
     port: '{{ replica_port }}'
   notify: stop postgresql
-  # For debugging
 
 - name: Check connectivity to the primary and get PostgreSQL version
   become: true
