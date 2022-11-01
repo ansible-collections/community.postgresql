@@ -49,14 +49,6 @@
     - '{{ primary_port }}'
     - '{{ replica_port }}'
 
-  #- name: Master - dump schema
-  #  <<: *task_parameters
-  #  shell: pg_dumpall -p '{{ primary_port }}' -s > /tmp/schema.sql
-
-  #- name: Replica restore schema
-  #  <<: *task_parameters
-  #  shell: psql -p '{{ replica_port }}' -f /tmp/schema.sql
-
   - name: Create publication
     <<: *task_parameters
     postgresql_publication: 

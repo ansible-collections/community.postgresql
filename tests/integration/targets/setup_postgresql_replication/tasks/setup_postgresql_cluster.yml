@@ -13,62 +13,7 @@
   service: name={{ postgresql_service }} state=stopped
   ignore_errors: true
 
-- name: remove old db (RedHat)
-  file:
-    path: '{{ pg_dir }}'
-    state: absent
-  ignore_errors: true
-  when: ansible_os_family == "RedHat"
-
-- name: remove old db config and files (debian)
-  file:
-    path: '{{ loop_item }}'
-    state: absent
-  ignore_errors: true
-  when: ansible_os_family == "Debian"
-  loop:
-  - /etc/postgresql
-  - /var/lib/postgresql
-  loop_control:
-    loop_var: loop_item
-
-#
-# Install PostgreSQL 14 on Ubuntu 20.04
-- name: Install wget
-  package:
-    name: wget
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-
-- name: Add a repository
-  shell: echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-
-- name: Add a repository
-  shell: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-
-- name: Add a repository
-  shell: apt -y update
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-
-- name: Install locale needed
-  shell: 'locale-gen {{ item }}'
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-  loop:
-  - es_ES
-  - pt_BR
-
-- name: Update locale
-  shell: 'update-locale'
-  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version == '20'
-#=================
-
-- name: Install packages
-  apt:
-    name: '{{ pg_package_list }}'
-  notify: cleanup postgresql
-
-- name: Delete root dirs
+- name: Delete postgresql related files
   file:
     state: absent
     path: '{{ item }}'
@@ -77,6 +22,33 @@
   - '{{ primary_data_dir }}'
   - '{{ replica_root_dir }}'
   - '{{ replica_data_dir }}'
+  - /etc/postgresql
+  - /var/lib/postgresql
+
+#
+# Install PostgreSQL 14 on Ubuntu 20.04 and later
+- name: Install wget
+  package:
+    name: wget
+  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version >= '20'
+
+- name: Add a repository
+  shell: echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version >= '20'
+
+- name: Add a repository
+  shell: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version >= '20'
+
+- name: Add a repository
+  shell: apt -y update
+  when: ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version >= '20'
+#=================
+
+- name: Install packages
+  apt:
+    name: '{{ pg_package_list }}'
+  notify: cleanup postgresql
 
 - name: Create root dirs
   file:
@@ -93,7 +65,7 @@
   notify: cleanup postgresql
 
 - name: Find initdb
-  shell: find /usr/lib -type f -name "initdb" | tail -n 1
+  shell: find /usr/lib -type f -name "initdb"
   register: result
 
 - name: Set path to initdb
@@ -126,7 +98,7 @@
     conf_dest: '{{ replica_pg_hba_conf }}'
 
 - name: Find pg_ctl
-  shell: find /usr/lib -type f -name "pg_ctl" | tail -n 1
+  shell: find /usr/lib -type f -name "pg_ctl"
   register: result
 
 - name: Set path to initdb
@@ -136,14 +108,13 @@
 - name: Start servers
   become: true
   become_user: '{{ pg_user }}'
-  shell: '{{ pg_ctl }} -D {{ item.datadir }} -l /tmp/server-{{ item.port }}.log -o "-p {{ item.port }}" start'
+  shell: '{{ pg_ctl }} -D {{ item.datadir }} -o "-p {{ item.port }}" start'
   loop:
   - datadir: '{{ primary_data_dir }}'
     port: '{{ primary_port }}'
   - datadir: '{{ replica_data_dir }}'
     port: '{{ replica_port }}'
   notify: stop postgresql
-  # For debugging
 
 - name: Check connectivity to the primary and get PostgreSQL version
   become: true
