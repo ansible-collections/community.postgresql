@@ -5,6 +5,26 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.7.6
+======
+
+Release Summary
+---------------
+
+This is the bugfix release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.7.5.
+
+Bugfixes
+--------
+
+- Include ``PSF-license.txt`` file for ``plugins/module_utils/_version.py``.
+- postgresql_info - make arguments passed to SHOW command properly quoted to prevent the interpreter evaluating them (https://github.com/ansible-collections/community.postgresql/issues/314).
+- postgresql_pg_hba - support the connection types ``hostgssenc`` and ``hostnogssenc`` (https://github.com/ansible-collections/community.postgresql/pull/351).
+- postgresql_privs.py - add functionality when the PostgreSQL version is 9.0.0 or greater to incorporate ``ALL x IN SCHEMA`` syntax (https://github.com/ansible-collections/community.postgresql/pull/282). Please see the official documentation for details regarding grants (https://www.postgresql.org/docs/9.0/sql-grant.html).
+- postgresql_set - avoid postgres puts extra quotes when passing values containing commas (https://github.com/ansible-collections/community.postgresql/issues/78).
+- postgresql_user - make the module idempotent when password is scram hashed (https://github.com/ansible-collections/community.postgresql/issues/301).
+
 v1.7.5
 ======
 
