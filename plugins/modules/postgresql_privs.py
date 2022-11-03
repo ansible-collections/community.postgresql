@@ -116,6 +116,7 @@ options:
     description:
     - Database host address. If unspecified, connect via Unix socket.
     type: str
+    default: ''
     aliases:
     - login_host
   port:

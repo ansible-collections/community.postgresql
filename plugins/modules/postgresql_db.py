@@ -121,6 +121,7 @@ options:
       - If you want to move the database back to the default tablespace,
         explicitly set this to pg_default.
     type: path
+    default: ''
   dump_extra_args:
     description:
       - Provides additional arguments when I(state) is C(dump).
