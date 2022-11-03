@@ -51,6 +51,7 @@ options:
     description:
     - Name of database to connect to and where user's permissions are granted.
     type: str
+    default: ''
     aliases:
     - login_db
   fail_on_user:
@@ -83,6 +84,7 @@ options:
     - To create a simple role for using it like a group, use C(NOLOGIN) flag.
     - See the full list of supported flags in documentation for your PostgreSQL version.
     type: str
+    default: ''
   session_role:
     description:
     - Switch to session role after connecting.

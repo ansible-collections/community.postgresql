@@ -19,15 +19,18 @@ options:
     description:
       - The password this module should use to establish its PostgreSQL session.
     type: str
+    default: ''
   login_host:
     description:
       - Host running the database.
       - If you have connection issues when using C(localhost), try to use C(127.0.0.1) instead.
+    default: ''
     type: str
   login_unix_socket:
     description:
       - Path to a Unix domain socket for local connections.
     type: str
+    default: ''
   port:
     description:
       - Database port to connect to.
@@ -53,6 +56,7 @@ options:
       - Any additional parameters to be passed to libpg.
       - These parameters take precedence.
     type: dict
+    default: {}
     version_added: '2.3.0'
 notes:
 - The default authentication assumes that you are either logging in as or sudo'ing to the C(postgres) account on the host.

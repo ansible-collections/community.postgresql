@@ -77,6 +77,7 @@ options:
     description:
     - Name of database to connect and where the table will be created.
     type: str
+    default: ''
     aliases:
     - login_db
   session_role:
