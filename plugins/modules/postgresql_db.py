@@ -31,24 +31,29 @@ options:
     description:
       - Name of the role to set as owner of the database.
     type: str
+    default: ''
   template:
     description:
       - Template used to create the database.
     type: str
+    default: ''
   encoding:
     description:
       - Encoding of the database.
     type: str
+    default: ''
   lc_collate:
     description:
       - Collation order (LC_COLLATE) to use in the database
         must match collation order of template database unless C(template0) is used as template.
     type: str
+    default: ''
   lc_ctype:
     description:
       - Character classification (LC_CTYPE) to use in the database (e.g. lower, upper, ...).
       - Must match LC_CTYPE of template database unless C(template0) is used as template.
     type: str
+    default: ''
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -92,11 +97,13 @@ options:
     - File to back up or restore from.
     - Used when I(state) is C(dump) or C(restore).
     type: path
+    default: ''
   target_opts:
     description:
     - Additional arguments for pg_dump or restore program (pg_restore or psql, depending on target's format).
     - Used when I(state) is C(dump) or C(restore).
     type: str
+    default: ''
   maintenance_db:
     description:
       - The value specifies the initial database (which is also called as maintenance DB) that Ansible connects to.
@@ -106,6 +113,7 @@ options:
     description:
       - Specifies the database connection limit.
     type: str
+    default: ''
   tablespace:
     description:
       - The tablespace to set for the database

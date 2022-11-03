@@ -126,6 +126,7 @@ options:
     description:
     - Name of database to connect to and run queries against.
     type: str
+    default: ''
     aliases:
     - database
     - login_db
