@@ -33,6 +33,7 @@ options:
     description:
     - Name of the role to set as owner of the schema.
     type: str
+    default: ''
   session_role:
     description:
     - Switch to session_role after connecting.
