@@ -112,6 +112,7 @@ options:
     description:
     - Database host address. If unspecified, connect via Unix socket.
     type: str
+    default: ''
     aliases:
     - login_host
   port:
@@ -125,6 +126,7 @@ options:
     description:
     - Path to a Unix domain socket for local connections.
     type: str
+    default: ''
     aliases:
     - login_unix_socket
   login:
@@ -138,6 +140,7 @@ options:
     description:
     - The password to authenticate with.
     type: str
+    default: ''
     aliases:
     - login_password
   ssl_mode:
