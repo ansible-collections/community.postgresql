@@ -372,3 +372,37 @@ releases:
     - all_in_schema.yml
     - simplified-bsd-license.yml
     release_date: '2022-07-27'
+  2.3.0:
+    changes:
+      bugfixes:
+      - postgresql_info - make arguments passed to SHOW command properly quoted to
+        prevent the interpreter evaluating them (https://github.com/ansible-collections/community.postgresql/issues/314).
+      - postgresql_pg_hba - support the connection types ``hostgssenc`` and ``hostnogssenc``
+        (https://github.com/ansible-collections/community.postgresql/pull/351).
+      - postgresql_privs - add support for alter default privileges grant usage on
+        schemas (https://github.com/ansible-collections/community.postgresql/issues/332).
+      - postgresql_privs - cannot grant select on objects in all schemas; add the
+        ``not-specified`` value to the ``schema`` parameter to make this possible
+        (https://github.com/ansible-collections/community.postgresql/issues/332).
+      - postgresql_set - avoid postgres puts extra quotes when passing values containing
+        commas (https://github.com/ansible-collections/community.postgresql/issues/78).
+      - postgresql_user - make the module idempotent when password is scram hashed
+        (https://github.com/ansible-collections/community.postgresql/issues/301).
+      minor_changes:
+      - postgresql_* - add the ``connect_params`` parameter dict to allow any additional
+        ``libpg`` connection parameters (https://github.com/ansible-collections/community.postgresql/pull/329).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 2.2.0.'
+    fragments:
+    - 0-postgresql_set_avoid_quoting.yml
+    - 2.3.0.yml
+    - 301-postgresql_user_idempotent_scram.yml
+    - 314-postgresql_info-quote-show-args.yml
+    - 329-postgresql_add_connect_params_field.yml
+    - 332-postgresql_privs_def_privs_schemas.yml
+    - 351-postgresql_pg_hba-add-connection-types.yml
+    release_date: '2022-11-04'
