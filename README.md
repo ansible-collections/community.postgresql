@@ -78,7 +78,7 @@ Tested with the following `ansible-core` releases:
 - 2.14
 - current development version
 
-Ansible-core versions before 2.11.0 are not supported, in particular, ansible-base 2.10 and Ansible 2.9.
+Ansible-core versions before 2.12.0 are not supported.
 Our AZP CI includes testing with the following docker images / PostgreSQL versions:
 
 - CentOS 7: 9.2
