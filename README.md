@@ -45,8 +45,6 @@ They also should be subscribed to Ansible's [The Bullhorn newsletter](https://do
 
 We announce important development changes and releases through Ansible's [The Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn). If you are a collection developer, be sure you are subscribed.
 
-Join us in the `#postgresql:ansible.com` [room](https://matrix.to/#/#postgresql:ansible.com) on Matrix, the `#ansible` (general use questions and support), `#ansible-community` (community and collection development questions), and other [IRC channels](https://docs.ansible.com/ansible/devel/community/communication.html#irc-channels) on [Libera.Chat](https://libera.chat).
-
 Join us on Matrix in:
 
 * `#postgresql:ansible.com` [room](https://matrix.to/#/#postgresql:ansible.com): questions on how to contribute and use this collection.
