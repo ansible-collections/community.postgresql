@@ -1175,6 +1175,7 @@ def main():
 
         elif p.type == 'default_privs':
             if p.objs == 'ALL_DEFAULT':
+                VALID_DEFAULT_OBJS.pop('SCHEMAS')
                 objs = frozenset(VALID_DEFAULT_OBJS.keys())
             else:
                 objs = frozenset(obj.upper() for obj in p.objs.split(','))
