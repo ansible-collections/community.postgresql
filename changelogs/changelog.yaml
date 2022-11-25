@@ -406,3 +406,18 @@ releases:
     - 332-postgresql_privs_def_privs_schemas.yml
     - 351-postgresql_pg_hba-add-connection-types.yml
     release_date: '2022-11-04'
+  2.3.1:
+    changes:
+      bugfixes:
+      - postgresql_privs - fails with ``type=default_privs``, ``privs=ALL``, ``objs=ALL_DEFAULT``
+        (https://github.com/ansible-collections/community.postgresql/issues/373).
+      release_summary: 'This is the bugfix release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after release 2.3.0.'
+    fragments:
+    - 0-postgresql_privs.yml
+    - 2.3.1.yml
+    release_date: '2022-11-25'
