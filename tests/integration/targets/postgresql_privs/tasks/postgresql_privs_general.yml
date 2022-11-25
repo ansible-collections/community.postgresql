@@ -1544,6 +1544,22 @@
     that:
     - result is not changed
 
+- name: Test community.postgresql issue 373
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: ALL_DEFAULT
+    type: default_privs
+    privs: ALL
+  register: result
+
+- assert:
+    that:
+    - result is changed
+
 # Cleanup
 - name: Remove privs
   become: true
