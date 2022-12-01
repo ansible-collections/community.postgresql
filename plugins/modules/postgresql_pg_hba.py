@@ -366,7 +366,7 @@ class PgHba(object):
                         line, comment = line.split('#', 1)
                         if comment == '':
                             comment = None
-
+                        line = line.rstrip()
                     # if there is just a comment, save it
                     if line == '':
                         if comment is not None:
