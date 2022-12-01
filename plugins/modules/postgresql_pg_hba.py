@@ -337,6 +337,7 @@ class PgHba(object):
         # users, this might be totally off, but at least it is some info...
         self.users = set(['postgres'])
 
+        self.preexisting_rules = None
         self.read()
 
     def clear_rules(self):
@@ -381,6 +382,7 @@ class PgHba(object):
                         except PgHbaRuleError:
                             pass
             self.unchanged()
+            self.preexisting_rules = dict(self.rules)
         except IOError:
             pass
 
@@ -490,7 +492,9 @@ class PgHba(object):
         '''
         This method can be called to detect if the PgHba file has been changed.
         '''
-        return bool(self.diff['before']['pg_hba'] or self.diff['after']['pg_hba'])
+        if not self.preexisting_rules and not self.rules:
+            return False
+        return self.preexisting_rules != self.rules
 
 
 class PgHbaRule(dict):
