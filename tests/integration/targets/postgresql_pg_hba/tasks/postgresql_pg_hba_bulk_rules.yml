@@ -40,6 +40,16 @@
       - "result.pg_hba[0].src == test_rule1.address"
       - "result.pg_hba[0].usr == test_rule1.users"
       - "result.pg_hba[0].type == test_rule1.contype"
+- name: 'test the same again (overwrite: true, one normal rule) to ensure nothing changed'
+  community.postgresql.postgresql_pg_hba:
+    <<: *pghba_defaults
+    overwrite: true
+    <<: *test_rule1
+  register: result
+- assert:
+    that:
+      - "result.changed == false"
+
 - name: overwrite with one bulk rule
   community.postgresql.postgresql_pg_hba:
     <<: *pghba_defaults
@@ -54,6 +64,16 @@
       - "result.pg_hba[0].src == test_rule2.address"
       - "result.pg_hba[0].usr == test_rule2.users"
       - "result.pg_hba[0].type == test_rule2.contype"
+- name: 'test the same again (overwrite: true, one bulk rule) to ensure nothing changes'
+  community.postgresql.postgresql_pg_hba:
+    <<: *pghba_defaults
+    overwrite: true
+    rules:
+      - "{{ test_rule2 }}"
+  register: result
+- assert:
+    that:
+      - "result.changed == false"
 
 - name: test rules_behavior conflict
   community.postgresql.postgresql_pg_hba: "{{ pghba_defaults|combine(item)|combine({'rules': [test_rule2]}) }}"
