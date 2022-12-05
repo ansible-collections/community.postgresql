@@ -1560,6 +1560,25 @@
     that:
     - result is changed
 
+- name: Test community.postgresql issue 379
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: "{{ db_user3 }}"
+    objs: ALL_IN_SCHEMA
+    type: default_privs
+    privs: SELECT,INSERT,UPDATE,DELETE,EXECUTE
+    schema: public
+  register: result
+  ignore_errors: yes
+
+- assert:
+    that:
+    - result is failed
+    - result.msg is search('ALL_IN_SCHEMA can be used only for type')
+
 # Cleanup
 - name: Remove privs
   become: true

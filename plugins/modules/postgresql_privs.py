@@ -1101,6 +1101,13 @@ def main():
         module.fail_json(msg='Argument "schema" is not allowed '
                              'for type "%s".' % p.type)
 
+    # param "objs": ALL_IN_SCHEMA can be used only
+    # when param "type" is table, sequence, function or procedure
+    if p.objs == 'ALL_IN_SCHEMA' and p.type not in ('table', 'sequence', 'function', 'procedure'):
+        module.fail_json(msg='Argument "objs": ALL_IN_SCHEMA can be used only for '
+                             'type: table, sequence, function or procedure, '
+                             '%s was passed.' % p.type)
+
     # param "objs": default, required depends on param "type"
     if p.type == 'database':
         p.objs = p.objs or p.database
