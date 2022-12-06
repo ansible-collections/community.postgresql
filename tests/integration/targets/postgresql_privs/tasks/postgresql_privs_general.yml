@@ -1477,6 +1477,92 @@
     - result is not changed
 
 ##############
+# Issue https://github.com/ansible-collections/community.postgresql/issues/381
+- name: create schemas with special names
+  become: true
+  become_user: "{{ pg_user }}"
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    login_password: password
+    db: "{{ db_name }}"
+    name: '"{{ item|replace("\"", "\"\"") }}"'
+    state: present
+  loop:
+    - "{{ db_schema_with_dot }}"
+    - "{{ db_schema_with_quote }}"
+  register: result
+- assert:
+    that:
+      - result is changed
+- name: create tables in schemas with special names
+  become: true
+  become_user: "{{ pg_user }}"
+  postgresql_table:
+    login_user: "{{ pg_user }}"
+    login_password: password
+    db: "{{ db_name }}"
+    name: '"{{ item|replace("\"", "\"\"") }}"."test.table.name"'
+    columns: []
+  loop:
+    - "{{ db_schema_with_dot }}"
+    - "{{ db_schema_with_quote }}"
+  register: result
+- assert:
+    that:
+      - result is changed
+- name: grant privileges on all tables in schemas with special names
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: PUBLIC
+    objs: ALL_IN_SCHEMA
+    type: table
+    privs: SELECT
+    schema: "{{ item }}"
+  loop:
+    - "{{ db_schema_with_dot }}"
+    - "{{ db_schema_with_quote }}"
+  register: result
+- assert:
+    that:
+      - result is changed
+- name: grant privileges on some table in schemas with special names
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_privs:
+    login_user: "{{ pg_user }}"
+    login_db: "{{ db_name }}"
+    roles: PUBLIC
+    objs: 'test.table.name'
+    type: table
+    privs: SELECT
+    schema: "{{ item }}"
+  loop:
+    - "{{ db_schema_with_dot }}"
+    - "{{ db_schema_with_quote }}"
+  register: result
+- assert:
+    that:
+      - result is changed
+- name: cleanup test schemas with special names
+  become: true
+  become_user: "{{ pg_user }}"
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    login_password: password
+    db: "{{ db_name }}"
+    name: "{{ item }}"
+    state: absent
+    cascade_drop: true
+  loop:
+    - "{{ db_schema_with_dot }}"
+    - "{{ db_schema_with_quote }}"
+  register: result
+
+
+##############
 # Issue https://github.com/ansible-collections/community.postgresql/issues/332
 - name: Test community.postgresql issue 332 grant usage
   become: yes
