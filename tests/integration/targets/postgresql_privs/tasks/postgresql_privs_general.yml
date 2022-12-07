@@ -1485,7 +1485,7 @@
     login_user: "{{ pg_user }}"
     login_password: password
     db: "{{ db_name }}"
-    name: '"{{ item|replace("\"", "\"\"") }}"'
+    name: '"{{ item|replace("\\"", "\\"\\"") }}"'
     state: present
   loop:
     - "{{ db_schema_with_dot }}"
@@ -1501,7 +1501,7 @@
     login_user: "{{ pg_user }}"
     login_password: password
     db: "{{ db_name }}"
-    name: '"{{ item|replace("\"", "\"\"") }}"."test.table.name"'
+    name: '"{{ item|replace("\\"", "\\"\\"") }}"."test.table.name"'
     columns: []
   loop:
     - "{{ db_schema_with_dot }}"
