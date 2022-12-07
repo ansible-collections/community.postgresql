@@ -1546,6 +1546,28 @@
 - assert:
     that:
       - result is changed
+- name: check permissions on tables in schemas with special names
+  become: true
+  become_user: "{{ pg_user }}"
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    db: "{{ db_name }}"
+    query: |
+      select true as granted from information_schema.role_table_grants
+      where table_schema=%s and table_name='test.table.name' and privilege_type='SELECT' and grantee='PUBLIC'
+    positional_args:
+      - "{{ item }}"
+  loop:
+    - "{{ db_schema_with_dot }}"
+    - "{{ db_schema_with_quote }}"
+  register: result
+- assert:
+    that:
+      - 'result.results|length == 2'
+      - 'result.results[0].rowcount == 1'
+      - 'not result.results[0].failed'
+      - 'result.results[1].rowcount == 1'
+      - 'not result.results[1].failed'
 - name: cleanup test schemas with special names
   become: true
   become_user: "{{ pg_user }}"
