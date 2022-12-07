@@ -1485,11 +1485,11 @@
     login_user: "{{ pg_user }}"
     login_password: password
     db: "{{ db_name }}"
-    name: '"{{ item|replace("\\"", "\\"\\"") }}"'
+    name: '"{{ item }}"'
     state: present
   loop:
-    - "{{ db_schema_with_dot }}"
-    - "{{ db_schema_with_quote }}"
+    - "{{ db_schema_with_dot|replace('\"', '\"\"') }}"
+    - "{{ db_schema_with_quote|replace('\"', '\"\"') }}"
   register: result
 - assert:
     that:
@@ -1501,11 +1501,11 @@
     login_user: "{{ pg_user }}"
     login_password: password
     db: "{{ db_name }}"
-    name: '"{{ item|replace("\\"", "\\"\\"") }}"."test.table.name"'
+    name: '"{{ item }}"."test.table.name"'
     columns: []
   loop:
-    - "{{ db_schema_with_dot }}"
-    - "{{ db_schema_with_quote }}"
+    - "{{ db_schema_with_dot|replace('\"', '\"\"') }}"
+    - "{{ db_schema_with_quote|replace('\"', '\"\"') }}"
   register: result
 - assert:
     that:
