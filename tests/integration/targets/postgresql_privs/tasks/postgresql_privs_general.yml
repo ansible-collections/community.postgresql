@@ -1575,12 +1575,12 @@
     login_user: "{{ pg_user }}"
     login_password: password
     db: "{{ db_name }}"
-    name: "{{ item }}"
+    name: '"{{ item }}"'
     state: absent
     cascade_drop: true
   loop:
-    - "{{ db_schema_with_dot }}"
-    - "{{ db_schema_with_quote }}"
+    - "{{ db_schema_with_dot|replace('\"', '\"\"') }}"
+    - "{{ db_schema_with_quote|replace('\"', '\"\"') }}"
   register: result
 
 
