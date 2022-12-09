@@ -421,3 +421,25 @@ releases:
     - 0-postgresql_privs.yml
     - 2.3.1.yml
     release_date: '2022-11-25'
+  2.3.2:
+    changes:
+      bugfixes:
+      - postgresql_pg_hba - fix ``changed`` return value for when ``overwrite`` is
+        enabled (https://github.com/ansible-collections/community.postgresql/pull/378).
+      - postgresql_privs - fix quoting of the ``schema`` parameter in SQL statements
+        (https://github.com/ansible-collections/community.postgresql/pull/382).
+      - 'postgresql_privs - raise an error when the ``objs: ALL_IN_SCHEMA`` is used
+        with a value of ``type`` that is not ``table``, ``sequence``, ``function``
+        or ``procedure`` (https://github.com/ansible-collections/community.postgresql/issues/379).'
+      release_summary: 'This is the bugfix release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after release 2.3.1.'
+    fragments:
+    - 2.3.2.yml
+    - 378-postgresql_pg_hba_fix_change_detection.yml
+    - 379-postgresql_privs.yml
+    - 382-postgresql_privs_fix_schemas_with_special_names.yml
+    release_date: '2022-12-09'
