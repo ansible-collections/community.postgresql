@@ -7,6 +7,8 @@ db_user_with_dots2: role.with.dots2
 db_name_with_hyphens: ansible-db
 db_user_with_hyphens: ansible-db-user
 db_schema_with_hyphens: ansible-db-schema
+db_schema_with_dot: test.schema
+db_schema_with_quote: 'TEST_schema"'
 db_session_role1: session_role1
 db_session_role2: session_role2
 dangerous_name: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
