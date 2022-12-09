@@ -761,6 +761,8 @@ class Connection(object):
         if not objs:
             return False
 
+        quoted_schema_qualifier = '"%s"' % schema_qualifier.replace('"', '""') if schema_qualifier else None
+
         # obj_ids: quoted db object identifiers (sometimes schema-qualified)
         if obj_type in ('function', 'procedure'):
             obj_ids = []
@@ -769,9 +771,9 @@ class Connection(object):
                     f, args = obj.split('(', 1)
                 except Exception:
                     raise Error('Illegal function / procedure signature: "%s".' % obj)
-                obj_ids.append('"%s"."%s"(%s' % (schema_qualifier, f, args))
+                obj_ids.append('%s."%s"(%s' % (quoted_schema_qualifier, f, args))
         elif obj_type in ['table', 'sequence', 'type']:
-            obj_ids = ['"%s"."%s"' % (schema_qualifier, o) for o in objs]
+            obj_ids = ['%s."%s"' % (quoted_schema_qualifier, o) for o in objs]
         else:
             obj_ids = ['"%s"' % o for o in objs]
 
@@ -790,7 +792,7 @@ class Connection(object):
             # and privs was escaped when it was parsed
             # Note: Underscores are replaced with spaces to support multi-word obj_type
             if orig_objs is not None:
-                set_what = '%s ON %s %s' % (','.join(privs), orig_objs, schema_qualifier)
+                set_what = '%s ON %s %s' % (','.join(privs), orig_objs, quoted_schema_qualifier)
             else:
                 set_what = '%s ON %s %s' % (','.join(privs), obj_type.replace('_', ' '), ','.join(obj_ids))
 
@@ -819,9 +821,6 @@ class Connection(object):
         if target_roles:
             as_who = ','.join('"%s"' % r for r in target_roles)
 
-        if schema_qualifier:
-            schema_qualifier = '"%s"' % schema_qualifier
-
         status_before = get_status(objs)
 
         query = QueryBuilder(state) \
@@ -829,7 +828,7 @@ class Connection(object):
             .with_grant_option(grant_option) \
             .for_whom(for_whom) \
             .as_who(as_who) \
-            .for_schema(schema_qualifier) \
+            .for_schema(quoted_schema_qualifier) \
             .set_what(set_what) \
             .for_objs(objs) \
             .usage_on_types(usage_on_types) \
