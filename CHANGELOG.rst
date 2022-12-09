@@ -5,6 +5,21 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.7.7
+======
+
+Release Summary
+---------------
+
+This is the bugfix release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.7.6.
+
+Bugfixes
+--------
+
+- postgresql_privs - fix quoting of the ``schema`` parameter in SQL statements (https://github.com/ansible-collections/community.postgresql/pull/383).
+
 v1.7.6
 ======
 
