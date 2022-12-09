@@ -342,3 +342,18 @@ releases:
     - 314-postgresql_info-quote-show-args.yml
     - 351-postgresql_pg_hba-add-connection-types.yml
     release_date: '2022-11-02'
+  1.7.7:
+    changes:
+      bugfixes:
+      - postgresql_privs - fix quoting of the ``schema`` parameter in SQL statements
+        (https://github.com/ansible-collections/community.postgresql/pull/383).
+      release_summary: 'This is the bugfix release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.7.6.'
+    fragments:
+    - 1.7.7.yml
+    - 383-postgresql_privs_fix_schemas_with_special_names.yml
+    release_date: '2022-12-09'

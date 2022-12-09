@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_privs - fix quoting of the ``schema`` parameter in SQL statements (https://github.com/ansible-collections/community.postgresql/pull/383).
