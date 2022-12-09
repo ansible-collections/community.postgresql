@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_pg_hba - fix ``changed`` return value for when ``overwrite`` is enabled (https://github.com/ansible-collections/community.postgresql/pull/378).
