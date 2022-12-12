@@ -127,15 +127,15 @@
     group: '{{ pg_group }}'
     mode: '0644'
 
-- name: Generate locales (Debian)
-  locale_gen:
-    name: '{{ item }}'
-    state: present
-  with_items:
-  - pt_BR
-  - es_ES
-  when: ansible_os_family == 'Debian'
-
+#- name: Generate locales (Debian)
+#  locale_gen:
+#    name: '{{ item }}'
+#    state: present
+#  with_items:
+#  - pt_BR
+#  - es_ES
+#  when: ansible_os_family == 'Debian'
+#
 - block:
   - name: Install langpacks (RHEL8)
     yum:
