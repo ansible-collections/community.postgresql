@@ -854,6 +854,54 @@
       - result is changed
       - result.queries == ['ALTER TABLE "public"."test_schema_table" RENAME TO "new_test_schema_table"']
 
+#
+# Create and drop partitioned table:
+#
+
+#- name: postgresql_table - create table
+#  become_user: "{{ pg_user }}"
+#  become: true
+#  postgresql_table:
+#    login_db: postgres
+#    login_port: 5432
+#    login_user: "{{ pg_user }}"
+#    name: test1
+#    owner: alice
+#    columns: id int
+#  register: result
+#  ignore_errors: true
+
+
+- name: postgresql_table - create table with partition by range
+  postgresql_table:
+    db: postgres
+    login_port: 5432
+    login_user: "{{ pg_user }}"
+    name: test5
+    columns: id int
+    partition_by: RANGE
+    partition_on: id
+  register: result
+
+- assert:
+    that:
+      - result is changed
+      - result.queries == ['CREATE TABLE "test5" (id int) PARTITION BY RANGE (id)']
+
+#- name: postgresql_table - check that table exists after the previous step
+#  become_user: "{{ pg_user }}"
+#  become: true
+#  postgresql_query:
+#    db: postgres
+#    login_user: "{{ pg_user }}"
+#    query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test5'"
+#  ignore_errors: true
+#  register: result
+# 
+#- assert:
+#    that:
+#      - result.rowcount == 1
+      
 ############################
 # Test trust_input parameter
 - name: postgresql_table - check trust_input

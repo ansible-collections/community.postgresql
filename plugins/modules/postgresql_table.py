@@ -80,6 +80,10 @@ options:
     default: ''
     aliases:
     - login_db
+  partition_by:
+    description:
+    - Type of the table partitioning. Possibil values are range, list, and hash
+    - type: str
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -312,7 +316,7 @@ class Table(object):
             return False
 
     def create(self, columns='', params='', tblspace='',
-               unlogged=False, owner=''):
+               unlogged=False, owner='', partition_by='', partition_on=''):
         """
         Create table.
         If table exists, check passed args (params, tblspace, owner) and,
@@ -324,6 +328,8 @@ class Table(object):
         owner - table owner.
         unlogged - create unlogged table.
         columns - column string (comma separated).
+        partition_by - type of partitioning (range, hash, list).
+        partition_on - column string (comman separated).
         """
         name = pg_quote_identifier(self.name, 'table')
 
@@ -372,6 +378,9 @@ class Table(object):
 
         if tblspace:
             query += ' TABLESPACE "%s"' % tblspace
+
+        if partition_by:
+            query += " PARTITION BY %s (%s)" % (partition_by, partition_on)
 
         if exec_sql(self, query, return_bool=True):
             changed = True
@@ -482,6 +491,8 @@ def main():
         session_role=dict(type='str'),
         cascade=dict(type='bool', default=False),
         trust_input=dict(type='bool', default=True),
+        partition_by=dict(type='str'),
+        partition_on=dict(type='list', elements='str'),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -499,6 +510,8 @@ def main():
     storage_params = module.params['storage_params']
     truncate = module.params['truncate']
     columns = module.params['columns']
+    partition_by = module.params['partition_by']
+    partition_on = module.params['partition_on']
     cascade = module.params['cascade']
     session_role = module.params['session_role']
     trust_input = module.params['trust_input']
@@ -512,20 +525,20 @@ def main():
         module.warn("cascade=true is ignored when state=present")
 
     # Check mutual exclusive parameters:
-    if state == 'absent' and (truncate or newname or columns or tablespace or like or storage_params or unlogged or owner or including):
+    if state == 'absent' and (truncate or newname or columns or tablespace or like or storage_params or unlogged or owner or including or partition_by or partition_on):
         module.fail_json(msg="%s: state=absent is mutually exclusive with: "
                              "truncate, rename, columns, tablespace, "
-                             "including, like, storage_params, unlogged, owner" % table)
+                             "including, like, storage_params, unlogged, owner, partition_by, partition_on" % table)
 
-    if truncate and (newname or columns or like or unlogged or storage_params or owner or tablespace or including):
+    if truncate and (newname or columns or like or unlogged or storage_params or owner or tablespace or including or partition_by or partition_on):
         module.fail_json(msg="%s: truncate is mutually exclusive with: "
                              "rename, columns, like, unlogged, including, "
-                             "storage_params, owner, tablespace" % table)
+                             "storage_params, owner, tablespace, partition_by, partition_on" % table)
 
-    if newname and (columns or like or unlogged or storage_params or owner or tablespace or including):
+    if newname and (columns or like or unlogged or storage_params or owner or tablespace or including or partition_by or partition_on):
         module.fail_json(msg="%s: rename is mutually exclusive with: "
                              "columns, like, unlogged, including, "
-                             "storage_params, owner, tablespace" % table)
+                             "storage_params, owner, tablespace, partition_by, partition_on" % table)
 
     if like and columns:
         module.fail_json(msg="%s: like and columns params are mutually exclusive" % table)
@@ -543,6 +556,9 @@ def main():
 
     if columns:
         columns = ','.join(columns)
+
+    if partition_on:
+        partition_on = ','.join(partition_on)
 
     ##############
     # Do main job:
@@ -576,7 +592,7 @@ def main():
 
     elif state == 'present' and not like:
         changed = table_obj.create(columns, storage_params,
-                                   tablespace, unlogged, owner)
+                                   tablespace, unlogged, owner, partition_by, partition_on)
 
     elif state == 'present' and like:
         changed = table_obj.create_like(like, including, tablespace,
