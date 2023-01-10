@@ -82,8 +82,14 @@ options:
     - login_db
   partition_by:
     description:
-    - Type of the table partitioning. Possibil values are range, list, and hash
-    - type: str
+    - Type of the table partitioning. Possibil values are range, list, and hash.
+    type: str
+    default: ''
+  partition_on:
+    description:
+    - Columns that are used for partitioning
+    type: list
+    elements: str
   session_role:
     description:
     - Switch to session_role after connecting.
