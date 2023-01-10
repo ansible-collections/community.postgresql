@@ -127,6 +127,8 @@
     group: '{{ pg_group }}'
     mode: '0644'
 
+### Comment: This block caused the tests to crash
+
 #- name: Generate locales (Debian)
 #  locale_gen:
 #    name: '{{ item }}'
@@ -135,7 +137,7 @@
 #  - pt_BR
 #  - es_ES
 #  when: ansible_os_family == 'Debian'
-#
+
 - block:
   - name: Install langpacks (RHEL8)
     yum:
