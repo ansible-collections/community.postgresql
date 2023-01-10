@@ -84,7 +84,6 @@ options:
     description:
     - Type of the table partitioning. Possibil values are range, list, and hash.
     type: str
-    default: ''
   partition_on:
     description:
     - Columns that are used for partitioning
