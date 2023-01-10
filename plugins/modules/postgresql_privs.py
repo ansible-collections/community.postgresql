@@ -387,7 +387,7 @@ EXAMPLES = r'''
 # Needs PostreSQL 11 or higher and community.postgresql 1.3.0 or higher
 - name: GRANT EXECUTE ON ALL PROCEDURES IN SCHEMA common TO caller
   community.postgresql.postgresql_privs:
-    type: prucedure
+    type: procedure
     state: present
     privs: EXECUTE
     roles: caller
