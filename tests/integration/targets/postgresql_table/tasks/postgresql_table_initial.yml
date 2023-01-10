@@ -887,6 +887,17 @@
 - assert:
     that:
       - result.rowcount == 1
+
+- name: postgresql_table - drop table
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_table:
+    db: postgres
+    login_user: "{{ pg_user }}"
+    name: test5
+    state: absent
+  register: result
+  ignore_errors: true
      
 ############################
 # Test trust_input parameter
