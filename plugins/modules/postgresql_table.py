@@ -86,7 +86,7 @@ options:
     type: str
   partition_on:
     description:
-    - Columns that are used for partitioning
+    - Columns that are used for partitioning.
     type: list
     elements: str
   session_role:
