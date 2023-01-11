@@ -23,9 +23,9 @@ description:
 options:
   query:
     description:
-    - SQL query to run. Variables can be escaped with psycopg2 syntax
+    - SQL query string or list of queries to run. Variables can be escaped with psycopg2 syntax
       U(http://initd.org/psycopg/docs/usage.html).
-    type: str
+    type: raw
   positional_args:
     description:
     - List of values to be passed as positional arguments to the query.
@@ -131,6 +131,14 @@ EXAMPLES = r'''
   community.postgresql.postgresql_query:
     db: acme
     query: SELECT version()
+
+# The result of each query will be stored in query_all_results return value
+- name: Run several queries against acme db
+  community.postgresql.postgresql_query:
+    db: acme
+    query:
+    - SELECT version()
+    - SELECT id FROM accounts
 
 - name: Select query to db acme with positional arguments and non-default credentials
   community.postgresql.postgresql_query:
@@ -268,8 +276,6 @@ query_result:
     sample: [{"Column": "Value1"},{"Column": "Value2"}]
 query_list:
     description:
-    - This return value has been B(deprecated) and will be removed in
-      community.postgresql 3.0.0.
     - List of executed queries.
       Useful when reading several queries from a file.
     returned: always
@@ -278,10 +284,8 @@ query_list:
     sample: ['SELECT * FROM foo', 'SELECT * FROM bar']
 query_all_results:
     description:
-    - This return value has been B(deprecated) and will be removed in
-      community.postgresql 3.0.0.
     - List containing results of all queries executed (one sublist for every query).
-      Useful when reading several queries from a file.
+      Useful when running a list of queries.
     returned: always
     type: list
     elements: list
@@ -340,7 +344,7 @@ def insane_query(string):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        query=dict(type='str'),
+        query=dict(type='raw'),
         db=dict(type='str', aliases=['login_db']),
         positional_args=dict(type='list', elements='raw'),
         named_args=dict(type='dict'),
@@ -369,6 +373,9 @@ def main():
     trust_input = module.params["trust_input"]
     search_path = module.params["search_path"]
     as_single_query = module.params["as_single_query"]
+
+    if query and not isinstance(query, (str, list)):
+        module.fail_json(msg="query argument must be of type string or list")
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -411,7 +418,10 @@ def main():
         except Exception as e:
             module.fail_json(msg="Cannot read file '%s' : %s" % (path_to_script, to_native(e)))
     else:
-        query_list.append(query)
+        if isinstance(query, str):
+            query_list.append(query)
+        else:  # if it's a list
+            query_list = query
 
     # Ensure psycopg2 libraries are available before connecting to DB:
     ensure_required_libs(module)
