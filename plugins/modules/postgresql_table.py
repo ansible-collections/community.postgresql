@@ -82,7 +82,7 @@ options:
     - login_db
   partition_by:
     description:
-    - Type of the table partitioning. Possibil values are range, list, and hash.
+    - Type of the table partitioning. Possible values are range, list, and hash.
     type: str
   partition_on:
     description:
