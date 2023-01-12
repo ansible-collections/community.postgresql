@@ -82,11 +82,11 @@ options:
     - login_db
   partition_by:
     description:
-    - Type of the table partitioning. Possible values are range, list, and hash. Mutually required with I(partition_on).
+    - Type of the table partitioning. Possibil values are range, list, and hash.
     type: str
   partition_on:
     description:
-    - Columns that are used for partitioning. Mutually required with I(partition_by).
+    - Columns that are used for partitioning
     type: list
     elements: str
   session_role:
@@ -137,7 +137,6 @@ seealso:
   link: https://www.postgresql.org/docs/current/datatype.html
 author:
 - Andrei Klychkov (@Andersson007)
-- Max Klingsporn (@Sil3x)
 extends_documentation_fragment:
 - community.postgresql.postgres
 
@@ -520,7 +519,7 @@ def main():
     partition_on = module.params['partition_on']
     cascade = module.params['cascade']
     session_role = module.params['session_role']
-    trust_input = module.params['trust_input']
+    Trust_input = module.params['trust_input']
 
     if not trust_input:
         # Check input for potentially dangerous elements:
