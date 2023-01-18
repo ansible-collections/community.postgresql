@@ -229,7 +229,7 @@ EXAMPLES = r'''
     state: dump
     target: /tmp/acme.pgc
 
-# name: acme - the name of the database to connect through which the recovery will take place 
+# name: acme - the name of the database to connect through which the recovery will take place
 - name: Restore database using the tar format
   community.postgresql.postgresql_db:
     name: acme
