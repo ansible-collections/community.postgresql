@@ -223,6 +223,19 @@ EXAMPLES = r'''
     state: dump
     target: /tmp/acme.dir
 
+- name: Dump an existing database using the custom format
+  community.postgresql.postgresql_db:
+    name: acme
+    state: dump
+    target: /tmp/acme.pgc
+
+# name: acme - the name of the database to connect through which the recovery will take place 
+- name: Restore database using the tar format
+  community.postgresql.postgresql_db:
+    name: acme
+    state: restore
+    target: /tmp/acme.tar
+
 # Note: In the example below, if database foo exists and has another tablespace
 # the tablespace will be changed to foo. Access to the database will be locked
 # until the copying of database files is finished.
