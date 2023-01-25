@@ -58,7 +58,7 @@ def postgres_common_argument_spec():
                 'type': 'int',
                 'default': int(env_vars.get("PGPORT")),
                 'aliases': ['login_port']
-                }
+            }
         )
 
     # Setting the value for the login_user, if there is a PGUSER
