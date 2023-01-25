@@ -315,7 +315,7 @@ def param_set(cursor, module, name, value, context):
         if str(value).lower() == 'default':
             query = "ALTER SYSTEM SET %s = DEFAULT" % name
         else:
-            if isinstance(value, str) and ',' in value and not name.endswith('_command') and not name.endswith('_prefix'):
+            if isinstance(value, str) and ',' in value and not name.endswith(('_command', '_prefix')):
                 # Issue https://github.com/ansible-collections/community.postgresql/issues/78
                 # Change value from 'one, two, three' -> "'one','two','three'"
                 value = ','.join(["'" + elem.strip() + "'" for elem in value.split(',')])
