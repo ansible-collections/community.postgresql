@@ -30,6 +30,7 @@
         log_statement: mod
         track_functions: none
         shared_preload_libraries: 'pg_stat_statements, pgaudit'
+        log_line_prefix: 'db=%d,user=%u,app=%a,client=%h '
 
   # Check mode:
   - name: Set settings in check mode
@@ -59,3 +60,13 @@
   - assert:
       that:
       - result.stdout == "shared_preload_libraries = 'pg_stat_statements, pgaudit'"
+  
+  # Test for single-value params with commas and spaces in value
+  - name: Test single-value param with commas and spaces in value
+    <<: *task_parameters
+    shell: "grep log_line_prefix {{ pg_auto_conf }}"
+    register: result
+
+  - assert:
+      that:
+      - result.stdout == "log_line_prefix = 'db=%d,user=%u,app=%a,client=%h '"
