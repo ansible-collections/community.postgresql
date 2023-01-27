@@ -1,7 +1,7 @@
 # PostgreSQL collection for Ansible
 | | | | |
 |--|--|--|--|
-|[![Build Status](https://dev.azure.com/ansible/community.postgres/_apis/build/status/CI?branchName=main)](https://dev.azure.com/ansible/community.postgres/_build?definitionId=28)|[![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)| |![](https://img.shields.io/matrix/postgresql:ansible.com.svg?server_fqdn=ansible-accounts.ems.host&label=Discuss%20on%20Matrix%20%23postgresql:ansible.com&logo=matrix)|
+|[![Build Status](https://dev.azure.com/ansible/community.postgres/_apis/build/status/CI?branchName=main)](https://dev.azure.com/ansible/community.postgres/_build?definitionId=28)|[![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)| |[![Discuss on Matrix at #postgresql:ansible.com](https://img.shields.io/matrix/postgresql:ansible.com.svg?server_fqdn=ansible-accounts.ems.host&label=Discuss%20on%20Matrix%20at%20%23postgresql:ansible.com&logo=matrix)](https://matrix.to/#/#postgresql:ansible.com)|
 
 This collection is a part of the Ansible package.
 
