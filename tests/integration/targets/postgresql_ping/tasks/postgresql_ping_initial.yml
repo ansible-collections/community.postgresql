@@ -46,6 +46,39 @@
       - result.server_version == {}
       - result is not changed
 
+- name: postgresql_ping - check ping of the database on non-existent port does not return anything
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_ping:
+    db: "{{ db_default }}"
+    login_user: "{{ pg_user }}"
+  register: result
+  environment:
+    PGPORT: 5435
+  ignore_errors: true
+
+- assert:
+    that:
+      - result.is_available == false
+      - result.server_version == {}
+      - result is not changed
+
+- name: postgresql_ping - check ping of the database by a non-existent user does not return anything
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_ping:
+    db: "{{ db_default }}"
+  register: result
+  environment:
+    PGUSER: 'test_user'
+  ignore_errors: true
+
+- assert:
+    that:
+      - result.is_available == false
+      - result.server_version == {}
+      - result is not changed
+
 - name: postgresql_ping - ping DB with SSL
   become_user: "{{ pg_user }}"
   become: true
