@@ -15,6 +15,7 @@ __metaclass__ = type
 psycopg2 = None  # This line needs for unit tests
 try:
     import psycopg2
+    import psycopg2.extras
     HAS_PSYCOPG2 = True
 except ImportError:
     HAS_PSYCOPG2 = False
