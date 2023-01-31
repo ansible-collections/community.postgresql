@@ -41,31 +41,19 @@ def postgres_common_argument_spec():
     env_vars = environ
 
     dict_options = dict(
-        login_user=dict(default='postgres'),
+        login_user=dict(default='postgres' if not env_vars.get("PGUSER") else env_vars.get("PGUSER")),
         login_password=dict(default='', no_log=True),
         login_host=dict(default=''),
         login_unix_socket=dict(default=''),
-        port=dict(type='int', default=5432, aliases=['login_port']),
+        port=dict(
+            type='int',
+            default=5432 if not env_vars.get("PGPORT") else int(env_vars.get("PGPORT")),
+            aliases=['login_port']
+        ),
         ssl_mode=dict(default='prefer', choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']),
         ca_cert=dict(aliases=['ssl_rootcert']),
         connect_params=dict(default={}, type='dict'),
     )
-
-    # Setting the value for the port, if there is a PGPORT
-    if env_vars.get("PGPORT"):
-        dict_options.update(
-            port={
-                'type': 'int',
-                'default': int(env_vars.get("PGPORT")),
-                'aliases': ['login_port']
-            }
-        )
-
-    # Setting the value for the login_user, if there is a PGUSER
-    if env_vars.get("PGUSER"):
-        dict_options.update(
-            login_user={'default': env_vars.get("PGUSER")}
-        )
 
     return dict_options
 

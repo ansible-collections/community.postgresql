@@ -67,14 +67,8 @@ class TestPostgresCommonArgSpec():
         assert pg.postgres_common_argument_spec() == expected_dict
 
         # Setting new values for checking environment variables
-        expected_dict.update(
-            port={
-                'type': 'int',
-                'default': 5435,
-                'aliases': ['login_port']
-            },
-            login_user={'default': 'test_user'}
-        )
+        expected_dict['port']['default'] = 5435
+        expected_dict['login_user']['default'] = 'test_user'
 
         # Setting environment variables
         environ['PGUSER'] = 'test_user'
