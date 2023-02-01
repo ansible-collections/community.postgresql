@@ -38,10 +38,10 @@ def postgres_common_argument_spec():
     The options are commonly used by most of PostgreSQL modules.
     """
     return dict(
-        login_user=dict(default='postgres'),
+        login_user=dict(default='postgres', aliases=['login']),
         login_password=dict(default='', no_log=True),
-        login_host=dict(default=''),
-        login_unix_socket=dict(default=''),
+        login_host=dict(default='', aliases=['host']),
+        login_unix_socket=dict(default='', aliases=['unix_socket']),
         port=dict(type='int', default=5432, aliases=['login_port']),
         ssl_mode=dict(default='prefer', choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']),
         ca_cert=dict(aliases=['ssl_rootcert']),
