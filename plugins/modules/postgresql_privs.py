@@ -1070,7 +1070,7 @@ def main():
     # login_password should be used instead
     # https://github.com/ansible-collections/community.postgresql/issues/406
     if p.password:
-        if p.password and p.login_password:
+        if p.login_password:
             module.fail_json(msg='Use the "password" or "login_password" option but not both '
                                  'to pass a password to log in with.')
         p.login_password = p.password
