@@ -112,41 +112,14 @@ options:
     type: bool
     aliases:
     - admin_option
-  host:
-    description:
-    - Database host address. If unspecified, connect via Unix socket.
-    type: str
-    default: ''
-    aliases:
-    - login_host
-  port:
-    description:
-    - Database port to connect to.
-    type: int
-    default: 5432
-    aliases:
-    - login_port
-  unix_socket:
-    description:
-    - Path to a Unix domain socket for local connections.
-    type: str
-    default: ''
-    aliases:
-    - login_unix_socket
-  login:
-    description:
-    - The username to authenticate with.
-    type: str
-    default: postgres
-    aliases:
-    - login_user
   password:
     description:
     - The password to authenticate with.
+    - This option has been B(deprecated) and will be removed in community.postgresql 4.0.0,
+      use the I(login_password) option instead.
+    - Mutually exclusive with I(login_password).
     type: str
     default: ''
-    aliases:
-    - login_password
   ssl_mode:
     description:
     - Determines whether or with what priority a secure SSL TCP/IP connection will be negotiated with the server.
@@ -193,7 +166,7 @@ notes:
   access via privileges granted to any role R is a member of including C(PUBLIC).
 - Note that when you use C(PUBLIC) role, the module always reports that the state has been changed.
 - Note that when revoking privileges from a role R, you do so as the user
-  specified via I(login). If R has been granted the same privileges by
+  specified via I(login_user). If R has been granted the same privileges by
   another user also, R can still access database objects via these privileges.
 - When revoking privileges, C(RESTRICT) is assumed (see PostgreSQL docs).
 
@@ -525,9 +498,9 @@ class Connection(object):
         # check which values are empty and don't include in the **kw
         # dictionary
         params_map = {
-            "host": "host",
-            "login": "user",
-            "password": "password",
+            "login_host": "host",
+            "login_user": "user",
+            "login_password": "password",
             "port": "port",
             "database": "database",
             "ssl_mode": "sslmode",
@@ -537,10 +510,10 @@ class Connection(object):
         kw = dict((params_map[k], getattr(params, k)) for k in params_map
                   if getattr(params, k) != '' and getattr(params, k) is not None)
 
-        # If a unix_socket is specified, incorporate it here.
+        # If a login_unix_socket is specified, incorporate it here.
         is_localhost = "host" not in kw or kw["host"] == "" or kw["host"] == "localhost"
-        if is_localhost and params.unix_socket != "":
-            kw["host"] = params.unix_socket
+        if is_localhost and params.login_unix_socket != "":
+            kw["host"] = params.login_unix_socket
 
         sslrootcert = params.ca_cert
         if psycopg2.__version__ < '2.4.3' and sslrootcert is not None:
@@ -1070,13 +1043,16 @@ def main():
         target_roles=dict(required=False),
         grant_option=dict(required=False, type='bool',
                           aliases=['admin_option']),
-        host=dict(default='', aliases=['login_host']),
-        unix_socket=dict(default='', aliases=['login_unix_socket']),
-        login=dict(default='postgres', aliases=['login_user']),
-        password=dict(default='', aliases=['login_password'], no_log=True),
+        # WARNING: password is deprecated and will  be removed in community.postgresql 4.0.0,
+        # login_password should be used instead
+        password=dict(default='', no_log=True,
+                      removed_in_version='4.0.0',
+                      removed_from_collection='community.postgreql'),
         fail_on_role=dict(type='bool', default=True),
         trust_input=dict(type='bool', default=True),
-        usage_on_types=dict(type='bool', default=True, removed_in_version='3.0.0', removed_from_collection='community.postgresql'),
+        usage_on_types=dict(type='bool', default=True,
+                            removed_in_version='3.0.0',
+                            removed_from_collection='community.postgresql'),
     )
 
     module = AnsibleModule(
@@ -1089,6 +1065,16 @@ def main():
 
     # Create type object as namespace for module params
     p = type('Params', (), module.params)
+
+    # WARNING: password is deprecated and will  be removed in community.postgresql 4.0.0,
+    # login_password should be used instead
+    # https://github.com/ansible-collections/community.postgresql/issues/406
+    if p.password:
+        if p.login_password:
+            module.fail_json(msg='Use the "password" or "login_password" option but not both '
+                                 'to pass a password to log in with.')
+        p.login_password = p.password
+
     # param "schema": default, allowed depends on param "type"
     if p.type in ['table', 'sequence', 'function', 'procedure', 'type', 'default_privs']:
         if p.objs == 'schemas' or p.schema == 'not-specified':
