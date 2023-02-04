@@ -14,6 +14,7 @@ __metaclass__ = type
 
 from datetime import timedelta
 from decimal import Decimal
+from os import environ
 
 psycopg2 = None  # This line needs for unit tests
 try:
@@ -37,12 +38,22 @@ def postgres_common_argument_spec():
 
     The options are commonly used by most of PostgreSQL modules.
     """
+    # Getting a dictionary of environment variables
+    env_vars = environ
+
     return dict(
-        login_user=dict(default='postgres', aliases=['login']),
+        login_user=dict(
+            default='postgres' if not env_vars.get("PGUSER") else env_vars.get("PGUSER"),
+            aliases=['login']
+        ),
         login_password=dict(default='', no_log=True),
         login_host=dict(default='', aliases=['host']),
         login_unix_socket=dict(default='', aliases=['unix_socket']),
-        port=dict(type='int', default=5432, aliases=['login_port']),
+        port=dict(
+            type='int',
+            default=5432 if not env_vars.get("PGPORT") else int(env_vars.get("PGPORT")),
+            aliases=['login_port']
+        ),
         ssl_mode=dict(default='prefer', choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']),
         ca_cert=dict(aliases=['ssl_rootcert']),
         connect_params=dict(default={}, type='dict'),

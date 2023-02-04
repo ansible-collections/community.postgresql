@@ -3,6 +3,7 @@
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
+from os import environ
 
 import pytest
 
@@ -63,6 +64,15 @@ class TestPostgresCommonArgSpec():
             ca_cert=dict(aliases=['ssl_rootcert']),
             connect_params=dict(default={}, type='dict'),
         )
+        assert pg.postgres_common_argument_spec() == expected_dict
+
+        # Setting new values for checking environment variables
+        expected_dict['port']['default'] = 5435
+        expected_dict['login_user']['default'] = 'test_user'
+
+        # Setting environment variables
+        environ['PGUSER'] = 'test_user'
+        environ['PGPORT'] = '5435'
         assert pg.postgres_common_argument_spec() == expected_dict
 
 

@@ -46,6 +46,63 @@
       - result.server_version == {}
       - result is not changed
 
+- name: postgresql_ping - check ping of the database on non-existent port does not return anything
+  become_user: "{{ pg_user }}"
+  become: true
+  environment:
+    PGPORT: 5435
+  ignore_errors: true
+  postgresql_ping:
+    db: "{{ db_default }}"
+    login_user: "{{ pg_user }}"
+  register: result
+
+- assert:
+    that:
+      - result.is_available == false
+      - result.server_version == {}
+      - result is not changed
+
+- name: postgresql_ping - check ping of the database by a non-existent user does not return anything
+  become_user: "{{ pg_user }}"
+  become: true
+  environment:
+    PGUSER: 'test_user'
+  ignore_errors: true
+  postgresql_ping:
+    db: "{{ db_default }}"
+  register: result
+
+- assert:
+    that:
+      - result.is_available == false
+      - result.server_version == {}
+      - result is not changed
+
+- name: Creating a "test_user" in postresql
+  shell:
+    cmd: psql -U "{{ pg_user }}" -c "CREATE ROLE test_user WITH LOGIN PASSWORD 'TEST_PASSWORD';"
+
+- name: postgresql_ping - check ping of the database by a existent user
+  become_user: "{{ pg_user }}"
+  become: true
+  environment:
+    PGUSER: 'test_user'
+  ignore_errors: true
+  postgresql_ping:
+    db: "{{ db_default }}"
+    login_password: "TEST_PASSWORD"
+  register: result
+
+- assert:
+    that:
+      - result.is_available == true
+      - result.server_version != {}
+      - result.server_version.raw is search('PostgreSQL')
+      - result.server_version.major != ''
+      - result.server_version.minor != ''
+      - result is not changed
+
 - name: postgresql_ping - ping DB with SSL
   become_user: "{{ pg_user }}"
   become: true
