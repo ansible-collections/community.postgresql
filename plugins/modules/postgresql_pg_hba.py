@@ -795,7 +795,6 @@ def main():
         backup = False
     else:
         backup = module.params['backup']
-        backup_file = module.params['backup_file']
     dest = module.params["dest"]
     order = module.params["order"]
     keep_comments_at_rules = module.params["keep_comments_at_rules"]
@@ -885,6 +884,7 @@ def main():
         if not module.check_mode:
             ret['msgs'].append('Writing')
             try:
+                backup_file = module.params['backup_file']
                 if pg_hba.write(backup_file):
                     module.set_fs_attributes_if_different(file_args, True, pg_hba.diff,
                                                           expand=False)
