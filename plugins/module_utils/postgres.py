@@ -396,44 +396,6 @@ def set_search_path(cursor, search_path):
     cursor.execute('SET search_path TO %s' % search_path)
 
 
-def convert_elements_to_pg_arrays(obj):
-    """Convert list elements of the passed object
-    to PostgreSQL arrays represented as strings.
-
-    Args:
-        obj (dict or list): Object whose elements need to be converted.
-
-    Returns:
-        obj (dict or list): Object with converted elements.
-    """
-    if isinstance(obj, dict):
-        for (key, elem) in iteritems(obj):
-            if isinstance(elem, list):
-                obj[key] = list_to_pg_array(elem)
-
-    elif isinstance(obj, list):
-        for i, elem in enumerate(obj):
-            if isinstance(elem, list):
-                obj[i] = list_to_pg_array(elem)
-
-    return obj
-
-
-def list_to_pg_array(elem):
-    """Convert the passed list to PostgreSQL array
-    represented as a string.
-
-    Args:
-        elem (list): List that needs to be converted.
-
-    Returns:
-        elem (str): String representation of PostgreSQL array.
-    """
-    elem = str(elem).strip('[]')
-    elem = '{' + elem + '}'
-    return elem
-
-
 def convert_to_supported(val):
     """Convert unsupported type to appropriate.
     Args:

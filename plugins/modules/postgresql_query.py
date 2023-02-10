@@ -317,7 +317,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
-    convert_elements_to_pg_arrays,
     convert_to_supported,
     ensure_required_libs,
     get_conn_params,
@@ -441,11 +440,6 @@ def main():
         args = named_args
     else:
         args = None
-
-    # Convert elements of type list to strings
-    # representing PG arrays
-    if args:
-        args = convert_elements_to_pg_arrays(args)
 
     # Set defaults:
     changed = False
