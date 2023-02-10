@@ -73,8 +73,9 @@ options:
       pg_dump returns rc 1 in this case.
     - C(restore) also requires a target definition from which the database will be restored. (Added in Ansible 2.4).
     - The format of the backup will be detected based on the target name.
-    - Supported compression formats for dump and restore include C(.pgc), C(.bz2), C(.gz) and C(.xz).
-    - Supported formats for dump and restore include C(.sql), C(.tar), and C(.dir) (for the directory format which is supported since collection version 1.4.0).
+    - Supported compression formats for dump and restore determined by target file format C(.pgc) (custom), C(.bz2) (bzip2), C(.gz) (gzip/pigz) and C(.xz) (xz).
+    - Supported formats for dump and restore determined by target file format C(.sql) (plain), C(.tar) (tar), C(.pgc) (custom) and C(.dir) (directory)
+      For the directory format which is supported since collection version 1.4.0.
     - "Restore program is selected by target file format: C(.tar), C(.pgc), and C(.dir) are handled by pg_restore, other with pgsql."
     - "."
     - C(rename) is used to rename the database C(name) to C(target).
@@ -221,6 +222,19 @@ EXAMPLES = r'''
     name: acme
     state: dump
     target: /tmp/acme.dir
+
+- name: Dump an existing database using the custom format
+  community.postgresql.postgresql_db:
+    name: acme
+    state: dump
+    target: /tmp/acme.pgc
+
+# name: acme - the name of the database to connect through which the recovery will take place
+- name: Restore database using the tar format
+  community.postgresql.postgresql_db:
+    name: acme
+    state: restore
+    target: /tmp/acme.tar
 
 # Note: In the example below, if database foo exists and has another tablespace
 # the tablespace will be changed to foo. Access to the database will be locked
