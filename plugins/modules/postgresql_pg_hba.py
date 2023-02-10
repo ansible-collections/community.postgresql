@@ -884,8 +884,7 @@ def main():
         if not module.check_mode:
             ret['msgs'].append('Writing')
             try:
-                backup_file = module.params['backup_file']
-                if pg_hba.write(backup_file):
+                if pg_hba.write(module.params['backup_file']):
                     module.set_fs_attributes_if_different(file_args, True, pg_hba.diff,
                                                           expand=False)
             except PgHbaError as error:
