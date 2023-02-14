@@ -213,12 +213,15 @@ EXAMPLES = r'''
     name: django
     comment: This is a test user
 
-# Connect to default database, create rails user, set its password (MD5-hashed),
+# Connect to default database, create rails user, set its password (MD5- or sha256-hashed),
 # and grant privilege to create other databases and demote rails from super user status if user exists
+# for SCRAM-SHA-256 you can create the hash by creating a dummy user with the same password & copying 
+# the hash from the corresponding pg_authid entry. 
 - name: Create rails user, set MD5-hashed password, grant privs
   community.postgresql.postgresql_user:
     name: rails
     password: md59543f1d82624df2b31672ec0f7050460
+    # password: SCRAM-SHA-256$4096:zFuajwIVdli9mK=NJkcv1Q++$JC4gWIrEHmF6sqRbEiZw5FFW45HUPrpVzNdoM72o730+;fqA4vLN3mCZGbhcbQyvNYY7anCrUTsem1eCh/4YA94=
     role_attr_flags: CREATEDB,NOSUPERUSER
 
 # This example uses the 'priv' argument which is deprecated.
