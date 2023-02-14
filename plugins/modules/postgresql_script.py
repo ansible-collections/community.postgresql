@@ -229,7 +229,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     convert_to_supported,
     ensure_required_libs,
     get_conn_params,
-    list_to_pg_array,
     postgres_common_argument_spec,
     set_search_path,
     TYPES_NEED_TO_CONVERT,
