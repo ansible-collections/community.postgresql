@@ -223,6 +223,9 @@ EXAMPLES = r'''
     password: md59543f1d82624df2b31672ec0f7050460
     # password: SCRAM-SHA-256$4096:zFuajwIVdli9mK=NJkcv1Q++$JC4gWIrEHmF6sqRbEiZw5FFW45HUPrpVzNdoM72o730+;fqA4vLN3mCZGbhcbQyvNYY7anCrUTsem1eCh/4YA94=
     role_attr_flags: CREATEDB,NOSUPERUSER
+  # When using sha256-hashed password:
+  #environment:
+  #  PGOPTIONS: "-c password_encryption=scram-sha-256"
 
 # This example uses the 'priv' argument which is deprecated.
 # You should use the 'postgresql_privs' module instead.
