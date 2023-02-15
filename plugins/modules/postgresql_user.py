@@ -215,7 +215,7 @@ EXAMPLES = r'''
 
 # Connect to default database, create rails user, set its password (MD5- or sha256-hashed),
 # and grant privilege to create other databases and demote rails from super user status if user exists
-# for SCRAM-SHA-256 you can create the hash by creating a dummy user with the same password & copying 
+# for SCRAM-SHA-256 you can create the hash by creating a dummy user with the same password & copying
 # the hash from the corresponding pg_authid entry.
 - name: Create rails user, set MD5-hashed password, grant privs
   community.postgresql.postgresql_user:
