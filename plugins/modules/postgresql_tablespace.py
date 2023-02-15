@@ -191,7 +191,6 @@ from ansible.module_utils.six import iteritems
 
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
-    pg_quote_identifier,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
