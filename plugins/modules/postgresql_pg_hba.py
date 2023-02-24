@@ -364,7 +364,7 @@ class PgHba(object):
                     line = line.strip()
                     comment = None
                     if '#' in line:
-                        result = re.search(r'((("[^"]*"|([^#"])))*)(#(.*))?', line)
+                        result = re.search(r'((("([^"]|\")*"|([^#"])))*)(#(.*))?', line)
                         comment = result.group(6)
                         line = result.group(1)
                         if comment == '':
