@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_pg_hba - comment parsing assumed any hash starts a comment, but could be in quoted values (https://github.com/ansible-collections/community.postgresql/issues/420)
