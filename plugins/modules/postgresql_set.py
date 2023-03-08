@@ -269,7 +269,11 @@ def pretty_to_bytes(pretty_val):
             pretty_val = int(pretty_val)
 
         except ValueError:
-            pretty_val = float(pretty_val)
+            try:
+                pretty_val = float(pretty_val)
+
+            except ValueError:
+                return pretty_val
 
         return pretty_val
 
