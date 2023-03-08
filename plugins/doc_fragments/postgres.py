@@ -52,8 +52,16 @@ options:
     description:
       - Specifies the name of a file containing SSL certificate authority (CA) certificate(s).
       - If the file exists, the server's certificate will be verified to be signed by one of these authorities.
-    type: str
+    type: path
     aliases: [ ssl_rootcert ]
+  ssl_cert:
+    description:
+      - Specifies the file name of the client SSL certificate.
+    type: path
+  ssl_key:
+    description:
+      - Specifies the location for the secret key used for the client certificate.
+    type: path
   connect_params:
     description:
       - Any additional parameters to be passed to libpg.

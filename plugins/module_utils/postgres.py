@@ -54,8 +54,20 @@ def postgres_common_argument_spec():
             default=5432 if not env_vars.get("PGPORT") else int(env_vars.get("PGPORT")),
             aliases=['login_port']
         ),
-        ssl_mode=dict(default='prefer', choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']),
+        ssl_mode=dict(
+            default='prefer',
+            choices=[
+                'allow',
+                'disable',
+                'prefer',
+                'require',
+                'verify-ca',
+                'verify-full'
+            ]
+        ),
         ca_cert=dict(aliases=['ssl_rootcert']),
+        ssl_cert=dict(type='path'),
+        ssl_key=dict(type='path'),
         connect_params=dict(default={}, type='dict'),
     )
 
@@ -199,6 +211,8 @@ def get_conn_params(module, params_dict, warn_db_default=True):
         "port": "port",
         "ssl_mode": "sslmode",
         "ca_cert": "sslrootcert",
+        "ssl_cert": "sslcert",
+        "ssl_key": "sslkey",
     }
 
     # Might be different in the modules:

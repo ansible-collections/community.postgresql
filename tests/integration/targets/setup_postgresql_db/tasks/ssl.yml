@@ -16,25 +16,35 @@
   become: true
   package: name=openssl state=present
 
-- name: postgresql SSL - create certs 1
+- name: postgresql SSL - create certs 1 (Make a self-signed server CA)
   become_user: root
   become: true
-  shell: openssl req -new -nodes -text -out ~{{ pg_user }}/root.csr \ -keyout ~{{ pg_user }}/root.key -subj "/CN=localhost.local"
+  shell: openssl req -sha256 -new -x509 -days 365 -nodes -out /tmp/server-ca.crt -keyout /tmp/server-ca.key -subj "/CN="
 
-- name: postgresql SSL - create certs 2
+- name: postgresql SSL - create certs 2 (Generate server CSR)
   become_user: root
   become: true
-  shell: openssl x509 -req -in ~{{ pg_user }}/root.csr -text -days 3650 \ -extensions v3_ca -signkey ~{{ pg_user }}/root.key -out ~{{ pg_user }}/root.crt
+  shell: openssl req -sha256 -new -nodes -subj "/CN=127.0.0.1" -out /tmp/server.csr -keyout /tmp/server.key
 
-- name: postgresql SSL - create certs 3
+- name: postgresql SSL - create certs 3 (Sign a server certificate)
   become_user: root
   become: true
-  shell: openssl req -new -nodes -text -out ~{{ pg_user }}/server.csr \ -keyout ~{{ pg_user }}/server.key -subj "/CN=localhost.local"
+  shell: openssl x509 -req -sha256 -days 365 -in /tmp/server.csr -CA /tmp/server-ca.crt -CAkey /tmp/server-ca.key -CAcreateserial -out /tmp/server.crt
 
-- name: postgresql SSL - create certs 4
+- name: postgresql SSL - create certs 4 (Make a self-signed client CA)
   become_user: root
   become: true
-  shell: openssl x509 -req -in ~{{ pg_user }}/server.csr -text -days 365 \ -CA ~{{ pg_user }}/root.crt -CAkey ~{{ pg_user }}/root.key -CAcreateserial -out server.crt
+  shell: openssl req -sha256 -new -x509 -days 365 -nodes -out /tmp/client-ca.crt -keyout /tmp/client-ca.key -subj "/CN="
+
+- name: postgresql SSL - create certs 5 (Generate client CSR)
+  become_user: root
+  become: true
+  shell: openssl req -sha256 -new -nodes -subj "/CN={{ ssl_user }}" -out /tmp/client.csr -keyout /tmp/client.key
+
+- name: postgresql SSL - create certs 6 (Sign a client certificate)
+  become_user: root
+  become: true
+  shell: openssl x509 -req -sha256 -days 365 -in /tmp/client.csr -CA /tmp/client-ca.crt -CAkey /tmp/client-ca.key -CAcreateserial -out /tmp/client.crt
 
 - name: postgresql SSL - set right permissions to files
   become_user: root
@@ -45,10 +55,15 @@
     owner: '{{ pg_user }}'
     group: '{{ pg_user }}'
   with_items:
-  - ~{{ pg_user }}/root.key
-  - ~{{ pg_user }}/server.key
-  - ~{{ pg_user }}/root.crt
-  - ~{{ pg_user }}/server.csr
+  - /tmp/server.key
+  - /tmp/server.crt
+  - /tmp/server.csr
+  - /tmp/client.csr
+  - /tmp/client.key
+  - /tmp/client-ca.crt
+  - /tmp/client-ca.key
+  - /tmp/server-ca.key
+  - /tmp/server-ca.crt
 
 - name: postgresql SSL - enable SSL
   become_user: '{{ pg_user }}'
@@ -58,6 +73,33 @@
     db: postgres
     name: ssl
     value: true
+
+- name: postgresql SSL - add ssl_cert_file
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_set:
+    login_user: '{{ pg_user }}'
+    db: postgres
+    name: ssl_cert_file
+    value: /tmp/server.crt
+
+- name: postgresql SSL - add ssl_key_file
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_set:
+    login_user: '{{ pg_user }}'
+    db: postgres
+    name: ssl_key_file
+    value: /tmp/server.key
+
+- name: postgresql SSL - add ssl_ca_file
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_set:
+    login_user: '{{ pg_user }}'
+    db: postgres
+    name: ssl_ca_file
+    value: /tmp/client-ca.crt
 
 - name: postgresql SSL - reload PostgreSQL to enable ssl on
   become: true

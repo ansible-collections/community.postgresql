@@ -16,4 +16,6 @@ postgis: postgis
 ssl_db: 'ssl_db'
 ssl_user: 'ssl_user'
 ssl_pass: 'ssl_pass'
-ssl_rootcert: '~{{ pg_user }}/root.crt'
+ssl_rootcert: '/tmp/server-ca.crt'
+ssl_cert: '/tmp/client.crt'
+ssl_key: '/tmp/client.key'
