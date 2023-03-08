@@ -57,11 +57,11 @@ options:
   ssl_cert:
     description:
       - Specifies the file name of the client SSL certificate.
-    type: str
+    type: path
   ssl_key:
     description:
       - Specifies the location for the secret key used for the client certificate.
-    type: str
+    type: path
   connect_params:
     description:
       - Any additional parameters to be passed to libpg.
