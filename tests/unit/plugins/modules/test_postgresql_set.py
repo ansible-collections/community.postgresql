@@ -21,6 +21,7 @@ from ansible_collections.community.postgresql.plugins.modules.postgresql_set imp
     ('100MB', 104857600),
     ('1GB', 1073741824),
     ('10GB', 10737418240),
+    ('127.0.0.1', '127.0.0.1')
 ]
 )
 def test_pretty_to_bytes(input_, expected):
