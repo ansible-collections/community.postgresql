@@ -761,14 +761,20 @@ class PgClusterInfo(object):
         ext_dict = {}
         for i in res:
             ext_ver_raw = i[1]
-            ext_ver = i[1].split('.')
+            
+            if re.search('^([0-9]+([\-]*[0-9]+)?\.)+[0-9]+([\-]*[0-9]+)?$', i[1]) == None:
+                ext_ver = [None]
+            else:
+                ext_ver = i[1].split('.')
+                if re.search('-', ext_ver[1]) is None:
+                    ext_ver[1] = ext_ver[1].split('-')[0]
 
             if len(ext_ver) < 2:
                 ext_ver.append(None)
 
             ext_dict[i[0]] = dict(
                 extversion=dict(
-                    major=int(ext_ver[0]),
+                    major=int(ext_ver[0]) if ext_ver[0] else None,
                     minor=int(ext_ver[1]) if ext_ver[1] else None,
                     raw=ext_ver_raw,
                 ),
