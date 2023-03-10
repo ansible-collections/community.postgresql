@@ -36,8 +36,8 @@ EXPECTED_DICT = dict(
         choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
     ),
     sslrootcert=dict(aliases=['ssl_rootcert']),
-    ssl_cert=dict(type='path'),
-    ssl_key=dict(type='path'),
+    sslcert=dict(type='path'),
+    sslkey=dict(type='path'),
 )
 
 
