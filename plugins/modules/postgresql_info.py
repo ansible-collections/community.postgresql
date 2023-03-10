@@ -766,7 +766,7 @@ class PgClusterInfo(object):
                 ext_ver = [None]
             else:
                 ext_ver = i[1].split('.')
-                if re.search('-', ext_ver[1]) is None:
+                if re.search('-', ext_ver[1]) is not None:
                     ext_ver[1] = ext_ver[1].split('-')[0]
 
             if len(ext_ver) < 2:
