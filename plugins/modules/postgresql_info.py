@@ -761,8 +761,8 @@ class PgClusterInfo(object):
         ext_dict = {}
         for i in res:
             ext_ver_raw = i[1]
-            
-            if re.search('^([0-9]+([\-]*[0-9]+)?\.)+[0-9]+([\-]*[0-9]+)?$', i[1]) == None:
+
+            if re.search(r'^([0-9]+([\-]*[0-9]+)?\.)+[0-9]+([\-]*[0-9]+)?$', i[1]) is None:
                 ext_ver = [None]
             else:
                 ext_ver = i[1].split('.')
