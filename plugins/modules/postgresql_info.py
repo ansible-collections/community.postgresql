@@ -775,7 +775,6 @@ class PgClusterInfo(object):
                     except IndexError:
                         ext_ver.append(None)
 
-
             ext_dict[i[0]] = dict(
                 extversion=dict(
                     major=int(ext_ver[0]) if ext_ver[0] else None,
