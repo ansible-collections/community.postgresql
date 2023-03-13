@@ -762,15 +762,19 @@ class PgClusterInfo(object):
         for i in res:
             ext_ver_raw = i[1]
 
-            if re.search(r'^([0-9]+([\-]*[0-9]+)?\.)+[0-9]+([\-]*[0-9]+)?$', i[1]) is None:
-                ext_ver = [None]
+            if re.search(r'^([0-9]+([\-]*[0-9]+)?\.)*[0-9]+([\-]*[0-9]+)?$', i[1]) is None:
+                ext_ver = [None, None]
             else:
                 ext_ver = i[1].split('.')
-                if re.search('-', ext_ver[1]) is not None:
-                    ext_ver[1] = ext_ver[1].split('-')[0]
+                if re.search(r'-', ext_ver[0]) is not None:
+                    ext_ver = ext_ver[0].split('-')
+                else:
+                    try:
+                        if re.search(r'-', ext_ver[1]) is not None:
+                            ext_ver[1] = ext_ver[1].split('-')[0]
+                    except IndexError:
+                        ext_ver.append(None)
 
-            if len(ext_ver) < 2:
-                ext_ver.append(None)
 
             ext_dict[i[0]] = dict(
                 extversion=dict(
