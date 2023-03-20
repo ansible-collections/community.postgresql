@@ -58,10 +58,12 @@ options:
     description:
       - Specifies the file name of the client SSL certificate.
     type: path
+    version_added: '2.4.0'
   ssl_key:
     description:
       - Specifies the location for the secret key used for the client certificate.
     type: path
+    version_added: '2.4.0'
   connect_params:
     description:
       - Any additional parameters to be passed to libpg.
