@@ -103,7 +103,7 @@
       - result.server_version.minor != ''
       - result is not changed
 
-- name: postgresql_ping - ping DB with SSL
+- name: postgresql_ping - ping DB with SSL 1
   become_user: "{{ pg_user }}"
   become: true
   postgresql_ping:
@@ -114,6 +114,33 @@
     login_port: 5432
     ssl_mode: require
     ca_cert: '{{ ssl_rootcert }}'
+    trust_input: true
+  register: result
+  when:
+  - ansible_os_family == 'Debian'
+  - postgres_version_resp.stdout is version('9.4', '>=')
+
+- assert:
+    that: 
+    - result.is_available == true
+    - result.conn_err_msg == ''
+  when:
+  - ansible_os_family == 'Debian'
+  - postgres_version_resp.stdout is version('9.4', '>=')
+
+- name: postgresql_ping - ping DB with SSL 2
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_ping:
+    db: "{{ ssl_db }}"
+    login_user: "{{ ssl_user }}"
+    login_password: "{{ ssl_pass }}"
+    login_host: 127.0.0.1
+    login_port: 5432
+    ssl_mode: verify-full
+    ca_cert: '{{ ssl_rootcert }}'
+    ssl_cert: '{{ ssl_cert }}'
+    ssl_key: '{{ ssl_key }}'
     trust_input: true
   register: result
   when:

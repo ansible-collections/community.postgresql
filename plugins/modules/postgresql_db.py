@@ -708,7 +708,9 @@ def main():
         "login_password": "password",
         "port": "port",
         "ssl_mode": "sslmode",
-        "ca_cert": "sslrootcert"
+        "ca_cert": "sslrootcert",
+        "ssl_cert": "sslcert",
+        "ssl_key": "sslkey",
     }
     kw = dict((params_map[k], v) for (k, v) in iteritems(module.params)
               if k in params_map and v != '' and v is not None)

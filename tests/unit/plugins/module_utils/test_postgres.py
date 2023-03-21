@@ -22,6 +22,8 @@ INPUT_DICT = dict(
         choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
     ),
     ca_cert=dict(aliases=['ssl_rootcert']),
+    ssl_cert=dict(type='path'),
+    ssl_key=dict(type='path'),
 )
 
 EXPECTED_DICT = dict(
@@ -34,6 +36,8 @@ EXPECTED_DICT = dict(
         choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
     ),
     sslrootcert=dict(aliases=['ssl_rootcert']),
+    sslcert=dict(type='path'),
+    sslkey=dict(type='path'),
 )
 
 
@@ -62,6 +66,8 @@ class TestPostgresCommonArgSpec():
                 choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
             ),
             ca_cert=dict(aliases=['ssl_rootcert']),
+            ssl_cert=dict(type='path'),
+            ssl_key=dict(type='path'),
             connect_params=dict(default={}, type='dict'),
         )
         assert pg.postgres_common_argument_spec() == expected_dict

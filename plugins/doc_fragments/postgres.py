@@ -54,6 +54,16 @@ options:
       - If the file exists, the server's certificate will be verified to be signed by one of these authorities.
     type: str
     aliases: [ ssl_rootcert ]
+  ssl_cert:
+    description:
+      - Specifies the file name of the client SSL certificate.
+    type: path
+    version_added: '2.4.0'
+  ssl_key:
+    description:
+      - Specifies the location for the secret key used for the client certificate.
+    type: path
+    version_added: '2.4.0'
   connect_params:
     description:
       - Any additional parameters to be passed to libpg.
