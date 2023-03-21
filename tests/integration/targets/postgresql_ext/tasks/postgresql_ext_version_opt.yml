@@ -205,7 +205,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '3.0'"
+      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '4.0'"
 
   - assert:
       that:
@@ -228,7 +228,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '3.0'"
+      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '4.0'"
 
   - assert:
       that:
@@ -265,7 +265,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '3.0'"
+      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '4.0'"
 
   - assert:
       that:
@@ -321,7 +321,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '3.0'"
+      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '4.0'"
 
   - assert:
       that:
@@ -385,6 +385,139 @@
       - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == None
       - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '0'
 
+  - name: Upgrade extension to a version that have a sub minor version 3.0-1
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      version: '3.0-1'
+
+  - name: Test
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+
+  - assert:
+      that:
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == 3
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == 0
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '3.0-1'
+
+  - name: Upgrade extension to version 3.0-foo
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      version: '3.0-foo'
+
+  - name: Test
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+
+  - assert:
+      that:
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == None
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == None
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '3.0-foo'
+
+  - name: Upgrade extension to version 3.beta
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      version: '3.beta'
+
+  - name: Test
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+
+  - assert:
+      that:
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == None
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == None
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '3.beta'
+
+  - name: Upgrade extension to version 3-1.0
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      version: '3-1.0'
+
+  - name: Test
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+
+  - assert:
+      that:
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == 3
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == 1
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '3-1.0'
+
+  - name: Upgrade extension to version 3-1.0-1
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      version: '3-1.0-1'
+
+  - name: Test
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+
+  - assert:
+      that:
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == 3
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == 1
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '3-1.0-1'
+
+  - name: Upgrade extension to version 3-1.foo
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      version: '3-1.foo'
+
+  - name: Test
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+
+  - assert:
+      that:
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == None
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == None
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '3-1.foo'
+
+  - name: Upgrade extension to version v4
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: '{{ test_ext }}'
+      schema: '{{ test_schema }}'
+      version: 'v4'
+
+  - name: Test
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+
+  - assert:
+      that:
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == None
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == None
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == 'v4'
+
   - name: Upgrade extension to the latest
     <<: *task_parameters
     postgresql_ext:
@@ -400,9 +533,9 @@
 
   - assert:
       that:
-      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == 3
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['major'] == 4
       - result['databases']['postgres']['extensions']['dummy']['extversion']['minor'] == 0
-      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '3.0'
+      - result['databases']['postgres']['extensions']['dummy']['extversion']['raw'] == '4.0'
 
   # Cleanup:
   - name: postgresql_ext_version - drop the extension
