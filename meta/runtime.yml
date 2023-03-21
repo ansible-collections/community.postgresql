@@ -1,2 +1,27 @@
 ---
 requires_ansible: '>=2.9.10'
+action_groups:
+  all:
+    - postgresql_copy
+    - postgresql_db
+    - postgresql_ext
+    - postgresql_idx
+    - postgresql_info
+    - postgresql_lang
+    - postgresql_membership
+    - postgresql_owner
+    - postgresql_pg_hba
+    - postgresql_ping
+    - postgresql_privs
+    - postgresql_publication
+    - postgresql_query
+    - postgresql_schema
+    - postgresql_script
+    - postgresql_sequence
+    - postgresql_set
+    - postgresql_slot
+    - postgresql_subscription
+    - postgresql_table
+    - postgresql_tablespace
+    - postgresql_user
+    - postgresql_user_obj_stat_info
