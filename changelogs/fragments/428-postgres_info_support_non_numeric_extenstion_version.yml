@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_info - add support for non numeric extenstion version (https://github.com/ansible-collections/community.postgresql/issues/428).
