@@ -281,6 +281,8 @@ databases:
           - Information about replication subscriptions (available for PostgreSQL 10 and higher)
             U(https://www.postgresql.org/docs/current/logical-replication-subscription.html).
           - Content depends on PostgreSQL server version.
+          - The return values for the superuser and the normal user may differ
+            U(https://www.postgresql.org/docs/current/catalog-pg-subscription.html).
           returned: if configured
           type: dict
           sample:
@@ -682,7 +684,14 @@ class PgClusterInfo(object):
 
     def get_subscr_info(self):
         """Get subscription statistics."""
-        query = ("SELECT s.*, r.rolname AS ownername, d.datname AS dbname "
+        columns_sub_table = ("SELECT column_name "
+                            "FROM information_schema.columns "
+                            "WHERE table_schema = 'pg_catalog' "
+                            "AND table_name = 'pg_subscription'")
+        columns_result = self.____exec_sql(columns_sub_table)
+        columns = ", ".join([f"s.{column[0]}" for column in columns_result])
+
+        query = (f"SELECT {columns}, r.rolname AS ownername, d.datname AS dbname "
                  "FROM pg_catalog.pg_subscription s "
                  "JOIN pg_catalog.pg_database d "
                  "ON s.subdbid = d.oid "
