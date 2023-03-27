@@ -688,15 +688,15 @@ class PgClusterInfo(object):
                             "FROM information_schema.columns "
                             "WHERE table_schema = 'pg_catalog' "
                             "AND table_name = 'pg_subscription'")
-        columns_result = self.____exec_sql(columns_sub_table)
-        columns = ", ".join([f"s.{column[0]}" for column in columns_result])
+        columns_result = self.__exec_sql(columns_sub_table)
+        columns = ", ".join(["s.%s" % column[0] for column in columns_result])
 
-        query = (f"SELECT {columns}, r.rolname AS ownername, d.datname AS dbname "
+        query = ("SELECT %s, r.rolname AS ownername, d.datname AS dbname "
                  "FROM pg_catalog.pg_subscription s "
                  "JOIN pg_catalog.pg_database d "
                  "ON s.subdbid = d.oid "
                  "JOIN pg_catalog.pg_roles AS r "
-                 "ON s.subowner = r.oid")
+                 "ON s.subowner = r.oid" % columns)
 
         result = self.__exec_sql(query)
 
