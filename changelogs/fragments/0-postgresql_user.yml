@@ -1,2 +1,2 @@
 bugfixes:
-- postgresql_user - didn't close connection to DB. Fix now connection to DB is closed `` (https://github.com/ansible-collections/community.postgresql/issues/431).
+- postgresql_user - properly close DB connections to prevent possible connection limit exhaustion (https://github.com/ansible-collections/community.postgresql/issues/431).
