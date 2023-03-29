@@ -1058,11 +1058,13 @@ def main():
                     module.fail_json(msg=msg)
                 kw['user_removed'] = user_removed
 
-    if changed:
-        if module.check_mode:
-            db_connection.rollback()
-        else:
-            db_connection.commit()
+    if module.check_mode:
+        db_connection.rollback()
+    else:
+        db_connection.commit()
+
+    cursor.close()
+    db_connection.close()
 
     kw['changed'] = changed
     kw['queries'] = executed_queries
