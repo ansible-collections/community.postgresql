@@ -256,27 +256,27 @@ increment:
                  sequence.
     returned: always
     type: int
-    sample: '-1'
+    sample: -1
 minvalue:
     description: The value of minvalue of the sequence.
     returned: always
     type: int
-    sample: '1'
+    sample: 1
 maxvalue:
     description: The value of maxvalue of the sequence.
     returned: always
     type: int
-    sample: '9223372036854775807'
+    sample: 9223372036854775807
 start:
     description: The value of start of the sequence.
     returned: always
     type: int
-    sample: '12'
+    sample: 12
 cycle:
     description: Shows if the sequence cycle or not.
     returned: always
-    type: str
-    sample: 'false'
+    type: bool
+    sample: false
 owner:
     description: Shows the current owner of the sequence
                  after the successful run of the task.
