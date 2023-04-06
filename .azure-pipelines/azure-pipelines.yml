@@ -130,8 +130,8 @@ stages:
           targets:
             - name: CentOS 7
               test: centos7
-            - name: Fedora 36
-              test: fedora36
+            - name: Fedora 37
+              test: fedora37
             - name: Ubuntu 20.04
               test: ubuntu2004
 
@@ -200,8 +200,8 @@ stages:
         parameters:
           testFormat: 2.15/{0}/1
           targets:
-            - name: RHEL 8.6
-              test: rhel/8.6
+            - name: RHEL 8.7
+              test: rhel/8.7
 
   - stage: Remote_2_14
     displayName: Remote 2.14
