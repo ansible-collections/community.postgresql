@@ -7,6 +7,12 @@
   - { datadir: '{{ replica_data_dir }}', port: '{{ replica_port }}' }
   listen: stop postgresql
 
+- name: Kill all postgres processes
+  shell: 'pkill -9 -u {{ pg_user }}'
+  become: true
+  ignore_errors: true
+  listen: kill postgresql processes
+
 - name: Remove packages
   apt:
     name: '{{ packages_to_remove }}'
@@ -17,6 +23,7 @@
   file:
     state: absent
     path: "{{ item }}"
+    force: true
   loop:
   - "{{ primary_root_dir }}"
   - "{{ replica_root_dir }}"
