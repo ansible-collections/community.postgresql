@@ -10,10 +10,6 @@ pg_package_list:
 packages_to_remove:
 - postgresql
 - postgresql-client
-- postgresql-contrib
-- postgresql-server
-- postgresql-libs
-- python3-psycopg2
 
 # Master specific defaults:
 primary_root_dir: '/var/lib/pgsql/primary'

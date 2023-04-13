@@ -123,16 +123,11 @@
   shell: '{{ pg_ctl }} -D {{ primary_data_dir }} -o "-p {{ primary_port }}" -l {{ primary_data_dir }}/primary.log start'
   notify:
   - stop postgresql
-  - kill postgresql processes
-  async: 15
-  poll: 0
 
 - name: Start replica
   become: true
   become_user: '{{ pg_user }}'
   shell: '{{ pg_ctl }} -D {{ replica_data_dir }} -o "-p {{ replica_port }}" -l {{ replica_data_dir }}/replica.log start'
-  async: 15
-  poll: 0
 
 - name: Check connectivity to the primary and get PostgreSQL version
   become: true
