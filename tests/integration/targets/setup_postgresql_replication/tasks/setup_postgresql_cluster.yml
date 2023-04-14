@@ -41,16 +41,8 @@
 - name: Install packages
   apt:
     name: '{{ pg_package_list }}'
+    policy_rc_d: 101  # prevent the service from starting
   notify: cleanup postgresql
-
-# Andersson007 has no idea why it runs after installation w/o asking..
-- name: Stop service if running
-  become: true
-  systemd:
-    name: postgresql
-    state: stopped
-    enabled: false
-    force: yes
 
 - name: Delete postgresql related files
   file:
