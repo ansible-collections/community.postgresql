@@ -26,9 +26,9 @@
         state: 'present'
     
     - name: Add PGDG GPG key
-      get_url:
-        dest: '/etc/apt/trusted.gpg.d/ACCC4CF8.asc'
-        url: 'https://www.postgresql.org/media/keys/ACCC4CF8.asc'
+      ansible.builtin.apt_key:
+        state: present
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
     
     - name: Update apt cache
       apt:
