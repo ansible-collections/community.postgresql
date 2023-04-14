@@ -105,18 +105,10 @@
     path: '{{ item }}'
     force: true
   loop:
-  - '{{ primary_root_dir }}'
-  - '{{ replica_root_dir }}'
-<<<<<<< HEAD
-  - '{{ replica_data_dir }}'
-
-- name: Create root dirs
-=======
   - /etc/postgresql
   - /var/lib/postgresql
 
 - name: Create dirs needed
->>>>>>> 39d25ee (Fix CI tests, postgresql_info and _subscription integration tests now use PostgreSQL 15 (#445))
   file:
     state: directory
     recurse: true
@@ -125,8 +117,7 @@
     group: postgres
     mode: '0700'
   loop:
-  - '{{ primary_data_dir }}'
-  - '{{ replica_data_dir }}'
+  - /etc/postgresql
   - /var/lib/postgresql
   notify: cleanup postgresql
 
