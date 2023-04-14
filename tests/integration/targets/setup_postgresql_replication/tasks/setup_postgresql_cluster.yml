@@ -21,7 +21,7 @@
     - name: Add PGDG repository
       lineinfile:
         create: true
-        line: 'deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main'
+        line: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_facts['distribution_release'] }}-pgdg main"
         path: '/etc/apt/sources.list.d/pgdg.list'
         state: 'present'
     
