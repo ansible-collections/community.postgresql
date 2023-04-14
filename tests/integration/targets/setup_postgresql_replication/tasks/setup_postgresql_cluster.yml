@@ -105,8 +105,8 @@
     path: '{{ item }}'
     force: true
   loop:
-  - /etc/postgresql
-  - /var/lib/postgresql
+  - '{{ primary_data_dir }}'
+  - '{{ replica_data_dir }}'
 
 - name: Create dirs needed
   file:
@@ -117,8 +117,8 @@
     group: postgres
     mode: '0700'
   loop:
-  - /etc/postgresql
-  - /var/lib/postgresql
+  - '{{ primary_data_dir }}'
+  - '{{ replica_data_dir }}'
   notify: cleanup postgresql
 
 - name: Find initdb
