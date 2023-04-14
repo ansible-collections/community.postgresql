@@ -31,7 +31,8 @@
         url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
     
     - name: Update apt cache
-      command: apt update
+      apt:
+        update_cache: true
 
 - name: Install apt-utils
   apt:
