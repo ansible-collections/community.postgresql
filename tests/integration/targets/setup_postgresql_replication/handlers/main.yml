@@ -17,6 +17,7 @@
   file:
     state: absent
     path: "{{ item }}"
+    force: true
   loop:
   - "{{ primary_root_dir }}"
   - "{{ replica_root_dir }}"

@@ -162,6 +162,7 @@
     <<: *task_parameters
     postgresql_info:
       <<: *pg_parameters
+      login_port: '{{ replica_port }}'
       filter: ver*,role*
 
   - assert:
@@ -178,6 +179,7 @@
     <<: *task_parameters
     postgresql_info:
       <<: *pg_parameters
+      login_port: '{{ replica_port }}'
       filter: ver*
 
   - assert:
@@ -189,6 +191,7 @@
     <<: *task_parameters
     postgresql_info:
       <<: *pg_parameters
+      login_port: '{{ replica_port }}'
       filter:
       - "!ver*"
       - "!rol*"
