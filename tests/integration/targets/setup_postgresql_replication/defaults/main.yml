@@ -3,18 +3,13 @@ pg_user: postgres
 db_default: postgres
 
 pg_package_list:
-- apt-utils
-- postgresql-14
-- postgresql-contrib
+- postgresql
+- postgresql-client
 - python3-psycopg2
 
 packages_to_remove:
-- postgresql-14
-- postgresql-15
-- postgresql-contrib
-- postgresql-server
-- postgresql-libs
-- python3-psycopg2
+- postgresql
+- postgresql-client
 
 # Master specific defaults:
 primary_root_dir: '/var/lib/pgsql/primary'
