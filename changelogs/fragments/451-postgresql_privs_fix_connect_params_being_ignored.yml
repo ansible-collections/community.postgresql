@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_privs - fix connect_params being ignored (https://github.com/ansible-collections/community.postgresql/issues/450).
