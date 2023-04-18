@@ -81,7 +81,6 @@
     objs: public
     role: "{{ item }}"
   loop:
-    - "{{ db_user1 }}"
     - "{{ db_user2 }}"
     - "{{ db_user3 }}"
 
