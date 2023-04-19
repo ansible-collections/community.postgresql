@@ -1732,7 +1732,10 @@
   become_user: "{{ pg_user }}"
   postgresql_query:
     login_db: "{{ db_name }}"
-    query: "DROP OWNED BY {{ db_user3 }};"
+    query: "DROP OWNED BY {{ item }};"
+  loop:
+    - "{{ db_user2 }}"
+    - "{{ db_user3 }}"
 
 - name: Remove user given permissions
   become: true
