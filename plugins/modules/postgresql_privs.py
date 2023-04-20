@@ -453,7 +453,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
     pg_quote_identifier,
     check_input,
 )
-from ansible_collections.community.postgresql.plugins.module_utils.postgres import postgres_common_argument_spec
+from ansible_collections.community.postgresql.plugins.module_utils.postgres import postgres_common_argument_spec, get_conn_params
 from ansible.module_utils._text import to_native
 
 VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
@@ -518,19 +518,13 @@ class Connection(object):
             "ca_cert": "sslrootcert"
         }
 
-        kw = dict((params_map[k], getattr(params, k)) for k in params_map
-                  if getattr(params, k) != '' and getattr(params, k) is not None)
-
-        # If a unix_socket is specified, incorporate it here.
-        is_localhost = "host" not in kw or kw["host"] == "" or kw["host"] == "localhost"
-        if is_localhost and params.unix_socket != "":
-            kw["host"] = params.unix_socket
+        conn_params = get_conn_params(module, module.params, warn_db_default=False)
 
         sslrootcert = params.ca_cert
         if psycopg2.__version__ < '2.4.3' and sslrootcert is not None:
             raise ValueError('psycopg2 must be at least 2.4.3 in order to user the ca_cert parameter')
 
-        self.connection = psycopg2.connect(**kw)
+        self.connection = psycopg2.connect(**conn_params)
         self.cursor = self.connection.cursor()
         self.pg_version = self.connection.server_version
 
