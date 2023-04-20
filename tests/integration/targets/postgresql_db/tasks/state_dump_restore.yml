@@ -166,7 +166,7 @@
   become_user: "{{ pg_user }}"
   postgresql_db:
     state: present
-    name: "{{ suspicious_db_name }}"
+    name: "{{ db_name_with_dot }}"
     owner: "{{ db_user1 }}"
     login_user: "{{ pg_user }}"
     trust_input: true
