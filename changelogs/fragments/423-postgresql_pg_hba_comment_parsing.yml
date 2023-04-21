@@ -1,2 +1,2 @@
 bugfixes:
-- postgresql_pg_hba - comment parsing assumed any hash starts a comment, but could be in quoted values (https://github.com/ansible-collections/community.postgresql/issues/420)
+  - postgresql_pg_hba - add support for double-quoted values and escaped quotes when parsing pg_hba.conf (https://github.com/ansible-collections/community.postgresql/issues/420)
