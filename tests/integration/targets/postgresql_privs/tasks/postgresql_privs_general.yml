@@ -71,6 +71,19 @@
     that:
     - result is changed
 
+# Grant rights to the public schema, since in PostgreSQL 15
+# the rights to this schema are taken away from all users except the owner
+- name: GRANT ALL PRIVILEGES ON SCHEMA public TO ansible_db_user1,2,3
+  community.postgresql.postgresql_privs:
+    db: "{{ db_name }}"
+    privs: ALL
+    type: schema
+    objs: public
+    role: "{{ item }}"
+  loop:
+    - "{{ db_user2 }}"
+    - "{{ db_user3 }}"
+
 # Also covers https://github.com/ansible-collections/community.general/issues/884
 - name: Set table default privs on the schema with hyphen in the name
   postgresql_privs:
@@ -1609,6 +1622,16 @@
   loop:
   - "{{ db_user2 }}"
   - "{{ db_user3 }}"
+
+- name: Drop a role for which the default privileges have been altered
+  become: yes
+  become_user: "{{ pg_user }}"
+  postgresql_query:
+    login_db: "{{ db_name }}"
+    query: "DROP OWNED BY {{ item }};"
+  loop:
+    - "{{ db_user2 }}"
+    - "{{ db_user3 }}"
 
 - name: Remove user given permissions
   become: true
