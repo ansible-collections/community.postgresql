@@ -276,7 +276,8 @@ PG_HBA_TYPES = ["local", "host", "hostssl", "hostnossl", "hostgssenc", "hostnogs
 PG_HBA_ORDERS = ["sdu", "sud", "dsu", "dus", "usd", "uds"]
 PG_HBA_HDR = ['type', 'db', 'usr', 'src', 'mask', 'method', 'options']
 
-WHITESPACES_RE = re.compile(r'\s+')
+PG_HBA_ITEM_REGEX = re.compile(r'("(\\"|[^"])*"|[^"#\s]+)')
+PG_HBA_LINE_REGEX = re.compile(r'(("(\\"|[^"])*"|[^"#])*)(#(.*))?')
 
 
 class PgHbaError(Exception):
@@ -362,12 +363,12 @@ class PgHba(object):
                 for line in file:
                     # split into line and comment
                     line = line.strip()
-                    comment = None
-                    if '#' in line:
-                        line, comment = line.split('#', 1)
-                        if comment == '':
-                            comment = None
-                        line = line.rstrip()
+                    parsed_line = PG_HBA_LINE_REGEX.fullmatch(line)
+                    line = parsed_line[1]
+                    comment = parsed_line.group(5)
+                    if comment.strip() == '':
+                        comment = None
+                    line = line.rstrip()
                     # if there is just a comment, save it
                     if line == '':
                         if comment is not None:
@@ -570,10 +571,10 @@ class PgHbaRule(dict):
         '''
         split into 'type', 'db', 'usr', 'src', 'mask', 'method', 'options' cols
         '''
-        if WHITESPACES_RE.sub('', line) == '':
-            # empty line. skip this one...
+        if not line.strip():
+            # skip an empty line
             return
-        cols = WHITESPACES_RE.split(line)
+        cols = [item for item, _ in PG_HBA_ITEM_REGEX.findall(line)]
         if len(cols) < 4:
             msg = "Rule {0} has too few columns."
             raise PgHbaValueError(msg.format(line))
