@@ -574,7 +574,7 @@ class PgHbaRule(dict):
         if not line.strip():
             # skip an empty line
             return
-        cols = [item for item, _ in PG_HBA_ITEM_REGEX.findall(line)]
+        cols = [item for item, ignored in PG_HBA_ITEM_REGEX.findall(line)]
         if len(cols) < 4:
             msg = "Rule {0} has too few columns."
             raise PgHbaValueError(msg.format(line))
