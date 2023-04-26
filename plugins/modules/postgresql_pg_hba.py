@@ -277,7 +277,7 @@ PG_HBA_ORDERS = ["sdu", "sud", "dsu", "dus", "usd", "uds"]
 PG_HBA_HDR = ['type', 'db', 'usr', 'src', 'mask', 'method', 'options']
 
 PG_HBA_ITEM_REGEX = re.compile(r'("(\\"|[^"])*"|[^"#\s]+)')
-PG_HBA_LINE_REGEX = re.compile(r'(("(\\"|[^"])*"|[^"#])*)(#(.*))?')
+PG_HBA_LINE_REGEX = re.compile(r'\A(("(\\"|[^"])*"|[^"#])*)(#(.*))?\Z')
 
 
 class PgHbaError(Exception):
@@ -363,10 +363,10 @@ class PgHba(object):
                 for line in file:
                     # split into line and comment
                     line = line.strip()
-                    parsed_line = PG_HBA_LINE_REGEX.fullmatch(line)
-                    line = parsed_line[1]
+                    parsed_line = PG_HBA_LINE_REGEX.match(line)
+                    line = parsed_line.group(1)
                     comment = parsed_line.group(5)
-                    if comment.strip() == '':
+                    if comment is not None and comment.strip() == '':
                         comment = None
                     line = line.rstrip()
                     # if there is just a comment, save it
