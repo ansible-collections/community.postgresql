@@ -507,7 +507,7 @@ class Connection(object):
             "ca_cert": "sslrootcert"
         }
 
-        conn_params = get_conn_params(module, module.params, warn_db_default=False)
+        conn_params = get_conn_params(module, params.__dict__, warn_db_default=False)
 
         sslrootcert = params.ca_cert
         if psycopg2.__version__ < '2.4.3' and sslrootcert is not None:
