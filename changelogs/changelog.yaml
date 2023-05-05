@@ -493,3 +493,18 @@ releases:
     - 430-action_group_all_for_module_defaults.yml
     - 451-postgresql_privs_fix_connect_params_being_ignored.yml
     release_date: '2023-05-04'
+  2.4.1:
+    changes:
+      bugfixes:
+      - postgresql_privs - fix a breaking change related to handling the ``password``
+        argument (https://github.com/ansible-collections/community.postgresql/pull/463).
+      release_summary: 'This is the bugfix release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after release 2.4.0.'
+    fragments:
+    - 0-postgresql_privs.yml
+    - 2.4.1.yml
+    release_date: '2023-05-05'
