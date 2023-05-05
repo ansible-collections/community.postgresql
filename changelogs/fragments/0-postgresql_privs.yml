@@ -1,2 +1,0 @@
-bugfixes:
-- postgresql_privs - fix a breaking change related to handling the ``password`` argument (https://github.com/ansible-collections/community.postgresql/pull/463).
