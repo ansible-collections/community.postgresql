@@ -388,3 +388,18 @@ releases:
     - 428-postgres_info_support_non_numeric_extenstion_version.yml
     - 451-postgresql_privs_fix_connect_params_being_ignored.yml
     release_date: '2023-05-04'
+  1.7.9:
+    changes:
+      bugfixes:
+      - postgresql_privs - fix a breaking change related to handling the ``password``
+        argument (https://github.com/ansible-collections/community.postgresql/pull/463).
+      release_summary: 'This is the bugfix release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 1.7.8.'
+    fragments:
+    - 0-postgresql_privs.yml
+    - 1.7.9.yml
+    release_date: '2023-05-05'
