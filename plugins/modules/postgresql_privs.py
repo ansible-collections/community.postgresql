@@ -505,18 +505,6 @@ class Connection(object):
     def __init__(self, params, module):
         self.database = params.database
         self.module = module
-        # To use defaults values, keyword arguments must be absent, so
-        # check which values are empty and don't include in the **kw
-        # dictionary
-        params_map = {
-            "host": "host",
-            "login": "user",
-            "password": "password",
-            "port": "port",
-            "database": "database",
-            "ssl_mode": "sslmode",
-            "ca_cert": "sslrootcert"
-        }
 
         conn_params = get_conn_params(module, params.__dict__, warn_db_default=False)
 

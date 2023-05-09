@@ -88,7 +88,7 @@
 - name: Set table default privs on the schema with hyphen in the name
   postgresql_privs:
      login_user: "{{ pg_user }}"
-     password: password
+     login_password: password
      db: "{{ db_name_with_hyphens }}"
      schema: "{{ db_schema_with_hyphens }}"
      role: "{{ db_user_with_hyphens }}"
@@ -109,7 +109,7 @@
 - name: Set table default privs on the schema with hyphen in the name
   postgresql_privs:
      login_user: "{{ pg_user }}"
-     password: password
+     login_password: password
      db: "{{ db_name_with_hyphens }}"
      schema: "{{ db_schema_with_hyphens }}"
      role: "{{ db_user_with_hyphens }}"
@@ -128,7 +128,7 @@
 - name: Delete table default privs on the schema with hyphen in the name
   postgresql_privs:
      login_user: "{{ pg_user }}"
-     password: password
+     login_password: password
      db: "{{ db_name_with_hyphens }}"
      schema: "{{ db_schema_with_hyphens }}"
      role: "{{ db_user_with_hyphens }}"
@@ -160,7 +160,7 @@
     name: "{{ db_user_with_hyphens }}"
     state: absent
     encrypted: true
-    password: password
+    login_password: password
     role_attr_flags: CREATEDB,LOGIN
     db: "{{ db_name_with_hyphens }}"
     login_user: "{{ pg_user }}"

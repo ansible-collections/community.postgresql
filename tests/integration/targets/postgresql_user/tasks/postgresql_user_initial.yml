@@ -101,9 +101,9 @@
     privs: "CREATE,connect"
     objs: "{{ db_name }}"
     db: "{{ db_name }}"
-    login: "{{ db_user1 }}"
-    password: "password"
-    host: "localhost"
+    login_user: "{{ db_user1 }}"
+    login_password: "password"
+    login_host: "localhost"
 
 - name: Check that the user has the requested permissions (database)
   become: true
