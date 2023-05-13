@@ -271,8 +271,6 @@ import subprocess
 import traceback
 
 try:
-    import psycopg2
-    import psycopg2.extras
     from psycopg2.extras import DictCursor
 except ImportError:
     HAS_PSYCOPG2 = False
@@ -290,10 +288,8 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
     check_input,
     SQLParseError,
 )
-from ansible.module_utils.six import iteritems
 from ansible.module_utils.six.moves import shlex_quote
 from ansible.module_utils._text import to_native
-from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 
 executed_commands = []
 
@@ -749,9 +745,9 @@ def main():
             method = state == "dump" and db_dump or db_restore
             try:
                 if state == 'dump':
-                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, dump_extra_args, **kw)
+                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, dump_extra_args, **conn_params)
                 else:
-                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, **kw)
+                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, **conn_params)
 
                 if rc != 0:
                     module.fail_json(msg=stderr, stdout=stdout, rc=rc, cmd=cmd)
