@@ -1218,6 +1218,10 @@ def main():
         conn.rollback()
     else:
         conn.commit()
+
+    conn.cursor.close()
+    conn.connection.close()
+
     module.exit_json(changed=changed, queries=executed_queries)
 
 
