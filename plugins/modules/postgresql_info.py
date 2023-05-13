@@ -655,7 +655,7 @@ class PgClusterInfo(object):
                 subset_map[s]()
 
         self.cursor.close()
-        self.db_obj.close()
+        self.db_obj.db_conn.close()
 
         return self.pg_info
 
