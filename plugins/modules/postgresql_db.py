@@ -706,8 +706,12 @@ def main():
         target = os.path.expanduser(target)
 
     if not raw_connection:
-        conn_params = get_conn_params(module, module.params, warn_db_default=False)
-        db_connection, dummy = connect_to_db(module, conn_params, fail_on_conn=False)
+        # Such a transformation is used, since the connection should go to 'maintenance_db'
+        params_dict = module.params
+        params_dict["db"] = module.params["maintenance_db"]
+
+        conn_params = get_conn_params(module, params_dict, warn_db_default=False)
+        db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
         cursor = db_connection.cursor(cursor_factory=DictCursor)
 
         if session_role:
