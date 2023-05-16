@@ -201,7 +201,8 @@ def main():
     if cursor:
         # If connection established:
         result["is_available"], result["server_version"] = pg_ping.do()
-        db_connection.rollback()
+        cursor.close()
+        db_connection.close()
 
     module.exit_json(**result)
 
