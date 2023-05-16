@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_db - when the task is completed successfully, close the database connection (https://github.com/ansible-collections/community.postgresql/issues/465).

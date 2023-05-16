@@ -271,23 +271,25 @@ import subprocess
 import traceback
 
 try:
-    import psycopg2
-    import psycopg2.extras
+    from psycopg2.extras import DictCursor
 except ImportError:
     HAS_PSYCOPG2 = False
 else:
     HAS_PSYCOPG2 = True
 
-import ansible_collections.community.postgresql.plugins.module_utils.postgres as pgutils
+from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
+    connect_to_db,
+    get_conn_params,
+    ensure_required_libs,
+    postgres_common_argument_spec
+)
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     SQLParseError,
 )
-from ansible.module_utils.six import iteritems
 from ansible.module_utils.six.moves import shlex_quote
 from ansible.module_utils._text import to_native
-from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 
 executed_commands = []
 
@@ -635,7 +637,7 @@ def rename_db(module, cursor, db, target, check_mode=False):
 
 
 def main():
-    argument_spec = pgutils.postgres_common_argument_spec()
+    argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         db=dict(type='str', required=True, aliases=['name']),
         owner=dict(type='str', default=''),
@@ -697,56 +699,22 @@ def main():
     raw_connection = state in ("dump", "restore")
 
     if not raw_connection:
-        pgutils.ensure_required_libs(module)
-
-    # To use defaults values, keyword arguments must be absent, so
-    # check which values are empty and don't include in the **kw
-    # dictionary
-    params_map = {
-        "login_host": "host",
-        "login_user": "user",
-        "login_password": "password",
-        "port": "port",
-        "ssl_mode": "sslmode",
-        "ca_cert": "sslrootcert",
-        "ssl_cert": "sslcert",
-        "ssl_key": "sslkey",
-    }
-    kw = dict((params_map[k], v) for (k, v) in iteritems(module.params)
-              if k in params_map and v != '' and v is not None)
-
-    # If a login_unix_socket is specified, incorporate it here.
-    is_localhost = "host" not in kw or kw["host"] == "" or kw["host"] == "localhost"
-
-    if is_localhost and module.params["login_unix_socket"] != "":
-        kw["host"] = module.params["login_unix_socket"]
+        ensure_required_libs(module)
 
     if target == "":
         target = "{0}/{1}.sql".format(os.getcwd(), db)
         target = os.path.expanduser(target)
 
+    # Such a transformation is used, since the connection should go to 'maintenance_db'
+    params_dict = module.params
+    params_dict["db"] = module.params["maintenance_db"]
+
+    # Parameters for connecting to the database
+    conn_params = get_conn_params(module, params_dict, warn_db_default=False)
+
     if not raw_connection:
-        try:
-            if LooseVersion(psycopg2.__version__) >= LooseVersion('2.7.0'):
-                db_connection = psycopg2.connect(dbname=maintenance_db, **kw)
-            else:
-                db_connection = psycopg2.connect(database=maintenance_db, **kw)
-
-            # Enable autocommit so we can create databases
-            if LooseVersion(psycopg2.__version__) >= LooseVersion('2.4.2'):
-                db_connection.autocommit = True
-            else:
-                db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-            cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
-        except TypeError as e:
-            if 'sslrootcert' in e.args[0]:
-                module.fail_json(msg='Postgresql server must be at least version 8.4 to support sslrootcert. Exception: {0}'.format(to_native(e)),
-                                 exception=traceback.format_exc())
-            module.fail_json(msg="unable to connect to database: %s" % to_native(e), exception=traceback.format_exc())
-
-        except Exception as e:
-            module.fail_json(msg="unable to connect to database: %s" % to_native(e), exception=traceback.format_exc())
+        db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
+        cursor = db_connection.cursor(cursor_factory=DictCursor)
 
         if session_role:
             try:
@@ -779,13 +747,16 @@ def main():
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
-        elif state in ("dump", "restore"):
+        elif raw_connection:
+            # Parameters for performing dump/restore
+            conn_params = get_conn_params(module, module.params, warn_db_default=False)
+
             method = state == "dump" and db_dump or db_restore
             try:
                 if state == 'dump':
-                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, dump_extra_args, **kw)
+                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, dump_extra_args, **conn_params)
                 else:
-                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, **kw)
+                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, **conn_params)
 
                 if rc != 0:
                     module.fail_json(msg=stderr, stdout=stdout, rc=rc, cmd=cmd)
@@ -805,6 +776,10 @@ def main():
         raise
     except Exception as e:
         module.fail_json(msg="Database query failed: %s" % to_native(e), exception=traceback.format_exc())
+
+    if not raw_connection:
+        cursor.close()
+        db_connection.close()
 
     module.exit_json(changed=changed, db=db, executed_commands=executed_commands)
 
