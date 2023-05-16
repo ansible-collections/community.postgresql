@@ -651,6 +651,9 @@ class PgClusterInfo(object):
             for s in subset_map:
                 subset_map[s]()
 
+        self.cursor.close()
+        self.db_obj.db_conn.close()
+
         return self.pg_info
 
     def get_pub_info(self):
