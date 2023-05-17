@@ -102,14 +102,6 @@ seealso:
   link: https://www.postgresql.org/docs/current/sql-droppublication.html
 notes:
 - Supports C(check_mode).
-- The default authentication assumes that you are either logging in as
-  or sudo'ing to the C(postgres) account on the host.
-- This module uses I(psycopg2), a Python PostgreSQL database adapter.
-- You must ensure that C(psycopg2) is installed on the host before using this module.
-- If the remote host is the PostgreSQL server (which is the default case),
-  then PostgreSQL must also be installed on the remote host.
-- For Ubuntu-based systems, install the C(postgresql), C(libpq-dev),
-  and C(python-psycopg2) packages on the remote host before using this module.
 - Incomparable versions, for example PostGIS ``unpackaged``, cannot be installed.
 requirements: [ psycopg2 ]
 author:
