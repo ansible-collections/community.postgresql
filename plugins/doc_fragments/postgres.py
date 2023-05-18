@@ -55,11 +55,11 @@ notes:
 - The default authentication assumes that you are either logging in as or sudo'ing to the C(postgres) account on the host.
 - To avoid "Peer authentication failed for user postgres" error,
   use postgres user as a I(become_user).
-- This module uses psycopg2, a Python PostgreSQL database adapter. You must
-  ensure that psycopg2 is installed on the host before using this module.
+- This module uses C(psycopg2), a Python PostgreSQL database adapter. You must
+  ensure that C(psycopg2) is installed on the host before using this module.
 - If the remote host is the PostgreSQL server (which is the default case), then
   PostgreSQL must also be installed on the remote host.
-- For Ubuntu-based systems, install the postgresql, libpq-dev, and python-psycopg2 packages
+- For Ubuntu-based systems, install the C(postgresql), C(libpq-dev), and C(python-psycopg2) packages
   on the remote host before using this module.
 - The ca_cert parameter requires at least Postgres version 8.4 and I(psycopg2) version 2.4.3.
 requirements: [ psycopg2 ]
