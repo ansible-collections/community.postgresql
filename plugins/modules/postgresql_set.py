@@ -62,7 +62,6 @@ options:
     version_added: '0.2.0'
 notes:
 - Supported version of PostgreSQL is 9.4 and later.
-- Supports C(check_mode).
 - Pay attention, change setting with 'postmaster' context can return changed is true
   when actually nothing changes because the same value may be presented in
   several different form, for example, 1024MB, 1GB, etc. However in pg_settings
