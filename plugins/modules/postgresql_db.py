@@ -20,13 +20,6 @@ options:
     type: str
     required: true
     aliases: [ db ]
-  port:
-    description:
-      - Database port to connect (if needed).
-    type: int
-    default: 5432
-    aliases:
-      - login_port
   owner:
     description:
       - Name of the role to set as owner of the database.
@@ -153,13 +146,18 @@ seealso:
 - module: community.postgresql.postgresql_tablespace
 - module: community.postgresql.postgresql_info
 - module: community.postgresql.postgresql_ping
+
 notes:
 - State C(dump) and C(restore) don't require I(psycopg2) since version 2.8.
-- Supports C(check_mode).
+
+attributes:
+  check_mode:
+    support: full
+
 author: "Ansible Core Team"
+
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''

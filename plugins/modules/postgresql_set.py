@@ -62,7 +62,6 @@ options:
     version_added: '0.2.0'
 notes:
 - Supported version of PostgreSQL is 9.4 and later.
-- Supports C(check_mode).
 - Pay attention, change setting with 'postmaster' context can return changed is true
   when actually nothing changes because the same value may be presented in
   several different form, for example, 1024MB, 1GB, etc. However in pg_settings
@@ -71,6 +70,11 @@ notes:
   not restarted and the value in pg_settings is not updated yet.
 - For some parameters restart of PostgreSQL server is required.
   See official documentation U(https://www.postgresql.org/docs/current/view-pg-settings.html).
+
+attributes:
+  check_mode:
+    support: full
+
 seealso:
 - module: community.postgresql.postgresql_info
 - name: PostgreSQL server configuration
@@ -86,7 +90,6 @@ author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''

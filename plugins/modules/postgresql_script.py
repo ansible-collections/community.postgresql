@@ -81,6 +81,10 @@ seealso:
   description: Complete reference of the PostgreSQL schema documentation.
   link: https://www.postgresql.org/docs/current/ddl-schemas.html
 
+attributes:
+  check_mode:
+    support: none
+
 author:
 - Douglas J Hunley (@hunleyd)
 - A. Hart (@jtelcontar)
@@ -89,9 +93,6 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-
-notes:
-- Does not support C(check_mode).
 '''
 
 EXAMPLES = r'''

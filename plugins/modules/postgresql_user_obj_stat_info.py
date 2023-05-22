@@ -52,7 +52,11 @@ notes:
 - C(size) and C(total_size) returned values are presented in bytes.
 - For tracking function statistics the PostgreSQL C(track_functions) parameter must be enabled.
   See U(https://www.postgresql.org/docs/current/runtime-config-statistics.html) for more information.
-- Supports C(check_mode).
+
+attributes:
+  check_mode:
+    support: full
+
 seealso:
 - module: community.postgresql.postgresql_info
 - module: community.postgresql.postgresql_ping
@@ -64,7 +68,6 @@ author:
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''

@@ -100,12 +100,17 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+
 notes:
-- Supports C(check_mode).
 - If you do not pass db parameter, tables will be created in the database
   named postgres.
 - PostgreSQL allows to create columnless table, so columns param is optional.
 - Unlogged tables are available from PostgreSQL server version 9.1.
+
+attributes:
+  check_mode:
+    support: full
+
 seealso:
 - module: community.postgresql.postgresql_sequence
 - module: community.postgresql.postgresql_idx
@@ -130,7 +135,6 @@ author:
 - Andrei Klychkov (@Andersson007)
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''

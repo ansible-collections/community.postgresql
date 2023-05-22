@@ -95,7 +95,10 @@ options:
 
 notes:
 - PostgreSQL version must be 10 or greater.
-- Supports C(check_mode).
+
+attributes:
+  check_mode:
+    support: full
 
 seealso:
 - module: community.postgresql.postgresql_publication
@@ -115,7 +118,6 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''

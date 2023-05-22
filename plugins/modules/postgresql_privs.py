@@ -120,21 +120,6 @@ options:
     - Mutually exclusive with I(login_password).
     type: str
     default: ''
-  ssl_mode:
-    description:
-    - Determines whether or with what priority a secure SSL TCP/IP connection will be negotiated with the server.
-    - See U(https://www.postgresql.org/docs/current/static/libpq-ssl.html) for more information on the modes.
-    - Default of C(prefer) matches libpq default.
-    type: str
-    default: prefer
-    choices: [ allow, disable, prefer, require, verify-ca, verify-full ]
-  ca_cert:
-    description:
-    - Specifies the name of a file containing SSL certificate authority (CA) certificate(s).
-    - If the file exists, the server's certificate will be verified to be signed by one of these authorities.
-    type: str
-    aliases:
-    - ssl_rootcert
   trust_input:
     description:
     - If C(false), check whether values of parameters I(roles), I(target_roles), I(session_role),
@@ -157,7 +142,6 @@ options:
     version_added: '1.2.0'
 
 notes:
-- Supports C(check_mode).
 - Parameters that accept comma separated lists (I(privs), I(objs), I(roles))
   have singular alias names (I(priv), I(obj), I(role)).
 - To revoke only C(GRANT OPTION) for a specific object, set I(state) to
@@ -184,9 +168,12 @@ seealso:
   description: Complete reference of the PostgreSQL REVOKE command documentation.
   link: https://www.postgresql.org/docs/current/sql-revoke.html
 
+attributes:
+  check_mode:
+    support: full
+
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 
 author:
 - Bernhard Weitzhofer (@b6d)

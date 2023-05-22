@@ -7,7 +7,7 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-DOCUMENTATION = '''
+DOCUMENTATION = r'''
 ---
 module: postgresql_slot
 short_description: Add or remove replication slots from a PostgreSQL database
@@ -77,7 +77,10 @@ options:
 notes:
 - Physical replication slots were introduced to PostgreSQL with version 9.4,
   while logical replication slots were added beginning with version 10.0.
-- Supports C(check_mode).
+
+attributes:
+  check_mode:
+    support: full
 
 seealso:
 - name: PostgreSQL pg_replication_slots view reference
@@ -96,7 +99,6 @@ author:
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''
