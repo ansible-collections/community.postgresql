@@ -74,7 +74,7 @@ options:
 
 attributes:
   check_mode:
-    description: Can run in check_mode and return changed status prediction without modifying target
+    description: Can run in check_mode and return changed status prediction without modifying target.
 
 notes:
 - The default authentication assumes that you are either logging in as or sudo'ing to the C(postgres) account on the host.
