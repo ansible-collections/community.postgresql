@@ -116,14 +116,18 @@ seealso:
 - name: PostgreSQL Schema reference
   description: Complete reference of the PostgreSQL schema documentation.
   link: https://www.postgresql.org/docs/current/ddl-schemas.html
+
+attributes:
+  check_mode:
+    support: full
+
 author:
 - Felix Archambault (@archf)
 - Andrew Klychkov (@Andersson007)
 - Will Rouesnel (@wrouesnel)
+
 extends_documentation_fragment:
 - community.postgresql.postgres
-notes:
-- Supports C(check_mode).
 '''
 
 EXAMPLES = r'''

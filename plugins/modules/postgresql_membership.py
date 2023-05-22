@@ -87,12 +87,16 @@ seealso:
 - name: PostgreSQL role attributes reference
   description: Complete reference of the PostgreSQL role attributes documentation.
   link: https://www.postgresql.org/docs/current/role-attributes.html
+
+attributes:
+  check_mode:
+    support: full
+
 author:
 - Andrew Klychkov (@Andersson007)
+
 extends_documentation_fragment:
 - community.postgresql.postgres
-notes:
-- Supports C(check_mode).
 '''
 
 EXAMPLES = r'''

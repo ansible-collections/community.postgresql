@@ -71,6 +71,11 @@ options:
     type: dict
     default: {}
     version_added: '2.3.0'
+
+attributes:
+  check_mode:
+    description: Can run in check_mode and return changed status prediction without modifying target
+
 notes:
 - The default authentication assumes that you are either logging in as or sudo'ing to the C(postgres) account on the host.
 - To avoid "Peer authentication failed for user postgres" error,
@@ -82,5 +87,6 @@ notes:
 - For Ubuntu-based systems, install the C(postgresql), C(libpq-dev), and C(python-psycopg2) packages
   on the remote host before using this module.
 - The ca_cert parameter requires at least Postgres version 8.4 and I(psycopg2) version 2.4.3.
+
 requirements: [ psycopg2 ]
 '''

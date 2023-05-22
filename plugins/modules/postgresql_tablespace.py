@@ -83,6 +83,10 @@ notes:
   support check mode because the corresponding PostgreSQL DROP and CREATE TABLESPACE commands
   can not be run inside the transaction block.
 
+attributes:
+  check_mode:
+    support: partial
+
 seealso:
 - name: PostgreSQL tablespaces
   description: General information about PostgreSQL tablespaces.
@@ -104,7 +108,6 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''

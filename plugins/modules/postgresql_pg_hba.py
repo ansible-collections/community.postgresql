@@ -144,7 +144,6 @@ notes:
      After the C(pg_hba) file is rewritten by the M(community.postgresql.postgresql_pg_hba) module, the ip specific rule will be sorted above the range rule.
      And then it will hit, which will give unexpected results.
    - With the 'order' parameter you can control which field is used to sort first, next and last.
-   - The module supports a check mode and a diff mode.
 
 seealso:
 - name: PostgreSQL pg_hba.conf file reference
@@ -152,7 +151,15 @@ seealso:
   link: https://www.postgresql.org/docs/current/auth-pg-hba-conf.html
 
 requirements:
-    - ipaddress
+  - ipaddress
+
+attributes:
+  check_mode:
+    support: full
+    description: Can run in check_mode and return changed status prediction without modifying target
+  diff_mode:
+    support: full
+    description: Will return details on what has changed (or possibly needs changing in check_mode), when in diff mode
 
 author:
 - Sebastiaan Mannem (@sebasmannem)

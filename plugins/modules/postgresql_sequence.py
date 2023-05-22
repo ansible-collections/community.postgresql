@@ -138,10 +138,15 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+
 notes:
-- Supports C(check_mode).
 - If you do not pass db parameter, sequence will be created in the database
   named postgres.
+
+attributes:
+  check_mode:
+    support: full
+
 seealso:
 - module: community.postgresql.postgresql_table
 - module: community.postgresql.postgresql_owner

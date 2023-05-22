@@ -71,6 +71,11 @@ notes:
   not restarted and the value in pg_settings is not updated yet.
 - For some parameters restart of PostgreSQL server is required.
   See official documentation U(https://www.postgresql.org/docs/current/view-pg-settings.html).
+
+attributes:
+  check_mode:
+    support: full
+
 seealso:
 - module: community.postgresql.postgresql_info
 - name: PostgreSQL server configuration
@@ -86,7 +91,6 @@ author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''
