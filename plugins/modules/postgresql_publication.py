@@ -74,9 +74,14 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+
 notes:
 - PostgreSQL version must be 10 or greater.
-- Supports C(check_mode).
+
+attributes:
+  check_mode:
+    support: full
+
 seealso:
 - name: CREATE PUBLICATION reference
   description: Complete reference of the CREATE PUBLICATION command documentation.

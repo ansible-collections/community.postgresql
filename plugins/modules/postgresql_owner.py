@@ -81,12 +81,16 @@ seealso:
 - name: PostgreSQL REASSIGN OWNED command reference
   description: Complete reference of the PostgreSQL REASSIGN OWNED command documentation.
   link: https://www.postgresql.org/docs/current/sql-reassign-owned.html
+
+attributes:
+  check_mode:
+    support: full
+
 author:
 - Andrew Klychkov (@Andersson007)
+
 extends_documentation_fragment:
 - community.postgresql.postgres
-notes:
-- Supports C(check_mode).
 '''
 
 EXAMPLES = r'''

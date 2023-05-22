@@ -135,9 +135,12 @@ seealso:
   link: https://www.postgresql.org/docs/current/sql-dropindex.html
 
 notes:
-- Supports C(check_mode).
 - The index building process can affect database performance.
 - To avoid table locks on production databases, use I(concurrent=true) (default behavior).
+
+attributes:
+  check_mode:
+    support: full
 
 author:
 - Andrew Klychkov (@Andersson007)
@@ -145,7 +148,6 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''
