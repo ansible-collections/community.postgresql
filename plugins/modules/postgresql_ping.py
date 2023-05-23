@@ -37,12 +37,13 @@ options:
     version_added: '0.2.0'
 seealso:
 - module: community.postgresql.postgresql_info
+attributes:
+  check_mode:
+    support: full
 author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
 - community.postgresql.postgres
-notes:
-- Supports C(check_mode).
 '''
 
 EXAMPLES = r'''

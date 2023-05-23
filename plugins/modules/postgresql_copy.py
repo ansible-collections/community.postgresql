@@ -79,11 +79,16 @@ options:
 notes:
 - Supports PostgreSQL version 9.4+.
 - COPY command is only allowed to database superusers.
-- If I(check_mode=true), we just check the src/dst table availability
-  and return the COPY query that actually has not been executed.
-- If i(check_mode=true) and the source has been passed as SQL, the module
-  will execute it and rolled the transaction back but pay attention
-  it can affect database performance (e.g., if SQL collects a lot of data).
+
+attributes:
+  check_mode:
+    support: partial
+    details:
+      - If I(check_mode=true), we just check the src/dst table availability
+        and return the COPY query that actually has not been executed.
+      - If i(check_mode=true) and the source has been passed as SQL, the module
+        will execute it and roll the transaction back, but pay attention
+        it can affect database performance (e.g., if SQL collects a lot of data).
 
 seealso:
 - name: COPY command reference

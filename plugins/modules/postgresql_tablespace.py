@@ -78,10 +78,13 @@ options:
     default: true
     version_added: '0.2.0'
 
-notes:
-- I(state=absent) and I(state=present) (the second one if the tablespace doesn't exist) do not
-  support check mode because the corresponding PostgreSQL DROP and CREATE TABLESPACE commands
-  can not be run inside the transaction block.
+attributes:
+  check_mode:
+    support: partial
+    details:
+      - I(state=absent) and I(state=present) (the second one if the tablespace doesn't exist) do not
+        support check mode because the corresponding PostgreSQL DROP and CREATE TABLESPACE commands
+        can not be run inside the transaction block.
 
 seealso:
 - name: PostgreSQL tablespaces
@@ -104,7 +107,6 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''

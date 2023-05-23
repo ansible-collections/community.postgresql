@@ -178,7 +178,11 @@ notes:
 - On some systems (such as AWS RDS), C(SUPERUSER) is unavailable. This means the C(SUPERUSER) and
   C(NOSUPERUSER) I(role_attr_flags) should not be specified to preserve idempotency and avoid
   InsufficientPrivilege errors.
-- Supports ``check_mode``.
+
+attributes:
+  check_mode:
+    support: full
+
 seealso:
 - module: community.postgresql.postgresql_privs
 - module: community.postgresql.postgresql_membership
@@ -193,7 +197,6 @@ author:
 - Ansible Core Team
 extends_documentation_fragment:
 - community.postgresql.postgres
-
 '''
 
 EXAMPLES = r'''

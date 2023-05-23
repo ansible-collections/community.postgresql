@@ -47,15 +47,19 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+
+attributes:
+  check_mode:
+    support: full
+
 seealso:
 - module: community.postgresql.postgresql_ping
+
 author:
 - Andrew Klychkov (@Andersson007)
+
 extends_documentation_fragment:
 - community.postgresql.postgres
-
-notes:
-- Supports C(check_mode).
 '''
 
 EXAMPLES = r'''
