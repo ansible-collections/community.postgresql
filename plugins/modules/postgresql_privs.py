@@ -438,9 +438,8 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import postgres_common_argument_spec, get_conn_params
 from ansible.module_utils._text import to_native
 
-VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
-                         'REFERENCES', 'TRIGGER', 'CREATE', 'CONNECT',
-                         'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'SET', 'ALTER_SYSTEM'))
+VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'CREATE',
+                         'CONNECT', 'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'SET', 'ALTER_SYSTEM'))
 VALID_DEFAULT_OBJS = {'TABLES': ('ALL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'),
                       'SEQUENCES': ('ALL', 'SELECT', 'UPDATE', 'USAGE'),
                       'FUNCTIONS': ('ALL', 'EXECUTE'),
