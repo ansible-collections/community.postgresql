@@ -23,8 +23,6 @@ description:
   whether the user has been removed or not.
 - B(WARNING) The I(priv) option has been B(deprecated) and will be removed in community.postgresql 3.0.0. Please use the
   M(community.postgresql.postgresql_privs) module instead.
-- B(WARNING) The I(groups) option has been B(deprecated) ans will be removed in community.postgresql 3.0.0.
-  Please use the M(community.postgresql.postgresql_membership) module instead.
 options:
   name:
     description:
@@ -141,14 +139,6 @@ options:
       - If the file exists, verifies that the server's certificate is signed by one of these authorities.
     type: str
     aliases: [ ssl_rootcert ]
-  groups:
-    description:
-    - This option has been B(deprecated) and will be removed in community.postgresql 3.0.0.
-      Please use the I(postgresql_membership) module to GRANT/REVOKE group/role memberships
-      instead.
-    - The list of groups (roles) that you want to grant to the user.
-    type: list
-    elements: str
   comment:
     description:
     - Adds a comment on the user (equivalent to the C(COMMENT ON ROLE) statement).
@@ -157,7 +147,7 @@ options:
   trust_input:
     description:
     - If C(false), checks whether values of options I(name), I(password), I(privs), I(expires),
-      I(role_attr_flags), I(groups), I(comment), I(session_role) are potentially dangerous.
+      I(role_attr_flags), I(comment), I(session_role) are potentially dangerous.
     - It makes sense to use C(false) only when SQL injections through the options are possible.
     type: bool
     default: true
@@ -267,15 +257,6 @@ EXAMPLES = r'''
     user: test
     password: ""
 
-# This example uses the `group` argument which is deprecated.
-# You should use the `postgresql_membership` module instead.
-- name: Create user test and grant group user_ro and user_rw to it
-  community.postgresql.postgresql_user:
-    name: test
-    groups:
-    - user_ro
-    - user_rw
-
 # Create user with a cleartext password if it does not exist or update its password.
 # The password will be encrypted with SCRAM algorithm (available since PostgreSQL 10)
 - name: Create appclient user with SCRAM-hashed password
@@ -327,7 +308,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     ensure_required_libs,
     get_conn_params,
     get_server_version,
-    PgMembership,
     postgres_common_argument_spec,
 )
 from ansible.module_utils._text import to_bytes, to_native, to_text
@@ -952,8 +932,6 @@ def main():
         expires=dict(type='str', default=None),
         conn_limit=dict(type='int', default=None),
         session_role=dict(type='str'),
-        # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
-        groups=dict(type='list', elements='str', removed_in_version='3.0.0', removed_from_collection='community.postgreql'),
         comment=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
     )
@@ -979,19 +957,14 @@ def main():
     expires = module.params["expires"]
     conn_limit = module.params["conn_limit"]
     role_attr_flags = module.params["role_attr_flags"]
-    # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
-    groups = module.params["groups"]
-    if groups:
-        groups = [e.strip() for e in groups]
     comment = module.params["comment"]
     session_role = module.params['session_role']
 
     trust_input = module.params['trust_input']
     if not trust_input:
         # Check input for potentially dangerous elements:
-        # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
         check_input(module, user, password, privs, expires,
-                    role_attr_flags, groups, comment, session_role)
+                    role_attr_flags, comment, session_role)
 
     # Ensure psycopg2 libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -1032,14 +1005,6 @@ def main():
             changed = grant_privileges(cursor, user, privs) or changed
         except SQLParseError as e:
             module.fail_json(msg=to_native(e), exception=traceback.format_exc())
-
-        # WARNING: groups are deprecated and will  be removed in community.postgresql 3.0.0
-        if groups:
-            target_roles = []
-            target_roles.append(user)
-            pg_membership = PgMembership(module, cursor, groups, target_roles)
-            changed = pg_membership.grant() or changed
-            executed_queries.extend(pg_membership.executed_queries)
 
         if comment is not None:
             try:
