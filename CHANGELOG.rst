@@ -5,6 +5,24 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v3.0.0
+======
+
+Release Summary
+---------------
+
+This is a  major release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 2.4.2.
+
+Major Changes
+-------------
+
+- postgresql_privs - remove the deprecated ``usage_on_types`` argument (https://github.com/ansible-collections/community.postgresql/issues/208).
+- postgresql_query - remove the deprecated ``path_to_script`` and ``as_single_query`` arguments (https://github.com/ansible-collections/community.postgresql/issues/189).
+- postgresql_user - move the deprecated ``privs`` argument removal to community.postgresql 4.0.0 (https://github.com/ansible-collections/community.postgresql/issues/493).
+- postgresql_user - remove the deprecated ``groups`` argument (https://github.com/ansible-collections/community.postgresql/issues/300).
+
 v2.4.2
 ======
 

@@ -529,3 +529,24 @@ releases:
     - 0-postgresql_info.yml
     - 2.4.2.yml
     release_date: '2023-06-09'
+  3.0.0:
+    changes:
+      major_changes:
+      - postgresql_privs - remove the deprecated ``usage_on_types`` argument (https://github.com/ansible-collections/community.postgresql/issues/208).
+      - postgresql_query - remove the deprecated ``path_to_script`` and ``as_single_query``
+        arguments (https://github.com/ansible-collections/community.postgresql/issues/189).
+      - postgresql_user - move the deprecated ``privs`` argument removal to community.postgresql
+        4.0.0 (https://github.com/ansible-collections/community.postgresql/issues/493).
+      - postgresql_user - remove the deprecated ``groups`` argument (https://github.com/ansible-collections/community.postgresql/issues/300).
+      release_summary: 'This is a  major release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules in this collection that
+
+        have been added after the release of ``community.postgresql`` 2.4.2.'
+    fragments:
+    - 0-postgresql_query.yml
+    - 1-postgresql_privs.yml
+    - 3-postgresql_user.yml
+    - 3.0.0.yml
+    - 4-postgresql_user.yml
+    release_date: '2023-06-09'

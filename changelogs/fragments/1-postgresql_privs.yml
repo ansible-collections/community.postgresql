@@ -1,2 +1,0 @@
-major_changes:
-- postgresql_privs - remove the deprecated ``usage_on_types`` argument (https://github.com/ansible-collections/community.postgresql/issues/208).
