@@ -816,8 +816,6 @@ class Connection(object):
 
         executed_queries.append(query)
         self.cursor.execute(query)
-        if roles == 'PUBLIC':
-            return True
 
         status_after = get_status(objs)
 
