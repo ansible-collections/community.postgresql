@@ -1,2 +1,2 @@
 major_changes:
-- postgresql_user - remove the deprecated ``groups`` argument (https://github.com/ansible-collections/community.postgresql/issues/300).
+- postgresql_user - remove the deprecated ``groups`` argument. Use the ``postgresql_membership`` module instead (https://github.com/ansible-collections/community.postgresql/issues/300).
