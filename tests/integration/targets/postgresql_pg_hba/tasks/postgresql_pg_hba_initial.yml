@@ -11,7 +11,6 @@
     netmask: 'ffff:fff0::'
     method: md5
     backup: 'True'
-    order: sud
     state: "{{item}}"
   check_mode: true
   with_items:
@@ -30,7 +29,6 @@
     dest: /tmp/pg_hba.conf
     method: "{{item.method|default('md5')}}"
     netmask: "{{item.netmask|default('')}}"
-    order: sud
     source: "{{item.source|default('')}}"
     state: absent
     users: "{{item.users|default('all')}}"
@@ -51,7 +49,6 @@
     dest: /tmp/pg_hba.conf
     method: "{{item.method|default('md5')}}"
     netmask: "{{item.netmask|default('')}}"
-    order: sud
     source: "{{item.source|default('')}}"
     state: present
     users: "{{item.users|default('all')}}"
@@ -62,7 +59,6 @@
   postgresql_pg_hba:
     dest: "/tmp/pg_hba.conf"
     users: "+some"
-    order: "sud"
     state: "present"
     contype: "local"
     method: "cert"
@@ -76,7 +72,6 @@
   postgresql_pg_hba:
     dest: "/tmp/pg_hba.conf"
     users: "+some"
-    order: "sud"
     state: "present"
     contype: "{{ item.contype }}"
     method: "{{ item.method }}"
@@ -100,7 +95,6 @@
     dest: /tmp/pg_hba.conf
     method: "{{item.method|default('md5')}}"
     netmask: "{{item.netmask|default('')}}"
-    order: sud
     source: "{{item.source|default('')}}"
     state: present
     users: "{{item.users|default('all')}}"
@@ -119,7 +113,6 @@
     dest: /tmp/pg_hba.conf
     method: md5
     netmask: 255.255.255.0
-    order: sud
     source: '172.21.0.0'
     state: present
   register: pg_hba_backup_check2
@@ -130,7 +123,6 @@
     contype: host
     dest: /tmp/pg_hba.conf
     method: md5
-    order: sud
     source: '172.21.0.0/24'
     state: present
   register: netmask_sameas_prefix_check
@@ -146,7 +138,6 @@
     dest: /tmp/pg_hba.conf
     method: md5
     netmask: '255.255.255.255'
-    order: sud
     source: all
     state: present
   register: pg_hba_fail_src_all_with_netmask
@@ -196,7 +187,6 @@
     create: true
     method: md5
     address: "2001:db8::1/128"
-    order: sud
     state: present
     comment: "comment1"
 
@@ -220,7 +210,6 @@
     dest: /tmp/pg_hba2.conf
     method: md5
     address: "2001:db8::2/128"
-    order: sud
     state: present
     comment: "comment2"
 
@@ -244,7 +233,6 @@
     dest: /tmp/pg_hba2.conf
     method: md5
     address: "2001:db8::3/128"
-    order: sud
     state: present
     comment: "comment3"
     keep_comments_at_rules: true
