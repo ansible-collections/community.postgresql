@@ -96,14 +96,12 @@
      obj: TABLES
      privs: all
      state: present
-     usage_on_types: true
   register: result
   check_mode: true
 
 - assert:
     that:
     - result is changed
-    - result.queries is search('ON TYPES')
 
 # Also covers https://github.com/ansible-collections/community.general/issues/884
 - name: Set table default privs on the schema with hyphen in the name
@@ -117,13 +115,11 @@
      obj: TABLES
      privs: all
      state: present
-     usage_on_types: false
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries is not search('ON TYPES')
 
 - name: Delete table default privs on the schema with hyphen in the name
   postgresql_privs:
