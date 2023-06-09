@@ -5,6 +5,25 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v3.0.0
+======
+
+Release Summary
+---------------
+
+This is a major release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 2.4.2.
+
+Major Changes
+-------------
+
+- postgresql_pg_hba - remove the deprecated ``order`` argument. The sortorder ``sdu`` is hardcoded (https://github.com/ansible-collections/community.postgresql/pull/496).
+- postgresql_privs - remove the deprecated ``usage_on_types`` argument. Use the ``type`` option of the ``type`` argument to explicitly manipulate privileges on PG types (https://github.com/ansible-collections/community.postgresql/issues/208).
+- postgresql_query - remove the deprecated ``path_to_script`` and ``as_single_query`` arguments. Use the ``postgresql_script`` module to run queries from scripts (https://github.com/ansible-collections/community.postgresql/issues/189).
+- postgresql_user - move the deprecated ``privs`` argument removal to community.postgresql 4.0.0 (https://github.com/ansible-collections/community.postgresql/issues/493).
+- postgresql_user - remove the deprecated ``groups`` argument. Use the ``postgresql_membership`` module instead (https://github.com/ansible-collections/community.postgresql/issues/300).
+
 v2.4.2
 ======
 
