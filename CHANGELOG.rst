@@ -5,6 +5,23 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.7.10
+=======
+
+Release Summary
+---------------
+
+This is a bugfix release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules in this collection that
+have been added after the release of ``community.postgresql`` 1.7.9.
+
+Bugfixes
+--------
+
+- postgresql_info - when the task is completed successfully, close the database connection (https://github.com/ansible-collections/community.postgresql/issues/465).
+- postgresql_ping - when the task is completed successfully, close the database connection (https://github.com/ansible-collections/community.postgresql/issues/465).
+- postgresql_privs - when the task is completed successfully, close the database connection (https://github.com/ansible-collections/community.postgresql/issues/465).
+
 v1.7.9
 ======
 
