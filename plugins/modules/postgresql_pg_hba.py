@@ -80,16 +80,6 @@ options:
     description:
       - Additional options for the authentication I(method).
     type: str
-  order:
-    description:
-      - The entries will be written out in a specific order.
-        With this option you can control by which field they are ordered first, second and last.
-        s=source, d=databases, u=users.
-        This option is deprecated since 2.9 and will be removed in community.postgresql 3.0.0.
-        Sortorder is now hardcoded to sdu.
-    type: str
-    default: sdu
-    choices: [ sdu, sud, dsu, dus, usd, uds ]
   overwrite:
     description:
       - Remove all existing rules before adding rules. (Like I(state=absent) for all pre-existing rules.)
@@ -143,7 +133,6 @@ notes:
      In that situation, the 'ip specific rule' will never hit, it is in the C(pg_hba) file obsolete.
      After the C(pg_hba) file is rewritten by the M(community.postgresql.postgresql_pg_hba) module, the ip specific rule will be sorted above the range rule.
      And then it will hit, which will give unexpected results.
-   - With the 'order' parameter you can control which field is used to sort first, next and last.
 
 seealso:
 - name: PostgreSQL pg_hba.conf file reference
@@ -280,7 +269,6 @@ from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 PG_HBA_METHODS = ["trust", "reject", "md5", "password", "gss", "sspi", "krb5", "ident", "peer",
                   "ldap", "radius", "cert", "pam", "scram-sha-256"]
 PG_HBA_TYPES = ["local", "host", "hostssl", "hostnossl", "hostgssenc", "hostnogssenc"]
-PG_HBA_ORDERS = ["sdu", "sud", "dsu", "dus", "usd", "uds"]
 PG_HBA_HDR = ['type', 'db', 'usr', 'src', 'mask', 'method', 'options']
 
 WHITESPACES_RE = re.compile(r'\s+')
@@ -322,14 +310,10 @@ class PgHba(object):
     pg_hba_file - the pg_hba file almost always /etc/pg_hba
     """
 
-    def __init__(self, pg_hba_file=None, order="sdu", backup=False, create=False, keep_comments_at_rules=False):
-        if order not in PG_HBA_ORDERS:
-            msg = "invalid order setting {0} (should be one of '{1}')."
-            raise PgHbaError(msg.format(order, "', '".join(PG_HBA_ORDERS)))
+    def __init__(self, pg_hba_file=None, backup=False, create=False, keep_comments_at_rules=False):
         self.pg_hba_file = pg_hba_file
         self.rules = None
         self.comment = None
-        self.order = order
         self.backup = backup
         self.last_backup = None
         self.create = create
@@ -780,8 +764,6 @@ def main():
         method=dict(type='str', default='md5', choices=PG_HBA_METHODS),
         netmask=dict(type='str'),
         options=dict(type='str'),
-        order=dict(type='str', default="sdu", choices=PG_HBA_ORDERS,
-                   removed_in_version='3.0.0', removed_from_collection='community.postgresql'),
         keep_comments_at_rules=dict(type='bool', default=False),
         state=dict(type='str', default="present", choices=["absent", "present"]),
         users=dict(type='str', default='all'),
@@ -803,7 +785,6 @@ def main():
     else:
         backup = module.params['backup']
     dest = module.params["dest"]
-    order = module.params["order"]
     keep_comments_at_rules = module.params["keep_comments_at_rules"]
     rules = module.params["rules"]
     rules_behavior = module.params["rules_behavior"]
@@ -811,7 +792,7 @@ def main():
 
     ret = {'msgs': []}
     try:
-        pg_hba = PgHba(dest, order, backup=backup, create=create, keep_comments_at_rules=keep_comments_at_rules)
+        pg_hba = PgHba(dest, backup=backup, create=create, keep_comments_at_rules=keep_comments_at_rules)
     except PgHbaError as error:
         module.fail_json(msg='Error reading file:\n{0}'.format(error))
 
