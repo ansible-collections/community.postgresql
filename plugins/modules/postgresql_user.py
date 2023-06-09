@@ -21,7 +21,7 @@ description:
 - Set I(fail_on_user) to C(false) to make the module ignore failures when trying to remove a user.
   In this case, the module reports if changes happened as usual and separately reports
   whether the user has been removed or not.
-- B(WARNING) The I(priv) option has been B(deprecated) and will be removed in community.postgresql 3.0.0. Please use the
+- B(WARNING) The I(priv) option has been B(deprecated) and will be removed in community.postgresql 4.0.0. Please use the
   M(community.postgresql.postgresql_privs) module instead.
 options:
   name:
@@ -62,7 +62,7 @@ options:
   priv:
     description:
     - This option has been B(deprecated) and will be removed in
-      community.postgresql 3.0.0. Please use the M(community.postgresql.postgresql_privs) module to
+      community.postgresql 4.0.0. Please use the M(community.postgresql.postgresql_privs) module to
       GRANT/REVOKE permissions instead.
     - "Slash-separated PostgreSQL privileges string: C(priv1/priv2), where
       you can define the user's privileges for the database ( allowed options - 'CREATE',
@@ -328,7 +328,7 @@ FLAGS_BY_VERSION = {'BYPASSRLS': 90500}
 
 SCRAM_SHA256_REGEX = r'^SCRAM-SHA-256\$(\d+):([A-Za-z0-9+\/=]+)\$([A-Za-z0-9+\/=]+):([A-Za-z0-9+\/=]+)$'
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 VALID_PRIVS = dict(table=frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'ALL')),
                    database=frozenset(
                        ('CREATE', 'CONNECT', 'TEMPORARY', 'TEMP', 'ALL')),
@@ -633,7 +633,7 @@ def user_delete(cursor, user):
     return True
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def has_table_privileges(cursor, user, table, privs):
     """
     Return the difference between the privileges that a user already has and
@@ -651,7 +651,7 @@ def has_table_privileges(cursor, user, table, privs):
     return (have_currently, other_current, desired)
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def get_table_privileges(cursor, user, table):
     if '.' in table:
         schema, table = table.split('.', 1)
@@ -663,7 +663,7 @@ def get_table_privileges(cursor, user, table):
     return frozenset([x[0] for x in cursor.fetchall()])
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def grant_table_privileges(cursor, user, table, privs):
     # Note: priv escaped by parse_privs
     privs = ', '.join(privs)
@@ -673,7 +673,7 @@ def grant_table_privileges(cursor, user, table, privs):
     cursor.execute(query)
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def revoke_table_privileges(cursor, user, table, privs):
     # Note: priv escaped by parse_privs
     privs = ', '.join(privs)
@@ -683,7 +683,7 @@ def revoke_table_privileges(cursor, user, table, privs):
     cursor.execute(query)
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def get_database_privileges(cursor, user, db):
     priv_map = {
         'C': 'CREATE',
@@ -704,7 +704,7 @@ def get_database_privileges(cursor, user, db):
     return normalize_privileges(o, 'database')
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def has_database_privileges(cursor, user, db, privs):
     """
     Return the difference between the privileges that a user already has and
@@ -722,7 +722,7 @@ def has_database_privileges(cursor, user, db, privs):
     return (have_currently, other_current, desired)
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def grant_database_privileges(cursor, user, db, privs):
     # Note: priv escaped by parse_privs
     privs = ', '.join(privs)
@@ -737,7 +737,7 @@ def grant_database_privileges(cursor, user, db, privs):
     cursor.execute(query)
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def revoke_database_privileges(cursor, user, db, privs):
     # Note: priv escaped by parse_privs
     privs = ', '.join(privs)
@@ -752,7 +752,7 @@ def revoke_database_privileges(cursor, user, db, privs):
     cursor.execute(query)
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def revoke_privileges(cursor, user, privs):
     if privs is None:
         return False
@@ -774,7 +774,7 @@ def revoke_privileges(cursor, user, privs):
     return changed
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def grant_privileges(cursor, user, privs):
     if privs is None:
         return False
@@ -826,7 +826,7 @@ def parse_role_attrs(role_attr_flags, srv_version):
     return ' '.join(flags)
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def normalize_privileges(privs, type_):
     new_privs = set(privs)
     if 'ALL' in new_privs:
@@ -839,7 +839,7 @@ def normalize_privileges(privs, type_):
     return new_privs
 
 
-# WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+# WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def parse_privs(privs, db):
     """
     Parse privilege string to determine permissions for database db.
@@ -923,7 +923,7 @@ def main():
         user=dict(type='str', required=True, aliases=['name']),
         password=dict(type='str', default=None, no_log=True),
         state=dict(type='str', default='present', choices=['absent', 'present']),
-        priv=dict(type='str', default=None, removed_in_version='3.0.0', removed_from_collection='community.postgreql'),
+        priv=dict(type='str', default=None, removed_in_version='4.0.0', removed_from_collection='community.postgreql'),
         db=dict(type='str', default='', aliases=['login_db']),
         fail_on_user=dict(type='bool', default=True, aliases=['fail_on_role']),
         role_attr_flags=dict(type='str', default=''),
@@ -944,10 +944,10 @@ def main():
     password = module.params["password"]
     state = module.params["state"]
     fail_on_user = module.params["fail_on_user"]
-    # WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+    # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
     if module.params['db'] == '' and module.params["priv"] is not None:
         module.fail_json(msg="privileges require a database to be specified")
-    # WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+    # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
     privs = parse_privs(module.params["priv"], module.params["db"])
     no_password_changes = module.params["no_password_changes"]
     if module.params["encrypted"]:
@@ -1000,7 +1000,7 @@ def main():
                                  exception=traceback.format_exc())
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
-        # WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+        # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
         try:
             changed = grant_privileges(cursor, user, privs) or changed
         except SQLParseError as e:
@@ -1019,7 +1019,7 @@ def main():
                 changed = True
                 kw['user_removed'] = True
             else:
-                # WARNING: privs are deprecated and will  be removed in community.postgresql 3.0.0
+                # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
                 try:
                     changed = revoke_privileges(cursor, user, privs)
                     user_removed = user_delete(cursor, user)
