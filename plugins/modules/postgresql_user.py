@@ -308,7 +308,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     ensure_required_libs,
     get_conn_params,
     get_server_version,
-    PgMembership,
     postgres_common_argument_spec,
 )
 from ansible.module_utils._text import to_bytes, to_native, to_text
