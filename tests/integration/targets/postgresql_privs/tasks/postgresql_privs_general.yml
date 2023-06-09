@@ -81,6 +81,7 @@
     objs: public
     role: "{{ item }}"
   loop:
+    - "{{ db_user1 }}"
     - "{{ db_user2 }}"
     - "{{ db_user3 }}"
 
@@ -1695,6 +1696,132 @@
     that:
     - result is failed
     - result.msg is search('ALL_IN_SCHEMA can be used only for type')
+
+###########################################
+# Test for 'parameter' value of type parameter #
+###########################################
+
+- when: postgres_version_resp.stdout is version('15', '>=')
+  block:
+    #### GRANT ALTER_SYSTEM/SET - test ####
+    - name: GRANT ALTER SYSTEM ON PARAMETER primary_conninfo,synchronous_standby_names,log_destination TO db_user1
+      community.postgresql.postgresql_privs:
+        login_user: "{{ pg_user }}"
+        database: "{{ db_name }}"
+        state: present
+        privs: ALTER_SYSTEM
+        type: parameter
+        objs: primary_conninfo,synchronous_standby_names,log_destination
+        roles: "{{ db_user1 }}"
+      register: result
+
+    - assert:
+        that:
+          - result is changed
+
+    - name: GRANT SET ON PARAMETER log_destination,log_line_prefix,synchronous_standby_names TO db_user1
+      community.postgresql.postgresql_privs:
+        login_user: "{{ pg_user }}"
+        database: "{{ db_name }}"
+        state: present
+        privs: SET
+        type: parameter
+        objs: log_destination,log_line_prefix,synchronous_standby_names
+        roles: "{{ db_user1 }}"
+
+    - assert:
+        that:
+          - result is changed
+
+    #### GRANT ALTER_SYSTEM/SET - idempotence ####
+    - name: GRANT ALTER SYSTEM ON PARAMETER primary_conninfo,synchronous_standby_names,log_destination TO db_user1
+      community.postgresql.postgresql_privs:
+        login_user: "{{ pg_user }}"
+        database: "{{ db_name }}"
+        state: present
+        privs: ALTER_SYSTEM
+        type: parameter
+        objs: primary_conninfo,synchronous_standby_names,log_destination
+        roles: "{{ db_user1 }}"
+      register: result
+
+    - assert:
+        that:
+          - result is not changed
+
+    - name: GRANT SET ON PARAMETER log_destination,log_line_prefix,synchronous_standby_names TO db_user1
+      community.postgresql.postgresql_privs:
+        login_user: "{{ pg_user }}"
+        database: "{{ db_name }}"
+        state: present
+        privs: SET
+        type: parameter
+        objs: log_destination,log_line_prefix,synchronous_standby_names
+        roles: "{{ db_user1 }}"
+
+    - assert:
+        that:
+          - result is not changed
+
+    #### REVOKE ALTER_SYSTEM/SET - test ####
+    - name: REVOKE ALTER SYSTEM ON PARAMETER primary_conninfo,synchronous_standby_names,log_destination FROM db_user1
+      community.postgresql.postgresql_privs:
+        login_user: "{{ pg_user }}"
+        database: "{{ db_name }}"
+        state: absent
+        privs: ALTER_SYSTEM
+        type: parameter
+        objs: primary_conninfo,synchronous_standby_names,log_destination
+        roles: "{{ db_user1 }}"
+      register: result
+
+    - assert:
+        that:
+          - result is changed
+
+    - name: REVOKE SET ON PARAMETER log_destination,log_line_prefix,synchronous_standby_names FROM db_user1
+      community.postgresql.postgresql_privs:
+        login_user: "{{ pg_user }}"
+        database: "{{ db_name }}"
+        state: absent
+        privs: SET
+        type: parameter
+        objs: log_destination,log_line_prefix,synchronous_standby_names
+        roles: "{{ db_user1 }}"
+
+    - assert:
+        that:
+          - result is changed
+
+    #### REVOKE ALTER_SYSTEM/SET - idempotence ####
+    - name: REVOKE ALTER SYSTEM ON PARAMETER primary_conninfo,synchronous_standby_names,log_destination FROM db_user1
+      community.postgresql.postgresql_privs:
+        login_user: "{{ pg_user }}"
+        database: "{{ db_name }}"
+        state: absent
+        privs: ALTER_SYSTEM
+        type: parameter
+        objs: primary_conninfo,synchronous_standby_names,log_destination
+        roles: "{{ db_user1 }}"
+      register: result
+
+    - assert:
+        that:
+          - result is not changed
+
+    - name: REVOKE SET ON PARAMETER log_destination,log_line_prefix,synchronous_standby_names FROM db_user1
+      community.postgresql.postgresql_privs:
+        login_user: "{{ pg_user }}"
+        database: "{{ db_name }}"
+        state: absent
+        privs: SET
+        type: parameter
+        objs: log_destination,log_line_prefix,synchronous_standby_names
+        roles: "{{ db_user1 }}"
+
+    - assert:
+        that:
+          - result is not changed
 
 # Cleanup
 - name: Remove privs
