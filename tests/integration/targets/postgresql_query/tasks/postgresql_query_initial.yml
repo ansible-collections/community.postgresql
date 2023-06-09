@@ -25,19 +25,6 @@
     shell: psql postgres -U "{{ pg_user }}" -t -c "INSERT INTO test_table (id, story) VALUES (1, 'first'), (2, 'second'), (3, 'third');"
     ignore_errors: true
 
-  - name: Copy script files
-    become: true
-    copy:
-      src: '{{ item }}'
-      dest: '~{{ pg_user }}/{{ item }}'
-      owner: '{{ pg_user }}'
-      force: true
-    loop:
-    - test0.sql
-    - test1.sql
-    register: sql_file_created
-    ignore_errors: true
-
   - name: postgresql_query - analyze test_table
     become_user: '{{ pg_user }}'
     become: true
@@ -56,29 +43,6 @@
       - result.statusmessage == 'ANALYZE'
       - result.query_result == {}
       - result.query_all_results == [{}]
-
-  - name: postgresql_query - run queries from SQL script
-    become_user: '{{ pg_user }}'
-    become: true
-    postgresql_query:
-      <<: *pg_parameters
-      path_to_script: ~{{ pg_user }}/test0.sql
-      positional_args:
-      - 1
-      encoding: UTF-8
-      as_single_query: false
-    register: result
-    ignore_errors: true
-    when: sql_file_created
-
-  - assert:
-      that:
-      - result is not changed
-      - result.query == "\n\nSELECT story FROM test_table\n  WHERE id = 1 OR story = 'Данные'"
-      - result.query_result[0].story == 'first'
-      - result.rowcount == 2
-      - result.statusmessage == 'SELECT 1' or result.statusmessage == 'SELECT'
-    when: sql_file_created
 
   - name: postgresql_query - simple select query to test_table
     become_user: '{{ pg_user }}'
@@ -501,28 +465,6 @@
   - assert:
       that:
       - result is failed
-
-  # Tests for the as_single_query option
-  - name: Run queries from SQL script as a single query
-    become_user: '{{ pg_user }}'
-    become: true
-    postgresql_query:
-      <<: *pg_parameters
-      path_to_script: ~{{ pg_user }}/test1.sql
-      positional_args:
-      - 1
-      encoding: UTF-8
-      as_single_query: true
-    register: result
-
-  - name: >
-      Must pass. Not changed because we can only
-      check statusmessage of the last query
-    assert:
-      that:
-      - result is not changed
-      - result.statusmessage == 'SELECT 1' or result.statusmessage == 'SELECT'
-      - result.query_list[0] == "CREATE FUNCTION add(integer, integer) RETURNS integer\n  AS 'select $1 + $2;'\n  LANGUAGE SQL\n  IMMUTABLE\n  RETURNS NULL ON NULL INPUT;\n\nSELECT story FROM test_table\n  WHERE id = %s OR story = 'Данные';\n\nSELECT version();\n"
 
   #############################################################################
   # Issue https://github.com/ansible-collections/community.postgresql/issues/45

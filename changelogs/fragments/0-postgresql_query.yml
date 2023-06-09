@@ -1,0 +1,2 @@
+major_changes:
+- postgresql_query - remove the deprecated ``path_to_script`` and ``as_single_query`` arguments (https://github.com/ansible-collections/community.postgresql/issues/189).
