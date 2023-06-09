@@ -1006,7 +1006,7 @@ def main():
                            'foreign_data_wrapper',
                            'foreign_server',
                            'type',
-                           'parameter',]),
+                           'parameter', ]),
         objs=dict(required=False, aliases=['obj']),
         schema=dict(required=False),
         roles=dict(required=True, aliases=['role']),
