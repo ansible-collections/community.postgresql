@@ -51,7 +51,7 @@ def postgres_common_argument_spec():
         login_unix_socket=dict(default='', aliases=['unix_socket']),
         port=dict(
             type='int',
-            default=5432 if not env_vars.get("PGPORT") else int(env_vars.get("PGPORT")),
+            default=int(env_vars.get("PGPORT", 5432)),
             aliases=['login_port']
         ),
         ssl_mode=dict(
