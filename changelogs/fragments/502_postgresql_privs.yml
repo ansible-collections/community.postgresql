@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_privs - fixed idempotence when roles=PUBLIC (https://github.com/ansible-collections/community.postgresql/pull/502)

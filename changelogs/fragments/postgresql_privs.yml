@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_privs - fixed idempotence when roles=PUBLIC
