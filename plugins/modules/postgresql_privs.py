@@ -77,8 +77,10 @@ options:
   roles:
     description:
     - Comma separated list of role (user/group) names to set permissions for.
-    - The special value C(PUBLIC) can be provided instead to set permissions
-      for the implicitly defined PUBLIC group.
+    - Roles must to be provided in lowercase becaused in PostgreSQL roles are
+      case-insensitive and stored in lowercase only.
+    - The group C(PUBLIC) is implicitly defined so it can be provided both
+      in uppercase and lowercase.
     type: str
     required: true
     aliases:
@@ -133,7 +135,6 @@ notes:
   C(present) and I(grant_option) to C(false) (see examples).
 - Note that when revoking privileges from a role R, this role  may still have
   access via privileges granted to any role R is a member of including C(PUBLIC).
-- Note that when you use C(PUBLIC) role, the module always reports that the state has been changed.
 - Note that when revoking privileges from a role R, you do so as the user
   specified via I(login_user). If R has been granted the same privileges by
   another user also, R can still access database objects via these privileges.
@@ -434,11 +435,15 @@ class Error(Exception):
 
 def role_exists(module, cursor, rolname):
     """Check user exists or not"""
-    query = "SELECT 1 FROM pg_roles WHERE rolname = '%s'" % rolname
+    # role PUBLIC always exists
+    if rolname.upper() == 'PUBLIC':
+        return True
+
+    # check role is present in pg_catalog.pg_roles
+    query = "SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = '%s'" % rolname
     try:
         cursor.execute(query)
         return cursor.rowcount > 0
-
     except Exception as e:
         module.fail_json(msg="Cannot execute SQL '%s': %s" % (query, to_native(e)))
 
@@ -698,9 +703,8 @@ class Connection(object):
                       or None if type is "group".
         :param objs: List of database objects to grant/revoke
                      privileges for.
-        :param orig_objs: ALL_IN_SCHEMA or None
-        :param roles: Either a list of role names or "PUBLIC"
-                      for the implicitly defined "PUBLIC" group
+        :param orig_objs: ALL_IN_SCHEMA or None.
+        :param roles: List of role names.
         :param target_roles: List of role names to grant/revoke
                              default privileges as.
         :param state: "present" to grant privileges, "absent" to revoke.
@@ -778,26 +782,11 @@ class Connection(object):
                 set_what = '%s ON %s %s' % (','.join(privs), obj_type.replace('_', ' '), ','.join(obj_ids))
 
         # for_whom: SQL-fragment specifying for whom to set the above
-        if roles == 'PUBLIC':
-            for_whom = 'PUBLIC'
-        else:
-            for_whom = []
-            for r in roles:
-                if not role_exists(self.module, self.cursor, r):
-                    if fail_on_role:
-                        self.module.fail_json(msg="Role '%s' does not exist" % r.strip())
+        if not roles:
+            return False
+        for_whom = ','.join(roles)
 
-                    else:
-                        self.module.warn("Role '%s' does not exist, pass it" % r.strip())
-                else:
-                    for_whom.append('"%s"' % r)
-
-            if not for_whom:
-                return False
-
-            for_whom = ','.join(for_whom)
-
-        # as_who:
+        # as_who: SQL-fragment specifying to who to set the above
         as_who = None
         if target_roles:
             as_who = ','.join('"%s"' % r for r in target_roles)
@@ -1118,17 +1107,19 @@ def main():
                 objs = [obj.replace(':', ',') for obj in objs]
 
         # roles
-        if p.roles.upper() == 'PUBLIC':
-            roles = 'PUBLIC'
-        else:
-            roles = p.roles.split(',')
-
-            if len(roles) == 1 and not role_exists(module, conn.cursor, roles[0]):
+        roles = []
+        roles_raw = p.roles.split(',')
+        for r in roles_raw:
+            if role_exists(module, conn.cursor, r):
+                roles.append('"%s"' % r)
+            else:
                 if fail_on_role:
-                    module.fail_json(msg="Role '%s' does not exist" % roles[0].strip())
+                    module.fail_json(msg="Role '%s' does not exist" % r)
                 else:
-                    module.warn("Role '%s' does not exist, nothing to do" % roles[0].strip())
-                module.exit_json(changed=False, queries=executed_queries)
+                    module.warn("Role '%s' does not exist, pass it" % r)
+        if not roles:
+            module.warn("No valid roles provided, nothing to do")
+            module.exit_json(changed=False, queries=executed_queries)
 
         # check if target_roles is set with type: default_privs
         if p.target_roles and not p.type == 'default_privs':

@@ -1,2 +1,2 @@
-bugfixes:
-  - postgresql_privs - fixed idempotence when roles=PUBLIC (https://github.com/ansible-collections/community.postgresql/pull/502)
+major_changes:
+  - postgresql_privs - Improved roles management (https://github.com/ansible-collections/community.postgresql/pull/502)
