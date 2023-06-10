@@ -359,7 +359,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ["GRANT CONNECT ON database \"{{ db_name }}\" TO public;"]
+    - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO public;"]
 
 - name: Test passing lowercase PUBLIC role - Grant CREATE ON DATABASE - Idempotence
   become_user: "{{ pg_user }}"
@@ -376,7 +376,7 @@
 - assert:
     that:
     - result is not changed
-    - result.queries == ["GRANT CONNECT ON database \"{{ db_name }}\" TO public;"]
+    - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO public;"]
 
 - name: Test passing lowercase PUBLIC role - Revoke CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"
@@ -393,7 +393,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ["REVOKE CONNECT ON database \"{{ db_name }}\" FROM public;"]
+    - result.queries == ["REVOKE CREATE ON database \"{{ db_name }}\" FROM public;"]
 
 - name: Test passing lowercase PUBLIC role - Revoke CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"
@@ -410,7 +410,7 @@
 - assert:
     that:
     - result is not changed
-    - result.queries == ["REVOKE CONNECT ON database \"{{ db_name }}\" FROM public;"]
+    - result.queries == ["REVOKE CREATE ON database \"{{ db_name }}\" FROM public;"]
 
 #
 # Cleanup
