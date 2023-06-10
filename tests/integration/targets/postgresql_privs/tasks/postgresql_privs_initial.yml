@@ -343,22 +343,74 @@
     target_roles: "{{ db_user_with_dots2 }}"
     trust_input: false
 
-# Bugfix for https://github.com/ansible-collections/community.general/issues/857
-- name: Test passing lowercase PUBLIC role
+# https://github.com/ansible-collections/community.postgresql/pull/502
+- name: Test passing mixedcase PUBLIC role - Grant CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
+    state: present
     type: 'database'
-    privs: 'connect'
-    role: 'public'
+    privs: 'create'
+    role: 'pUbLiC'
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["GRANT CONNECT ON database \"{{ db_name }}\" TO PUBLIC;"]
+    - result.queries == ["GRANT CONNECT ON database \"{{ db_name }}\" TO pUbLiC;"]
+
+- name: Test passing mixedcase PUBLIC role - Grant CREATE ON DATABASE - Idempotence
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: present
+    type: 'database'
+    privs: 'create'
+    role: 'pUbLiC'
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == ["GRANT CONNECT ON database \"{{ db_name }}\" TO pUbLiC;"]
+
+- name: Test passing mixedcase PUBLIC role - Revoke CREATE ON DATABASE - Test
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: absent
+    type: 'database'
+    privs: 'create'
+    role: 'pUbLiC'
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ["REVOKE CONNECT ON database \"{{ db_name }}\" FROM pUbLiC;"]
+
+- name: Test passing mixedcase PUBLIC role - Revoke CREATE ON DATABASE - Test
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: absent
+    type: 'database'
+    privs: 'create'
+    role: 'pUbLiC'
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == ["REVOKE CONNECT ON database \"{{ db_name }}\" FROM pUbLiC;"]
 
 #
 # Cleanup
