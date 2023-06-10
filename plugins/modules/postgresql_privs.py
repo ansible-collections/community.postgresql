@@ -817,8 +817,6 @@ class Connection(object):
 
         status_before.sort(key=nonesorted)
         status_after.sort(key=nonesorted)
-        self.module.warn("status_before = '%s'" % status_before)
-        self.module.warn("status_after  = '%s'" % status_after)
         return status_before != status_after
 
 
