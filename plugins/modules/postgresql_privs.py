@@ -77,10 +77,11 @@ options:
   roles:
     description:
     - Comma separated list of role (user/group) names to set permissions for.
-    - Roles must to be provided in lowercase becaused in PostgreSQL roles are
-      case-insensitive and stored in lowercase only.
-    - The group C(PUBLIC) is implicitly defined so it can be provided both
-      in uppercase and lowercase.
+    - Each role must be in lowercase as internally PostgreSQL store them in lowercase only.
+    - Special roles C(PUBLIC), C(CURRENT_ROLE), C(CURRENT_USER), C(SESSION_USER) are
+      implicitly defined, so they can be provided both in uppercase and lowercase.
+    - C(CURRENT_USER) and C(SESSION_USER) special roles are supported since collection version X.X.X and PostgreSQL 9.5.
+    - C(CURRENT_ROLE) special role is supported since collection version X.X.X and PostgreSQL 14.
     type: str
     required: true
     aliases:
@@ -433,23 +434,6 @@ class Error(Exception):
     pass
 
 
-def role_exists(module, cursor, rolname):
-    """Check user exists or not"""
-    # role PUBLIC always exists
-    if rolname.upper() == 'PUBLIC':
-        return True
-
-    # check role is present in pg_catalog.pg_roles
-    query = "SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = '%s'" % rolname
-    try:
-        cursor.execute(query)
-        return cursor.rowcount > 0
-    except Exception as e:
-        module.fail_json(msg="Cannot execute SQL '%s': %s" % (query, to_native(e)))
-
-    return False
-
-
 # We don't have functools.partial in Python < 2.5
 def partial(f, *args, **kwargs):
     """Partial function application"""
@@ -494,6 +478,21 @@ class Connection(object):
         return psycopg2.extensions.encodings[self.connection.encoding]
 
     # Methods for querying database objects
+
+    def role_exists(self, rolname):
+        # check if rolname is a default role
+        rolname_upper = rolname.upper()
+        if rolname_upper == 'PUBLIC':
+            return True
+        if self.pg_version >= 90000 and rolname_upper in ('CURRENT_USER', 'SESSION_USER'):
+            return True
+        if self.pg_version >= 140000 and rolname_upper == 'CURRENT_ROLE':
+            return True
+
+        # check if rolname is present in pg_catalog.pg_roles
+        query = "SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = %s"
+        self.cursor.execute(query, (rolname,))
+        return self.cursor.rowcount > 0
 
     # PostgreSQL < 9.0 doesn't support "ALL TABLES IN SCHEMA schema"-like
     # phrases in GRANT or REVOKE statements, therefore alternative methods are
@@ -1110,7 +1109,7 @@ def main():
         roles = []
         roles_raw = p.roles.split(',')
         for r in roles_raw:
-            if role_exists(module, conn.cursor, r):
+            if conn.role_exists(r):
                 roles.append('"%s"' % r)
             else:
                 if fail_on_role:
