@@ -426,6 +426,10 @@ VALID_DEFAULT_OBJS = {'TABLES': ('ALL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 
                       'FUNCTIONS': ('ALL', 'EXECUTE'),
                       'TYPES': ('ALL', 'USAGE'),
                       'SCHEMAS': ('CREATE', 'USAGE'), }
+VALID_IMPLICIT_ROLES = {'PUBLIC': 0,
+                        'CURRENT_USER': 90000,
+                        'SESSION_USER': 90000,
+                        'CURRENT_ROLE': 140000, }
 
 executed_queries = []
 
@@ -466,6 +470,9 @@ class Connection(object):
         self.cursor = self.connection.cursor()
         self.pg_version = self.connection.server_version
 
+        # implicit roles in current pg version
+        self.pg_implicit_roles = tuple(dr for dr, ver_min in VALID_IMPLICIT_ROLES.items() if self.pg_version >= ver_min)
+
     def commit(self):
         self.connection.commit()
 
@@ -479,14 +486,12 @@ class Connection(object):
 
     # Methods for querying database objects
 
+    def is_implicit_role(self, rolname):
+        return rolname.upper() in self.pg_implicit_roles
+
     def role_exists(self, rolname):
-        # check if rolname is a default role
-        rolname_upper = rolname.upper()
-        if rolname_upper == 'PUBLIC':
-            return True
-        if self.pg_version >= 90000 and rolname_upper in ('CURRENT_USER', 'SESSION_USER'):
-            return True
-        if self.pg_version >= 140000 and rolname_upper == 'CURRENT_ROLE':
+        # check if rolname is a implicit role
+        if self.is_implicit_role(rolname):
             return True
 
         # check if rolname is present in pg_catalog.pg_roles
@@ -1110,7 +1115,11 @@ def main():
         roles_raw = p.roles.split(',')
         for r in roles_raw:
             if conn.role_exists(r):
-                roles.append('"%s"' % r)
+                if conn.is_implicit_role(r):
+                    # implicit roles must be uppercase and not in double quotes
+                    roles.append('%s' % r.upper())
+                else:
+                    roles.append('"%s"' % r)
             else:
                 if fail_on_role:
                     module.fail_json(msg="Role '%s' does not exist" % r)
