@@ -344,7 +344,7 @@
     trust_input: false
 
 # https://github.com/ansible-collections/community.postgresql/pull/502
-- name: Test passing mixedcase PUBLIC role - Grant CREATE ON DATABASE - Test
+- name: Test passing lowercase PUBLIC role - Grant CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
@@ -353,15 +353,15 @@
     state: present
     type: 'database'
     privs: 'create'
-    role: 'pUbLiC'
+    role: 'public'
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["GRANT CONNECT ON database \"{{ db_name }}\" TO pUbLiC;"]
+    - result.queries == ["GRANT CONNECT ON database \"{{ db_name }}\" TO public;"]
 
-- name: Test passing mixedcase PUBLIC role - Grant CREATE ON DATABASE - Idempotence
+- name: Test passing lowercase PUBLIC role - Grant CREATE ON DATABASE - Idempotence
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
@@ -370,15 +370,15 @@
     state: present
     type: 'database'
     privs: 'create'
-    role: 'pUbLiC'
+    role: 'public'
   register: result
 
 - assert:
     that:
     - result is not changed
-    - result.queries == ["GRANT CONNECT ON database \"{{ db_name }}\" TO pUbLiC;"]
+    - result.queries == ["GRANT CONNECT ON database \"{{ db_name }}\" TO public;"]
 
-- name: Test passing mixedcase PUBLIC role - Revoke CREATE ON DATABASE - Test
+- name: Test passing lowercase PUBLIC role - Revoke CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
@@ -387,15 +387,15 @@
     state: absent
     type: 'database'
     privs: 'create'
-    role: 'pUbLiC'
+    role: 'public'
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["REVOKE CONNECT ON database \"{{ db_name }}\" FROM pUbLiC;"]
+    - result.queries == ["REVOKE CONNECT ON database \"{{ db_name }}\" FROM public;"]
 
-- name: Test passing mixedcase PUBLIC role - Revoke CREATE ON DATABASE - Test
+- name: Test passing lowercase PUBLIC role - Revoke CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
@@ -404,13 +404,13 @@
     state: absent
     type: 'database'
     privs: 'create'
-    role: 'pUbLiC'
+    role: 'public'
   register: result
 
 - assert:
     that:
     - result is not changed
-    - result.queries == ["REVOKE CONNECT ON database \"{{ db_name }}\" FROM pUbLiC;"]
+    - result.queries == ["REVOKE CONNECT ON database \"{{ db_name }}\" FROM public;"]
 
 #
 # Cleanup
