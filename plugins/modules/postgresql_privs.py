@@ -427,8 +427,8 @@ VALID_DEFAULT_OBJS = {'TABLES': ('ALL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 
                       'TYPES': ('ALL', 'USAGE'),
                       'SCHEMAS': ('CREATE', 'USAGE'), }
 VALID_IMPLICIT_ROLES = {'PUBLIC': 0,
-                        'CURRENT_USER': 90000,
-                        'SESSION_USER': 90000,
+                        'CURRENT_USER': 95000,
+                        'SESSION_USER': 95000,
                         'CURRENT_ROLE': 140000, }
 
 executed_queries = []
