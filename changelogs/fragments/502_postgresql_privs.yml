@@ -1,2 +1,2 @@
 major_changes:
-  - postgresql_privs - Improved roles management (https://github.com/ansible-collections/community.postgresql/pull/502)
+- "postgresql_privs - Improved roles management (https://github.com/ansible-collections/community.postgresql/pull/502)."
