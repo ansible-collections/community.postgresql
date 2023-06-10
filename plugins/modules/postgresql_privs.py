@@ -1116,7 +1116,9 @@ def main():
         for r in roles_raw:
             if conn.role_exists(r):
                 if conn.is_implicit_role(r):
-                    # implicit roles must be uppercase and not in double quotes
+                    # PUBLIC works in uppercase without double quotes and in lowercase with double quotes
+                    # others implicit roles works only in uppercase without double quotes
+                    # so to works for all implicit roles must be uppercase without double quotes
                     roles.append('%s' % r.upper())
                 else:
                     roles.append('"%s"' % r)

@@ -343,7 +343,7 @@
     target_roles: "{{ db_user_with_dots2 }}"
     trust_input: false
 
-# https://github.com/ansible-collections/community.postgresql/pull/502
+# https://github.com/ansible-collections/community.postgresql/pull/502 - role PUBLIC
 - name: Test passing lowercase PUBLIC role - Grant CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"
   become: true
@@ -359,7 +359,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO \"public\";"]
+    - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO PUBLIC;"]
 
 - name: Test passing lowercase PUBLIC role - Grant CREATE ON DATABASE - Idempotence
   become_user: "{{ pg_user }}"
@@ -376,7 +376,7 @@
 - assert:
     that:
     - result is not changed
-    - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO \"public\";"]
+    - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO PUBLIC;"]
 
 - name: Test passing lowercase PUBLIC role - Revoke CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"
@@ -393,7 +393,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ["REVOKE CREATE ON database \"{{ db_name }}\" FROM \"public\";"]
+    - result.queries == ["REVOKE CREATE ON database \"{{ db_name }}\" FROM PUBLIC;"]
 
 - name: Test passing lowercase PUBLIC role - Revoke CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"
@@ -410,7 +410,76 @@
 - assert:
     that:
     - result is not changed
-    - result.queries == ["REVOKE CREATE ON database \"{{ db_name }}\" FROM \"public\";"]
+    - result.queries == ["REVOKE CREATE ON database \"{{ db_name }}\" FROM PUBLIC;"]
+
+# https://github.com/ansible-collections/community.postgresql/pull/502 - role SESSION_USER
+- name: Test passing lowercase SESSION_USER role - Grant CREATE ON DATABASE - Test
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: present
+    type: 'database'
+    privs: 'create'
+    role: 'session_user'
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO SESSION_USER;"]
+
+- name: Test passing lowercase SESSION_USER role - Grant CREATE ON DATABASE - Idempotence
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: present
+    type: 'database'
+    privs: 'create'
+    role: 'session_user'
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO SESSION_USER;"]
+
+- name: Test passing lowercase SESSION_USER role - Revoke CREATE ON DATABASE - Test
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: absent
+    type: 'database'
+    privs: 'create'
+    role: 'session_user'
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ["REVOKE CREATE ON database \"{{ db_name }}\" FROM SESSION_USER;"]
+
+- name: Test passing lowercase SESSION_USER role - Revoke CREATE ON DATABASE - Test
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: absent
+    type: 'database'
+    privs: 'create'
+    role: 'session_user'
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == ["REVOKE CREATE ON database \"{{ db_name }}\" FROM SESSION_USER;"]
 
 #
 # Cleanup
