@@ -78,10 +78,10 @@ options:
     description:
     - Comma separated list of role (user/group) names to set permissions for.
     - Each role must be in lowercase as internally PostgreSQL store them in lowercase only.
-    - Special roles C(PUBLIC), C(CURRENT_ROLE), C(CURRENT_USER), C(SESSION_USER) are
+    - Roles C(PUBLIC), C(CURRENT_ROLE), C(CURRENT_USER), C(SESSION_USER) are
       implicitly defined, so they can be provided both in uppercase and lowercase.
-    - C(CURRENT_USER) and C(SESSION_USER) special roles are supported since collection version X.X.X and PostgreSQL 9.5.
-    - C(CURRENT_ROLE) special role is supported since collection version X.X.X and PostgreSQL 14.
+    - C(CURRENT_USER) and C(SESSION_USER) implicit roles are supported since collection version X.X.X and PostgreSQL 9.5.
+    - C(CURRENT_ROLE) implicit role is supported since collection version X.X.X and PostgreSQL 14.
     type: str
     required: true
     aliases:
