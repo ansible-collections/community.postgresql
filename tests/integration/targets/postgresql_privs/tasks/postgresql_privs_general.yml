@@ -1554,7 +1554,7 @@
   register: result
 - assert:
     that:
-      - result is changed
+      - result is not changed
 - name: check permissions on tables in schemas with special names
   become: true
   become_user: "{{ pg_user }}"
