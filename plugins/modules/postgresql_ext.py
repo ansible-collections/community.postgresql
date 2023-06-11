@@ -424,7 +424,7 @@ def main():
                             else:
                                 update_cmd_executed = ext_update_version(cursor, ext, version)
                                 if version == 'latest':
-                                    new_curr_version, _ = ext_get_versions(cursor, ext)
+                                    new_curr_version, new_available_versions = ext_get_versions(cursor, ext)
                                     changed = curr_version != new_curr_version
                                 else:
                                     changed = update_cmd_executed
