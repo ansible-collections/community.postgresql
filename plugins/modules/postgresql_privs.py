@@ -471,7 +471,9 @@ class Connection(object):
         self.pg_version = self.connection.server_version
 
         # implicit roles in current pg version
-        self.pg_implicit_roles = tuple(dr for dr, ver_min in VALID_IMPLICIT_ROLES.items() if self.pg_version >= ver_min)
+        self.pg_implicit_roles = tuple(
+            implicit_role for implicit_role, version_min in VALID_IMPLICIT_ROLES.items() if self.pg_version >= version_min
+        )
 
     def commit(self):
         self.connection.commit()
@@ -484,10 +486,12 @@ class Connection(object):
         """Connection encoding in Python-compatible form"""
         return psycopg2.extensions.encodings[self.connection.encoding]
 
-    # Methods for querying database objects
+    # Methods for implicit roles managements
 
     def is_implicit_role(self, rolname):
         return rolname.upper() in self.pg_implicit_roles
+
+    # Methods for querying database objects
 
     def role_exists(self, rolname):
         # check if rolname is a implicit role
