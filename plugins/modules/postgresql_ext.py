@@ -404,11 +404,6 @@ def main():
         # Get extension info and available versions:
         curr_version, available_versions = ext_get_versions(cursor, ext)
 
-        # Extract latest available version
-        latest_version = None
-        if available_versions:
-            latest_version = max(available_versions)
-
         if state == "present":
 
             # If version passed
@@ -418,17 +413,21 @@ def main():
                     # Given version already installed
                     if curr_version == version:
                         changed = False
-                    # Latest version required but already installed
-                    elif version == 'latest' and curr_version == latest_version:
-                        changed = False
-                    # Version update required
+                    # Attempt to update to given version or latest version defined in extension control file
+                    # ALTER EXTENSION is actually run if valid, so check if installed version is changed
+                    # when latest version is requested
                     else:
                         valid_update_path = ext_valid_update_path(cursor, ext, curr_version, version)
                         if valid_update_path:
                             if module.check_mode:
                                 changed = True
                             else:
-                                changed = ext_update_version(cursor, ext, version)
+                                update_cmd_executed = ext_update_version(cursor, ext, version)
+                                if version == 'latest':
+                                    new_curr_version, _ = ext_get_versions(cursor, ext)
+                                    changed = curr_version != new_curr_version
+                                else:
+                                    changed = update_cmd_executed
                         else:
                             module.fail_json(msg="Passed version '%s' has no valid update path from "
                                                  "the currently installed version '%s' or "
