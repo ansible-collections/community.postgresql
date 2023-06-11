@@ -415,7 +415,7 @@ def main():
                         changed = False
                     # Attempt to update to given version or latest version defined in extension control file
                     # ALTER EXTENSION is actually run if valid, so check if installed version is changed
-                    # when latest version is requested
+                    # when update to latest version is requested
                     else:
                         valid_update_path = ext_valid_update_path(cursor, ext, curr_version, version)
                         if valid_update_path:
