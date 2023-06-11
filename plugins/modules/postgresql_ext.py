@@ -404,6 +404,11 @@ def main():
         # Get extension info and available versions:
         curr_version, available_versions = ext_get_versions(cursor, ext)
 
+        # Extract latest available version
+        latest_version = None
+        if available_versions:
+            latest_version = max(available_versions)
+
         if state == "present":
 
             # If version passed
@@ -413,8 +418,10 @@ def main():
                     # Given version already installed
                     if curr_version == version:
                         changed = False
-                    # Attempt to update to given version or latest version defined in extension control file
-                    # ALTER EXTENSION is actually run if valid, so 'changed' will be true even if nothing updated
+                    # Latest version required but already installed
+                    elif version == 'latest' and curr_version == latest_version:
+                        changed = False
+                    # Version update required
                     else:
                         valid_update_path = ext_valid_update_path(cursor, ext, curr_version, version)
                         if valid_update_path:
