@@ -325,6 +325,8 @@ def param_set(cursor, module, name, value, context):
             if isinstance(value, str) and ',' in value and not name.endswith(('_command', '_prefix')):
                 # Issue https://github.com/ansible-collections/community.postgresql/issues/78
                 # Change value from 'one, two, three' -> "'one','two','three'"
+                # PR https://github.com/ansible-collections/community.postgresql/pull/400
+                # Parameter names ends with '_command' or '_prefix' can contains commas but are not lists
                 value = ','.join(["'" + elem.strip() + "'" for elem in value.split(',')])
                 query = "ALTER SYSTEM SET %s = %s" % (name, value)
             else:
