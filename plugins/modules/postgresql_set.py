@@ -335,7 +335,7 @@ def param_set(cursor, module, name, value, context):
             cursor.execute("SELECT pg_reload_conf()")
 
     except Exception as e:
-        module.fail_json(msg="Unable to get %s value due to : %s" % (name, to_native(e)))
+        module.fail_json(msg="Unable to set %s value due to : %s" % (name, to_native(e)))
 
     return True
 
