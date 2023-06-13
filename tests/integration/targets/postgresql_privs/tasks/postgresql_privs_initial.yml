@@ -482,6 +482,80 @@
     - result is not changed
     - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO SESSION_USER;"]
 
+# https://github.com/ansible-collections/community.postgresql/pull/502
+- name: Test passing multiple roles as comma separated list
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: present
+    type: 'database'
+    privs: 'create'
+    roles: 'public,{{ db_user1 }}'
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ["GRANT CREATE ON database \"{{ db_name }}\" TO PUBLIC;", "GRANT CREATE ON database \"{{ db_name }}\" TO \"{{ db_user1 }}\";"]
+
+- name: Test passing multiple roles as list
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: absent
+    type: 'database'
+    privs: 'create'
+    roles:
+      - "public"
+      - "{{ db_user1 }}"
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ["REVOKE CREATE ON database \"{{ db_name }}\" FROM PUBLIC;", "REVOKE CREATE ON database \"{{ db_name }}\" FROM \"{{ db_user1 }}\";"]
+
+- name: Test passing multiple roles as None
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: absent
+    type: 'database'
+    privs: 'create'
+    roles: "{{ wrong_variable | d(omit) }}"
+  register: result
+  ignore_errors: yes
+
+- assert:
+    that:
+    - result is failed
+
+- name: Test passing multiple roles as dict
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: absent
+    type: 'database'
+    privs: 'create'
+    roles:
+      "public": a
+      "other,role": b
+  register: result
+  ignore_errors: yes
+
+- assert:
+    that:
+    - result is failed
+    - result.msg is search("Argument 'roles' requires type string or list")
+
 #
 # Cleanup
 #
