@@ -1,2 +1,2 @@
-major_changes:
+minor_changes:
 - "postgresql_privs - added idempotence when version=latest (https://github.com/ansible-collections/community.postgresql/pull/504)."
