@@ -76,8 +76,7 @@ options:
     type: str
   roles:
     description:
-    - Role (user/group) names to set permissions for.
-    - May be a comma separated list of roles or (since collection version X.X.X) a list of roles.
+    - Comma separated list of role (user/group) names to set permissions for.
     - Roles C(PUBLIC), C(CURRENT_ROLE), C(CURRENT_USER), C(SESSION_USER) are implicitly defined in PostgreSQL.
     - C(CURRENT_USER) and C(SESSION_USER) implicit roles are supported since collection version X.X.X and PostgreSQL 9.5.
     - C(CURRENT_ROLE) implicit role is supported since collection version X.X.X and PostgreSQL 14.
@@ -187,16 +186,6 @@ EXAMPLES = r'''
     privs: SELECT,INSERT,UPDATE
     objs: books,authors
     roles: librarian,reader
-    grant_option: true
-
-- name: Same as above with roles as list
-  community.postgresql.postgresql_privs:
-    db: library
-    privs: SELECT,INSERT,UPDATE
-    objs: books,authors
-    roles:
-      - librarian
-      - reader
     grant_option: true
 
 # REVOKE GRANT OPTION FOR INSERT ON TABLE books FROM reader
@@ -426,7 +415,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import postgres_common_argument_spec, get_conn_params
 from ansible.module_utils._text import to_native
-from ansible.module_utils.six import string_types
 
 VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
                          'REFERENCES', 'TRIGGER', 'CREATE', 'CONNECT',
@@ -1126,12 +1114,7 @@ def main():
 
         # roles
         roles = []
-        if isinstance(p.roles, list):
-            roles_raw = list(p.roles)
-        elif isinstance(p.roles, string_types):
-            roles_raw = p.roles.split(',')
-        else:
-            module.fail_json(msg="Argument 'roles' requires type string or list but '%s' found" % type(p.roles))
+        roles_raw = p.roles.split(',')
         for r in roles_raw:
             if conn.role_exists(r):
                 if conn.is_implicit_role(r):
