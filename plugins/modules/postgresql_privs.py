@@ -81,8 +81,7 @@ options:
     - Roles C(PUBLIC), C(CURRENT_ROLE), C(CURRENT_USER), C(SESSION_USER) are implicitly defined in PostgreSQL.
     - C(CURRENT_USER) and C(SESSION_USER) implicit roles are supported since collection version X.X.X and PostgreSQL 9.5.
     - C(CURRENT_ROLE) implicit role is supported since collection version X.X.X and PostgreSQL 14.
-    type: list
-    elements: string
+    type: str
     required: true
     aliases:
     - role
