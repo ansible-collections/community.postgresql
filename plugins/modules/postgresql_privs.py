@@ -45,7 +45,7 @@ options:
     - The C(foreign_data_wrapper) and C(foreign_server) object types are available since Ansible version 2.8.
     - The C(type) choice is available since Ansible version 2.10.
     - The C(procedure) is supported since collection version 1.3.0 and PostgreSQL 11.
-    - The C(parameter) is supported since collection version X.X.X and PostgreSQL 15 PostgreSQL.
+    - The C(parameter) is supported since collection version X.X.X and PostgreSQL 15.
     type: str
     default: table
     choices: [ database, default_privs, foreign_data_wrapper, foreign_server, function,
@@ -805,7 +805,7 @@ class Connection(object):
             # and privs was escaped when it was parsed
             # Note: Underscores are replaced with spaces to support multi-word privs and obj_type
             if orig_objs is not None:
-                set_what = '%s ON %s %s' % (','.join(privs), orig_objs, quoted_schema_qualifier)
+                set_what = '%s ON %s %s' % (','.join(privs).replace('_', ' '), orig_objs, quoted_schema_qualifier)
             else:
                 set_what = '%s ON %s %s' % (','.join(privs).replace('_', ' '), obj_type.replace('_', ' '), ','.join(obj_ids))
 
