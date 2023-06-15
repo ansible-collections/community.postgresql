@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_set - fixed error message in param_set function (https://github.com/ansible-collections/community.postgresql/pull/505).
