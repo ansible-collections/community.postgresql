@@ -45,10 +45,11 @@ options:
     - The C(foreign_data_wrapper) and C(foreign_server) object types are available since Ansible version 2.8.
     - The C(type) choice is available since Ansible version 2.10.
     - The C(procedure) is supported since collection version 1.3.0 and PostgreSQL 11.
+    - The C(parameter) is supported since collection version X.X.X and PostgreSQL 15.
     type: str
     default: table
     choices: [ database, default_privs, foreign_data_wrapper, foreign_server, function,
-               group, language, table, tablespace, schema, sequence, type , procedure]
+               group, language, table, tablespace, schema, sequence, type, procedure, parameter ]
   objs:
     description:
     - Comma separated list of database objects to set privileges on.
@@ -58,6 +59,7 @@ options:
       (This also works with PostgreSQL < 9.0.) (C(ALL_IN_SCHEMA) is available
        for C(function) and C(partition table) since Ansible 2.8).
     - C(procedure) is supported since PostgreSQL 11 and community.postgresql collection 1.3.0.
+    - C(parameter) is supported since PostgreSQL 15 and community.postgresql collection 3.1.0.
     - If I(type) is C(database), this parameter can be omitted, in which case
       privileges are set for the database specified via I(database).
     - If I(type) is C(function) or C(procedure), colons (":") in object names will be
@@ -387,6 +389,26 @@ EXAMPLES = r'''
     privs: usage
     objs: schemas
     role: datascience
+
+# Available since community.postgresql 3.1.0
+# Needs PostgreSQL 15 or higher
+- name: GRANT SET ON PARAMETER log_destination,log_line_prefix TO logtest
+  community.postgresql.postgresql_privs:
+    database: logtest
+    state: present
+    privs: SET
+    type: parameter
+    objs: log_destination,log_line_prefix
+    roles: logtest
+
+- name: GRANT ALTER SYSTEM ON PARAMETER primary_conninfo,synchronous_standby_names TO replicamgr
+  community.postgresql.postgresql_privs:
+    database: replicamgr
+    state: present
+    privs: ALTER_SYSTEM
+    type: parameter
+    objs: primary_conninfo,synchronous_standby_names
+    roles: replicamgr
 '''
 
 RETURN = r'''
@@ -416,9 +438,8 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import postgres_common_argument_spec, get_conn_params
 from ansible.module_utils._text import to_native
 
-VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
-                         'REFERENCES', 'TRIGGER', 'CREATE', 'CONNECT',
-                         'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL'))
+VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'CREATE',
+                         'CONNECT', 'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'SET', 'ALTER_SYSTEM'))
 VALID_DEFAULT_OBJS = {'TABLES': ('ALL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'),
                       'SEQUENCES': ('ALL', 'SELECT', 'UPDATE', 'USAGE'),
                       'FUNCTIONS': ('ALL', 'EXECUTE'),
@@ -549,7 +570,7 @@ class Connection(object):
 
     def get_all_procedures_in_schema(self, schema):
         if self.pg_version < 110000:
-            raise Error("PostgreSQL verion must be >= 11 for type=procedure. Exit")
+            raise Error("PostgreSQL version must be >= 11 for type=procedure. Exit")
 
         if schema:
             if not self.schema_exists(schema):
@@ -686,6 +707,15 @@ class Connection(object):
             self.cursor.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
+    def get_parameter_acls(self, parameters):
+        if self.pg_version < 150000:
+            raise Error("PostgreSQL version must be >= 15 for type=parameter. Exit")
+
+        query = """SELECT paracl FROM pg_catalog.pg_parameter_acl
+                   WHERE parname = ANY (%s) ORDER BY parname"""
+        self.cursor.execute(query, (parameters,))
+        return [t[0] for t in self.cursor.fetchall()]
+
     # Manipulating privileges
 
     def manipulate_privs(self, obj_type, privs, objs, orig_objs, roles, target_roles,
@@ -736,6 +766,8 @@ class Connection(object):
             get_status = self.get_foreign_server_acls
         elif obj_type == 'type':
             get_status = partial(self.get_type_acls, schema_qualifier)
+        elif obj_type == 'parameter':
+            get_status = self.get_parameter_acls
         else:
             raise Error('Unsupported database object type "%s".' % obj_type)
 
@@ -771,11 +803,11 @@ class Connection(object):
                 obj_ids = [pg_quote_identifier(i, 'table') for i in obj_ids]
             # Note: obj_type has been checked against a set of string literals
             # and privs was escaped when it was parsed
-            # Note: Underscores are replaced with spaces to support multi-word obj_type
+            # Note: Underscores are replaced with spaces to support multi-word privs and obj_type
             if orig_objs is not None:
-                set_what = '%s ON %s %s' % (','.join(privs), orig_objs, quoted_schema_qualifier)
+                set_what = '%s ON %s %s' % (','.join(privs).replace('_', ' '), orig_objs, quoted_schema_qualifier)
             else:
-                set_what = '%s ON %s %s' % (','.join(privs), obj_type.replace('_', ' '), ','.join(obj_ids))
+                set_what = '%s ON %s %s' % (','.join(privs).replace('_', ' '), obj_type.replace('_', ' '), ','.join(obj_ids))
 
         # for_whom: SQL-fragment specifying for whom to set the above
         if roles == 'PUBLIC':
@@ -972,7 +1004,8 @@ def main():
                            'default_privs',
                            'foreign_data_wrapper',
                            'foreign_server',
-                           'type', ]),
+                           'type',
+                           'parameter', ]),
         objs=dict(required=False, aliases=['obj']),
         schema=dict(required=False),
         roles=dict(required=True, aliases=['role']),
