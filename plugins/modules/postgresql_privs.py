@@ -45,7 +45,7 @@ options:
     - The C(foreign_data_wrapper) and C(foreign_server) object types are available since Ansible version 2.8.
     - The C(type) choice is available since Ansible version 2.10.
     - The C(procedure) is supported since collection version 1.3.0 and PostgreSQL 11.
-    - The C(parameter) is supported since collection version X.X.X and PostgreSQL 15.
+    - The C(parameter) is supported since collection version 3.1.0 and PostgreSQL 15.
     type: str
     default: table
     choices: [ database, default_privs, foreign_data_wrapper, foreign_server, function,
@@ -1089,7 +1089,7 @@ def main():
     except TypeError as e:
         if 'sslrootcert' in e.args[0]:
             module.fail_json(msg='Postgresql server must be at least version 8.4 to support sslrootcert')
-        module.fail_json(msg="unable to connect to database: %s" % to_native(e), exception=traceback.format_exc())
+        module.fail_json(msg="Unable to connect to database: %s" % to_native(e), exception=traceback.format_exc())
     except ValueError as e:
         # We raise this when the psycopg library is too old
         module.fail_json(msg=to_native(e))
