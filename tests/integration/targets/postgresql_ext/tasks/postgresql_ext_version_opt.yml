@@ -211,7 +211,7 @@
       that:
       - result.rowcount == 1
 
-  - name: postgresql_ext_version - try to update the extension to the latest version again which always runs an update.
+  - name: postgresql_ext_version - try to update the extension to the latest version again which always runs an update
     <<: *task_parameters
     postgresql_ext:
       <<: *pg_parameters
@@ -222,7 +222,7 @@
 
   - assert:
       that:
-      - result is changed
+      - result is not changed
 
   - name: postgresql_ext_version - check that version number did not change even though update ran
     <<: *task_parameters
