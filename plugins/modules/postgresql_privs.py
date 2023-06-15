@@ -390,7 +390,7 @@ EXAMPLES = r'''
     objs: schemas
     role: datascience
 
-# Available since community.postgresql X.X.X
+# Available since community.postgresql 3.1.0
 # Needs PostgreSQL 15 or higher
 - name: GRANT SET ON PARAMETER log_destination,log_line_prefix TO logtest
   community.postgresql.postgresql_privs:
