@@ -78,8 +78,8 @@ options:
     description:
     - Comma separated list of role (user/group) names to set permissions for.
     - Roles C(PUBLIC), C(CURRENT_ROLE), C(CURRENT_USER), C(SESSION_USER) are implicitly defined in PostgreSQL.
-    - C(CURRENT_USER) and C(SESSION_USER) implicit roles are supported since collection version X.X.X and PostgreSQL 9.5.
-    - C(CURRENT_ROLE) implicit role is supported since collection version X.X.X and PostgreSQL 14.
+    - C(CURRENT_USER) and C(SESSION_USER) implicit roles are supported since collection version 3.1.0 and PostgreSQL 9.5.
+    - C(CURRENT_ROLE) implicit role is supported since collection version 3.1.0 and PostgreSQL 14.
     type: str
     required: true
     aliases:
