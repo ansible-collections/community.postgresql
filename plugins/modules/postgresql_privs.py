@@ -59,7 +59,7 @@ options:
       (This also works with PostgreSQL < 9.0.) (C(ALL_IN_SCHEMA) is available
        for C(function) and C(partition table) since Ansible 2.8).
     - C(procedure) is supported since PostgreSQL 11 and community.postgresql collection 1.3.0.
-    - C(parameter) is supported since PostgreSQL 15 and community.postgresql collection X.X.X.
+    - C(parameter) is supported since PostgreSQL 15 and community.postgresql collection 3.1.0.
     - If I(type) is C(database), this parameter can be omitted, in which case
       privileges are set for the database specified via I(database).
     - If I(type) is C(function) or C(procedure), colons (":") in object names will be
