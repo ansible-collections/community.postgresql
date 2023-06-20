@@ -473,6 +473,12 @@ class Connection(object):
             implicit_role for implicit_role, version_min in VALID_IMPLICIT_ROLES.items() if self.pg_version >= version_min
         )
 
+    def execute(self, query, input_vars=None):
+        try:
+            self.cursor.execute(query, input_vars)
+        except Exception as e:
+            self.module.fail_json(msg="Cannot execute SQL '%s': %s" % (query, to_native(e)))
+
     def commit(self):
         self.connection.commit()
 
@@ -498,7 +504,7 @@ class Connection(object):
 
         # check if rolname is present in pg_catalog.pg_roles
         query = "SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = %s"
-        self.cursor.execute(query, (rolname,))
+        self.execute(query, (rolname,))
         return self.cursor.rowcount > 0
 
     # PostgreSQL < 9.0 doesn't support "ALL TABLES IN SCHEMA schema"-like
@@ -508,7 +514,7 @@ class Connection(object):
     def schema_exists(self, schema):
         query = """SELECT count(*)
                    FROM pg_catalog.pg_namespace WHERE nspname = %s"""
-        self.cursor.execute(query, (schema,))
+        self.execute(query, (schema,))
         return self.cursor.fetchone()[0] > 0
 
     def get_all_tables_in_schema(self, schema):
@@ -520,11 +526,11 @@ class Connection(object):
                        FROM pg_catalog.pg_class c
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                        WHERE nspname = %s AND relkind in ('r', 'v', 'm', 'p')"""
-            self.cursor.execute(query, (schema,))
+            self.execute(query, (schema,))
         else:
             query = ("SELECT relname FROM pg_catalog.pg_class "
                      "WHERE relkind in ('r', 'v', 'm', 'p')")
-            self.cursor.execute(query)
+            self.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_all_sequences_in_schema(self, schema):
@@ -535,9 +541,9 @@ class Connection(object):
                        FROM pg_catalog.pg_class c
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                        WHERE nspname = %s AND relkind = 'S'"""
-            self.cursor.execute(query, (schema,))
+            self.execute(query, (schema,))
         else:
-            self.cursor.execute("SELECT relname FROM pg_catalog.pg_class WHERE relkind = 'S'")
+            self.execute("SELECT relname FROM pg_catalog.pg_class WHERE relkind = 'S'")
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_all_functions_in_schema(self, schema):
@@ -553,9 +559,9 @@ class Connection(object):
             if self.pg_version >= 110000:
                 query += " and p.prokind = 'f'"
 
-            self.cursor.execute(query, (schema,))
+            self.execute(query, (schema,))
         else:
-            self.cursor.execute("SELECT p.proname, oidvectortypes(p.proargtypes) FROM pg_catalog.pg_proc p")
+            self.execute("SELECT p.proname, oidvectortypes(p.proargtypes) FROM pg_catalog.pg_proc p")
         return ["%s(%s)" % (t[0], t[1]) for t in self.cursor.fetchall()]
 
     def get_all_procedures_in_schema(self, schema):
@@ -571,11 +577,11 @@ class Connection(object):
                      "JOIN pg_namespace n ON n.oid = p.pronamespace "
                      "WHERE nspname = %s and p.prokind = 'p'")
 
-            self.cursor.execute(query, (schema,))
+            self.execute(query, (schema,))
         else:
             query = ("SELECT p.proname, oidvectortypes(p.proargtypes) "
                      "FROM pg_catalog.pg_proc p WHERE p.prokind = 'p'")
-            self.cursor.execute(query)
+            self.execute(query)
         return ["%s(%s)" % (t[0], t[1]) for t in self.cursor.fetchall()]
 
     # Methods for getting access control lists and group membership info
@@ -593,12 +599,12 @@ class Connection(object):
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                        WHERE nspname = %s AND relkind in ('r','p','v','m') AND relname = ANY (%s)
                        ORDER BY relname"""
-            self.cursor.execute(query, (schema, tables))
+            self.execute(query, (schema, tables))
         else:
             query = ("SELECT relacl FROM pg_catalog.pg_class "
                      "WHERE relkind in ('r','p','v','m') AND relname = ANY (%s) "
                      "ORDER BY relname")
-            self.cursor.execute(query)
+            self.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_sequence_acls(self, schema, sequences):
@@ -608,11 +614,11 @@ class Connection(object):
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                        WHERE nspname = %s AND relkind = 'S' AND relname = ANY (%s)
                        ORDER BY relname"""
-            self.cursor.execute(query, (schema, sequences))
+            self.execute(query, (schema, sequences))
         else:
             query = ("SELECT relacl FROM pg_catalog.pg_class "
                      "WHERE  relkind = 'S' AND relname = ANY (%s) ORDER BY relname")
-            self.cursor.execute(query)
+            self.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_function_acls(self, schema, function_signatures):
@@ -623,35 +629,35 @@ class Connection(object):
                        JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
                        WHERE nspname = %s AND proname = ANY (%s)
                        ORDER BY proname, proargtypes"""
-            self.cursor.execute(query, (schema, funcnames))
+            self.execute(query, (schema, funcnames))
         else:
             query = ("SELECT proacl FROM pg_catalog.pg_proc WHERE proname = ANY (%s) "
                      "ORDER BY proname, proargtypes")
-            self.cursor.execute(query)
+            self.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_schema_acls(self, schemas):
         query = """SELECT nspacl FROM pg_catalog.pg_namespace
                    WHERE nspname = ANY (%s) ORDER BY nspname"""
-        self.cursor.execute(query, (schemas,))
+        self.execute(query, (schemas,))
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_language_acls(self, languages):
         query = """SELECT lanacl FROM pg_catalog.pg_language
                    WHERE lanname = ANY (%s) ORDER BY lanname"""
-        self.cursor.execute(query, (languages,))
+        self.execute(query, (languages,))
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_tablespace_acls(self, tablespaces):
         query = """SELECT spcacl FROM pg_catalog.pg_tablespace
                    WHERE spcname = ANY (%s) ORDER BY spcname"""
-        self.cursor.execute(query, (tablespaces,))
+        self.execute(query, (tablespaces,))
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_database_acls(self, databases):
         query = """SELECT datacl FROM pg_catalog.pg_database
                    WHERE datname = ANY (%s) ORDER BY datname"""
-        self.cursor.execute(query, (databases,))
+        self.execute(query, (databases,))
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_group_memberships(self, groups):
@@ -660,7 +666,7 @@ class Connection(object):
                    JOIN pg_catalog.pg_roles r ON r.oid = am.roleid
                    WHERE r.rolname = ANY(%s)
                    ORDER BY roleid, grantor, member"""
-        self.cursor.execute(query, (groups,))
+        self.execute(query, (groups,))
         return self.cursor.fetchall()
 
     def get_default_privs(self, schema, *args):
@@ -669,21 +675,21 @@ class Connection(object):
                        FROM pg_default_acl a
                        JOIN pg_namespace b ON a.defaclnamespace=b.oid
                        WHERE b.nspname = %s;"""
-            self.cursor.execute(query, (schema,))
+            self.execute(query, (schema,))
         else:
-            self.cursor.execute("SELECT defaclacl FROM pg_default_acl;")
+            self.execute("SELECT defaclacl FROM pg_default_acl;")
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_foreign_data_wrapper_acls(self, fdws):
         query = """SELECT fdwacl FROM pg_catalog.pg_foreign_data_wrapper
                    WHERE fdwname = ANY (%s) ORDER BY fdwname"""
-        self.cursor.execute(query, (fdws,))
+        self.execute(query, (fdws,))
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_foreign_server_acls(self, fs):
         query = """SELECT srvacl FROM pg_catalog.pg_foreign_server
                    WHERE srvname = ANY (%s) ORDER BY srvname"""
-        self.cursor.execute(query, (fs,))
+        self.execute(query, (fs,))
         return [t[0] for t in self.cursor.fetchall()]
 
     def get_type_acls(self, schema, types):
@@ -691,10 +697,10 @@ class Connection(object):
             query = """SELECT t.typacl FROM pg_catalog.pg_type t
                        JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
                        WHERE n.nspname = %s AND t.typname = ANY (%s) ORDER BY typname"""
-            self.cursor.execute(query, (schema, types))
+            self.execute(query, (schema, types))
         else:
             query = "SELECT typacl FROM pg_catalog.pg_type WHERE typname = ANY (%s) ORDER BY typname"
-            self.cursor.execute(query)
+            self.execute(query)
         return [t[0] for t in self.cursor.fetchall()]
 
     # Manipulating privileges
@@ -810,7 +816,7 @@ class Connection(object):
             .build()
 
         executed_queries.append(query)
-        self.cursor.execute(query)
+        self.execute(query)
 
         status_after = get_status(objs)
 
