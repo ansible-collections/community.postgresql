@@ -1129,7 +1129,7 @@ def main():
                     # So the approach that works for all implicit roles is uppercase without double quotes.
                     roles.append('%s' % r.upper())
                 else:
-                    roles.append('"%s"' % r)
+                    roles.append('"%s"' % r.replace('"', '""'))
             else:
                 if fail_on_role:
                     module.fail_json(msg="Role '%s' does not exist" % r)
