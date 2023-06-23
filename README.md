@@ -74,15 +74,17 @@ Tested with the following `ansible-core` releases:
 - 2.12
 - 2.13
 - 2.14
+- 2.15
 - current development version
 
 Ansible-core versions before 2.12.0 are not supported.
 Our AZP CI includes testing with the following docker images / PostgreSQL versions:
 
 - CentOS 7: 9.2
-- RHEL 8.3 / 8.4: 10
-- Fedora 34: 13
-- Ubuntu 20.04: 14
+- RHEL 8: 10
+- Fedora 34/35: 13
+- Fedora 36/37: 14
+- Ubuntu 20.04: 15
 
 ## Included content
 
