@@ -8,7 +8,7 @@ postgresql_packages:
   - "postgresql-client"
 
 pip_packages:
-  - psycopg
+  - "psycopg>=3.1" # We need Client-side-binding cursors
 
 pg_hba_location: "/etc/postgresql/{{ pg_ver }}/main/pg_hba.conf"
 pg_dir: "/var/lib/postgresql/{{ pg_ver }}/main"
