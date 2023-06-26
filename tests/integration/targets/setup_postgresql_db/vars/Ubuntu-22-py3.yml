@@ -1,0 +1,17 @@
+pg_ver: 15
+
+postgresql_packages:
+  - "apt-utils"
+  - "postgresql-{{ pg_ver }}"
+  - "postgresql-common"
+  - "python3-psycopg2"
+  - "postgresql-client"
+
+pip_packages:
+  - psycopg
+
+pg_hba_location: "/etc/postgresql/{{ pg_ver }}/main/pg_hba.conf"
+pg_dir: "/var/lib/postgresql/{{ pg_ver }}/main"
+pg_auto_conf: "{{ pg_dir }}/postgresql.auto.conf"
+
+postgis: postgresql-{{ pg_ver }}-postgis-3
