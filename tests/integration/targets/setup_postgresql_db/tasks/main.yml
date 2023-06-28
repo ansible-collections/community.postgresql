@@ -66,21 +66,16 @@
     loop_var: loop_item
 
 #
-# Install PostgreSQL 15 on Ubuntu 20.04
-- name: Install PostgreSQL 15 on Ubuntu 20.04
+# Prepare Ubuntu for PostgreSQL install
+- name: Prepare Ubuntu for PostgreSQL
   when:
     - ansible_facts.distribution == 'Ubuntu'
-    - ansible_facts.distribution_major_version == '20'
   block:
   - name: Run autoremove
     become: true
     apt:
       autoremove: true
   
-  - name: Install wget
-    package:
-      name: wget
-
   - name: Create the file repository configuration
     lineinfile:
       create: true
@@ -108,13 +103,20 @@
 ##
 #
 
-- name: install dependencies for postgresql test
+- name: Install required OS packages
   package:
     name: '{{ postgresql_package_item }}'
     state: present
   with_items: '{{ postgresql_packages }}'
   loop_control:
     loop_var: postgresql_package_item
+
+- name: Install required Pip packages
+  pip:
+    name: "{{ pip_package_item }}"
+  with_items: "{{ pip_packages }}"
+  loop_control:
+    loop_var: pip_package_item
 
 - name: Initialize postgres (RedHat systemd)
   command: postgresql-setup initdb

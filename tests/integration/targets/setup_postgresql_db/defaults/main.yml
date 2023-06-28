@@ -4,6 +4,8 @@ postgresql_packages:
     - postgresql-server
     - python-psycopg2
 
+pip_packages: []
+
 pg_user: postgres
 pg_group: root
 
