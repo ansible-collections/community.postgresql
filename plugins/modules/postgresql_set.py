@@ -178,6 +178,7 @@ except Exception:
 from copy import deepcopy
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
@@ -185,9 +186,9 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     connect_to_db,
     ensure_required_libs,
     get_conn_params,
+    get_server_version,
     postgres_common_argument_spec,
 )
-from ansible.module_utils._text import to_native
 
 PG_REQ_VER = 90400
 
@@ -395,7 +396,7 @@ def main():
 
     kw = {}
     # Check server version (needs 9.4 or later):
-    ver = db_connection.server_version
+    ver = get_server_version(db_connection)
     if ver < PG_REQ_VER:
         module.warn("PostgreSQL is %s version but %s or later is required" % (ver, PG_REQ_VER))
         kw = dict(

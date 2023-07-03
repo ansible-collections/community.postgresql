@@ -431,12 +431,16 @@ except ImportError:
 
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils._text import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     pg_quote_identifier,
     check_input,
 )
-from ansible_collections.community.postgresql.plugins.module_utils.postgres import postgres_common_argument_spec, get_conn_params
-from ansible.module_utils._text import to_native
+from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
+    get_conn_params,
+    get_server_version,
+    postgres_common_argument_spec
+)
 
 VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'CREATE',
                          'CONNECT', 'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'SET', 'ALTER_SYSTEM'))
@@ -496,7 +500,7 @@ class Connection(object):
 
         self.connection = psycopg2.connect(**conn_params)
         self.cursor = self.connection.cursor()
-        self.pg_version = self.connection.server_version
+        self.pg_version = get_server_version(self.connection)
 
     def commit(self):
         self.connection.commit()

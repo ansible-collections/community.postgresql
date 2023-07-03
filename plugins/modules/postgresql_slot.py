@@ -162,6 +162,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     exec_sql,
     ensure_required_libs,
     get_conn_params,
+    get_server_version,
     postgres_common_argument_spec,
 )
 
@@ -195,7 +196,7 @@ class PgSlot(object):
 
         if kind == 'physical':
             # Check server version (immediately_reserved needs 9.6+):
-            if self.cursor.connection.server_version < 90600:
+            if get_server_version(self.cursor.connection) < 90600:
                 query = "SELECT pg_create_physical_replication_slot(%(name)s)"
 
             else:
