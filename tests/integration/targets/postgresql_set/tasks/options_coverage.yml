@@ -30,7 +30,16 @@
         track_functions: none
         shared_preload_libraries: 'pg_stat_statements, pgcrypto'
         log_line_prefix: 'db=%d,user=%u,app=%a,client=%h '
-        unix_socket_directories: '/tmp, /var/run/postgresql'
+        unix_socket_directories: '/var/run/postgresql, /tmp/postgresql'
+
+  - name: Ensure /tmp/postgresql directory exists
+    file:
+      state: directory
+      path: /tmp/postgresql
+      owner: "{{ pg_user }}"
+      group: "{{ pg_group }}"
+      mode: 770
+    become: true
 
   # Check mode:
   - name: Set settings in check mode
@@ -70,12 +79,12 @@
 
   - assert:
       that:
-      - result.stdout == "unix_socket_directories = '/tmp, /var/run/postgresql'"
+      - result.stdout == "unix_socket_directories = '/var/run/postgresql, /tmp/postgresql'"
     when: postgres_version_resp.stdout is version('14', '<')
 
   - assert:
       that:
-      - result.stdout == "unix_socket_directories = '\"/tmp\", \"/var/run/postgresql\"'"
+      - result.stdout == "unix_socket_directories = '\"/var/run/postgresql\", \"/tmp/postgresql\"'"
     when: postgres_version_resp.stdout is version('14', '>=')
 
   # https://github.com/ansible-collections/community.postgresql/pull/400
