@@ -275,7 +275,7 @@ def param_get(cursor, module, name, is_guc_list_quote):
         raw_vals_unquoted = []
         for v in raw_val.split(','):
             v = v.strip()  # strip whitespaces at start/end
-            if v[0] == v[-1] == '"':
+            if v and v[0] == v[-1] == '"':
                 # is quoted -> strip quotes
                 raw_vals_unquoted.append(v[1:-1])
             else:
