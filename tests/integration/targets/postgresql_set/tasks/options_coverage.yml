@@ -106,12 +106,6 @@
     service:
       name: "{{ postgresql_service }}"
       state: restarted
-    ignore_errors: true
-
-  - name: Check journalctl
-    become: true
-    shell: "journalctl -x -e --no-pager"
-    register: journalctl_res
 
   # Idempotence:
   - name: Set settings in actual mode again after restart for idempotence
