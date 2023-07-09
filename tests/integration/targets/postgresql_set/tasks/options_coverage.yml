@@ -11,19 +11,6 @@
       login_db: postgres
 
   block:
-
-  - name: Restart PostgreSQL
-    become: true
-    service:
-      name: "{{ postgresql_service }}"
-      state: restarted
-    ignore_errors: true
-
-  - name: Check journalctl
-    become: true
-    shell: "journalctl -x -e --no-pager"
-    register: journalctl_res
-
   - name: Define a test setting map
     set_fact:
       setting_map:
