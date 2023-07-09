@@ -37,8 +37,8 @@
       state: directory
       path: "{{ item }}"
       owner: "{{ pg_user }}"
-      group: "{{ pg_group }}"
-      mode: 770
+      group: "{{ pg_user }}"
+      mode: 777
     become: true
     with_list:
       - /var/run/postgresql
