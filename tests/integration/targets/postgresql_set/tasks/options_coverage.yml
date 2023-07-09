@@ -11,6 +11,19 @@
       login_db: postgres
 
   block:
+
+  - name: Restart PostgreSQL
+    become: true
+    service:
+      name: "{{ postgresql_service }}"
+      state: restarted
+    ignore_errors: true
+
+  - name: Check journalctl
+    become: true
+    shell: "journalctl -x -e --no-pager"
+    register: journalctl_res
+
   - name: Define a test setting map
     set_fact:
       setting_map:
@@ -30,7 +43,7 @@
         track_functions: none
         shared_preload_libraries: 'pg_stat_statements, pgcrypto'
         log_line_prefix: 'db=%d,user=%u,app=%a,client=%h '
-        unix_socket_directories: '/var/run/postgresql, /tmp/postgresql'
+        unix_socket_directories: '/var/run/postgresql, /var/run/postgresql2'
 
   - name: Ensure unix_socket_directories exist
     file:
@@ -42,7 +55,7 @@
     become: true
     with_list:
       - /var/run/postgresql
-      - /tmp/postgresql
+      - /var/run/postgresql2
 
   # Check mode:
   - name: Set settings in check mode
@@ -82,12 +95,12 @@
 
   - assert:
       that:
-      - result.stdout == "unix_socket_directories = '/var/run/postgresql, /tmp/postgresql'"
+      - result.stdout == "unix_socket_directories = '/var/run/postgresql, /var/run/postgresql2'"
     when: postgres_version_resp.stdout is version('14', '<')
 
   - assert:
       that:
-      - result.stdout == "unix_socket_directories = '\"/var/run/postgresql\", \"/tmp/postgresql\"'"
+      - result.stdout == "unix_socket_directories = '\"/var/run/postgresql\", \"/var/run/postgresql2\"'"
     when: postgres_version_resp.stdout is version('14', '>=')
 
   # https://github.com/ansible-collections/community.postgresql/pull/400
@@ -106,6 +119,12 @@
     service:
       name: "{{ postgresql_service }}"
       state: restarted
+    ignore_errors: true
+
+  - name: Check journalctl
+    become: true
+    shell: "journalctl -x -e --no-pager"
+    register: journalctl_res
 
   # Idempotence:
   - name: Set settings in actual mode again after restart for idempotence
