@@ -70,12 +70,12 @@
 
   - assert:
       that:
-      - result.stdout == "unix_socket_directories = '/var/run/postgresql, /tmp'"
+      - result.stdout == "unix_socket_directories = '/tmp, /var/run/postgresql'"
     when: postgres_version_resp.stdout is version('14', '<')
 
   - assert:
       that:
-      - result.stdout == "unix_socket_directories = '\"/var/run/postgresql\", \"/tmp\"'"
+      - result.stdout == "unix_socket_directories = '"/tmp", "/var/run/postgresql"'"
     when: postgres_version_resp.stdout is version('14', '>=')
 
   # https://github.com/ansible-collections/community.postgresql/pull/400
