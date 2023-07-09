@@ -71,12 +71,12 @@
   - assert:
       that:
       - result.stdout == "unix_socket_directories = '/var/run/postgresql, /tmp'"
-    - when: postgres_version_resp.stdout is version('14', '<')
+    when: postgres_version_resp.stdout is version('14', '<')
 
   - assert:
       that:
       - result.stdout == "unix_socket_directories = '\"/var/run/postgresql\", \"/tmp\"'"
-    - when: postgres_version_resp.stdout is version('14', '>=')
+    when: postgres_version_resp.stdout is version('14', '>=')
 
   # https://github.com/ansible-collections/community.postgresql/pull/400
   - name: Test single-value param with commas and spaces in value
