@@ -30,7 +30,7 @@
         track_functions: none
         shared_preload_libraries: 'pg_stat_statements, pgcrypto'
         log_line_prefix: 'db=%d,user=%u,app=%a,client=%h '
-        unix_socket_directories: '/var/run/postgresql, /tmp'
+        unix_socket_directories: '/tmp, /var/run/postgresql'
 
   # Check mode:
   - name: Set settings in check mode
@@ -108,4 +108,4 @@
   - name: Check idempotence after restart
     assert:
       that: not item.changed
-    with_items: test_idempotence.results
+    with_items: '{{ test_idempotence.results }}'
