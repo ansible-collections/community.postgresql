@@ -370,9 +370,9 @@ def param_set(cursor, module, name, value, context, server_version):
             query = "ALTER SYSTEM SET %s = DEFAULT" % name
         else:
             if isinstance(value, str) and \
-                ',' in value and \
-                not name.endswith(('_command', '_prefix')) and \
-                not (server_version < 140000 and name == 'unix_socket_directories'):
+                    ',' in value and \
+                    not name.endswith(('_command', '_prefix')) and \
+                    not (server_version < 140000 and name == 'unix_socket_directories'):
                 # Issue https://github.com/ansible-collections/community.postgresql/issues/78
                 # Change value from 'one, two, three' -> "'one','two','three'"
                 # PR https://github.com/ansible-collections/community.postgresql/pull/400
