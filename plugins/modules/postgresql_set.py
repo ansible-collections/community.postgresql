@@ -227,6 +227,20 @@ def param_is_guc_list_quote(server_version, name):
     return False
 
 
+def param_guc_list_unquote(value):
+    # unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
+    value_unquoted = []
+    for v in value.split(','):
+        v = v.strip()  # strip whitespaces at start/end
+        if v and v[0] == v[-1] == '"':
+            # is quoted -> strip quotes
+            value_unquoted.append(v[1:-1])
+        else:
+            # is not quoted -> no changes
+            value_unquoted.append(v)
+    return ', '.join(value_unquoted)
+
+
 def param_get(cursor, module, name, is_guc_list_quote):
     query = ("SELECT name, setting, unit, context, boot_val "
              "FROM pg_settings WHERE name = %(name)s")
@@ -244,15 +258,16 @@ def param_get(cursor, module, name, is_guc_list_quote):
                              "Please check its spelling or presence in your PostgreSQL version "
                              "(https://www.postgresql.org/docs/current/runtime-config.html)" % name)
 
+    current_val = val[name]
     raw_val = info['setting']
     unit = info['unit']
     context = info['context']
     boot_val = info['boot_val']
 
-    if val[name] == 'True':
-        val[name] = 'on'
-    elif val[name] == 'False':
-        val[name] = 'off'
+    if current_val == 'True':
+        current_val = 'on'
+    elif current_val == 'False':
+        current_val = 'off'
 
     if unit == 'kB':
         if int(raw_val) > 0:
@@ -271,20 +286,11 @@ def param_get(cursor, module, name, is_guc_list_quote):
         unit = 'b'
 
     if is_guc_list_quote:
-        # unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
-        raw_vals_unquoted = []
-        for v in raw_val.split(','):
-            v = v.strip()  # strip whitespaces at start/end
-            if v and v[0] == v[-1] == '"':
-                # is quoted -> strip quotes
-                raw_vals_unquoted.append(v[1:-1])
-            else:
-                # is not quoted -> no changes
-                raw_vals_unquoted.append(v)
-        raw_val = ', '.join(raw_vals_unquoted)
+        current_val = param_guc_list_unquote(current_val)
+        raw_val = param_guc_list_unquote(raw_val)
 
     return {
-        'current_val': val[name],
+        'current_val': current_val,
         'raw_val': raw_val,
         'unit': unit,
         'boot_val': boot_val,
