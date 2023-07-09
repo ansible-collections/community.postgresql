@@ -364,16 +364,21 @@ def pretty_to_bytes(pretty_val):
         return pretty_val
 
 
-def param_set(cursor, module, name, value, context):
+def param_set(cursor, module, name, value, context, server_version):
     try:
         if str(value).lower() == 'default':
             query = "ALTER SYSTEM SET %s = DEFAULT" % name
         else:
-            if isinstance(value, str) and ',' in value and not name.endswith(('_command', '_prefix')):
+            if isinstance(value, str) and \
+                ',' in value and \
+                not name.endswith(('_command', '_prefix')) and \
+                not (server_version < 140000 and name == 'unix_socket_directories'):
                 # Issue https://github.com/ansible-collections/community.postgresql/issues/78
                 # Change value from 'one, two, three' -> "'one','two','three'"
                 # PR https://github.com/ansible-collections/community.postgresql/pull/400
                 # Parameter names ends with '_command' or '_prefix' can contains commas but are not lists
+                # PR https://github.com/ansible-collections/community.postgresql/pull/521
+                # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and GUC_LIST_QUOTE options so it is a single value parameter
                 value = ','.join(["'" + elem.strip() + "'" for elem in value.split(',')])
                 query = "ALTER SYSTEM SET %s = %s" % (name, value)
             else:
@@ -509,7 +514,7 @@ def main():
 
     # Set param (value can be an empty string):
     if value is not None and value != current_val:
-        changed = param_set(cursor, module, name, value, context)
+        changed = param_set(cursor, module, name, value, context, ver)
 
         kw['value_pretty'] = value
 
@@ -523,7 +528,7 @@ def main():
             )
             module.exit_json(**kw)
 
-        changed = param_set(cursor, module, name, boot_val, context)
+        changed = param_set(cursor, module, name, boot_val, context, ver)
 
     cursor.close()
     db_connection.close()
