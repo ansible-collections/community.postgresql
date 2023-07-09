@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_set - fixed GUC_LIST_QUOTE parameters (https://github.com/ansible-collections/community.postgresql/pull/521).
