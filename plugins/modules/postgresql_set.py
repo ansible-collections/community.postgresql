@@ -194,12 +194,40 @@ PG_REQ_VER = 90400
 # To allow to set value like 1mb instead of 1MB, etc:
 LOWERCASE_SIZE_UNITS = ("mb", "gb", "tb")
 
+# GUC_LIST_QUOTE parameters list for each version where they changed (from PG_REQ_VER).
+# It is a tuple of tuples as we need to iterate it in order.
+PARAMETERS_GUC_LIST_QUOTE = (
+    (140000, (
+        'local_preload_libraries',
+        'search_path',
+        'session_preload_libraries',
+        'shared_preload_libraries',
+        'temp_tablespaces',
+        'unix_socket_directories'
+    )),
+    (90400,  (
+        'local_preload_libraries',
+        'search_path',
+        'session_preload_libraries',
+        'shared_preload_libraries',
+        'temp_tablespaces'
+    )),
+)
+
+
 # ===========================================
 # PostgreSQL module specific support methods.
 #
 
 
-def param_get(cursor, module, name):
+def param_is_guc_list_quote(server_version, name):
+    for guc_list_quote_ver, guc_list_quote_params in PARAMETERS_GUC_LIST_QUOTE:
+        if server_version >= guc_list_quote_ver:
+            return name in guc_list_quote_params
+    return False
+
+
+def param_get(cursor, module, name, is_guc_list_quote):
     query = ("SELECT name, setting, unit, context, boot_val "
              "FROM pg_settings WHERE name = %(name)s")
     try:
@@ -241,6 +269,19 @@ def param_get(cursor, module, name):
             boot_val = int(boot_val) * 1024 * 1024
 
         unit = 'b'
+
+    if is_guc_list_quote:
+        # unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
+        raw_vals_unquoted = []
+        for v in raw_val.split(','):
+            v = v.strip() # strip whitespaces at start/end
+            if v[0] == v[-1] == '"':
+                # is quoted -> strip quotes
+                raw_vals_unquoted.append(v[1:-1])
+            else:
+                # is not quoted -> no changes
+                raw_vals_unquoted.append(v)
+        raw_val = ', '.join(raw_vals_unquoted)
 
     return {
         'current_val': val[name],
@@ -409,6 +450,9 @@ def main():
         db_connection.close()
         module.exit_json(**kw)
 
+    # Check parameter is GUC_LIST_QUOTE (done once as depend only on server version)
+    is_guc_list_quote = param_is_guc_list_quote(ver, name)
+
     # Set default returned values:
     restart_required = False
     changed = False
@@ -416,7 +460,7 @@ def main():
     kw['restart_required'] = False
 
     # Get info about param state:
-    res = param_get(cursor, module, name)
+    res = param_get(cursor, module, name, is_guc_list_quote)
     current_val = res['current_val']
     raw_val = res['raw_val']
     unit = res['unit']
@@ -483,7 +527,7 @@ def main():
         db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
         cursor = db_connection.cursor(cursor_factory=DictCursor)
 
-        res = param_get(cursor, module, name)
+        res = param_get(cursor, module, name, is_guc_list_quote)
         # f_ means 'final'
         f_value = res['current_val']
         f_raw_val = res['raw_val']
