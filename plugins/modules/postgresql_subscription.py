@@ -211,15 +211,16 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     exec_sql,
     ensure_required_libs,
     get_conn_params,
+    get_server_version,
     postgres_common_argument_spec,
 )
-from ansible.module_utils.six import iteritems
 
 SUPPORTED_PG_VERSION = 10000
 
@@ -670,7 +671,7 @@ def main():
     cursor = db_connection.cursor(cursor_factory=DictCursor)
 
     # Check version:
-    if cursor.connection.server_version < SUPPORTED_PG_VERSION:
+    if get_server_version(cursor.connection) < SUPPORTED_PG_VERSION:
         module.fail_json(msg="PostgreSQL server version should be 10.0 or greater")
 
     # Set defaults:

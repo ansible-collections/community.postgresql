@@ -523,6 +523,8 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.six import iteritems
+from ansible.module_utils._text import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
@@ -530,10 +532,9 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     connect_to_db,
     ensure_required_libs,
     get_conn_params,
+    get_server_version,
     postgres_common_argument_spec,
 )
-from ansible.module_utils.six import iteritems
-from ansible.module_utils._text import to_native
 
 
 # ===========================================
@@ -1038,7 +1039,7 @@ class PgClusterInfo(object):
                 size=i[6],
             )
 
-        if self.cursor.connection.server_version >= 100000:
+        if get_server_version(self.cursor.connection) >= 100000:
             subscr_info = self.get_subscr_info()
 
         for datname in db_dict:
@@ -1053,7 +1054,7 @@ class PgClusterInfo(object):
             db_dict[datname]['namespaces'] = self.get_namespaces()
             db_dict[datname]['extensions'] = self.get_ext_info()
             db_dict[datname]['languages'] = self.get_lang_info()
-            if self.cursor.connection.server_version >= 100000:
+            if get_server_version(self.cursor.connection) >= 100000:
                 db_dict[datname]['publications'] = self.get_pub_info()
                 db_dict[datname]['subscriptions'] = subscr_info.get(datname, {})
 

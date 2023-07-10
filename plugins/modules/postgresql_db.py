@@ -275,19 +275,20 @@ except ImportError:
 else:
     HAS_PSYCOPG2 = True
 
-from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db,
-    get_conn_params,
-    ensure_required_libs,
-    postgres_common_argument_spec
-)
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.six.moves import shlex_quote
+from ansible.module_utils._text import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     SQLParseError,
 )
-from ansible.module_utils.six.moves import shlex_quote
-from ansible.module_utils._text import to_native
+from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    get_server_version,
+    postgres_common_argument_spec
+)
 
 executed_commands = []
 
@@ -342,7 +343,7 @@ def db_exists(cursor, db):
 
 
 def db_dropconns(cursor, db):
-    if cursor.connection.server_version >= 90200:
+    if get_server_version(cursor.connection) >= 90200:
         """ Drop DB connections in Postgres 9.2 and above """
         query_terminate = ("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity "
                            "WHERE pg_stat_activity.datname=%(db)s AND pid <> pg_backend_pid()")
@@ -360,7 +361,7 @@ def db_delete(cursor, db, force=False):
     if db_exists(cursor, db):
         query = 'DROP DATABASE "%s"' % db
         if force:
-            if cursor.connection.server_version >= 130000:
+            if get_server_version(cursor.connection) >= 130000:
                 query = ('DROP DATABASE "%s" WITH (FORCE)' % db)
             else:
                 db_dropconns(cursor, db)
