@@ -168,13 +168,6 @@ context:
   sample: user
 '''
 
-try:
-    from psycopg2.extras import DictCursor
-except Exception:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
-
 from copy import deepcopy
 
 from ansible.module_utils.basic import AnsibleModule
@@ -187,6 +180,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     ensure_required_libs,
     get_conn_params,
     get_server_version,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 
@@ -388,11 +382,11 @@ def main():
     if value is None and not reset:
         module.fail_json(msg="%s: at least one of value or reset param must be specified" % name)
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    cursor = db_connection.cursor(**pg_cursor_args)
 
     kw = {}
     # Check server version (needs 9.4 or later):
@@ -482,7 +476,7 @@ def main():
     # Reconnect and recheck current value:
     if context in ('sighup', 'superuser-backend', 'backend', 'superuser', 'user'):
         db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
-        cursor = db_connection.cursor(cursor_factory=DictCursor)
+        cursor = db_connection.cursor(**pg_cursor_args)
 
         res = param_get(cursor, module, name)
         # f_ means 'final'

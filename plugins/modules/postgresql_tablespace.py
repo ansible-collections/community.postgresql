@@ -180,7 +180,6 @@ state:
 
 try:
     from psycopg2 import __version__ as PSYCOPG2_VERSION
-    from psycopg2.extras import DictCursor
     from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT as AUTOCOMMIT
     from psycopg2.extensions import ISOLATION_LEVEL_READ_COMMITTED as READ_COMMITTED
 except ImportError:
@@ -199,6 +198,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     exec_sql,
     ensure_required_libs,
     get_conn_params,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 
@@ -209,12 +209,12 @@ class PgTablespace(object):
 
     Args:
         module (AnsibleModule) -- object of AnsibleModule class
-        cursor (cursor) -- cursor object of psycopg2 library
+        cursor (cursor) -- cursor object of psycopg library
         name (str) -- name of the tablespace
 
     Attrs:
         module (AnsibleModule) -- object of AnsibleModule class
-        cursor (cursor) -- cursor object of psycopg2 library
+        cursor (cursor) -- cursor object of psycopg library
         name (str) -- name of the tablespace
         exists (bool) -- flag the tablespace exists in the DB or not
         owner (str) -- tablespace owner
@@ -429,11 +429,11 @@ def main():
         check_input(module, tablespace, location, owner,
                     rename_to, session_role, settings_list)
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    cursor = db_connection.cursor(**pg_cursor_args)
 
     # Change autocommit to False if check_mode:
     if module.check_mode:

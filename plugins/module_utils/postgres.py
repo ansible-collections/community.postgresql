@@ -16,18 +16,23 @@ from datetime import timedelta
 from decimal import Decimal
 from os import environ
 
-psycopg2 = None  # This line needs for unit tests
-try:
-    import psycopg2
-    import psycopg2.extras
-    HAS_PSYCOPG2 = True
-except ImportError:
-    HAS_PSYCOPG2 = False
-
 from ansible.module_utils.basic import missing_required_lib
 from ansible.module_utils._text import to_native
 from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
+
+psycopg2 = None  # This line needs for unit tests
+pg_cursor_args = None
+PSYCOPG_VERSION = None
+
+try:
+    import psycopg2
+    from psycopg2.extras import DictCursor
+    PSYCOPG_VERSION = LooseVersion(psycopg2.__version__)
+    HAS_PSYCOPG2 = True
+    pg_cursor_args = {"cursor_factory": DictCursor}
+except ImportError:
+    HAS_PSYCOPG2 = False
 
 TYPES_NEED_TO_CONVERT = (Decimal, timedelta)
 

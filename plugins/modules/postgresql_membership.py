@@ -163,13 +163,6 @@ state:
     sample: "present"
 '''
 
-try:
-    from psycopg2.extras import DictCursor
-except ImportError:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -177,6 +170,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     ensure_required_libs,
     get_conn_params,
     PgMembership,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 
@@ -212,11 +206,11 @@ def main():
         # Check input for potentially dangerous elements:
         check_input(module, groups, target_roles, session_role)
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    cursor = db_connection.cursor(**pg_cursor_args)
 
     ##############
     # Create the object and do main job:

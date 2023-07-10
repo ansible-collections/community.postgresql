@@ -268,13 +268,6 @@ import os
 import subprocess
 import traceback
 
-try:
-    from psycopg2.extras import DictCursor
-except ImportError:
-    HAS_PSYCOPG2 = False
-else:
-    HAS_PSYCOPG2 = True
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves import shlex_quote
 from ansible.module_utils._text import to_native
@@ -287,6 +280,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     ensure_required_libs,
     get_conn_params,
     get_server_version,
+    pg_cursor_args,
     postgres_common_argument_spec
 )
 
@@ -713,7 +707,7 @@ def main():
 
     if not raw_connection:
         db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
-        cursor = db_connection.cursor(cursor_factory=DictCursor)
+        cursor = db_connection.cursor(**pg_cursor_args)
 
         if session_role:
             try:

@@ -176,13 +176,6 @@ parameters:
 '''
 
 
-try:
-    from psycopg2.extras import DictCursor
-except ImportError:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
@@ -195,6 +188,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     ensure_required_libs,
     get_conn_params,
     get_server_version,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 
@@ -229,12 +223,12 @@ class PgPublication():
 
     Args:
         module (AnsibleModule): Object of AnsibleModule class.
-        cursor (cursor): Cursor object of psycopg2 library to work with PostgreSQL.
+        cursor (cursor): Cursor object of psycopg library to work with PostgreSQL.
         name (str): The name of the publication.
 
     Attributes:
         module (AnsibleModule): Object of AnsibleModule class.
-        cursor (cursor): Cursor object of psycopg2 library to work with PostgreSQL.
+        cursor (cursor): Cursor object of psycopg library to work with PostgreSQL.
         name (str): Name of the publication.
         executed_queries (list): List of executed queries.
         attrs (dict): Dict with publication attributes.
@@ -640,13 +634,13 @@ def main():
     if state == 'present' and cascade:
         module.warn('parameter "cascade" is ignored when "state=present"')
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     # Connect to DB and make cursor object:
     conn_params = get_conn_params(module, module.params)
     # We check publication state without DML queries execution, so set autocommit:
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    cursor = db_connection.cursor(**pg_cursor_args)
 
     # Check version:
     if get_server_version(cursor.connection) < SUPPORTED_PG_VERSION:

@@ -515,13 +515,6 @@ settings:
 import re
 from fnmatch import fnmatch
 
-try:
-    from psycopg2.extras import DictCursor
-except ImportError:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
 from ansible.module_utils._text import to_native
@@ -533,6 +526,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     ensure_required_libs,
     get_conn_params,
     get_server_version,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 
@@ -559,14 +553,14 @@ class PgDbConn(object):
 
         Note: connection parameters are passed by self.module object.
         """
-        # Ensure psycopg2 libraries are available before connecting to DB:
+        # Ensure psycopg libraries are available before connecting to DB:
         ensure_required_libs(self.module)
         conn_params = get_conn_params(self.module, self.module.params, warn_db_default=False)
         self.db_conn, dummy = connect_to_db(self.module, conn_params, fail_on_conn=fail_on_conn)
         if self.db_conn is None:
             # only happens if fail_on_conn is False and there actually was an issue connecting to the DB
             return None
-        return self.db_conn.cursor(cursor_factory=DictCursor)
+        return self.db_conn.cursor(**pg_cursor_args)
 
     def reconnect(self, dbname):
         """Reconnect to another database and return a PostgreSQL cursor object.
@@ -589,7 +583,7 @@ class PgClusterInfo(object):
 
     Arguments:
         module (AnsibleModule): Object of AnsibleModule class.
-        db_conn_obj (psycopg2.connect): PostgreSQL connection object.
+        db_conn_obj (psycopg.connect): PostgreSQL connection object.
     """
 
     def __init__(self, module, db_conn_obj):
