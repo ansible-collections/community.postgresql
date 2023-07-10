@@ -32,7 +32,7 @@
         log_line_prefix: 'db=%d,user=%u,app=%a,client=%h '
         unix_socket_directories: '/var/run/postgresql, /var/run/postgresql2'
 
-  - name: Ensure unix_socket_directories exist
+  - name: Ensure all unix_socket_directories directories exist
     file:
       state: directory
       path: "{{ item }}"
@@ -40,9 +40,7 @@
       group: "{{ pg_user }}"
       mode: '0777'
     become: true
-    with_list:
-      - /var/run/postgresql
-      - /var/run/postgresql2
+    with_list: "{{ setting_map['unix_socket_directories'].split(',') | map('trim') | list }}"
 
   # Check mode:
   - name: Set settings in check mode
