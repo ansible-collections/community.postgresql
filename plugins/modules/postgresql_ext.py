@@ -297,7 +297,7 @@ def ext_get_versions(cursor, ext):
 
     res = cursor.fetchone()
     if res:
-        current_version = res[0]
+        current_version = res["extversion"]
 
     # 2. Get available versions:
     query = ("SELECT version FROM pg_available_extension_versions "
@@ -305,7 +305,7 @@ def ext_get_versions(cursor, ext):
 
     cursor.execute(query, params)
 
-    available_versions = set(r[0] for r in cursor.fetchall())
+    available_versions = set(r["version"] for r in cursor.fetchall())
 
     if current_version is None:
         current_version = False

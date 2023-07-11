@@ -351,11 +351,11 @@ class Index(object):
             self.info = dict(
                 name=self.name,
                 state='present',
-                schema=res[0][0],
-                tblname=res[0][1],
-                tblspace=res[0][2] if res[0][2] else '',
-                valid=res[0][3],
-                storage_params=res[0][4] if res[0][4] else [],
+                schema=res[0]["schemaname"],
+                tblname=res[0]["tablename"],
+                tblspace=res[0]["tablespace"] if res[0]["tablespace"] else '',
+                valid=res[0]["indisvalid"],
+                storage_params=res[0]["reloptions"] if res[0]["reloptions"] else [],
             )
             return True
 

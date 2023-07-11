@@ -89,7 +89,7 @@ def ensure_required_libs(module):
 def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
     """Connect to a PostgreSQL database.
 
-    Return a tuple containing a psycopg2 connection object and error message / None.
+    Return a tuple containing a psycopg connection object and error message / None.
 
     Args:
         module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule class
@@ -280,7 +280,7 @@ class PgRole():
         res = exec_sql(self, query, query_params={'dst_role': self.name},
                        add_to_executed=False)
         if res:
-            return res[0][0]
+            return res[0]["array"]
         else:
             return []
 
@@ -402,14 +402,14 @@ class PgMembership(object):
     def __roles_exist(self, roles):
         tmp = ["'" + x + "'" for x in roles]
         query = "SELECT rolname FROM pg_roles WHERE rolname IN (%s)" % ','.join(tmp)
-        return [x[0] for x in exec_sql(self, query, add_to_executed=False)]
+        return [x["rolname"] for x in exec_sql(self, query, add_to_executed=False)]
 
 
 def set_search_path(cursor, search_path):
     """Set session's search_path.
 
     Args:
-        cursor (Psycopg2 cursor): Database cursor object.
+        cursor (Psycopg cursor): Database cursor object.
         search_path (str): String containing comma-separated schema names.
     """
     cursor.execute('SET search_path TO %s' % search_path)

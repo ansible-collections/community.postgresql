@@ -192,7 +192,7 @@ def lang_istrusted(cursor, lang):
     """Checks if language is trusted for db"""
     query = "SELECT lanpltrusted FROM pg_language WHERE lanname = %(lang)s"
     cursor.execute(query, {'lang': lang})
-    return cursor.fetchone()[0]
+    return cursor.fetchone()["lanpltrusted"]
 
 
 def lang_altertrust(cursor, lang, trust):
@@ -243,7 +243,7 @@ def get_lang_owner(cursor, lang):
              "JOIN pg_roles r ON l.lanowner = r.oid "
              "WHERE l.lanname = %(lang)s")
     cursor.execute(query, {'lang': lang})
-    return cursor.fetchone()[0]
+    return cursor.fetchone()["rolname"]
 
 
 def set_lang_owner(cursor, lang, owner):
