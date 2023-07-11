@@ -1,0 +1,2 @@
+minor_changes:
+- Collection core functions - use common cursor arguments in all modules (https://github.com/ansible-collections/community.postgresql/pull/522)."

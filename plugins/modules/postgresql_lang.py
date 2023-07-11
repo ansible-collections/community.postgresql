@@ -174,6 +174,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     connect_to_db,
     ensure_required_libs,
     get_conn_params,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 
@@ -235,7 +236,7 @@ def get_lang_owner(cursor, lang):
     """Get language owner.
 
     Args:
-        cursor (cursor): psycopg2 cursor object.
+        cursor (cursor): psycopg cursor object.
         lang (str): language name.
     """
     query = ("SELECT r.rolname FROM pg_language l "
@@ -249,7 +250,7 @@ def set_lang_owner(cursor, lang, owner):
     """Set language owner.
 
     Args:
-        cursor (cursor): psycopg2 cursor object.
+        cursor (cursor): psycopg cursor object.
         lang (str): language name.
         owner (str): name of new owner.
     """
@@ -294,11 +295,11 @@ def main():
         # Check input for potentially dangerous elements:
         check_input(module, lang, session_role, owner)
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
-    cursor = db_connection.cursor()
+    cursor = db_connection.cursor(**pg_cursor_args)
 
     changed = False
     kw = {'db': db, 'lang': lang, 'trust': trust}

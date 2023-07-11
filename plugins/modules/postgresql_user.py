@@ -291,7 +291,6 @@ from base64 import b64decode
 
 try:
     import psycopg2
-    from psycopg2.extras import DictCursor
 except ImportError:
     # psycopg2 is checked by connect_to_db()
     # from ansible.module_utils.postgres
@@ -308,6 +307,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     ensure_required_libs,
     get_conn_params,
     get_server_version,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 from ansible.module_utils._text import to_bytes, to_native, to_text
@@ -469,7 +469,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
     """Change user password and/or attributes. Return True if changed, False otherwise."""
     changed = False
 
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    cursor = db_connection.cursor(**pg_cursor_args)
     # Note: role_attr_flags escaped by parse_role_attrs and encrypted is a
     # literal
     if user == 'PUBLIC':
@@ -966,11 +966,11 @@ def main():
         check_input(module, user, password, privs, expires,
                     role_attr_flags, comment, session_role)
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
     db_connection, dummy = connect_to_db(module, conn_params)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    cursor = db_connection.cursor(**pg_cursor_args)
 
     srv_version = get_server_version(db_connection)
 

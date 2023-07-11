@@ -94,13 +94,6 @@ conn_err_msg:
 
 import re
 
-try:
-    from psycopg2.extras import DictCursor
-except ImportError:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
@@ -110,6 +103,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     exec_sql,
     ensure_required_libs,
     get_conn_params,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 
@@ -190,7 +184,7 @@ def main():
         conn_err_msg='',
     )
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
     db_connection, err = connect_to_db(module, conn_params, fail_on_conn=False)
@@ -198,7 +192,7 @@ def main():
         result['conn_err_msg'] = err
 
     if db_connection is not None:
-        cursor = db_connection.cursor(cursor_factory=DictCursor)
+        cursor = db_connection.cursor(**pg_cursor_args)
 
     # Do job:
     pg_ping = PgPing(module, cursor)

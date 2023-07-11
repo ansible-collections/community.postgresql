@@ -301,13 +301,6 @@ newschema:
 '''
 
 
-try:
-    from psycopg2.extras import DictCursor
-except ImportError:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
@@ -317,6 +310,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     exec_sql,
     ensure_required_libs,
     get_conn_params,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 
@@ -326,11 +320,11 @@ class Sequence(object):
 
     Arguments:
         module (AnsibleModule) -- object of AnsibleModule class
-        cursor (cursor) -- cursor object of psycopg2 library
+        cursor (cursor) -- cursor object of psycopg library
 
     Attributes:
         module (AnsibleModule) -- object of AnsibleModule class
-        cursor (cursor) -- cursor object of psycopg2 library
+        cursor (cursor) -- cursor object of psycopg library
         changed (bool) --  something was changed after execution or not
         executed_queries (list) -- executed queries
         name (str) -- name of the sequence
@@ -539,12 +533,12 @@ def main():
 
     # Change autocommit to False if check_mode:
     autocommit = not module.check_mode
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     # Connect to DB and make cursor object:
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=autocommit)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    cursor = db_connection.cursor(**pg_cursor_args)
 
     ##############
     # Create the object and do main job:

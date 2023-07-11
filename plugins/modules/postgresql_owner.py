@@ -148,13 +148,6 @@ queries:
   sample: [ 'REASSIGN OWNED BY "bob" TO "alice"' ]
 '''
 
-try:
-    from psycopg2.extras import DictCursor
-except ImportError:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
@@ -165,6 +158,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     exec_sql,
     ensure_required_libs,
     get_conn_params,
+    pg_cursor_args,
     postgres_common_argument_spec,
 )
 
@@ -175,7 +169,7 @@ class PgOwnership(object):
 
     Arguments:
         module (AnsibleModule): Object of Ansible module class.
-        cursor (psycopg2.connect.cursor): Cursor object for interaction with the database.
+        cursor (psycopg.connect.cursor): Cursor object for interaction with the database.
         role (str): Role name to set as a new owner of objects.
 
     Important:
@@ -426,11 +420,11 @@ def main():
         # Check input for potentially dangerous elements:
         check_input(module, new_owner, obj_name, reassign_owned_by, session_role)
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    cursor = db_connection.cursor(**pg_cursor_args)
 
     ##############
     # Create the object and do main job:

@@ -437,8 +437,10 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
     check_input,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
+    connect_to_db,
     get_conn_params,
     get_server_version,
+    pg_cursor_args,
     postgres_common_argument_spec
 )
 
@@ -489,8 +491,8 @@ class Connection(object):
         if psycopg2.__version__ < '2.4.3' and sslrootcert is not None:
             raise ValueError('psycopg2 must be at least 2.4.3 in order to user the ca_cert parameter')
 
-        self.connection = psycopg2.connect(**conn_params)
-        self.cursor = self.connection.cursor()
+        self.connection, dummy = connect_to_db(module, conn_params, autocommit=False)
+        self.cursor = self.connection.cursor(**pg_cursor_args)
         self.pg_version = get_server_version(self.connection)
 
         # implicit roles in current pg version

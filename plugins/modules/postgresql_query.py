@@ -252,7 +252,6 @@ rowcount:
 
 try:
     from psycopg2 import ProgrammingError as Psycopg2ProgrammingError
-    from psycopg2.extras import DictCursor
 except ImportError:
     # it is needed for checking 'no result to fetch' in main(),
     # psycopg2 availability will be checked by connect_to_db() into
@@ -271,6 +270,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     convert_to_supported,
     ensure_required_libs,
     get_conn_params,
+    pg_cursor_args,
     postgres_common_argument_spec,
     set_search_path,
     TYPES_NEED_TO_CONVERT,
@@ -337,13 +337,13 @@ def main():
     else:  # if it's a list
         query_list = query
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=autocommit)
     if encoding is not None:
         db_connection.set_client_encoding(encoding)
-    cursor = db_connection.cursor(cursor_factory=DictCursor)
+    cursor = db_connection.cursor(**pg_cursor_args)
 
     if search_path:
         set_search_path(cursor, '%s' % ','.join([x.strip(' ') for x in search_path]))
