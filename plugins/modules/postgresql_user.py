@@ -520,8 +520,8 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                     role_attr_flags_changing = True
 
         if expires is not None:
-            cursor.execute("SELECT %s::timestamptz;", (expires,))
-            expires_with_tz = cursor.fetchone()[0]
+            cursor.execute("SELECT %s::timestamptz exp_timestamp", (expires,))
+            expires_with_tz = cursor.fetchone()["exp_timestamp"]
             expires_changing = expires_with_tz != current_role_attrs.get('rolvaliduntil')
         else:
             expires_changing = False
@@ -660,7 +660,7 @@ def get_table_privileges(cursor, user, table):
     query = ("SELECT privilege_type FROM information_schema.role_table_grants "
              "WHERE grantee=%(user)s AND table_name=%(table)s AND table_schema=%(schema)s")
     cursor.execute(query, {'user': user, 'table': table, 'schema': schema})
-    return frozenset([x[0] for x in cursor.fetchall()])
+    return frozenset([x["privilege_type"] for x in cursor.fetchall()])
 
 
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
@@ -690,9 +690,9 @@ def get_database_privileges(cursor, user, db):
         'T': 'TEMPORARY',
         'c': 'CONNECT',
     }
-    query = 'SELECT datacl FROM pg_database WHERE datname = %s'
+    query = 'SELECT datacl::varchar FROM pg_database WHERE datname = %s'
     cursor.execute(query, (db,))
-    datacl = cursor.fetchone()[0]
+    datacl = cursor.fetchone()["datacl"]
     if datacl is None:
         return set()
     r = re.search(r'%s\\?"?=(C?T?c?)/[^,]+,?' % user, datacl)
@@ -895,11 +895,11 @@ def get_valid_flags_by_version(srv_version):
 
 def get_comment(cursor, user):
     """Get user's comment."""
-    query = ("SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') "
+    query = ("SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') obj_desc "
              "FROM pg_catalog.pg_roles r "
              "WHERE r.rolname = %(user)s")
     cursor.execute(query, {'user': user})
-    return cursor.fetchone()[0]
+    return cursor.fetchone()["obj_desc"]
 
 
 def add_comment(cursor, user, comment):

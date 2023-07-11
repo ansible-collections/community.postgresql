@@ -256,12 +256,12 @@ class PgTablespace(object):
 
         if not opt:
             self.opt_not_supported = True
-            query = ("SELECT r.rolname, (SELECT Null), %s "
+            query = ("SELECT r.rolname, (SELECT Null) spcoptions, %s loc_string "
                      "FROM pg_catalog.pg_tablespace AS t "
                      "JOIN pg_catalog.pg_roles AS r "
                      "ON t.spcowner = r.oid " % location)
         else:
-            query = ("SELECT r.rolname, t.spcoptions, %s "
+            query = ("SELECT r.rolname, t.spcoptions, %s loc_string "
                      "FROM pg_catalog.pg_tablespace AS t "
                      "JOIN pg_catalog.pg_roles AS r "
                      "ON t.spcowner = r.oid " % location)
@@ -273,19 +273,19 @@ class PgTablespace(object):
             self.exists = False
             return False
 
-        if res[0][0]:
+        if res[0]["rolname"]:
             self.exists = True
-            self.owner = res[0][0]
+            self.owner = res[0]["rolname"]
 
-            if res[0][1]:
+            if res[0]["spcoptions"]:
                 # Options exist:
-                for i in res[0][1]:
+                for i in res[0]["spcoptions"]:
                     i = i.split('=')
                     self.settings[i[0]] = i[1]
 
-            if res[0][2]:
+            if res[0]["loc_string"]:
                 # Location exists:
-                self.location = res[0][2]
+                self.location = res[0]["loc_string"]
 
     def create(self, location):
         """Create tablespace.
