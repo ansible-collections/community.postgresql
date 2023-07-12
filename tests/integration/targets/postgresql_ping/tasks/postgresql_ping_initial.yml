@@ -2,16 +2,17 @@
 # Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-- name: postgresql_ping - test return values
+- name: Test return values
   become_user: "{{ pg_user }}"
   become: true
-  postgresql_ping:
-    db: "{{ db_default }}"
-    login_user: "{{ pg_user }}"
   register: result
   ignore_errors: true
+  community.postgresql.postgresql_ping:
+    db: "{{ db_default }}"
+    login_user: "{{ pg_user }}"
 
-- assert:
+- name: Assert general result
+  ansible.builtin.assert:
     that:
       - result.is_available == true
       - result.server_version != {}
@@ -20,81 +21,88 @@
       - result.server_version.minor != ''
       - result is not changed
 
-- assert:
+- name: Assert result when server major version is 9
+  when: result.server_version.major == 9
+  ansible.builtin.assert:
     that:
     - result.server_version.patch != {}
     - result.server_version.full == '{{ result.server_version.major }}.{{ result.server_version.minor }}.{{ result.server_version.patch }}'
-  when: result.server_version.major == 9
 
-- assert:
+- name: Assert result when server major version is 10 or higher
+  when: result.server_version.major >= 10
+  ansible.builtin.assert:
     that:
     - result.server_version.full == '{{ result.server_version.major }}.{{ result.server_version.minor }}'
-  when: result.server_version.major >= 10
 
-- name: postgresql_ping - check ping of non-existing database doesn't return anything
+- name: Test ping of non-existing database doesn't return anything
   become_user: "{{ pg_user }}"
   become: true
-  postgresql_ping:
-    db: "{{ db_name_nonexist }}"
-    login_user: "{{ pg_user }}"
   register: result
   ignore_errors: true
+  community.postgresql.postgresql_ping:
+    db: "{{ db_name_nonexist }}"
+    login_user: "{{ pg_user }}"
 
-- assert:
+- name: Assert result
+  ansible.builtin.assert:
     that:
       - result.is_available == false
       - result.server_version == {}
       - result is not changed
 
-- name: postgresql_ping - check ping of the database on non-existent port does not return anything
+- name: Test ping of the database on non-existent port does not return anything
   become_user: "{{ pg_user }}"
   become: true
   environment:
     PGPORT: 5435
   ignore_errors: true
-  postgresql_ping:
+  register: result
+  community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
-  register: result
 
-- assert:
+- name: Test result
+  ansible.builtin.assert:
     that:
       - result.is_available == false
       - result.server_version == {}
       - result is not changed
 
-- name: postgresql_ping - check ping of the database by a non-existent user does not return anything
+- name: Test ping of the database by a non-existent user does not return anything
   become_user: "{{ pg_user }}"
   become: true
   environment:
     PGUSER: 'test_user'
   ignore_errors: true
-  postgresql_ping:
-    db: "{{ db_default }}"
   register: result
+  community.postgresql.postgresql_ping:
+    db: "{{ db_default }}"
 
-- assert:
+- name: Assert result
+  ansible.builtin.assert:
     that:
       - result.is_available == false
       - result.server_version == {}
       - result is not changed
 
 - name: Creating a "test_user" in postresql
-  shell:
-    cmd: psql -U "{{ pg_user }}" -c "CREATE ROLE test_user WITH LOGIN PASSWORD 'TEST_PASSWORD';"
+  ansible.builtin.shell: >
+      psql -U "{{ pg_user }}" -c "CREATE ROLE test_user WITH 
+      LOGIN PASSWORD 'TEST_PASSWORD';"
 
-- name: postgresql_ping - check ping of the database by a existent user
+- name: Test ping of the database by a existent user
   become_user: "{{ pg_user }}"
   become: true
   environment:
     PGUSER: 'test_user'
   ignore_errors: true
-  postgresql_ping:
+  register: result
+  community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
     login_password: "TEST_PASSWORD"
-  register: result
 
-- assert:
+- name: Assert result
+  ansible.builtin.assert:
     that:
       - result.is_available == true
       - result.server_version != {}
@@ -103,10 +111,14 @@
       - result.server_version.minor != ''
       - result is not changed
 
-- name: postgresql_ping - ping DB with SSL 1
+- name: Test ping DB with SSL 1
   become_user: "{{ pg_user }}"
   become: true
-  postgresql_ping:
+  register: result
+  when:
+  - ansible_os_family == 'Debian'
+  - postgres_version_resp.stdout is version('9.4', '>=')
+  community.postgresql.postgresql_ping:
     db: "{{ ssl_db }}"
     login_user: "{{ ssl_user }}"
     login_password: "{{ ssl_pass }}"
@@ -115,23 +127,24 @@
     ssl_mode: require
     ca_cert: '{{ ssl_rootcert }}'
     trust_input: true
-  register: result
+
+- name: Assert result
   when:
   - ansible_os_family == 'Debian'
   - postgres_version_resp.stdout is version('9.4', '>=')
-
-- assert:
+  ansible.builtin.assert:
     that: 
     - result.is_available == true
     - result.conn_err_msg == ''
-  when:
-  - ansible_os_family == 'Debian'
-  - postgres_version_resp.stdout is version('9.4', '>=')
 
 - name: postgresql_ping - ping DB with SSL 2
   become_user: "{{ pg_user }}"
   become: true
-  postgresql_ping:
+  register: result
+  when:
+  - ansible_os_family == 'Debian'
+  - postgres_version_resp.stdout is version('9.4', '>=')
+  community.postgresql.postgresql_ping:
     db: "{{ ssl_db }}"
     login_user: "{{ ssl_user }}"
     login_password: "{{ ssl_pass }}"
@@ -142,31 +155,29 @@
     ssl_cert: '{{ ssl_cert }}'
     ssl_key: '{{ ssl_key }}'
     trust_input: true
-  register: result
+
+- name: Assert result
   when:
   - ansible_os_family == 'Debian'
   - postgres_version_resp.stdout is version('9.4', '>=')
-
-- assert:
+  ansible.builtin.assert:
     that: 
     - result.is_available == true
     - result.conn_err_msg == ''
-  when:
-  - ansible_os_family == 'Debian'
-  - postgres_version_resp.stdout is version('9.4', '>=')
 
 - name: postgresql_ping - check trust_input
   become_user: "{{ pg_user }}"
   become: true
-  postgresql_ping:
+  register: result
+  ignore_errors: true
+  community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
     trust_input: false
     session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
-  register: result
-  ignore_errors: true
 
-- assert:
+- name: Assert result
+  ansible.builtin.assert:
     that:
     - result is failed
     - result.msg is search('is potentially dangerous')
@@ -175,13 +186,13 @@
 - name: Try to connect to non-existent DB
   become_user: "{{ pg_user }}"
   become: true
-  postgresql_ping:
+  register: result
+  community.postgresql.postgresql_ping:
     db: blahblah
     login_user: "{{ pg_user }}"
-  register: result
 
-- name: Check conn_err_msg return value
-  assert:
+- name: Assert result
+  ansible.builtin.assert:
     that:
     - result is succeeded
     - result.conn_err_msg is search("database \"blahblah\" does not exist")
