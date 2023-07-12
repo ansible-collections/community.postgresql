@@ -378,7 +378,8 @@ def param_set(cursor, module, name, value, context, server_version):
                 # PR https://github.com/ansible-collections/community.postgresql/pull/400
                 # Parameter names ends with '_command' or '_prefix' can contains commas but are not lists
                 # PR https://github.com/ansible-collections/community.postgresql/pull/521
-                # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and GUC_LIST_QUOTE options so it is a single value parameter
+                # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and
+                # GUC_LIST_QUOTE options so it is a single value parameter
                 value = ','.join(["'" + elem.strip() + "'" for elem in value.split(',')])
                 query = "ALTER SYSTEM SET %s = %s" % (name, value)
             else:
