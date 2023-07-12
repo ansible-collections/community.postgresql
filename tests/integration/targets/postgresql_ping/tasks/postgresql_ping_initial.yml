@@ -2,10 +2,10 @@
 # Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+# See defaults/main.yml for *task_parameters
+
 - name: Test return values
-  become_user: "{{ pg_user }}"
-  become: true
-  register: result
+  <<: *task_parameters
   ignore_errors: true
   community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
@@ -35,9 +35,7 @@
     - result.server_version.full == '{{ result.server_version.major }}.{{ result.server_version.minor }}'
 
 - name: Test ping of non-existing database doesn't return anything
-  become_user: "{{ pg_user }}"
-  become: true
-  register: result
+  <<: *task_parameters
   ignore_errors: true
   community.postgresql.postgresql_ping:
     db: "{{ db_name_nonexist }}"
@@ -51,12 +49,10 @@
       - result is not changed
 
 - name: Test ping of the database on non-existent port does not return anything
-  become_user: "{{ pg_user }}"
-  become: true
+  <<: *task_parameters
   environment:
     PGPORT: 5435
   ignore_errors: true
-  register: result
   community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
@@ -69,12 +65,10 @@
       - result is not changed
 
 - name: Test ping of the database by a non-existent user does not return anything
-  become_user: "{{ pg_user }}"
-  become: true
+  <<: *task_parameters
   environment:
     PGUSER: 'test_user'
   ignore_errors: true
-  register: result
   community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
 
@@ -91,12 +85,10 @@
       LOGIN PASSWORD 'TEST_PASSWORD';"
 
 - name: Test ping of the database by a existent user
-  become_user: "{{ pg_user }}"
-  become: true
+  <<: *task_parameters
   environment:
     PGUSER: 'test_user'
   ignore_errors: true
-  register: result
   community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
     login_password: "TEST_PASSWORD"
@@ -112,9 +104,7 @@
       - result is not changed
 
 - name: Test ping DB with SSL 1
-  become_user: "{{ pg_user }}"
-  become: true
-  register: result
+  <<: *task_parameters
   when:
   - ansible_os_family == 'Debian'
   - postgres_version_resp.stdout is version('9.4', '>=')
@@ -138,9 +128,7 @@
     - result.conn_err_msg == ''
 
 - name: postgresql_ping - ping DB with SSL 2
-  become_user: "{{ pg_user }}"
-  become: true
-  register: result
+  <<: *task_parameters
   when:
   - ansible_os_family == 'Debian'
   - postgres_version_resp.stdout is version('9.4', '>=')
@@ -166,9 +154,7 @@
     - result.conn_err_msg == ''
 
 - name: postgresql_ping - check trust_input
-  become_user: "{{ pg_user }}"
-  become: true
-  register: result
+  <<: *task_parameters
   ignore_errors: true
   community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
@@ -184,9 +170,7 @@
 
 # Check conn_err_msg return value
 - name: Try to connect to non-existent DB
-  become_user: "{{ pg_user }}"
-  become: true
-  register: result
+  <<: *task_parameters
   community.postgresql.postgresql_ping:
     db: blahblah
     login_user: "{{ pg_user }}"
