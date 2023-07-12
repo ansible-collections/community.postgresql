@@ -731,10 +731,10 @@ class PgClusterInfo(object):
                               "AND column_name = 'spcoptions'")
 
         if not opt:
-            query = ("SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl::varchar "
+            query = ("SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl::text "
                      "FROM pg_tablespace AS s ")
         else:
-            query = ("SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl::varchar, s.spcoptions "
+            query = ("SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl::text, s.spcoptions "
                      "FROM pg_tablespace AS s ")
 
         res = self.__exec_sql(query)
@@ -924,7 +924,7 @@ class PgClusterInfo(object):
         if not res[0]["exists"]:
             return True
 
-        query = ("SELECT r.pid, pg_catalog.pg_get_userbyid(r.usesysid) AS rolname, r.application_name, r.client_addr::varchar, "
+        query = ("SELECT r.pid, pg_catalog.pg_get_userbyid(r.usesysid) AS rolname, r.application_name, r.client_addr::text, "
                  "r.client_hostname, r.backend_start::text, r.state "
                  "FROM pg_stat_replication AS r ")
         res = self.__exec_sql(query)
@@ -948,7 +948,7 @@ class PgClusterInfo(object):
 
     def get_lang_info(self):
         """Get information about current supported languages."""
-        query = ("SELECT l.lanname, pg_catalog.pg_get_userbyid(l.lanowner) AS rolname, l.lanacl::varchar "
+        query = ("SELECT l.lanname, pg_catalog.pg_get_userbyid(l.lanowner) AS rolname, l.lanacl::text "
                  "FROM pg_language AS l ")
         res = self.__exec_sql(query)
         lang_dict = {}
@@ -962,7 +962,7 @@ class PgClusterInfo(object):
 
     def get_namespaces(self):
         """Get information about namespaces."""
-        query = ("SELECT n.nspname, pg_catalog.pg_get_userbyid(n.nspowner) AS rolname, n.nspacl::varchar "
+        query = ("SELECT n.nspname, pg_catalog.pg_get_userbyid(n.nspowner) AS rolname, n.nspacl::text "
                  "FROM pg_catalog.pg_namespace AS n ")
         res = self.__exec_sql(query)
 

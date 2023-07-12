@@ -690,7 +690,7 @@ def get_database_privileges(cursor, user, db):
         'T': 'TEMPORARY',
         'c': 'CONNECT',
     }
-    query = 'SELECT datacl::varchar FROM pg_database WHERE datname = %s'
+    query = 'SELECT datacl::text FROM pg_database WHERE datname = %s'
     cursor.execute(query, (db,))
     datacl = cursor.fetchone()["datacl"]
     if datacl is None:

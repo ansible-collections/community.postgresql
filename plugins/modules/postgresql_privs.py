@@ -621,14 +621,14 @@ class Connection(object):
 
     def get_table_acls(self, schema, tables):
         if schema:
-            query = """SELECT relacl::varchar
+            query = """SELECT relacl::text
                        FROM pg_catalog.pg_class c
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                        WHERE nspname = %s AND relkind in ('r','p','v','m') AND relname = ANY (%s)
                        ORDER BY relname"""
             self.execute(query, (schema, tables))
         else:
-            query = ("SELECT relacl::varchar FROM pg_catalog.pg_class "
+            query = ("SELECT relacl::text FROM pg_catalog.pg_class "
                      "WHERE relkind in ('r','p','v','m') AND relname = ANY (%s) "
                      "ORDER BY relname")
             self.execute(query)
@@ -636,14 +636,14 @@ class Connection(object):
 
     def get_sequence_acls(self, schema, sequences):
         if schema:
-            query = """SELECT relacl::varchar
+            query = """SELECT relacl::text
                        FROM pg_catalog.pg_class c
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                        WHERE nspname = %s AND relkind = 'S' AND relname = ANY (%s)
                        ORDER BY relname"""
             self.execute(query, (schema, sequences))
         else:
-            query = ("SELECT relacl::varchar FROM pg_catalog.pg_class "
+            query = ("SELECT relacl::text FROM pg_catalog.pg_class "
                      "WHERE  relkind = 'S' AND relname = ANY (%s) ORDER BY relname")
             self.execute(query)
         return [t["relacl"] for t in self.cursor.fetchall()]
@@ -651,38 +651,38 @@ class Connection(object):
     def get_function_acls(self, schema, function_signatures):
         funcnames = [f.split('(', 1)[0] for f in function_signatures]
         if schema:
-            query = """SELECT proacl::varchar
+            query = """SELECT proacl::text
                        FROM pg_catalog.pg_proc p
                        JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
                        WHERE nspname = %s AND proname = ANY (%s)
                        ORDER BY proname, proargtypes"""
             self.execute(query, (schema, funcnames))
         else:
-            query = ("SELECT proacl::varchar FROM pg_catalog.pg_proc WHERE proname = ANY (%s) "
+            query = ("SELECT proacl::text FROM pg_catalog.pg_proc WHERE proname = ANY (%s) "
                      "ORDER BY proname, proargtypes")
             self.execute(query)
         return [t["proacl"] for t in self.cursor.fetchall()]
 
     def get_schema_acls(self, schemas):
-        query = """SELECT nspacl::varchar FROM pg_catalog.pg_namespace
+        query = """SELECT nspacl::text FROM pg_catalog.pg_namespace
                    WHERE nspname = ANY (%s) ORDER BY nspname"""
         self.execute(query, (schemas,))
         return [t["nspacl"] for t in self.cursor.fetchall()]
 
     def get_language_acls(self, languages):
-        query = """SELECT lanacl::varchar FROM pg_catalog.pg_language
+        query = """SELECT lanacl::text FROM pg_catalog.pg_language
                    WHERE lanname = ANY (%s) ORDER BY lanname"""
         self.execute(query, (languages,))
         return [t["lanacl"] for t in self.cursor.fetchall()]
 
     def get_tablespace_acls(self, tablespaces):
-        query = """SELECT spcacl::varchar FROM pg_catalog.pg_tablespace
+        query = """SELECT spcacl::text FROM pg_catalog.pg_tablespace
                    WHERE spcname = ANY (%s) ORDER BY spcname"""
         self.execute(query, (tablespaces,))
         return [t["spcacl"] for t in self.cursor.fetchall()]
 
     def get_database_acls(self, databases):
-        query = """SELECT datacl::varchar FROM pg_catalog.pg_database
+        query = """SELECT datacl::text FROM pg_catalog.pg_database
                    WHERE datname = ANY (%s) ORDER BY datname"""
         self.execute(query, (databases,))
         return [t["datacl"] for t in self.cursor.fetchall()]
@@ -698,35 +698,35 @@ class Connection(object):
 
     def get_default_privs(self, schema, *args):
         if schema:
-            query = """SELECT defaclacl::varchar
+            query = """SELECT defaclacl::text
                        FROM pg_default_acl a
                        JOIN pg_namespace b ON a.defaclnamespace=b.oid
                        WHERE b.nspname = %s;"""
             self.execute(query, (schema,))
         else:
-            self.execute("SELECT defaclacl::varchar FROM pg_default_acl;")
+            self.execute("SELECT defaclacl::text FROM pg_default_acl;")
         return [t["defaclacl"] for t in self.cursor.fetchall()]
 
     def get_foreign_data_wrapper_acls(self, fdws):
-        query = """SELECT fdwacl::varchar FROM pg_catalog.pg_foreign_data_wrapper
+        query = """SELECT fdwacl::text FROM pg_catalog.pg_foreign_data_wrapper
                    WHERE fdwname = ANY (%s) ORDER BY fdwname"""
         self.execute(query, (fdws,))
         return [t["fdwacl"] for t in self.cursor.fetchall()]
 
     def get_foreign_server_acls(self, fs):
-        query = """SELECT srvacl::varchar FROM pg_catalog.pg_foreign_server
+        query = """SELECT srvacl::text FROM pg_catalog.pg_foreign_server
                    WHERE srvname = ANY (%s) ORDER BY srvname"""
         self.execute(query, (fs,))
         return [t["srvacl"] for t in self.cursor.fetchall()]
 
     def get_type_acls(self, schema, types):
         if schema:
-            query = """SELECT t.typacl::varchar FROM pg_catalog.pg_type t
+            query = """SELECT t.typacl::text FROM pg_catalog.pg_type t
                        JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
                        WHERE n.nspname = %s AND t.typname = ANY (%s) ORDER BY typname"""
             self.execute(query, (schema, types))
         else:
-            query = "SELECT typacl::varchar FROM pg_catalog.pg_type WHERE typname = ANY (%s) ORDER BY typname"
+            query = "SELECT typacl::text FROM pg_catalog.pg_type WHERE typname = ANY (%s) ORDER BY typname"
             self.execute(query)
         return [t["typacl"] for t in self.cursor.fetchall()]
 
@@ -734,7 +734,7 @@ class Connection(object):
         if self.pg_version < 150000:
             raise Error("PostgreSQL version must be >= 15 for type=parameter. Exit")
 
-        query = """SELECT paracl::varchar FROM pg_catalog.pg_parameter_acl
+        query = """SELECT paracl::text FROM pg_catalog.pg_parameter_acl
                    WHERE parname = ANY (%s) ORDER BY parname"""
         self.cursor.execute(query, (parameters,))
         return [t["paracl"] for t in self.cursor.fetchall()]
