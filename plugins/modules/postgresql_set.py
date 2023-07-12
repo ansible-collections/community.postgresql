@@ -228,7 +228,8 @@ def param_is_guc_list_quote(server_version, name):
 
 
 def param_guc_list_unquote(value):
-    # unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
+    # Unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
+    # Assume the parameter is GUC_LIST_QUOTE (check in param_is_guc_list_quote function)
     return ', '.join([v.strip('" ') for v in value.split(',')])
 
 
