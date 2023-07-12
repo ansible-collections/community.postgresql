@@ -2,7 +2,13 @@
 # Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-# See defaults/main.yml for *task_parameters
+- name: Set parameters we use with most of tasks
+  ansible.builtin.set_fact:
+    task_parameters: &task_parameters
+      become_user: "{{ pg_user }}"
+      become: true
+      register: result
+
 
 - name: Test return values
   <<: *task_parameters
@@ -14,25 +20,26 @@
 - name: Assert general result
   ansible.builtin.assert:
     that:
-      - result.is_available == true
-      - result.server_version != {}
-      - result.server_version.raw is search('PostgreSQL')
-      - result.server_version.major != ''
-      - result.server_version.minor != ''
-      - result is not changed
+    - result.is_available == true
+    - result.server_version != {}
+    - result.server_version.raw is search("PostgreSQL")
+    - result.server_version.major != ""
+    - result.server_version.minor != ""
+    - result is not changed
 
 - name: Assert result when server major version is 9
   when: result.server_version.major == 9
   ansible.builtin.assert:
     that:
     - result.server_version.patch != {}
-    - result.server_version.full == '{{ result.server_version.major }}.{{ result.server_version.minor }}.{{ result.server_version.patch }}'
+    - result.server_version.full == "{{ result.server_version.major }}.{{ result.server_version.minor }}.{{ result.server_version.patch }}"
 
 - name: Assert result when server major version is 10 or higher
   when: result.server_version.major >= 10
   ansible.builtin.assert:
     that:
-    - result.server_version.full == '{{ result.server_version.major }}.{{ result.server_version.minor }}'
+    - result.server_version.full == "{{ result.server_version.major }}.{{ result.server_version.minor }}"
+
 
 - name: Test ping of non-existing database doesn't return anything
   <<: *task_parameters
@@ -44,9 +51,10 @@
 - name: Assert result
   ansible.builtin.assert:
     that:
-      - result.is_available == false
-      - result.server_version == {}
-      - result is not changed
+    - result.is_available == false
+    - result.server_version == {}
+    - result is not changed
+
 
 - name: Test ping of the database on non-existent port does not return anything
   <<: *task_parameters
@@ -60,14 +68,15 @@
 - name: Test result
   ansible.builtin.assert:
     that:
-      - result.is_available == false
-      - result.server_version == {}
-      - result is not changed
+    - result.is_available == false
+    - result.server_version == {}
+    - result is not changed
+
 
 - name: Test ping of the database by a non-existent user does not return anything
   <<: *task_parameters
   environment:
-    PGUSER: 'test_user'
+    PGUSER: "none_existent_test_user"
   ignore_errors: true
   community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
@@ -75,85 +84,86 @@
 - name: Assert result
   ansible.builtin.assert:
     that:
-      - result.is_available == false
-      - result.server_version == {}
-      - result is not changed
+    - result.is_available == false
+    - result.server_version == {}
+    - result is not changed
 
-- name: Creating a "test_user" in postresql
-  ansible.builtin.shell: >
-      psql -U "{{ pg_user }}" -c "CREATE ROLE test_user WITH 
-      LOGIN PASSWORD 'TEST_PASSWORD';"
 
-- name: Test ping of the database by a existent user
+- name: Create a {{ ping_test_user }}
+  <<: *task_parameters
+  notify: Drop test user
+  community.postgresql.postgresql_user:
+    name: "{{ ping_test_user }}"
+    role_attr_flags: LOGIN
+    password: "{{ ping_test_user_pass }}"
+
+- name: Test ping of the database by existent user
   <<: *task_parameters
   environment:
-    PGUSER: 'test_user'
+    PGUSER: "{{ ping_test_user }}"
   ignore_errors: true
   community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
-    login_password: "TEST_PASSWORD"
+    login_password: "{{ ping_test_user_pass }}"
 
 - name: Assert result
   ansible.builtin.assert:
     that:
-      - result.is_available == true
-      - result.server_version != {}
-      - result.server_version.raw is search('PostgreSQL')
-      - result.server_version.major != ''
-      - result.server_version.minor != ''
-      - result is not changed
-
-- name: Test ping DB with SSL 1
-  <<: *task_parameters
-  when:
-  - ansible_os_family == 'Debian'
-  - postgres_version_resp.stdout is version('9.4', '>=')
-  community.postgresql.postgresql_ping:
-    db: "{{ ssl_db }}"
-    login_user: "{{ ssl_user }}"
-    login_password: "{{ ssl_pass }}"
-    login_host: 127.0.0.1
-    login_port: 5432
-    ssl_mode: require
-    ca_cert: '{{ ssl_rootcert }}'
-    trust_input: true
-
-- name: Assert result
-  when:
-  - ansible_os_family == 'Debian'
-  - postgres_version_resp.stdout is version('9.4', '>=')
-  ansible.builtin.assert:
-    that: 
     - result.is_available == true
-    - result.conn_err_msg == ''
+    - result.server_version != {}
+    - result.server_version.raw is search("PostgreSQL")
+    - result.server_version.major != ""
+    - result.server_version.minor != ""
+    - result is not changed
 
-- name: postgresql_ping - ping DB with SSL 2
-  <<: *task_parameters
+
+- name: Test SSL block
   when:
-  - ansible_os_family == 'Debian'
-  - postgres_version_resp.stdout is version('9.4', '>=')
-  community.postgresql.postgresql_ping:
-    db: "{{ ssl_db }}"
-    login_user: "{{ ssl_user }}"
-    login_password: "{{ ssl_pass }}"
-    login_host: 127.0.0.1
-    login_port: 5432
-    ssl_mode: verify-full
-    ca_cert: '{{ ssl_rootcert }}'
-    ssl_cert: '{{ ssl_cert }}'
-    ssl_key: '{{ ssl_key }}'
-    trust_input: true
+  - ansible_os_family == "Debian"
+  - postgres_version_resp.stdout is version("9.4", ">=")
+  block:
 
-- name: Assert result
-  when:
-  - ansible_os_family == 'Debian'
-  - postgres_version_resp.stdout is version('9.4', '>=')
-  ansible.builtin.assert:
-    that: 
-    - result.is_available == true
-    - result.conn_err_msg == ''
+    - name: Test ping DB with SSL 1
+      <<: *task_parameters
+      community.postgresql.postgresql_ping:
+        db: "{{ ssl_db }}"
+        login_user: "{{ ssl_user }}"
+        login_password: "{{ ssl_pass }}"
+        login_host: 127.0.0.1
+        login_port: 5432
+        ssl_mode: require
+        ca_cert: "{{ ssl_rootcert }}"
+        trust_input: true
 
-- name: postgresql_ping - check trust_input
+    - name: Assert result
+      ansible.builtin.assert:
+        that: 
+        - result.is_available == true
+        - result.conn_err_msg == ""
+
+
+    - name: postgresql_ping - ping DB with SSL 2
+      <<: *task_parameters
+      community.postgresql.postgresql_ping:
+        db: "{{ ssl_db }}"
+        login_user: "{{ ssl_user }}"
+        login_password: "{{ ssl_pass }}"
+        login_host: 127.0.0.1
+        login_port: 5432
+        ssl_mode: verify-full
+        ca_cert: "{{ ssl_rootcert }}"
+        ssl_cert: "{{ ssl_cert }}"
+        ssl_key: "{{ ssl_key }}"
+        trust_input: true
+
+    - name: Assert result
+      ansible.builtin.assert:
+        that: 
+        - result.is_available == true
+        - result.conn_err_msg == ""
+
+
+- name: Test trust_input
   <<: *task_parameters
   ignore_errors: true
   community.postgresql.postgresql_ping:
@@ -166,7 +176,8 @@
   ansible.builtin.assert:
     that:
     - result is failed
-    - result.msg is search('is potentially dangerous')
+    - result.msg is search("is potentially dangerous")
+
 
 # Check conn_err_msg return value
 - name: Try to connect to non-existent DB

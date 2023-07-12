@@ -1,7 +1,5 @@
 db_default: postgres
 db_name_nonexist: fake_db
 
-task_parameters: &task_parameters
-  become_user: '{{ pg_user }}'
-  become: true
-  register: result
+ping_test_user: ping_test_user
+ping_test_user_pass: ping_test_user_pass
