@@ -229,16 +229,7 @@ def param_is_guc_list_quote(server_version, name):
 
 def param_guc_list_unquote(value):
     # unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
-    value_unquoted = []
-    for v in value.split(','):
-        v = v.strip()  # strip whitespaces at start/end
-        if v and v[0] == v[-1] == '"':
-            # is quoted -> strip quotes
-            value_unquoted.append(v[1:-1])
-        else:
-            # is not quoted -> no changes
-            value_unquoted.append(v)
-    return ', '.join(value_unquoted)
+    return ', '.join([v.strip('" ') for v in value.split(',')])
 
 
 def param_get(cursor, module, name, is_guc_list_quote):
