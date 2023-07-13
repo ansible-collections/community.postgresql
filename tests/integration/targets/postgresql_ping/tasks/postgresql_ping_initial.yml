@@ -17,7 +17,7 @@
     db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
 
-- name: Assert general result
+- name: Assert return values
   ansible.builtin.assert:
     that:
     - result.is_available == true
@@ -27,28 +27,28 @@
     - result.server_version.minor != ""
     - result is not changed
 
-- name: Assert result when server major version is 9
+- name: Assert return values when server major version is 9
   when: result.server_version.major == 9
   ansible.builtin.assert:
     that:
     - result.server_version.patch != {}
     - result.server_version.full == "{{ result.server_version.major }}.{{ result.server_version.minor }}.{{ result.server_version.patch }}"
 
-- name: Assert result when server major version is 10 or higher
+- name: Assert result values when server major version is 10 or higher
   when: result.server_version.major >= 10
   ansible.builtin.assert:
     that:
     - result.server_version.full == "{{ result.server_version.major }}.{{ result.server_version.minor }}"
 
 
-- name: Test ping of non-existing database doesn't return anything
+- name: Test ping of non-existing database returns nothing
   <<: *task_parameters
   ignore_errors: true
   community.postgresql.postgresql_ping:
     db: "{{ db_name_nonexist }}"
     login_user: "{{ pg_user }}"
 
-- name: Assert result
+- name: Assert that ping of non-existing database returns nothing
   ansible.builtin.assert:
     that:
     - result.is_available == false
@@ -56,7 +56,7 @@
     - result is not changed
 
 
-- name: Test ping of the database on non-existent port does not return anything
+- name: Test ping of the database on non-existent port returns nothing
   <<: *task_parameters
   environment:
     PGPORT: 5435
@@ -65,7 +65,7 @@
     db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
 
-- name: Test result
+- name: Assert that ping of the database on non-existent port returns nothing
   ansible.builtin.assert:
     that:
     - result.is_available == false
@@ -73,7 +73,7 @@
     - result is not changed
 
 
-- name: Test ping of the database by a non-existent user does not return anything
+- name: Test ping of the database by a non-existent user returns nothing
   <<: *task_parameters
   environment:
     PGUSER: "none_existent_test_user"
@@ -81,7 +81,7 @@
   community.postgresql.postgresql_ping:
     db: "{{ db_default }}"
 
-- name: Assert result
+- name: Assert that ping of the database by a non-existent user returns nothing
   ansible.builtin.assert:
     that:
     - result.is_available == false
@@ -106,7 +106,7 @@
     db: "{{ db_default }}"
     login_password: "{{ ping_test_user_pass }}"
 
-- name: Assert result
+- name: Assert ping of the database by existent user
   ansible.builtin.assert:
     that:
     - result.is_available == true
@@ -135,14 +135,14 @@
         ca_cert: "{{ ssl_rootcert }}"
         trust_input: true
 
-    - name: Assert result
+    - name: Assert ping DB with SSL 1
       ansible.builtin.assert:
         that: 
         - result.is_available == true
         - result.conn_err_msg == ""
 
 
-    - name: postgresql_ping - ping DB with SSL 2
+    - name: Test ping DB with SSL 2
       <<: *task_parameters
       community.postgresql.postgresql_ping:
         db: "{{ ssl_db }}"
@@ -156,14 +156,14 @@
         ssl_key: "{{ ssl_key }}"
         trust_input: true
 
-    - name: Assert result
+    - name: Assert ping DB with SSL 2
       ansible.builtin.assert:
         that: 
         - result.is_available == true
         - result.conn_err_msg == ""
 
 
-- name: Test trust_input
+- name: Test trust_input is false and input looks suspicious
   <<: *task_parameters
   ignore_errors: true
   community.postgresql.postgresql_ping:
@@ -172,7 +172,7 @@
     trust_input: false
     session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
 
-- name: Assert result
+- name: Assert result when trust_input is false and input looks suspicious
   ansible.builtin.assert:
     that:
     - result is failed
@@ -183,11 +183,11 @@
 - name: Try to connect to non-existent DB
   <<: *task_parameters
   community.postgresql.postgresql_ping:
-    db: blahblah
+    db: "{{ db_name_nonexist }}"
     login_user: "{{ pg_user }}"
 
-- name: Assert result
+- name: Assert connection to non-existent DB
   ansible.builtin.assert:
     that:
     - result is succeeded
-    - result.conn_err_msg is search("database \"blahblah\" does not exist")
+    - result.conn_err_msg is search("database \"{{ db_name_nonexist }}\" does not exist")
