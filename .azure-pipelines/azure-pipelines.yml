@@ -115,8 +115,8 @@ stages:
           targets:
             - name: CentOS 7
               test: centos7
-            - name: Fedora 37
-              test: fedora37
+            - name: Fedora 38
+              test: fedora38
             - name: Ubuntu 20.04
               test: ubuntu2004
             - name: Ubuntu 22.04

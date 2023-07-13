@@ -84,6 +84,7 @@ Our AZP CI includes testing with the following docker images / PostgreSQL versio
 - RHEL 8: 10
 - Fedora 34/35: 13
 - Fedora 36/37: 14
+- Fedora 38: 15
 - Ubuntu 20.04/22.04: 15
 
 ## Included content
