@@ -299,9 +299,9 @@ class Table(object):
         if res:
             self.exists = True
             self.info = dict(
-                owner=res[0][0],
-                tblspace=res[0][1] if res[0][1] else '',
-                storage_params=res[0][2] if res[0][2] else [],
+                owner=res[0]["tableowner"],
+                tblspace=res[0]["tablespace"] if res[0]["tablespace"] else '',
+                storage_params=res[0]["reloptions"] if res[0]["reloptions"] else [],
             )
 
             return True

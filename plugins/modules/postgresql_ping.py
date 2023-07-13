@@ -126,7 +126,7 @@ class PgPing(object):
 
     def get_pg_version(self):
         query = "SELECT version()"
-        raw = exec_sql(self, query, add_to_executed=False)[0][0]
+        raw = exec_sql(self, query, add_to_executed=False)[0]["version"]
 
         if not raw:
             return

@@ -217,7 +217,7 @@ class PgSlot(object):
         res = exec_sql(self, query, query_params={'name': self.name}, add_to_executed=False)
         if res:
             self.exists = True
-            self.kind = res[0][0]
+            self.kind = res[0]["slot_type"]
 
 
 # ===========================================

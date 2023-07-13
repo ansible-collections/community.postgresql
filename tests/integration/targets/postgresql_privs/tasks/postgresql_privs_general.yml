@@ -1186,7 +1186,7 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     login_db: "{{ db_name }}"
-    query: SELECT typacl FROM pg_catalog.pg_type WHERE typname = 'numeric';
+    query: SELECT typacl::varchar FROM pg_catalog.pg_type WHERE typname = 'numeric';
   register: typ_result
   when: postgres_version_resp.stdout is version('10', '>=')
 
@@ -1224,7 +1224,7 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     login_db: "{{ db_name }}"
-    query: SELECT typacl FROM pg_catalog.pg_type WHERE typname = 'numeric';
+    query: SELECT typacl::varchar FROM pg_catalog.pg_type WHERE typname = 'numeric';
   register: typ_result
   when: postgres_version_resp.stdout is version('10', '>=')
 
@@ -1261,7 +1261,7 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     login_db: "{{ db_name }}"
-    query: SELECT typacl FROM pg_catalog.pg_type WHERE typname = 'numeric';
+    query: SELECT typacl::varchar FROM pg_catalog.pg_type WHERE typname = 'numeric';
   register: typ_result
   when: postgres_version_resp.stdout is version('10', '>=')
 
@@ -1299,7 +1299,7 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     login_db: "{{ db_name }}"
-    query: SELECT typacl FROM pg_catalog.pg_type WHERE typname = 'numeric';
+    query: SELECT typacl::varchar FROM pg_catalog.pg_type WHERE typname = 'numeric';
   register: typ_result
   when: postgres_version_resp.stdout is version('10', '>=')
 
@@ -1336,7 +1336,7 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     login_db: "{{ db_name }}"
-    query: SELECT typacl FROM pg_catalog.pg_type WHERE typname = 'numeric';
+    query: SELECT typacl::varchar FROM pg_catalog.pg_type WHERE typname = 'numeric';
   register: typ_result
   when: postgres_version_resp.stdout is version('10', '>=')
 
@@ -1384,7 +1384,7 @@
     login_user: "{{ pg_user }}"
     login_db: "{{ db_name }}"
     query: >
-      SELECT t.typacl FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n
+      SELECT t.typacl::varchar FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n
       ON n.oid = t.typnamespace WHERE t.typname = 'compfoo' AND n.nspname = 'public';
   register: typ_result
   when: postgres_version_resp.stdout is version('10', '>=')
