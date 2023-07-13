@@ -1,0 +1,6 @@
+- name: Drop test user
+  become: true
+  become_user: "{{ pg_user }}"
+  community.postgresql.postgresql_user:
+    name: "{{ ping_test_user }}"
+    state: absent
