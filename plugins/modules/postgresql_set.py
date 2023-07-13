@@ -189,12 +189,46 @@ PG_REQ_VER = 90400
 # To allow to set value like 1mb instead of 1MB, etc:
 LOWERCASE_SIZE_UNITS = ("mb", "gb", "tb")
 
+# GUC_LIST_QUOTE parameters list for each version where they changed (from PG_REQ_VER).
+# It is a tuple of tuples as we need to iterate it in order.
+PARAMETERS_GUC_LIST_QUOTE = (
+    (140000, (
+        'local_preload_libraries',
+        'search_path',
+        'session_preload_libraries',
+        'shared_preload_libraries',
+        'temp_tablespaces',
+        'unix_socket_directories'
+    )),
+    (90400, (
+        'local_preload_libraries',
+        'search_path',
+        'session_preload_libraries',
+        'shared_preload_libraries',
+        'temp_tablespaces'
+    )),
+)
+
+
 # ===========================================
 # PostgreSQL module specific support methods.
 #
 
 
-def param_get(cursor, module, name):
+def param_is_guc_list_quote(server_version, name):
+    for guc_list_quote_ver, guc_list_quote_params in PARAMETERS_GUC_LIST_QUOTE:
+        if server_version >= guc_list_quote_ver:
+            return name in guc_list_quote_params
+    return False
+
+
+def param_guc_list_unquote(value):
+    # Unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
+    # Assume the parameter is GUC_LIST_QUOTE (check in param_is_guc_list_quote function)
+    return ', '.join([v.strip('" ') for v in value.split(',')])
+
+
+def param_get(cursor, module, name, is_guc_list_quote):
     query = ("SELECT name, setting, unit, context, boot_val "
              "FROM pg_settings WHERE name = %(name)s")
     try:
@@ -211,15 +245,16 @@ def param_get(cursor, module, name):
                              "Please check its spelling or presence in your PostgreSQL version "
                              "(https://www.postgresql.org/docs/current/runtime-config.html)" % name)
 
+    current_val = val[name]
     raw_val = info['setting']
     unit = info['unit']
     context = info['context']
     boot_val = info['boot_val']
 
-    if val[name] == 'True':
-        val[name] = 'on'
-    elif val[name] == 'False':
-        val[name] = 'off'
+    if current_val == 'True':
+        current_val = 'on'
+    elif current_val == 'False':
+        current_val = 'off'
 
     if unit == 'kB':
         if int(raw_val) > 0:
@@ -237,8 +272,12 @@ def param_get(cursor, module, name):
 
         unit = 'b'
 
+    if is_guc_list_quote:
+        current_val = param_guc_list_unquote(current_val)
+        raw_val = param_guc_list_unquote(raw_val)
+
     return {
-        'current_val': val[name],
+        'current_val': current_val,
         'raw_val': raw_val,
         'unit': unit,
         'boot_val': boot_val,
@@ -312,16 +351,22 @@ def pretty_to_bytes(pretty_val):
         return pretty_val
 
 
-def param_set(cursor, module, name, value, context):
+def param_set(cursor, module, name, value, context, server_version):
     try:
         if str(value).lower() == 'default':
             query = "ALTER SYSTEM SET %s = DEFAULT" % name
         else:
-            if isinstance(value, str) and ',' in value and not name.endswith(('_command', '_prefix')):
+            if isinstance(value, str) and \
+                    ',' in value and \
+                    not name.endswith(('_command', '_prefix')) and \
+                    not (server_version < 140000 and name == 'unix_socket_directories'):
                 # Issue https://github.com/ansible-collections/community.postgresql/issues/78
                 # Change value from 'one, two, three' -> "'one','two','three'"
                 # PR https://github.com/ansible-collections/community.postgresql/pull/400
                 # Parameter names ends with '_command' or '_prefix' can contains commas but are not lists
+                # PR https://github.com/ansible-collections/community.postgresql/pull/521
+                # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and
+                # GUC_LIST_QUOTE options so it is a single value parameter
                 value = ','.join(["'" + elem.strip() + "'" for elem in value.split(',')])
                 query = "ALTER SYSTEM SET %s = %s" % (name, value)
             else:
@@ -404,6 +449,9 @@ def main():
         db_connection.close()
         module.exit_json(**kw)
 
+    # Check parameter is GUC_LIST_QUOTE (done once as depend only on server version)
+    is_guc_list_quote = param_is_guc_list_quote(ver, name)
+
     # Set default returned values:
     restart_required = False
     changed = False
@@ -411,7 +459,7 @@ def main():
     kw['restart_required'] = False
 
     # Get info about param state:
-    res = param_get(cursor, module, name)
+    res = param_get(cursor, module, name, is_guc_list_quote)
     current_val = res['current_val']
     raw_val = res['raw_val']
     unit = res['unit']
@@ -454,7 +502,7 @@ def main():
 
     # Set param (value can be an empty string):
     if value is not None and value != current_val:
-        changed = param_set(cursor, module, name, value, context)
+        changed = param_set(cursor, module, name, value, context, ver)
 
         kw['value_pretty'] = value
 
@@ -468,7 +516,7 @@ def main():
             )
             module.exit_json(**kw)
 
-        changed = param_set(cursor, module, name, boot_val, context)
+        changed = param_set(cursor, module, name, boot_val, context, ver)
 
     cursor.close()
     db_connection.close()
@@ -478,7 +526,7 @@ def main():
         db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
         cursor = db_connection.cursor(**pg_cursor_args)
 
-        res = param_get(cursor, module, name)
+        res = param_get(cursor, module, name, is_guc_list_quote)
         # f_ means 'final'
         f_value = res['current_val']
         f_raw_val = res['raw_val']

@@ -1,5 +1,6 @@
 postgresql_packages:
   - "postgresql-server"
+  - "postgresql-contrib"
   - "python3-psycopg2"
   - "bzip2"
   - "xz"
