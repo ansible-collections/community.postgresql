@@ -4,6 +4,5 @@
 ####################################################################
 
 # Initial CI tests of postgresql_ping module
-- import_tasks: postgresql_ping_initial.yml
-  vars:
-    db_name_nonexist: fake_db
+- name: Import the original test task file
+  ansible.builtin.import_tasks: postgresql_ping_initial.yml
