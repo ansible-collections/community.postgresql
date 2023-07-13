@@ -1,2 +1,5 @@
----
 db_default: postgres
+db_name_nonexist: fake_db
+
+ping_test_user: ping_test_user
+ping_test_user_pass: ping_test_user_pass
