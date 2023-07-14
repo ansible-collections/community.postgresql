@@ -179,7 +179,6 @@ state:
 '''
 
 try:
-    from psycopg2 import __version__ as PSYCOPG2_VERSION
     from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT as AUTOCOMMIT
     from psycopg2.extensions import ISOLATION_LEVEL_READ_COMMITTED as READ_COMMITTED
 except ImportError:
@@ -189,7 +188,7 @@ except ImportError:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-
+from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
@@ -200,6 +199,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_conn_params,
     pg_cursor_args,
     postgres_common_argument_spec,
+    PSYCOPG_VERSION
 )
 
 
@@ -437,8 +437,8 @@ def main():
 
     # Change autocommit to False if check_mode:
     if module.check_mode:
-        if PSYCOPG2_VERSION >= '2.4.2':
-            db_connection.set_session(autocommit=False)
+        if PSYCOPG_VERSION >= LooseVersion("2.4.2"):
+            db_connection.autocommit = False
         else:
             db_connection.set_isolation_level(READ_COMMITTED)
 
@@ -466,8 +466,8 @@ def main():
 
         # Because CREATE TABLESPACE can not be run inside the transaction block:
         autocommit = True
-        if PSYCOPG2_VERSION >= '2.4.2':
-            db_connection.set_session(autocommit=True)
+        if PSYCOPG_VERSION >= LooseVersion("2.4.2"):
+            db_connection.autocommit = True
         else:
             db_connection.set_isolation_level(AUTOCOMMIT)
 
@@ -482,8 +482,8 @@ def main():
     elif tblspace.exists and state == 'absent':
         # Because DROP TABLESPACE can not be run inside the transaction block:
         autocommit = True
-        if PSYCOPG2_VERSION >= '2.4.2':
-            db_connection.set_session(autocommit=True)
+        if PSYCOPG_VERSION >= LooseVersion("2.4.2"):
+            db_connection.autocommit = True
         else:
             db_connection.set_isolation_level(AUTOCOMMIT)
 
