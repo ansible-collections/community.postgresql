@@ -1,0 +1,2 @@
+bugfixes:
+- "postgresql_tablespace - improved autocommit handling (https://github.com/ansible-collections/community.postgresql/pull/533)."
