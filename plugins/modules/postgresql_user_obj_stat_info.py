@@ -275,12 +275,12 @@ class PgUserObjStatInfo():
 
     def set_schema(self, schema):
         """If schema exists, sets self.schema, otherwise fails."""
-        query = ("SELECT 1 FROM information_schema.schemata "
+        query = ("SELECT 1 as schema_exists FROM information_schema.schemata "
                  "WHERE schema_name = %s")
         result = exec_sql(self, query, query_params=(schema,),
                           add_to_executed=False)
 
-        if result and result[0][0]:
+        if result and result[0]["schema_exists"]:
             self.schema = schema
         else:
             self.module.fail_json(msg="Schema '%s' does not exist" % (schema))
