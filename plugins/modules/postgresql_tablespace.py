@@ -178,18 +178,8 @@ state:
     sample: 'present'
 '''
 
-try:
-    from psycopg2 import __version__ as PSYCOPG2_VERSION
-    from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT as AUTOCOMMIT
-    from psycopg2.extensions import ISOLATION_LEVEL_READ_COMMITTED as READ_COMMITTED
-except ImportError:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
@@ -200,6 +190,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_conn_params,
     pg_cursor_args,
     postgres_common_argument_spec,
+    set_autocommit,
 )
 
 
@@ -432,15 +423,8 @@ def main():
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
-    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=False if module.check_mode else True)
     cursor = db_connection.cursor(**pg_cursor_args)
-
-    # Change autocommit to False if check_mode:
-    if module.check_mode:
-        if PSYCOPG2_VERSION >= '2.4.2':
-            db_connection.set_session(autocommit=False)
-        else:
-            db_connection.set_isolation_level(READ_COMMITTED)
 
     # Set defaults:
     autocommit = False
@@ -466,10 +450,7 @@ def main():
 
         # Because CREATE TABLESPACE can not be run inside the transaction block:
         autocommit = True
-        if PSYCOPG2_VERSION >= '2.4.2':
-            db_connection.set_session(autocommit=True)
-        else:
-            db_connection.set_isolation_level(AUTOCOMMIT)
+        set_autocommit(db_connection, True)
 
         changed = tblspace.create(location)
 
@@ -482,10 +463,7 @@ def main():
     elif tblspace.exists and state == 'absent':
         # Because DROP TABLESPACE can not be run inside the transaction block:
         autocommit = True
-        if PSYCOPG2_VERSION >= '2.4.2':
-            db_connection.set_session(autocommit=True)
-        else:
-            db_connection.set_isolation_level(AUTOCOMMIT)
+        set_autocommit(db_connection, True)
 
         changed = tblspace.drop()
 

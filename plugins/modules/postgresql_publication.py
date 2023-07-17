@@ -283,10 +283,8 @@ class PgPublication():
         # If alltables flag is False, get the list of targeted tables:
         if not pub_info.get('puballtables'):
             table_info = self.__get_tables_pub_info()
-            # Join sublists [['schema', 'table'], ...] to ['schema.table', ...]
-            # for better representation:
             for i, schema_and_table in enumerate(table_info):
-                table_info[i] = pg_quote_identifier('.'.join(schema_and_table), 'table')
+                table_info[i] = pg_quote_identifier(schema_and_table["schema_dot_table"], 'table')
 
             self.attrs['tables'] = table_info
         else:
@@ -467,7 +465,7 @@ class PgPublication():
         Returns:
             List of dicts with published tables.
         """
-        query = ("SELECT schemaname, tablename "
+        query = ("SELECT schemaname || '.' || tablename as schema_dot_table "
                  "FROM pg_publication_tables WHERE pubname = %(pname)s")
         return exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
 

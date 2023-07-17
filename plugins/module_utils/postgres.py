@@ -480,3 +480,18 @@ def get_server_version(conn):
         return conn.info.server_version
     else:
         return conn.server_version
+
+
+def set_autocommit(conn, autocommit):
+    """Set autocommit.
+    Args:
+        conn (psycopg.Connection) -- Psycopg connection object.
+        autocommit -- bool.
+    """
+    if PSYCOPG_VERSION >= LooseVersion("2.4.2"):
+        conn.autocommit = autocommit
+    else:
+        if autocommit:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        else:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
