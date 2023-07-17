@@ -1,4 +1,5 @@
 postgresql_packages:
+  - "postgresql-contrib"
   - "postgresql-server"
   - "python3-psycopg2"
   - "python3-psycopg3"
