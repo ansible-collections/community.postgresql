@@ -187,11 +187,12 @@ class PgUserObjStatInfo():
     def get_func_stat(self):
         """Get function statistics and fill out self.info dictionary."""
         query = "SELECT * FROM pg_stat_user_functions"
+        qp = None
         if self.schema:
             query = "SELECT * FROM pg_stat_user_functions WHERE schemaname = %s"
+            qp = (self.schema,)
 
-        result = exec_sql(self, query, query_params=(self.schema,),
-                          add_to_executed=False)
+        result = exec_sql(self, query, query_params=qp, add_to_executed=False)
 
         if not result:
             return
@@ -204,11 +205,12 @@ class PgUserObjStatInfo():
     def get_idx_stat(self):
         """Get index statistics and fill out self.info dictionary."""
         query = "SELECT * FROM pg_stat_user_indexes"
+        qp = None
         if self.schema:
             query = "SELECT * FROM pg_stat_user_indexes WHERE schemaname = %s"
+            qp = (self.schema,)
 
-        result = exec_sql(self, query, query_params=(self.schema,),
-                          add_to_executed=False)
+        result = exec_sql(self, query, query_params=qp, add_to_executed=False)
 
         if not result:
             return
@@ -221,11 +223,12 @@ class PgUserObjStatInfo():
     def get_tbl_stat(self):
         """Get table statistics and fill out self.info dictionary."""
         query = "SELECT * FROM pg_stat_user_tables"
+        qp = None
         if self.schema:
             query = "SELECT * FROM pg_stat_user_tables WHERE schemaname = %s"
+            qp = (self.schema,)
 
-        result = exec_sql(self, query, query_params=(self.schema,),
-                          add_to_executed=False)
+        result = exec_sql(self, query, query_params=qp, add_to_executed=False)
 
         if not result:
             return
@@ -264,14 +267,14 @@ class PgUserObjStatInfo():
                                   query_params=(relname,),
                                   add_to_executed=False)
 
-                self.info[info_key][elem[schema_key]][elem[name_key]]['size'] = result[0][0]
+                self.info[info_key][elem[schema_key]][elem[name_key]]['size'] = result[0]["pg_relation_size"]
 
                 if info_key == 'tables':
                     result = exec_sql(self, "SELECT pg_total_relation_size (%s)",
                                       query_params=(relname,),
                                       add_to_executed=False)
 
-                    self.info[info_key][elem[schema_key]][elem[name_key]]['total_size'] = result[0][0]
+                    self.info[info_key][elem[schema_key]][elem[name_key]]['total_size'] = result[0]["pg_total_relation_size"]
 
     def set_schema(self, schema):
         """If schema exists, sets self.schema, otherwise fails."""
