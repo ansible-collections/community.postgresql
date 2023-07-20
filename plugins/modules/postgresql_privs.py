@@ -421,16 +421,13 @@ queries:
 
 import traceback
 
-PSYCOPG2_IMP_ERR = None
 try:
     import psycopg2
-    import psycopg2.extensions
 except ImportError:
-    PSYCOPG2_IMP_ERR = traceback.format_exc()
     psycopg2 = None
 
 # import module snippets
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     pg_quote_identifier,
@@ -438,6 +435,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
+    ensure_required_libs,
     get_conn_params,
     get_server_version,
     pg_cursor_args,
@@ -479,17 +477,15 @@ def partial(f, *args, **kwargs):
 
 
 class Connection(object):
-    """Wrapper around a psycopg2 connection with some convenience methods"""
+    """Wrapper around a psycopg connection with some convenience methods"""
 
     def __init__(self, params, module):
         self.database = params.database
         self.module = module
 
+        # Ensure psycopg libraries are available before connecting to DB:
+        ensure_required_libs(module)
         conn_params = get_conn_params(module, params.__dict__, warn_db_default=False)
-
-        sslrootcert = params.ca_cert
-        if psycopg2.__version__ < '2.4.3' and sslrootcert is not None:
-            raise ValueError('psycopg2 must be at least 2.4.3 in order to user the ca_cert parameter')
 
         self.connection, dummy = connect_to_db(module, conn_params, autocommit=False)
         self.cursor = self.connection.cursor(**pg_cursor_args)
@@ -511,11 +507,6 @@ class Connection(object):
 
     def rollback(self):
         self.connection.rollback()
-
-    @property
-    def encoding(self):
-        """Connection encoding in Python-compatible form"""
-        return psycopg2.extensions.encodings[self.connection.encoding]
 
     # Methods for implicit roles managements
 
@@ -1085,19 +1076,7 @@ def main():
         check_input(module, p.roles, p.target_roles, p.session_role, p.schema)
 
     # Connect to Database
-    if not psycopg2:
-        module.fail_json(msg=missing_required_lib('psycopg2'), exception=PSYCOPG2_IMP_ERR)
-    try:
-        conn = Connection(p, module)
-    except psycopg2.Error as e:
-        module.fail_json(msg='Could not connect to database: %s' % to_native(e), exception=traceback.format_exc())
-    except TypeError as e:
-        if 'sslrootcert' in e.args[0]:
-            module.fail_json(msg='Postgresql server must be at least version 8.4 to support sslrootcert')
-        module.fail_json(msg="Unable to connect to database: %s" % to_native(e), exception=traceback.format_exc())
-    except ValueError as e:
-        # We raise this when the psycopg library is too old
-        module.fail_json(msg=to_native(e))
+    conn = Connection(p, module)
 
     if p.session_role:
         try:
