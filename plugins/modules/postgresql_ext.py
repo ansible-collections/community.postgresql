@@ -426,9 +426,10 @@ def main():
         # Get extension info and available versions:
         curr_version, default_version, available_versions = ext_get_versions(cursor, ext)
 
-        # Decode version 'latest' if passed
-        # Note: real_version used for checks but not in CREATE/DROP/ALTER EXTENSION commands
-        if version == 'latest':
+        # Decode version 'latest' when passed (if version is not passed 'latest' is assumed)
+        # Note: real_version used for checks but not in CREATE/DROP/ALTER EXTENSION commands,
+        #       as the correct way to obtain 'latest' version is not specify the version
+        if not version or version == 'latest':
             if default_version:
                 # 'latest' version matches default_version specificed in extension control file
                 real_version = default_version
@@ -485,6 +486,7 @@ def main():
                 else:
                     # If the ext doesn't exist and is available:
                     if available_versions:
+                        # 'latest' version installed by default if version not passed
                         changed = ext_create(module.check_mode, cursor, ext, schema, cascade, 'latest')
                     # If the ext doesn't exist and is not available:
                     else:
