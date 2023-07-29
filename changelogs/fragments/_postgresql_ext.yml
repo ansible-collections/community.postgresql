@@ -1,0 +1,3 @@
+minor_changes:
+- "postgresql_ext - added idempotence always both in standard and in check mode (https://github.com/ansible-collections/community.postgresql/pull/)."
+- "postgresql_ext - improved error messages (https://github.com/ansible-collections/community.postgresql/pull/)."

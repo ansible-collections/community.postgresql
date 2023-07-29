@@ -187,6 +187,31 @@
       that:
       - result.rowcount == 1
 
+  - name: postgresql_ext_version - update the extension to the latest version in check_mode
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: "{{ test_ext }}"
+      schema: "{{ test_schema }}"
+      version: latest
+      trust_input: false
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["ALTER EXTENSION \"{{ test_ext }}\" UPDATE"]
+
+  - name: postgresql_ext_version - check, the version must be 2.0
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '2.0'"
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
   - name: postgresql_ext_version - update the extension to the latest version
     <<: *task_parameters
     postgresql_ext:
@@ -211,7 +236,31 @@
       that:
       - result.rowcount == 1
 
-  - name: postgresql_ext_version - try to update the extension to the latest version again which always runs an update
+  - name: postgresql_ext_version - update the extension to the latest version again in check_mode
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: "{{ test_ext }}"
+      schema: "{{ test_schema }}"
+      version: latest
+      trust_input: false
+    check_mode: true
+
+  - assert:
+      that:
+      - result is not changed
+
+  - name: postgresql_ext_version - check, the version must be 4.0 (latest)
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT 1 FROM pg_extension WHERE extname = '{{ test_ext }}' AND extversion = '4.0'"
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
+  - name: postgresql_ext_version - update the extension to the latest version again
     <<: *task_parameters
     postgresql_ext:
       <<: *pg_parameters
@@ -224,7 +273,7 @@
       that:
       - result is not changed
 
-  - name: postgresql_ext_version - check that version number did not change even though update ran
+  - name: postgresql_ext_version - check, the version must be 4.0 (latest)
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -293,6 +342,19 @@
       that:
       - result.rowcount == 0
 
+  - name: postgresql_ext_version - try to drop the non-existent extension again in check_mode
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: "{{ test_ext }}"
+      state: absent
+      trust_input: false
+    check_mode: true
+
+  - assert:
+      that:
+      - result is not changed
+
   - name: postgresql_ext_version - try to drop the non-existent extension again
     <<: *task_parameters
     postgresql_ext:
@@ -326,6 +388,17 @@
   - assert:
       that:
       - result.rowcount == 1
+
+  - name: postgresql_ext_version - create the extension without passing version again
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: "{{ test_ext }}"
+      trust_input: false
+
+  - assert:
+      that:
+      - result is not changed
 
   - name: postgresql_ext_version - try to install non-existent extension
     <<: *task_parameters
