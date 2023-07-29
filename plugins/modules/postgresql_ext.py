@@ -430,12 +430,17 @@ def main():
         # Note: real_version used for checks but not in CREATE/DROP/ALTER EXTENSION commands,
         #       as the correct way to obtain 'latest' version is not specify the version
         if not version or version == 'latest':
+            # If there are not available versions the extension is not available
+            if not available_versions:
+                module.fail_json(msg="Extension %s is not available" % ext)
+            # Check default_version is available
             if default_version:
                 # 'latest' version matches default_version specificed in extension control file
                 real_version = default_version
             else:
-                # If version is 'latest' and no default_version is specificed in extension
-                # control file (extension is buggy) CREATE/ALTER EXTENSION commands fail
+                # Passed version is 'latest', versions are available, but no default_version is specificed
+                # in extension control file. In this situation CREATE/ALTER EXTENSION commands fail if
+                # a specific version is not passed ('latest' cannot be determinated).
                 module.fail_json(msg="Passed version 'latest' but no default_version available "
                                      "in extension control file")
         else:
