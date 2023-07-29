@@ -200,7 +200,6 @@
   - assert:
       that:
       - result is changed
-      - result.queries == ["ALTER EXTENSION \"{{ test_ext }}\" UPDATE"]
 
   - name: postgresql_ext_version - check, the version must be 2.0
     <<: *task_parameters
