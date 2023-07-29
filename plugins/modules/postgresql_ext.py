@@ -192,7 +192,7 @@ executed_queries = []
 #
 
 
-def ext_delete(cursor, ext, current_version, cascade):
+def ext_delete(check_mode, cursor, ext, cascade):
     """Remove the extension from the database.
 
     Return True if success.
@@ -200,23 +200,21 @@ def ext_delete(cursor, ext, current_version, cascade):
     Args:
       cursor (cursor) -- cursor object of psycopg library
       ext (str) -- extension name
-      current_version (str) -- installed version of the extension.
-        Value obtained from ext_get_versions and used to
-        determine if the extension was installed.
       cascade (boolean) -- Pass the CASCADE flag to the DROP commmand
     """
-    if current_version:
-        query = "DROP EXTENSION \"%s\"" % ext
-        if cascade:
-            query += " CASCADE"
+    query = "DROP EXTENSION \"%s\"" % ext
+
+    if cascade:
+        query += " CASCADE"
+
+    if not check_mode:
         cursor.execute(query)
-        executed_queries.append(cursor.mogrify(query))
-        return True
-    else:
-        return False
+    executed_queries.append(cursor.mogrify(query))
+
+    return True
 
 
-def ext_update_version(cursor, ext, version):
+def ext_update_version(check_mode, cursor, ext, version):
     """Update extension version.
 
     Return True if success.
@@ -233,13 +231,14 @@ def ext_update_version(cursor, ext, version):
         query += " TO %(ver)s"
         params['ver'] = version
 
-    cursor.execute(query, params)
+    if not check_mode:
+        cursor.execute(query, params)
     executed_queries.append(cursor.mogrify(query, params))
 
     return True
 
 
-def ext_create(cursor, ext, schema, cascade, version):
+def ext_create(check_mode, cursor, ext, schema, cascade, version):
     """
     Create the extension objects inside the database.
 
@@ -263,8 +262,10 @@ def ext_create(cursor, ext, schema, cascade, version):
     if cascade:
         query += " CASCADE"
 
-    cursor.execute(query, params)
+    if not check_mode:
+        cursor.execute(query, params)
     executed_queries.append(cursor.mogrify(query, params))
+
     return True
 
 
@@ -437,10 +438,7 @@ def main():
                     else:
                         valid_update_path = ext_valid_update_path(cursor, ext, curr_version, real_version)
                         if valid_update_path:
-                            if module.check_mode:
-                                changed = True
-                            else:
-                                changed = ext_update_version(cursor, ext, version)
+                            changed = ext_update_version(module.check_mode, cursor, ext, version)
                         else:
                             if version == 'latest':
                                 # No valid update path from curr_version to latest extension version
@@ -462,10 +460,7 @@ def main():
                             module.fail_json(msg="Passed version '%s' is not available" % real_version)
                     # Else install the passed version
                     else:
-                        if module.check_mode:
-                            changed = True
-                        else:
-                            changed = ext_create(cursor, ext, schema, cascade, version)
+                        changed = ext_create(module.check_mode, cursor, ext, schema, cascade, version)
 
             # If version is not passed:
             else:
@@ -475,20 +470,14 @@ def main():
                 else:
                     # If the ext doesn't exist and is available:
                     if available_versions:
-                        if module.check_mode:
-                            changed = True
-                        else:
-                            changed = ext_create(cursor, ext, schema, cascade, 'latest')
+                        changed = ext_create(module.check_mode, cursor, ext, schema, cascade, 'latest')
                     # If the ext doesn't exist and is not available:
                     else:
                         module.fail_json(msg="Extension %s is not available" % ext)
 
         elif state == "absent":
             if curr_version:
-                if module.check_mode:
-                    changed = True
-                else:
-                    changed = ext_delete(cursor, ext, curr_version, cascade)
+                changed = ext_delete(module.check_mode, cursor, ext, cascade)
             else:
                 changed = False
 
