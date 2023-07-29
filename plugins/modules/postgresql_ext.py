@@ -169,7 +169,7 @@ queries:
 prev_version:
   description:
     - Previous installed extension version.
-    - Empty string if extension was not installed.
+    - Empty string if the extension was not installed.
     - Available since community.postgresql collection 3.1.0.
   returned: always
   type: str
@@ -177,7 +177,7 @@ prev_version:
 version:
   description:
     - Current installed extension version.
-    - Empty string if extension is not installed.
+    - Empty string if the extension is not installed.
     - Available since community.postgresql collection 3.1.0.
   returned: always
   type: str
