@@ -89,7 +89,8 @@
       that:
       - result is not changed
       - result.queries == []
-      - result.prev_version == result.version
+      - result.prev_version == '1.0'
+      - result.version == result.prev_version
 
   - name: postgresql_ext_version - check
     <<: *task_parameters
@@ -114,7 +115,8 @@
       that:
       - result is not changed
       - result.queries == []
-      - result.prev_version == result.version
+      - result.prev_version == '1.0'
+      - result.version == result.prev_version
 
   - name: postgresql_ext_version - check
     <<: *task_parameters
@@ -191,7 +193,8 @@
       that:
       - result is not changed
       - result.queries == []
-      - result.prev_version == result.version
+      - result.prev_version == '2.0'
+      - result.version == result.prev_version
 
   - name: postgresql_ext_version - check, the version must be 2.0
     <<: *task_parameters
@@ -270,7 +273,8 @@
       that:
       - result is not changed
       - result.queries == []
-      - result.prev_version == result.version
+      - result.prev_version == '4.0'
+      - result.version == result.prev_version
 
   - name: postgresql_ext_version - check, the version must be 4.0 (latest)
     <<: *task_parameters
@@ -295,7 +299,8 @@
       that:
       - result is not changed
       - result.queries == []
-      - result.prev_version == result.version
+      - result.prev_version == '4.0'
+      - result.version == result.prev_version
 
   - name: postgresql_ext_version - check, the version must be 4.0 (latest)
     <<: *task_parameters
@@ -385,7 +390,8 @@
       that:
       - result is not changed
       - result.queries == []
-      - result.prev_version == result.version
+      - result.prev_version == ''
+      - result.version == result.prev_version
 
   - name: postgresql_ext_version - try to drop the non-existent extension again
     <<: *task_parameters
@@ -399,7 +405,23 @@
       that:
       - result is not changed
       - result.queries == []
-      - result.prev_version == result.version
+      - result.prev_version == ''
+      - result.version == result.prev_version
+
+  - name: postgresql_ext_version - create the extension without passing version in check_mode
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: "{{ test_ext }}"
+      trust_input: false
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["CREATE EXTENSION \"{{ test_ext }}\""]
+      - result.prev_version == ''
+      - result.version == '4.0'
 
   - name: postgresql_ext_version - create the extension without passing version
     <<: *task_parameters
@@ -425,6 +447,21 @@
       that:
       - result.rowcount == 1
 
+  - name: postgresql_ext_version - create the extension without passing version again in check_mode
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: "{{ test_ext }}"
+      trust_input: false
+    check_mode: true
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+      - result.prev_version == '4.0'
+      - result.version == result.prev_version
+
   - name: postgresql_ext_version - create the extension without passing version again
     <<: *task_parameters
     postgresql_ext:
@@ -436,7 +473,8 @@
       that:
       - result is not changed
       - result.queries == []
-      - result.prev_version == result.version
+      - result.prev_version == '4.0'
+      - result.version == result.prev_version
 
   - name: postgresql_ext_version - try to install non-existent extension
     <<: *task_parameters
