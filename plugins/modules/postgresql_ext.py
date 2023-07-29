@@ -347,8 +347,8 @@ def ext_valid_update_path(cursor, ext, current_version, version):
     valid_path = False
     params = {}
     query = ("SELECT path FROM pg_extension_update_paths(%(ext)s) "
-              "WHERE source = %(cv)s "
-              "AND target = %(ver)s")
+             "WHERE source = %(cv)s "
+             "AND target = %(ver)s")
 
     params['ext'] = ext
     params['cv'] = current_version
