@@ -161,12 +161,27 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-query:
+queries:
   description: List of executed queries.
   returned: always
   type: list
   sample: ["DROP EXTENSION \"acme\""]
-
+prev_version:
+  description:
+    - Previous installed extension version.
+    - Empty string if extension was not installed.
+    - Available since community.postgresql collection 3.1.0.
+  returned: always
+  type: str
+  sample: '1.0'
+version:
+  description:
+    - Current installed extension version.
+    - Empty string if extension is not installed.
+    - Available since community.postgresql collection 3.1.0.
+  returned: always
+  type: str
+  sample: '2.0'
 '''
 
 import traceback
@@ -481,12 +496,32 @@ def main():
             else:
                 changed = False
 
+        # Get extension info again:
+        new_version, new_default_version, new_available_versions = ext_get_versions(cursor, ext)
+
+        # Parse previous and current version for module output
+        out_prev_version = curr_version if curr_version else ''
+        if module.check_mode and changed:
+            if state == "present":
+                out_version = real_version
+            elif state == "absent":
+                out_version = ''
+        else:
+            out_version = new_version if new_version else ''
+
     except Exception as e:
         db_connection.close()
         module.fail_json(msg="Management of PostgreSQL extension failed: %s" % to_native(e), exception=traceback.format_exc())
 
     db_connection.close()
-    module.exit_json(changed=changed, db=module.params["db"], ext=ext, queries=executed_queries)
+    module.exit_json(
+        changed=changed,
+        db=module.params["db"],
+        ext=ext,
+        prev_version=out_prev_version,
+        version=out_version,
+        queries=executed_queries
+    )
 
 
 if __name__ == '__main__':
