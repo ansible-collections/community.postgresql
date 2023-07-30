@@ -163,7 +163,7 @@ EXAMPLES = r'''
 RETURN = r'''
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: list
   sample: ["DROP EXTENSION \"acme\""]
 prev_version:
@@ -171,7 +171,7 @@ prev_version:
     - Previous installed extension version.
     - Empty string if the extension was not installed.
     - Available since community.postgresql collection 3.1.0.
-  returned: always
+  returned: success
   type: str
   sample: '1.0'
 version:
@@ -179,7 +179,7 @@ version:
     - Current installed extension version.
     - Empty string if the extension is not installed.
     - Available since community.postgresql collection 3.1.0.
-  returned: always
+  returned: success
   type: str
   sample: '2.0'
 '''

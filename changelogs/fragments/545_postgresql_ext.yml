@@ -1,5 +1,6 @@
 bugfixes:
 - "postgresql_ext - fixed queries return value documentation (https://github.com/ansible-collections/community.postgresql/pull/545)."
+- "postgresql_ext - fixed return values 'returned' value in documentation (https://github.com/ansible-collections/community.postgresql/pull/545)."
 
 minor_changes:
 - "postgresql_ext - added idempotence always both in standard and in check mode (https://github.com/ansible-collections/community.postgresql/pull/545)."
