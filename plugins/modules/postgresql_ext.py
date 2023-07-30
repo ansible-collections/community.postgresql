@@ -167,21 +167,17 @@ queries:
   type: list
   sample: ["DROP EXTENSION \"acme\""]
 prev_version:
-  description:
-    - Previous installed extension version.
-    - Empty string if the extension was not installed.
-    - Available since community.postgresql collection 3.1.0.
+  description: Previous installed extension version or empty string if the extension was not installed.
   returned: success
   type: str
   sample: '1.0'
+  version_added: '3.1.0'
 version:
-  description:
-    - Current installed extension version.
-    - Empty string if the extension is not installed.
-    - Available since community.postgresql collection 3.1.0.
+  description: Current installed extension version or empty string if the extension is not installed.
   returned: success
   type: str
   sample: '2.0'
+  version_added: '3.1.0'
 '''
 
 import traceback
