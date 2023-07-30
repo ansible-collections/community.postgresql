@@ -221,7 +221,7 @@ EXAMPLES = '''
 RETURN = r'''
 msgs:
     description: List of textual messages what was done.
-    returned: always
+    returned: success
     type: list
     sample:
        "msgs": [
@@ -236,7 +236,7 @@ backup_file:
     sample: /tmp/pg_hba_jxobj_p
 pg_hba:
     description: List of the pg_hba rules as they are configured in the specified hba file.
-    returned: always
+    returned: success
     type: list
     sample:
       "pg_hba": [

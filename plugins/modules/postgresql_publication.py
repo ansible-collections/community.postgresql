@@ -142,12 +142,12 @@ RETURN = r'''
 exists:
   description:
   - Flag indicates the publication exists or not at the end of runtime.
-  returned: always
+  returned: success
   type: bool
   sample: true
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: str
   sample: [ 'DROP PUBLICATION "acme" CASCADE' ]
 owner:

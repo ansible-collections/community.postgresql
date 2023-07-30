@@ -257,7 +257,7 @@ EXAMPLES = r'''
 RETURN = r'''
 executed_commands:
   description: List of commands which tried to run.
-  returned: always
+  returned: success
   type: list
   sample: ["CREATE DATABASE acme"]
   version_added: '0.2.0'

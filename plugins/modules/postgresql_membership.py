@@ -143,7 +143,7 @@ EXAMPLES = r'''
 RETURN = r'''
 queries:
     description: List of executed queries.
-    returned: always
+    returned: success
     type: str
     sample: [ "GRANT \"user_ro\" TO \"alice\"" ]
 granted:
@@ -158,7 +158,7 @@ revoked:
     sample: { "ro_group": [ "alice", "bob" ] }
 state:
     description: Membership state that tried to be set.
-    returned: always
+    returned: success
     type: str
     sample: "present"
 '''

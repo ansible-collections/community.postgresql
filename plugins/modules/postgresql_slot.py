@@ -136,12 +136,12 @@ EXAMPLES = r'''
 RETURN = r'''
 name:
   description: Name of the slot.
-  returned: always
+  returned: success
   type: str
   sample: "physical_one"
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: str
   sample: [ "SELECT pg_create_physical_replication_slot('physical_one', False, False)" ]
 '''
