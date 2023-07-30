@@ -143,27 +143,27 @@ EXAMPLES = r'''
 RETURN = r'''
 queries:
     description: List of queries that was tried to be executed.
-    returned: always
+    returned: success
     type: str
     sample: [ "CREATE TABLESPACE bar LOCATION '/incredible/ssd'" ]
 tablespace:
     description: Tablespace name.
-    returned: always
+    returned: success
     type: str
     sample: 'ssd'
 owner:
     description: Tablespace owner.
-    returned: always
+    returned: success
     type: str
     sample: 'Bob'
 options:
     description: Tablespace options.
-    returned: always
+    returned: success
     type: dict
     sample: { 'random_page_cost': 1, 'seq_page_cost': 1 }
 location:
     description: Path to the tablespace in the file system.
-    returned: always
+    returned: v
     type: str
     sample: '/incredible/fast/ssd'
 newname:
@@ -173,7 +173,7 @@ newname:
     sample: new_ssd
 state:
     description: Tablespace state at the end of execution.
-    returned: always
+    returned: success
     type: str
     sample: 'present'
 '''

@@ -407,7 +407,7 @@ EXAMPLES = r'''
 RETURN = r'''
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: list
   sample: ['REVOKE GRANT OPTION FOR INSERT ON TABLE "books" FROM "reader";']
 '''

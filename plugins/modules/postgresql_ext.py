@@ -163,7 +163,7 @@ EXAMPLES = r'''
 RETURN = r'''
 query:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: list
   sample: ["DROP EXTENSION \"acme\""]
 

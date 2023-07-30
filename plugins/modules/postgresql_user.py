@@ -296,7 +296,7 @@ EXAMPLES = r'''
 RETURN = r'''
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: list
   sample: ['CREATE USER "alice"', 'GRANT CONNECT ON DATABASE "acme" TO "alice"']
 '''
