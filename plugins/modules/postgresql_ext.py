@@ -77,7 +77,7 @@ options:
         path exists.
       - Downgrading is only supported if the extension provides a downgrade path otherwise
         the extension must be removed and a lower version of the extension must be made available.
-      - Set I(version=latest) to update the extension to the latest available version if necessary.
+      - Set I(version=latest) to update the extension to the latest available version.
     type: str
   trust_input:
     description:
