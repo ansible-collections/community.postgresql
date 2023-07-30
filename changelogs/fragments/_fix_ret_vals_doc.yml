@@ -1,0 +1,2 @@
+bugfixes:
+- fixed 'returned' value of all returned values of all modules (https://github.com/ansible-collections/community.postgresql/pull/).
