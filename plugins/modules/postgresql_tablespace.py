@@ -163,7 +163,7 @@ options:
     sample: { 'random_page_cost': 1, 'seq_page_cost': 1 }
 location:
     description: Path to the tablespace in the file system.
-    returned: v
+    returned: success
     type: str
     sample: '/incredible/fast/ssd'
 newname:
