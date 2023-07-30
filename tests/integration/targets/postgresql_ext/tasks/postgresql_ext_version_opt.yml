@@ -14,15 +14,19 @@
       login_db: postgres
 
   block:
-  # Preparation:
+  ######## Preparation ########
+
   - name: postgresql_ext_version - create schema schema1
     <<: *task_parameters
     postgresql_schema:
       <<: *pg_parameters
       name: "{{ test_schema }}"
 
-  # Do tests:
-  - name: postgresql_ext_version - create extension of specific version, check mode
+  ######## Do tests ########
+
+  #### create extension with specific version ####
+
+  - name: postgresql_ext_version - create extension of specific version in check_mode
     <<: *task_parameters
     postgresql_ext:
       <<: *pg_parameters
@@ -128,6 +132,8 @@
       that:
       - result.rowcount == 1
 
+  #### update the extension to the next version ####
+
   - name: postgresql_ext_version - update the extension to the next version in check_mode
     <<: *task_parameters
     postgresql_ext:
@@ -181,6 +187,24 @@
       that:
       - result.rowcount == 1
 
+  #### check no change if extension installed but no version specified ####
+
+  - name: postgresql_ext_version - check that version won't be changed if version won't be passed in check_mode
+    <<: *task_parameters
+    postgresql_ext:
+      <<: *pg_parameters
+      name: "{{ test_ext }}"
+      schema: "{{ test_schema }}"
+      trust_input: false
+    check_mode: true
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+      - result.prev_version == '2.0'
+      - result.version == result.prev_version
+
   - name: postgresql_ext_version - check that version won't be changed if version won't be passed
     <<: *task_parameters
     postgresql_ext:
@@ -205,6 +229,8 @@
   - assert:
       that:
       - result.rowcount == 1
+
+  #### update the extension to the latest version ####
 
   - name: postgresql_ext_version - update the extension to the latest version in check_mode
     <<: *task_parameters
@@ -312,6 +338,8 @@
       that:
       - result.rowcount == 1
 
+  #### downgrade the extension version ####
+
   - name: postgresql_ext_version - try to downgrade the extension version, must fail
     <<: *task_parameters
     postgresql_ext:
@@ -325,6 +353,8 @@
   - assert:
       that:
       - result.failed == true
+
+  #### drop extension ####
 
   - name: postgresql_ext_version - drop the extension in check_mode
     <<: *task_parameters
@@ -408,6 +438,8 @@
       - result.prev_version == ''
       - result.version == result.prev_version
 
+  #### create extension without specify version ####
+
   - name: postgresql_ext_version - create the extension without passing version in check_mode
     <<: *task_parameters
     postgresql_ext:
@@ -475,6 +507,8 @@
       - result.queries == []
       - result.prev_version == '4.0'
       - result.version == result.prev_version
+
+  #### create non existent extension ####
 
   - name: postgresql_ext_version - try to install non-existent extension
     <<: *task_parameters
