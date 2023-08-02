@@ -220,6 +220,8 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_native
+from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
@@ -234,8 +236,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     set_search_path,
     TYPES_NEED_TO_CONVERT,
 )
-from ansible.module_utils._text import to_native
-from ansible.module_utils.six import iteritems
 
 # ===========================================
 # Module execution.
@@ -306,6 +306,7 @@ def main():
 
     # Execute script content:
     try:
+        current_query_txt = cursor.mogrify(script_content, args)
         cursor.execute(script_content, args)
     except Exception as e:
         cursor.close()
@@ -337,7 +338,7 @@ def main():
 
     kw = dict(
         changed=True,
-        query=cursor.query,
+        query=current_query_txt,
         statusmessage=statusmessage,
         query_result=query_result,
         rowcount=rowcount,
