@@ -647,6 +647,35 @@
       that:
       - result is not changed
 
+##### Test error handling when the database is read-only
+
+  - name: Set database as read-only
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: 'default_transaction_read_only'
+      value: 'on'
+
+  - name: Try to alter role in read-only database
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      role_attr_flags: 'CREATEDB'
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result.msg == 'ERROR:  cannot execute ALTER ROLE in a read-only transaction\n'
+
+  - name: Set database as read-write
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: 'default_transaction_read_only'
+      value: 'off'
+
   always:
   #
   # Clean up

@@ -234,6 +234,37 @@
       - result.rowcount == 0
       - result.statusmessage == 'ALTER TABLE'
 
+  - name: postgresql_query - alter test_table using encoding
+    become_user: '{{ pg_user }}'
+    become: true
+    postgresql_query:
+      <<: *pg_parameters
+      query: ALTER TABLE test_table ADD COLUMN foo2 int
+      encoding: 'UTF-8'
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is changed
+      - result.query == "ALTER TABLE test_table ADD COLUMN foo2 int"
+      - result.rowcount == 0
+      - result.statusmessage == 'ALTER TABLE'
+
+  - name: postgresql_query - alter test_table using bad encoding
+    become_user: '{{ pg_user }}'
+    become: true
+    postgresql_query:
+      <<: *pg_parameters
+      query: ALTER TABLE test_table ADD COLUMN foo888 int
+      encoding: 'UTF-888-bad'
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result.failed == true
+
   - name: postgresql_query - vacuum without autocommit must fail
     become_user: '{{ pg_user }}'
     become: true
