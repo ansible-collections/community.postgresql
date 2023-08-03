@@ -33,7 +33,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == []
+    - result.queries == ['CREATE EXTENSION "postgis"']
 
 - name: postgresql_ext - check that extension doesn't exist after the previous step
   become_user: '{{ pg_user }}'
