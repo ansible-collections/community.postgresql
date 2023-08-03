@@ -208,35 +208,35 @@ query:
     description:
     - Executed query.
     - When reading several queries from a file, it contains only the last one.
-    returned: always
+    returned: success
     type: str
     sample: 'SELECT * FROM bar'
 statusmessage:
     description:
     - Attribute containing the message returned by the command.
     - When reading several queries from a file, it contains a message of the last one.
-    returned: always
+    returned: success
     type: str
     sample: 'INSERT 0 1'
 query_result:
     description:
     - List of dictionaries in column:value form representing returned rows.
     - When running queries from a file, returns result of the last query.
-    returned: always
+    returned: success
     type: list
     elements: dict
     sample: [{"Column": "Value1"},{"Column": "Value2"}]
 query_list:
     description:
     - List of executed queries.
-    returned: always
+    returned: success
     type: list
     elements: str
     sample: ['SELECT * FROM foo', 'SELECT * FROM bar']
 query_all_results:
     description:
     - List containing results of all queries executed (one sublist for every query).
-    returned: always
+    returned: success
     type: list
     elements: list
     sample: [[{"Column": "Value1"},{"Column": "Value2"}], [{"Column": "Value1"},{"Column": "Value2"}]]

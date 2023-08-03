@@ -212,32 +212,32 @@ EXAMPLES = r'''
 RETURN = r'''
 table:
   description: Name of a table.
-  returned: always
+  returned: success
   type: str
   sample: 'foo'
 state:
   description: Table state.
-  returned: always
+  returned: success
   type: str
   sample: 'present'
 owner:
   description: Table owner.
-  returned: always
+  returned: success
   type: str
   sample: 'postgres'
 tablespace:
   description: Tablespace.
-  returned: always
+  returned: success
   type: str
   sample: 'ssd_tablespace'
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: str
   sample: [ 'CREATE TABLE "test_table" (id bigint)' ]
 storage_params:
   description: Storage parameters.
-  returned: always
+  returned: success
   type: list
   sample: [ "fillfactor=100", "autovacuum_analyze_threshold=1" ]
 '''

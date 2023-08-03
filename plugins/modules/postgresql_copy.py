@@ -163,17 +163,17 @@ EXAMPLES = r'''
 RETURN = r'''
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: str
   sample: [ "COPY test_table FROM '/tmp/data_file.txt' (FORMAT csv, DELIMITER ',', NULL 'NULL')" ]
 src:
   description: Data source.
-  returned: always
+  returned: success
   type: str
   sample: "mytable"
 dst:
   description: Data destination.
-  returned: always
+  returned: success
   type: str
   sample: "/tmp/data.csv"
 '''

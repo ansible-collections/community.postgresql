@@ -175,28 +175,28 @@ RETURN = r'''
 name:
   description:
   - Name of the subscription.
-  returned: always
+  returned: success
   type: str
   sample: acme
 exists:
   description:
   - Flag indicates the subscription exists or not at the end of runtime.
-  returned: always
+  returned: success
   type: bool
   sample: true
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: str
   sample: [ 'DROP SUBSCRIPTION "mysubscription"' ]
 initial_state:
   description: Subscription configuration at the beginning of runtime.
-  returned: always
+  returned: success
   type: dict
   sample: {"conninfo": {}, "enabled": true, "owner": "postgres", "slotname": "test", "synccommit": true}
 final_state:
   description: Subscription configuration at the end of runtime.
-  returned: always
+  returned: success
   type: dict
   sample: {"conninfo": {}, "enabled": true, "owner": "postgres", "slotname": "test", "synccommit": true}
 '''

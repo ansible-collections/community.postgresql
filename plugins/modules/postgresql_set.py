@@ -134,22 +134,22 @@ EXAMPLES = r'''
 RETURN = r'''
 name:
   description: Name of PostgreSQL server parameter.
-  returned: always
+  returned: success
   type: str
   sample: 'shared_buffers'
 restart_required:
   description: Information about parameter current state.
-  returned: always
+  returned: success
   type: bool
   sample: true
 prev_val_pretty:
   description: Information about previous state of the parameter.
-  returned: always
+  returned: success
   type: str
   sample: '4MB'
 value_pretty:
   description: Information about current state of the parameter.
-  returned: always
+  returned: success
   type: str
   sample: '64MB'
 value:
@@ -157,13 +157,13 @@ value:
   - Dictionary that contains the current parameter value (at the time of playbook finish).
   - Pay attention that for real change some parameters restart of PostgreSQL server is required.
   - Returns the current value in the check mode.
-  returned: always
+  returned: success
   type: dict
   sample: { "value": 67108864, "unit": "b" }
 context:
   description:
   - PostgreSQL setting context.
-  returned: always
+  returned: success
   type: str
   sample: user
 '''

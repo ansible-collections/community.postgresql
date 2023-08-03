@@ -180,7 +180,7 @@ query:
     - When the C(positional_args) or C(named_args) options are used,
       the query contains all variables that were substituted
       inside the database connector.
-    returned: always
+    returned: success
     type: str
     sample: 'SELECT * FROM bar'
 statusmessage:
@@ -189,7 +189,7 @@ statusmessage:
       after executing the script content.
     - When there are several statements in the script, returns a message
       related to the last statement.
-    returned: always
+    returned: success
     type: str
     sample: 'INSERT 0 1'
 query_result:
@@ -197,7 +197,7 @@ query_result:
     - List of dictionaries in the column:value form representing returned rows.
     - When there are several statements in the script,
       returns result of the last statement.
-    returned: always
+    returned: success
     type: list
     elements: dict
     sample: [{"Column": "Value1"},{"Column": "Value2"}]
