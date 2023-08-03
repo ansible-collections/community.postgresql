@@ -41,8 +41,8 @@
       - result.query_list == ['ANALYZE test_table']
       - result.rowcount == 0
       - result.statusmessage == 'ANALYZE'
-      - result.query_result == {} or result.query_result == []  # Psycopg2 or Psycopg 3
-      - result.query_all_results == [{}] or result.query_all_results == [[]]  # Psycopg2 or Psycopg 3
+      - result.query_result == {}
+      - result.query_all_results == [{}]
 
   - name: postgresql_query - simple select query to test_table
     become_user: '{{ pg_user }}'
@@ -121,7 +121,7 @@
       - result.query == "UPDATE test_table SET story = 'new' WHERE id = 3"
       - result.rowcount == 1
       - result.statusmessage == 'UPDATE 1'
-      - result.query_result == {} or result.query_result == []  # Psycopg2 or Psycopg 3
+      - result.query_result == {}
 
   - name: check the previous update
     become_user: '{{ pg_user }}'
@@ -150,7 +150,7 @@
       - result.query == "UPDATE test_table SET story = 'CHECK_MODE' WHERE id = 3"
       - result.rowcount == 1
       - result.statusmessage == 'UPDATE 1'
-      - result.query_result == {} or result.query_result == []  # Psycopg2 or Psycopg 3
+      - result.query_result == {}
 
   - name: check the previous update that nothing has been changed
     become_user: '{{ pg_user }}'
@@ -179,7 +179,7 @@
       - result.query == "UPDATE test_table SET story = 'new' WHERE id = 100"
       - result.rowcount == 0
       - result.statusmessage == 'UPDATE 0'
-      - result.query_result == {} or result.query_result == []  # Psycopg2 or Psycopg 3
+      - result.query_result == {}
 
   - name: postgresql_query - insert query
     become_user: '{{ pg_user }}'
@@ -199,7 +199,7 @@
       - result.query == "INSERT INTO test_table (id, story) VALUES (4, 'fourth')" or result.query == "INSERT INTO test_table (id, story) VALUES (4, E'fourth')"
       - result.rowcount == 1
       - result.statusmessage == 'INSERT 0 1'
-      - result.query_result == {} or result.query_result == []  # Psycopg2 or Psycopg 3
+      - result.query_result == {}
 
   - name: postgresql_query - truncate test_table
     become_user: '{{ pg_user }}'
@@ -216,7 +216,7 @@
       - result.query == "TRUNCATE test_table"
       - result.rowcount == 0
       - result.statusmessage == 'TRUNCATE TABLE'
-      - result.query_result == {} or result.query_result == []  # Psycopg2 or Psycopg 3
+      - result.query_result == {}
 
   - name: postgresql_query - alter test_table
     become_user: '{{ pg_user }}'
@@ -309,7 +309,7 @@
       - result.query == "VACUUM"
       - result.rowcount == 0
       - result.statusmessage == 'VACUUM'
-      - result.query_result == {} or result.query_result == []  # Psycopg2 or Psycopg 3
+      - result.query_result == {}
 
   - name: postgresql_query - create test table for issue 59955
     become_user: '{{ pg_user }}'
