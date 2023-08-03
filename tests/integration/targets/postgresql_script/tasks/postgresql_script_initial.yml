@@ -56,7 +56,7 @@
       - result.query == 'ANALYZE test_table\n'
       - result.rowcount != 0
       - result.statusmessage == 'ANALYZE'
-      - result.query_result == {}
+      - result.query_result == {} or result.query_result == []  # Psycopg2 or Psycopg 3
 
   - name: Run queries from SQL script using positional_args
     <<: *task_parameters
