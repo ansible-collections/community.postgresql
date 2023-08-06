@@ -1109,7 +1109,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER MATERIALIZED VIEW "test_procedure" OWNER TO "bob"']
+    - result.queries == ['ALTER PROCEDURE "test_procedure" OWNER TO "bob"']
   when: postgres_version_resp.stdout is version('9.4', '>=')
 
 - name: postgresql_owner - check that nothing changed after the previous step

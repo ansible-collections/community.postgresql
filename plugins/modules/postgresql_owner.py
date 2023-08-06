@@ -305,10 +305,19 @@ class PgOwnership(object):
                      "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'function':
-            query = ("SELECT 1 FROM pg_proc AS f "
-                     "JOIN pg_roles AS r ON f.proowner = r.oid "
-                     "WHERE f.proname = %(obj_name)s "
-                     "AND r.rolname = %(role)s")
+            if self.pg_version < 110000:
+                query = ("SELECT 1 FROM pg_proc AS f "
+                        "JOIN pg_roles AS r ON f.proowner = r.oid "
+                        "WHERE NOT f.proisagg "
+                        "AND NOT f.proiswindow "
+                        "AND f.proname = %(obj_name)s "
+                        "AND r.rolname = %(role)s")
+            else:
+                query = ("SELECT 1 FROM pg_proc AS f "
+                        "JOIN pg_roles AS r ON f.proowner = r.oid "
+                        "WHERE f.prokind = 'f' "
+                        "AND f.proname = %(obj_name)s "
+                        "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'sequence':
             query = ("SELECT 1 FROM pg_class AS c "
@@ -344,9 +353,11 @@ class PgOwnership(object):
             if self.pg_version < 110000:
                 raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
 
-            query = ("SELECT 1 FROM pg_proc "
-                     "WHERE proname = %(obj_name)s "
-                     "AND proowner = %(role)s")
+            query = ("SELECT 1 FROM pg_proc AS f "
+                    "JOIN pg_roles AS r ON f.proowner = r.oid "
+                    "WHERE f.prokind = 'p' "
+                    "AND f.proname = %(obj_name)s "
+                    "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'type':
             query = ("SELECT 1 FROM pg_type "
