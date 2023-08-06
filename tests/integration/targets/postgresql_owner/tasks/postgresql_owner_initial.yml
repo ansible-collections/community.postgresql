@@ -85,20 +85,6 @@
     query: CREATE MATERIALIZED VIEW test_mat_view AS SELECT * FROM my_table
   when: postgres_version_resp.stdout is version('9.4', '>=')
 
-- name: postgresql_owner - create test procedure
-  become_user: '{{ pg_user }}'
-  become: true
-  postgresql_query:
-    login_user: '{{ pg_user }}'
-    db: acme
-    query: >
-      CREATE OR REPLACE PROCEDURE test_procedure(id integer)
-      LANGUAGE SQL
-      AS $$
-      INSERT INTO my_table VALUES (id);
-      $$
-  when: postgres_version_resp.stdout is version('11', '>=')
-
 - name: postgresql_owner - drop dir for test tablespace
   become: true
   file:
@@ -132,6 +118,29 @@
     name: acme
     owner: alice
     location: '{{ test_tablespace_path }}'
+
+- name: postgresql_owner - create test procedure
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE OR REPLACE PROCEDURE test_procedure(id integer)
+      LANGUAGE SQL
+      AS $$
+      INSERT INTO my_table VALUES (id);
+      $$
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - create test type
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: CREATE TYPE test_type AS ENUM ('new', 'open', 'closed')
+
 
 ################
 # Do main tests:
@@ -1186,6 +1195,100 @@
     that:
     - result.rowcount == 1
   when: postgres_version_resp.stdout is version('11', '>=')
+
+# Test obj_type: type
+
+- name: postgresql_owner - set type owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_type
+    obj_type: type
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TYPE "test_type" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: SELECT 1 FROM pg_type WHERE typname = 'test_type' AND typowner = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set type owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_type
+    obj_type: type
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TYPE "test_type" OWNER TO "bob"']
+
+- name: postgresql_owner - check that type owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: SELECT 1 FROM pg_type WHERE typname = 'test_type' AND typowner = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set type owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_type
+    obj_type: type
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that type owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: SELECT 1 FROM pg_type WHERE typname = 'test_type' AND typowner = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
 
 # #############################
 

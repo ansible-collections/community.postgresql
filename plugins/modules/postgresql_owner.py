@@ -31,7 +31,7 @@ options:
     - Type of a database object.
     - Mutually exclusive with I(reassign_owned_by).
     type: str
-    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure ]
+    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type ]
     aliases:
     - type
   reassign_owned_by:
@@ -288,6 +288,9 @@ class PgOwnership(object):
         elif obj_type == 'procedure':
             self.__set_procedure_owner()
 
+        elif obj_type == 'type':
+            self.__set_type_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -344,6 +347,11 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_proc "
                      "WHERE proname = %(obj_name)s "
                      "AND proowner = %(role)s")
+
+        elif self.obj_type == 'type':
+            query = ("SELECT 1 FROM pg_type "
+                     "WHERE typname = %(obj_name)s "
+                     "AND typowner = %(role)s")
 
         query_params = {'obj_name': self.obj_name, 'role': self.role}
         return exec_sql(self, query, query_params, add_to_executed=False)
@@ -405,6 +413,13 @@ class PgOwnership(object):
                                                               self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_type_owner(self):
+        """Set the type owner."""
+
+        query = 'ALTER TYPE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                              self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -423,16 +438,17 @@ def main():
         new_owner=dict(type='str', required=True),
         obj_name=dict(type='str'),
         obj_type=dict(type='str', aliases=['type'], choices=[
-            'database',
-            'function',
-            'matview',
-            'sequence',
-            'schema',
-            'table',
-            'tablespace',
-            'view',
-            'procedure'
-            ]),
+                      'database',
+                      'function',
+                      'matview',
+                      'sequence',
+                      'schema',
+                      'table',
+                      'tablespace',
+                      'view',
+                      'procedure',
+                      'type'
+                      ]),
         reassign_owned_by=dict(type='list', elements='str'),
         fail_on_role=dict(type='bool', default=True),
         db=dict(type='str', aliases=['login_db']),
