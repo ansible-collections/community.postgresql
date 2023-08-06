@@ -124,7 +124,7 @@ def m_psycopg2():
 
     class DummyPsycopg2():
         def __init__(self):
-            self.__version__ = '2.4.3'
+            self.__version__ = "2.9.6"
             self.extras = Extras()
             self.extensions = Extensions()
 
@@ -155,7 +155,11 @@ class TestEnsureReqLibs():
         class Dummym_ansible_module():
             def __init__(self):
                 self.params = {'ca_cert': False}
+                self.warn_msg = ''
                 self.err_msg = ''
+
+            def warn(self, msg):
+                self.warn_msg = msg
 
             def fail_json(self, msg):
                 self.err_msg = msg
@@ -171,6 +175,7 @@ class TestEnsureReqLibs():
     def test_ensure_req_libs_has_psycopg2(self, m_ansible_module, monkeypatch):
         """Test ensure_required_libs() with psycopg2 is not None."""
         monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
+        monkeypatch.setattr(pg, 'PSYCOPG_VERSION', "2.9")
 
         pg.ensure_required_libs(m_ansible_module)
         assert m_ansible_module.err_msg == ''
@@ -181,6 +186,7 @@ class TestEnsureReqLibs():
         """
         m_ansible_module.params['ca_cert'] = True
         monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
+        monkeypatch.setattr(pg, 'PSYCOPG_VERSION', "2.9")
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         pg.ensure_required_libs(m_ansible_module)
@@ -194,7 +200,7 @@ class TestEnsureReqLibs():
         monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
         # Set wrong psycopg2 version number:
         psycopg2 = m_psycopg2
-        psycopg2.__version__ = '2.4.2'
+        monkeypatch.setattr(pg, 'PSYCOPG_VERSION', "2.4.2")
         monkeypatch.setattr(pg, 'psycopg2', psycopg2)
 
         pg.ensure_required_libs(m_ansible_module)
