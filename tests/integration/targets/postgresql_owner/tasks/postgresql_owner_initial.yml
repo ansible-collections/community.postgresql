@@ -30,7 +30,7 @@
   postgresql_query:
     login_user: '{{ pg_user }}'
     db: acme
-    query: CREATE TABLE my_table (id int)
+    query: CREATE TABLE test_table (id int)
 
 - name: postgresql_owner - set owner
   become_user: '{{ pg_user }}'
@@ -39,7 +39,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: my_table
+    obj_name: test_table
     obj_type: table
 
 - name: postgresql_owner - create test sequence
@@ -57,7 +57,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: >
-      CREATE FUNCTION increment(integer) RETURNS integer AS 'select $1 + 1;'
+      CREATE FUNCTION test_function(integer) RETURNS integer AS 'select $1 + 1;'
       LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 - name: postgresql_owner - create test schema
@@ -74,7 +74,7 @@
   postgresql_query:
     login_user: '{{ pg_user }}'
     db: acme
-    query: CREATE VIEW test_view AS SELECT * FROM my_table
+    query: CREATE VIEW test_view AS SELECT * FROM test_table
 
 - name: postgresql_owner - create test materialized view
   become_user: '{{ pg_user }}'
@@ -82,7 +82,7 @@
   postgresql_query:
     login_user: '{{ pg_user }}'
     db: acme
-    query: CREATE MATERIALIZED VIEW test_mat_view AS SELECT * FROM my_table
+    query: CREATE MATERIALIZED VIEW test_mat_view AS SELECT * FROM test_table
   when: postgres_version_resp.stdout is version('9.4', '>=')
 
 - name: postgresql_owner - drop dir for test tablespace
@@ -129,7 +129,7 @@
       CREATE OR REPLACE PROCEDURE test_procedure(id integer)
       LANGUAGE SQL
       AS $$
-      INSERT INTO my_table VALUES (id);
+      INSERT INTO test_table VALUES (id);
       $$
   when: postgres_version_resp.stdout is version('11', '>=')
 
@@ -202,7 +202,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_tables WHERE tablename = 'my_table'
+      SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
       AND tableowner = 'alice'
   ignore_errors: true
   register: result
@@ -233,7 +233,7 @@
   postgresql_query:
     db: acme
     login_user: '{{ pg_user }}'
-    query: SELECT 1 FROM pg_tables WHERE tablename = 'my_table' AND tableowner = 'alice'
+    query: SELECT 1 FROM pg_tables WHERE tablename = 'test_table' AND tableowner = 'alice'
   ignore_errors: true
   register: result
 
@@ -392,7 +392,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: my_table
+    obj_name: test_table
     obj_type: table
   check_mode: true
   register: result
@@ -400,7 +400,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER TABLE "my_table" OWNER TO "bob"']
+    - result.queries == ['ALTER TABLE "test_table" OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -409,7 +409,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_tables WHERE tablename = 'my_table'
+      SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
       AND tableowner = 'bob'
   ignore_errors: true
   register: result
@@ -425,14 +425,14 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: my_table
+    obj_name: test_table
     obj_type: table
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER TABLE "my_table" OWNER TO "bob"']
+    - result.queries == ['ALTER TABLE "test_table" OWNER TO "bob"']
 
 - name: postgresql_owner - check that table owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -441,7 +441,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_tables WHERE tablename = 'my_table'
+      SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
       AND tableowner = 'bob'
   ignore_errors: true
   register: result
@@ -457,7 +457,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: my_table
+    obj_name: test_table
     obj_type: table
   register: result
 
@@ -473,7 +473,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_tables WHERE tablename = 'my_table'
+      SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
       AND tableowner = 'bob'
   ignore_errors: true
   register: result
@@ -593,7 +593,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: increment
+    obj_name: test_function
     obj_type: function
   check_mode: true
   register: result
@@ -602,7 +602,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER FUNCTION increment OWNER TO "bob"']
+    - result.queries == ['ALTER FUNCTION test_function OWNER TO "bob"']
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: postgresql_owner - check that nothing changed after the previous step
@@ -613,7 +613,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
-      ON f.proowner = r.oid WHERE f.proname = 'increment' AND r.rolname = 'bob'
+      ON f.proowner = r.oid WHERE f.proname = 'test_function' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -630,7 +630,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: increment
+    obj_name: test_function
     obj_type: function
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -638,7 +638,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER FUNCTION increment OWNER TO "bob"']
+    - result.queries == ['ALTER FUNCTION test_function OWNER TO "bob"']
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: postgresql_owner - check that function owner has been changed after the previous step
@@ -649,7 +649,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
-      ON f.proowner = r.oid WHERE f.proname = 'increment' AND r.rolname = 'bob'
+      ON f.proowner = r.oid WHERE f.proname = 'test_function' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -666,7 +666,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: increment
+    obj_name: test_function
     obj_type: function
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -685,7 +685,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
-      ON f.proowner = r.oid WHERE f.proname = 'increment' AND r.rolname = 'bob'
+      ON f.proowner = r.oid WHERE f.proname = 'test_function' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
