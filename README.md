@@ -67,6 +67,7 @@ Every voice is important and every idea is valuable. If you have something on yo
 ## External requirements
 
 The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) PostgreSQL database adapter.
+The minimum supported version of Psycopg2 is 2.8.
 
 ## Tested with ansible-core
 
