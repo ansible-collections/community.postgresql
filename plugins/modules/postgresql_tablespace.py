@@ -454,11 +454,6 @@ def main():
 
         changed = tblspace.create(location)
 
-    # Drop non-existing tablespace:
-    elif not tblspace.exists and state == 'absent':
-        # Nothing to do:
-        module.fail_json(msg="Tries to drop nonexistent tablespace '%s'" % tblspace.name)
-
     # Drop existing tablespace:
     elif tblspace.exists and state == 'absent':
         # Because DROP TABLESPACE can not be run inside the transaction block:
