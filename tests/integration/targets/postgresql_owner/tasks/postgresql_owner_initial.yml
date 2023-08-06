@@ -260,7 +260,9 @@
 #
 
 # #############################
-# check_mode obj_type: database
+
+# Test obj_type: database
+
 - name: postgresql_owner - set db owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
@@ -358,6 +360,8 @@
     that:
     - result.rowcount == 1
 
+# Test obj_type: table
+
 - name: postgresql_owner - set table owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
@@ -391,7 +395,7 @@
     that:
     - result.rowcount == 0
 
-- name: postgresql_owner - set db owner
+- name: postgresql_owner - set table owner
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -423,7 +427,7 @@
     that:
     - result.rowcount == 1
 
-- name: postgresql_owner - set db owner again
+- name: postgresql_owner - set table owner again
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -454,6 +458,8 @@
 - assert:
     that:
     - result.rowcount == 1
+
+# Test obj_type: sequence
 
 - name: postgresql_owner - set sequence owner in check_mode
   become_user: '{{ pg_user }}'
@@ -489,7 +495,7 @@
     that:
     - result.rowcount == 0
 
-- name: postgresql_owner - set db owner
+- name: postgresql_owner - set sequence owner
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -522,7 +528,7 @@
     that:
     - result.rowcount == 1
 
-- name: postgresql_owner - set db owner again
+- name: postgresql_owner - set sequence owner again
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -554,6 +560,8 @@
 - assert:
     that:
     - result.rowcount == 1
+
+# Test obj_type: function
 
 - name: postgresql_owner - set function owner in check_mode
   become_user: '{{ pg_user }}'
@@ -592,7 +600,7 @@
     - result.rowcount == 0
   when: postgres_version_resp.stdout is version('10', '>=')
 
-- name: postgresql_owner - set func owner
+- name: postgresql_owner - set function owner
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -610,7 +618,7 @@
     - result.queries == ['ALTER FUNCTION increment OWNER TO "bob"']
   when: postgres_version_resp.stdout is version('10', '>=')
 
-- name: postgresql_owner - check that func owner has been changed after the previous step
+- name: postgresql_owner - check that function owner has been changed after the previous step
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
@@ -628,7 +636,7 @@
     - result.rowcount == 1
   when: postgres_version_resp.stdout is version('10', '>=')
 
-- name: postgresql_owner - set func owner again
+- name: postgresql_owner - set function owner again
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -663,6 +671,8 @@
     that:
     - result.rowcount == 1
   when: postgres_version_resp.stdout is version('10', '>=')
+
+# Test obj_type: schema
 
 - name: postgresql_owner - set schema owner in check_mode
   become_user: '{{ pg_user }}'
@@ -761,6 +771,8 @@
     that:
     - result.rowcount == 1
 
+# Test obj_type: view
+
 - name: postgresql_owner - set view owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
@@ -851,6 +863,8 @@
 - assert:
     that:
     - result.rowcount == 1
+
+# Test obj_type: matview
 
 - name: postgresql_owner - set matview owner in check_mode
   become_user: '{{ pg_user }}'
@@ -955,6 +969,8 @@
     - result.rowcount == 1
   when: postgres_version_resp.stdout is version('9.4', '>=')
 
+# Test obj_type: tablespace
+
 - name: postgresql_owner - set tablespace owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
@@ -1052,9 +1068,12 @@
     that:
     - result.rowcount == 1
 
+# #############################
+
 #
-# Crean up
+# Clean up
 #
+
 - name: postgresql_owner - drop test database
   become_user: '{{ pg_user }}'
   become: true
