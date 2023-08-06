@@ -311,9 +311,9 @@ class PgOwnership(object):
             if self.obj_type == 'procedure' and self.pg_version < 110000:
                 raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
             query = ("SELECT 1 FROM pg_proc AS f "
-                    "JOIN pg_roles AS r ON f.proowner = r.oid "
-                    "WHERE f.proname = %(obj_name)s "
-                    "AND r.rolname = %(role)s")
+                     "JOIN pg_roles AS r ON f.proowner = r.oid "
+                     "WHERE f.proname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'sequence':
             query = ("SELECT 1 FROM pg_class AS c "
