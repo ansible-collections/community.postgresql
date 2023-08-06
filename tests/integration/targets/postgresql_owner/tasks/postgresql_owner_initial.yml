@@ -148,11 +148,10 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: >
-      CREATE AGGREGATE test_aggregate (complex)
+      CREATE AGGREGATE test_aggregate (integer)
       (
-          sfunc = complex_add,
-          stype = complex,
-          initcond = '(0,0)'
+          sfunc = test_function,
+          stype = integer
       )
 
 
