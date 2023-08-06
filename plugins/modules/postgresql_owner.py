@@ -31,7 +31,7 @@ options:
     - Type of a database object.
     - Mutually exclusive with I(reassign_owned_by).
     type: str
-    choices: [ database, function, matview, sequence, schema, table, tablespace, view ]
+    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure ]
     aliases:
     - type
   reassign_owned_by:
@@ -285,6 +285,9 @@ class PgOwnership(object):
         elif obj_type == 'matview':
             self.__set_mat_view_owner()
 
+        elif obj_type == 'procedure':
+            self.__set_procedure_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -334,6 +337,14 @@ class PgOwnership(object):
                      "WHERE matviewname = %(obj_name)s "
                      "AND matviewowner = %(role)s")
 
+        elif self.obj_type == 'procedure':
+            if self.pg_version < 110000:
+                raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
+
+            query = ("SELECT 1 FROM pg_proc "
+                     "WHERE proname = %(obj_name)s "
+                     "AND proowner = %(role)s")
+
         query_params = {'obj_name': self.obj_name, 'role': self.role}
         return exec_sql(self, query, query_params, add_to_executed=False)
 
@@ -382,6 +393,15 @@ class PgOwnership(object):
             raise Error("PostgreSQL version must be >= 9.3 for obj_type=matview. Exit")
 
         query = 'ALTER MATERIALIZED VIEW %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                              self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_procedure_owner(self):
+        """Set the procedure owner."""
+        if self.pg_version < 110000:
+            raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
+
+        query = 'ALTER PROCEDURE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                               self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
