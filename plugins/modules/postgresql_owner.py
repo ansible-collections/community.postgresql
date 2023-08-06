@@ -368,7 +368,7 @@ class PgOwnership(object):
 
     def __set_seq_owner(self):
         """Set the sequence owner."""
-        query = 'ALTER SEQUENCE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+        query = 'ALTER SEQUENCE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'sequence'),
                                                      self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
@@ -386,7 +386,8 @@ class PgOwnership(object):
 
     def __set_tablespace_owner(self):
         """Set the tablespace owner."""
-        query = 'ALTER TABLESPACE "%s" OWNER TO "%s"' % (self.obj_name, self.role)
+        query = 'ALTER TABLESPACE "%s" OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'tablespace'),
+                                                         self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_view_owner(self):
@@ -410,14 +411,14 @@ class PgOwnership(object):
             raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
 
         query = 'ALTER PROCEDURE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                              self.role)
+                                                      self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_type_owner(self):
         """Set the type owner."""
 
         query = 'ALTER TYPE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                              self.role)
+                                                 self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __role_exists(self, role):
