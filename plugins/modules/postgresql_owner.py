@@ -386,8 +386,7 @@ class PgOwnership(object):
 
     def __set_tablespace_owner(self):
         """Set the tablespace owner."""
-        query = 'ALTER TABLESPACE "%s" OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'tablespace'),
-                                                         self.role)
+        query = 'ALTER TABLESPACE "%s" OWNER TO "%s"' % (self.obj_name, self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_view_owner(self):
