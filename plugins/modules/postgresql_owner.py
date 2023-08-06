@@ -346,9 +346,10 @@ class PgOwnership(object):
                      "AND matviewowner = %(role)s")
 
         elif self.obj_type == 'type':
-            query = ("SELECT 1 FROM pg_type "
-                     "WHERE typname = %(obj_name)s "
-                     "AND typowner = %(role)s")
+            query = ("SELECT 1 FROM pg_type AS t "
+                     "JOIN pg_roles AS r ON t.typowner = r.oid "
+                     "WHERE t.typname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
 
         query_params = {'obj_name': self.obj_name, 'role': self.role}
         return exec_sql(self, query, query_params, add_to_executed=False)

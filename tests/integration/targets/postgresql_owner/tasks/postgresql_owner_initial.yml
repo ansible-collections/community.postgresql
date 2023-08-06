@@ -141,6 +141,20 @@
     db: acme
     query: CREATE TYPE test_type AS ENUM ('new', 'open', 'closed')
 
+- name: postgresql_owner - create test aggregate
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE AGGREGATE test_aggregate (complex)
+      (
+          sfunc = complex_add,
+          stype = complex,
+          initcond = '(0,0)'
+      )
+
 
 ################
 # Do main tests:
@@ -1221,7 +1235,9 @@
   postgresql_query:
     db: acme
     login_user: '{{ pg_user }}'
-    query: SELECT 1 FROM pg_type WHERE typname = 'test_type' AND typowner = 'bob'
+    query: >
+      SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
+      ON t.typowner = r.oid WHERE t.typname = 'test_type' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
@@ -1251,7 +1267,9 @@
   postgresql_query:
     db: acme
     login_user: '{{ pg_user }}'
-    query: SELECT 1 FROM pg_type WHERE typname = 'test_type' AND typowner = 'bob'
+    query: >
+      SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
+      ON t.typowner = r.oid WHERE t.typname = 'test_type' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
@@ -1281,7 +1299,9 @@
   postgresql_query:
     db: acme
     login_user: '{{ pg_user }}'
-    query: SELECT 1 FROM pg_type WHERE typname = 'test_type' AND typowner = 'bob'
+    query: >
+      SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
+      ON t.typowner = r.oid WHERE t.typname = 'test_type' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
