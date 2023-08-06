@@ -2,9 +2,13 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 ####################
-# Prepare for tests:
 
-# Create test roles:
+#
+# Prepare for tests
+#
+
+# Create test roles
+
 - name: postgresql_owner - create test roles
   become_user: '{{ pg_user }}'
   become: true
@@ -17,12 +21,16 @@
   - alice
   - bob
 
+# Create test database
+
 - name: postgresql_owner - create test database
   become_user: '{{ pg_user }}'
   become: true
   postgresql_db:
     login_user: '{{ pg_user }}'
     db: acme
+
+# Create test table
 
 - name: postgresql_owner - create test table
   become_user: '{{ pg_user }}'
@@ -42,6 +50,8 @@
     obj_name: test_table
     obj_type: table
 
+# Create test sequence
+
 - name: postgresql_owner - create test sequence
   become_user: '{{ pg_user }}'
   become: true
@@ -49,6 +59,8 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: CREATE SEQUENCE test_seq
+
+# Create test function
 
 - name: postgresql_owner - create test function
   become_user: '{{ pg_user }}'
@@ -60,6 +72,8 @@
       CREATE FUNCTION test_function(integer) RETURNS integer AS 'select $1 + 1;'
       LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
 
+# Create test schema
+
 - name: postgresql_owner - create test schema
   become_user: '{{ pg_user }}'
   become: true
@@ -67,6 +81,8 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: CREATE SCHEMA test_schema
+
+# Create test view
 
 - name: postgresql_owner - create test view
   become_user: '{{ pg_user }}'
@@ -76,6 +92,8 @@
     db: acme
     query: CREATE VIEW test_view AS SELECT * FROM test_table
 
+# Create test materialized view
+
 - name: postgresql_owner - create test materialized view
   become_user: '{{ pg_user }}'
   become: true
@@ -84,6 +102,8 @@
     db: acme
     query: CREATE MATERIALIZED VIEW test_mat_view AS SELECT * FROM test_table
   when: postgres_version_resp.stdout is version('9.4', '>=')
+
+# Create test materialized tablespace
 
 - name: postgresql_owner - drop dir for test tablespace
   become: true
@@ -119,6 +139,8 @@
     owner: alice
     location: '{{ test_tablespace_path }}'
 
+# Create test procedure
+
 - name: postgresql_owner - create test procedure
   become_user: '{{ pg_user }}'
   become: true
@@ -133,6 +155,8 @@
       $$
   when: postgres_version_resp.stdout is version('11', '>=')
 
+# Create test type
+
 - name: postgresql_owner - create test type
   become_user: '{{ pg_user }}'
   become: true
@@ -140,6 +164,8 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: CREATE TYPE test_type AS ENUM ('new', 'open', 'closed')
+
+# Create test aggregate
 
 - name: postgresql_owner - create test aggregate
   become_user: '{{ pg_user }}'
@@ -161,6 +187,7 @@
 #
 # check reassign_owned_by param
 #
+
 # try to reassign ownership to non existent user:
 - name: postgresql_owner - reassign_owned_by to non existent user
   become_user: '{{ pg_user }}'
