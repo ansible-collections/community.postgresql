@@ -1132,7 +1132,9 @@
   postgresql_query:
     db: acme
     login_user: '{{ pg_user }}'
-    query: SELECT 1 FROM pg_proc WHERE proname = 'test_procedure' AND proowner = 'bob'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_procedure' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('11', '>=')
@@ -1166,7 +1168,9 @@
   postgresql_query:
     db: acme
     login_user: '{{ pg_user }}'
-    query: SELECT 1 FROM pg_proc WHERE proname = 'test_procedure' AND proowner = 'bob'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_procedure' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('11', '>=')
@@ -1200,7 +1204,9 @@
   postgresql_query:
     db: acme
     login_user: '{{ pg_user }}'
-    query: SELECT 1 FROM pg_proc WHERE proname = 'test_procedure' AND proowner = 'bob'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_procedure' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('11', '>=')
