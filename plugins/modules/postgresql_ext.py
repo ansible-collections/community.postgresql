@@ -161,7 +161,7 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-query:
+queries:
   description: List of executed queries.
   returned: always
   type: list
