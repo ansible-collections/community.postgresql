@@ -31,7 +31,7 @@ options:
     - Type of a database object.
     - Mutually exclusive with I(reassign_owned_by).
     type: str
-    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type ]
+    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type, aggregate ]
     aliases:
     - type
   reassign_owned_by:
@@ -291,6 +291,9 @@ class PgOwnership(object):
         elif obj_type == 'type':
             self.__set_type_owner()
 
+        elif obj_type == 'aggregate':
+            self.__set_aggregate_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -304,20 +307,13 @@ class PgOwnership(object):
                      "WHERE d.datname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
-        elif self.obj_type == 'function':
-            if self.pg_version < 110000:
-                query = ("SELECT 1 FROM pg_proc AS f "
-                        "JOIN pg_roles AS r ON f.proowner = r.oid "
-                        "WHERE NOT f.proisagg "
-                        "AND NOT f.proiswindow "
-                        "AND f.proname = %(obj_name)s "
-                        "AND r.rolname = %(role)s")
-            else:
-                query = ("SELECT 1 FROM pg_proc AS f "
-                        "JOIN pg_roles AS r ON f.proowner = r.oid "
-                        "WHERE f.prokind = 'f' "
-                        "AND f.proname = %(obj_name)s "
-                        "AND r.rolname = %(role)s")
+        elif self.obj_type in ('function', 'aggregate', 'procedure'):
+            if self.obj_type == 'procedure' and self.pg_version < 110000:
+                raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
+            query = ("SELECT 1 FROM pg_proc AS f "
+                    "JOIN pg_roles AS r ON f.proowner = r.oid "
+                    "WHERE f.proname = %(obj_name)s "
+                    "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'sequence':
             query = ("SELECT 1 FROM pg_class AS c "
@@ -348,16 +344,6 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_matviews "
                      "WHERE matviewname = %(obj_name)s "
                      "AND matviewowner = %(role)s")
-
-        elif self.obj_type == 'procedure':
-            if self.pg_version < 110000:
-                raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
-
-            query = ("SELECT 1 FROM pg_proc AS f "
-                    "JOIN pg_roles AS r ON f.proowner = r.oid "
-                    "WHERE f.prokind = 'p' "
-                    "AND f.proname = %(obj_name)s "
-                    "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'type':
             query = ("SELECT 1 FROM pg_type "
@@ -431,6 +417,13 @@ class PgOwnership(object):
                                                  self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_aggregate_owner(self):
+        """Set the aggregate owner."""
+
+        query = 'ALTER AGGREGATE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                      self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -458,7 +451,8 @@ def main():
                       'tablespace',
                       'view',
                       'procedure',
-                      'type'
+                      'type',
+                      'aggregate',
                       ]),
         reassign_owned_by=dict(type='list', elements='str'),
         fail_on_role=dict(type='bool', default=True),

@@ -1289,6 +1289,104 @@
     that:
     - result.rowcount == 1
 
+# Test obj_type: aggregate
+
+- name: postgresql_owner - set aggregate owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_aggregate
+    obj_type: aggregate
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER AGGREGATE "test_aggregate" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_aggregate' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set aggregate owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_aggregate
+    obj_type: aggregate
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER AGGREGATE "test_aggregate" OWNER TO "bob"']
+
+- name: postgresql_owner - check that aggregate owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_aggregate' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set aggregate owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_aggregate
+    obj_type: aggregate
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that aggregate owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_aggregate' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
 
 # #############################
 
