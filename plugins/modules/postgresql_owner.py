@@ -160,7 +160,12 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_conn_params,
     pg_cursor_args,
     postgres_common_argument_spec,
+    get_server_version,
 )
+
+
+class Error(Exception):
+    pass
 
 
 class PgOwnership(object):
@@ -181,9 +186,10 @@ class PgOwnership(object):
         That's all.
     """
 
-    def __init__(self, module, cursor, role):
+    def __init__(self, module, cursor, pg_version, role):
         self.module = module
         self.cursor = cursor
+        self.pg_version = pg_version
         self.check_role_exists(role)
         self.role = role
         self.changed = False
@@ -321,6 +327,9 @@ class PgOwnership(object):
                      "AND viewowner = %(role)s")
 
         elif self.obj_type == 'matview':
+            if self.pg_version < 90300:
+                raise Error("PostgreSQL version must be >= 9.3 for obj_type=matview. Exit")
+
             query = ("SELECT 1 FROM pg_matviews "
                      "WHERE matviewname = %(obj_name)s "
                      "AND matviewowner = %(role)s")
@@ -369,6 +378,9 @@ class PgOwnership(object):
 
     def __set_mat_view_owner(self):
         """Set the materialized view owner."""
+        if self.pg_version < 90300:
+            raise Error("PostgreSQL version must be >= 9.3 for obj_type=matview. Exit")
+
         query = 'ALTER MATERIALIZED VIEW %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                               self.role)
         self.changed = exec_sql(self, query, return_bool=True)
@@ -425,10 +437,11 @@ def main():
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor(**pg_cursor_args)
+    pg_version = get_server_version(db_connection)
 
     ##############
     # Create the object and do main job:
-    pg_ownership = PgOwnership(module, cursor, new_owner)
+    pg_ownership = PgOwnership(module, cursor, pg_version, new_owner)
 
     # if we want to change ownership:
     if obj_name:
