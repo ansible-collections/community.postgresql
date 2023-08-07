@@ -31,7 +31,7 @@ options:
     - Type of a database object.
     - Mutually exclusive with I(reassign_owned_by).
     type: str
-    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type, aggregate ]
+    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type, aggregate, routine ]
     aliases:
     - type
   reassign_owned_by:
@@ -294,6 +294,9 @@ class PgOwnership(object):
         elif obj_type == 'aggregate':
             self.__set_aggregate_owner()
 
+        elif obj_type == 'routine':
+            self.__set_routine_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -307,7 +310,7 @@ class PgOwnership(object):
                      "WHERE d.datname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
-        elif self.obj_type in ('function', 'aggregate', 'procedure'):
+        elif self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
             if self.obj_type == 'procedure' and self.pg_version < 110000:
                 raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
             query = ("SELECT 1 FROM pg_proc AS f "
@@ -425,6 +428,13 @@ class PgOwnership(object):
                                                       self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_routine_owner(self):
+        """Set the routine owner."""
+
+        query = 'ALTER ROUTINE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                      self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -454,6 +464,7 @@ def main():
                       'procedure',
                       'type',
                       'aggregate',
+                      'routine',
                       ]),
         reassign_owned_by=dict(type='list', elements='str'),
         fail_on_role=dict(type='bool', default=True),
