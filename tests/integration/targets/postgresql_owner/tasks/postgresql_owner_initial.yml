@@ -174,10 +174,12 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: >
-      CREATE AGGREGATE test_aggregate (integer)
+      CREATE AGGREGATE test_aggregate (float8)
       (
-          sfunc = test_function,
-          stype = integer
+          sfunc = float8_accum,
+          stype = float8[],
+          finalfunc = float8_avg,
+          initcond = '{0,0,0}'
       )
 
 
