@@ -1364,7 +1364,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: test_aggregate
+    obj_name: test_aggregate(float8)
     obj_type: aggregate
   check_mode: true
   register: result
@@ -1372,7 +1372,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER AGGREGATE "test_aggregate" OWNER TO "bob"']
+    - result.queries == ['ALTER AGGREGATE "test_aggregate(float8)" OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1397,14 +1397,14 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: test_aggregate
+    obj_name: test_aggregate(float8)
     obj_type: aggregate
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER AGGREGATE "test_aggregate" OWNER TO "bob"']
+    - result.queries == ['ALTER AGGREGATE "test_aggregate(float8)" OWNER TO "bob"']
 
 - name: postgresql_owner - check that aggregate owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1429,7 +1429,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: test_aggregate
+    obj_name: test_aggregate(float8)
     obj_type: aggregate
   register: result
 

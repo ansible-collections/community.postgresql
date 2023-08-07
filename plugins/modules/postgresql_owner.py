@@ -424,7 +424,7 @@ class PgOwnership(object):
     def __set_aggregate_owner(self):
         """Set the aggregate owner."""
 
-        query = 'ALTER AGGREGATE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+        query = 'ALTER AGGREGATE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name.split('(')[0], 'table'),
                                                       self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
