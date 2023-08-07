@@ -232,70 +232,70 @@ EXAMPLES = r'''
 RETURN = r'''
 state:
   description: Sequence state at the end of execution.
-  returned: always
+  returned: success
   type: str
   sample: 'present'
 sequence:
   description: Sequence name.
-  returned: always
+  returned: success
   type: str
   sample: 'foobar'
 queries:
     description: List of queries that was tried to be executed.
-    returned: always
+    returned: success
     type: str
     sample: [ "CREATE SEQUENCE \"foo\"" ]
 schema:
     description: Name of the schema of the sequence.
-    returned: always
+    returned: success
     type: str
     sample: 'foo'
 data_type:
     description: Shows the current data type of the sequence.
-    returned: always
+    returned: success
     type: str
     sample: 'bigint'
 increment:
     description: The value of increment of the sequence. A positive value will
                  make an ascending sequence, a negative one a descending
                  sequence.
-    returned: always
+    returned: success
     type: int
     sample: -1
 minvalue:
     description: The value of minvalue of the sequence.
-    returned: always
+    returned: success
     type: int
     sample: 1
 maxvalue:
     description: The value of maxvalue of the sequence.
-    returned: always
+    returned: success
     type: int
     sample: 9223372036854775807
 start:
     description: The value of start of the sequence.
-    returned: always
+    returned: success
     type: int
     sample: 12
 cycle:
     description: Shows if the sequence cycle or not.
-    returned: always
+    returned: success
     type: bool
     sample: false
 owner:
     description: Shows the current owner of the sequence
                  after the successful run of the task.
-    returned: always
+    returned: success
     type: str
     sample: 'postgres'
 newname:
     description: Shows the new sequence name after rename.
-    returned: on success
+    returned: success
     type: str
     sample: 'barfoo'
 newschema:
     description: Shows the new schema of the sequence after schema change.
-    returned: on success
+    returned: success
     type: str
     sample: 'foobar'
 '''

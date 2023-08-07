@@ -106,12 +106,12 @@ EXAMPLES = r'''
 RETURN = r'''
 schema:
   description: Name of the schema.
-  returned: success, changed
+  returned: success
   type: str
   sample: "acme"
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: list
   sample: ["CREATE SCHEMA \"acme\""]
 '''

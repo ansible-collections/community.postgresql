@@ -163,7 +163,7 @@ EXAMPLES = r'''
 RETURN = r'''
 queries:
   description: List of executed queries.
-  returned: always
+  returned: success
   type: list
   sample: ['CREATE LANGUAGE "acme"']
 '''

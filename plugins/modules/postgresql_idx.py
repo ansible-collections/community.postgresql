@@ -222,37 +222,37 @@ EXAMPLES = r'''
 RETURN = r'''
 name:
   description: Index name.
-  returned: always
+  returned: success
   type: str
   sample: 'foo_idx'
 state:
   description: Index state.
-  returned: always
+  returned: success
   type: str
   sample: 'present'
 schema:
   description: Schema where index exists.
-  returned: always
+  returned: success
   type: str
   sample: 'public'
 tablespace:
   description: Tablespace where index exists.
-  returned: always
+  returned: success
   type: str
   sample: 'ssd'
 query:
   description: Query that was tried to be executed.
-  returned: always
+  returned: success
   type: str
   sample: 'CREATE INDEX CONCURRENTLY foo_idx ON test_table USING BTREE (id)'
 storage_params:
   description: Index storage parameters.
-  returned: always
+  returned: success
   type: list
   sample: [ "fillfactor=90" ]
 valid:
   description: Index validity.
-  returned: always
+  returned: success
   type: bool
   sample: true
 '''
