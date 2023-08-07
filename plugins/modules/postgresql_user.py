@@ -601,7 +601,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             executed_queries.append(statement)
 
         except psycopg2.InternalError as e:
-            if psycopg_error.diag.sqlstate == "25006":
+            if e.diag.sqlstate == "25006":
                 # Handle errors due to read-only transactions indicated by pgcode 25006
                 # ERROR:  cannot execute ALTER ROLE in a read-only transaction
                 changed = False
