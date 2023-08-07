@@ -82,8 +82,8 @@ def ensure_required_libs(module):
     if not HAS_PSYCOPG2:
         module.fail_json(msg=missing_required_lib('psycopg2'))
 
-    elif PSYCOPG_VERSION < LooseVersion("2.8"):
-        module.warn("psycopg should be at least 2.8 to support all modules functionality")
+    elif PSYCOPG_VERSION < LooseVersion("2.5.1"):
+        module.warn("psycopg should be at least 2.5.1 to support all modules functionality")
 
     if module.params.get('ca_cert') and PSYCOPG_VERSION < LooseVersion('2.4.3'):
         module.fail_json(msg='psycopg2 must be at least 2.4.3 in order to use the ca_cert parameter')

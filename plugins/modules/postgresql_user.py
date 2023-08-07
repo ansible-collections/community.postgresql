@@ -552,12 +552,17 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             cursor.execute(statement, query_password_data)
             changed = True
             executed_queries.append(statement)
-        # psycopg.errors (and ReadOnlySqlTransaction) was added in Psycopg 2.8
-        except psycopg2.errors.ReadOnlySqlTransaction as e:
-            # ERROR:  cannot execute ALTER ROLE in a read-only transaction
-            changed = False
-            module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
-            return changed
+        # We could catch psycopg.errors.ReadOnlySqlTransaction directly,
+        # but that was added only in Psycopg 2.8
+        except psycopg2.InternalError as e:
+            if e.diag.sqlstate == "25006":
+                # Handle errors due to read-only transactions indicated by pgcode 25006
+                # ERROR:  cannot execute ALTER ROLE in a read-only transaction
+                changed = False
+                module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
+                return changed
+            else:
+                raise psycopg2.InternalError(e)
         except psycopg2.NotSupportedError as e:
             module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
 
@@ -595,12 +600,15 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             cursor.execute(statement)
             executed_queries.append(statement)
 
-        # psycopg.errors (and ReadOnlySqlTransaction) was added in Psycopg 2.8
-        except psycopg2.errors.ReadOnlySqlTransaction as e:
-            # ERROR:  cannot execute ALTER ROLE in a read-only transaction
-            changed = False
-            module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
-            return changed
+        except psycopg2.InternalError as e:
+            if psycopg_error.diag.sqlstate == "25006":
+                # Handle errors due to read-only transactions indicated by pgcode 25006
+                # ERROR:  cannot execute ALTER ROLE in a read-only transaction
+                changed = False
+                module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
+                return changed
+            else:
+                raise psycopg2.InternalError(e)
 
         # Grab new role attributes.
         cursor.execute(select, {"user": user})

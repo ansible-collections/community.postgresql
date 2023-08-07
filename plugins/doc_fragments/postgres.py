@@ -88,5 +88,5 @@ notes:
   on the remote host before using this module.
 - The ca_cert parameter requires at least Postgres version 8.4 and I(psycopg2) version 2.4.3.
 
-requirements: [ 'psycopg2 >= 2.8' ]
+requirements: [ 'psycopg2 >= 2.5.1' ]
 '''
