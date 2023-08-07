@@ -1,0 +1,2 @@
+major_changes:
+- "postgres modules - the minimum version of psycopg2 library the collection supports is 2.8 (https://github.com/ansible-collections/community.postgresql/pull/556)."

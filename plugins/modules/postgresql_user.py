@@ -556,7 +556,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
         except psycopg2.errors.ReadOnlySqlTransaction as e:
             # ERROR:  cannot execute ALTER ROLE in a read-only transaction
             changed = False
-            module.fail_json(msg=p_error.diag.message_primary, exception=traceback.format_exc())
+            module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
             return changed
         except psycopg2.NotSupportedError as e:
             module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
