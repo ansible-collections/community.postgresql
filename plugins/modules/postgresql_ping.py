@@ -76,17 +76,17 @@ EXAMPLES = r'''
 RETURN = r'''
 is_available:
   description: PostgreSQL server availability.
-  returned: always
+  returned: success
   type: bool
   sample: true
 server_version:
   description: PostgreSQL server version.
-  returned: always
+  returned: if C(is_available=true)
   type: dict
   sample: { major: 13, minor: 2, full: '13.2', raw: 'PostgreSQL 13.2 on x86_64-pc-linux-gnu' }
 conn_err_msg:
   description: Connection error message.
-  returned: always
+  returned: if C(is_available=true)
   type: str
   sample: ''
   version_added: 1.7.0

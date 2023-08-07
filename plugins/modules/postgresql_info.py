@@ -109,18 +109,18 @@ EXAMPLES = r'''
 RETURN = r'''
 version:
   description: Database server version U(https://www.postgresql.org/support/versioning/).
-  returned: always
+  returned: success
   type: dict
   sample: { "version": { "major": 10, "minor": 6 } }
   contains:
     major:
       description: Major server version.
-      returned: always
+      returned: success
       type: int
       sample: 11
     minor:
       description: Minor server version.
-      returned: always
+      returned: success
       type: int
       sample: 1
     patch:
@@ -131,24 +131,24 @@ version:
       version_added: '1.2.0'
     full:
       description: Full server version.
-      returned: always
+      returned: success
       type: str
       sample: '13.2'
       version_added: '1.2.0'
     raw:
       description: Full output returned by ``SELECT version()``.
-      returned: always
+      returned: success
       type: str
       sample: 'PostgreSQL 13.2 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 10.2.1 20201125 (Red Hat 10.2.1-9), 64-bit'
       version_added: '1.2.0'
 in_recovery:
   description: Indicates if the service is in recovery mode or not.
-  returned: always
+  returned: success
   type: bool
   sample: false
 databases:
   description: Information about databases.
-  returned: always
+  returned: success
   type: dict
   sample:
   - { "postgres": { "access_priv": "", "collate": "en_US.UTF-8",
@@ -156,48 +156,48 @@ databases:
   contains:
     database_name:
       description: Database name.
-      returned: always
+      returned: success
       type: dict
       sample: template1
       contains:
         access_priv:
           description: Database access privileges.
-          returned: always
+          returned: success
           type: str
           sample: "=c/postgres_npostgres=CTc/postgres"
         collate:
           description:
           - Database collation U(https://www.postgresql.org/docs/current/collation.html).
-          returned: always
+          returned: success
           type: str
           sample: en_US.UTF-8
         ctype:
           description:
           - Database LC_CTYPE U(https://www.postgresql.org/docs/current/multibyte.html).
-          returned: always
+          returned: success
           type: str
           sample: en_US.UTF-8
         encoding:
           description:
           - Database encoding U(https://www.postgresql.org/docs/current/multibyte.html).
-          returned: always
+          returned: success
           type: str
           sample: UTF8
         owner:
           description:
           - Database owner U(https://www.postgresql.org/docs/current/sql-createdatabase.html).
-          returned: always
+          returned: success
           type: str
           sample: postgres
         size:
           description: Database size in bytes.
-          returned: always
+          returned: success
           type: str
           sample: 8189415
         extensions:
           description:
           - Extensions U(https://www.postgresql.org/docs/current/sql-createextension.html).
-          returned: always
+          returned: success
           type: dict
           sample:
           - { "plpgsql": { "description": "PL/pgSQL procedural language",
@@ -210,32 +210,32 @@ databases:
               sample: PL/pgSQL procedural language
             extversion:
               description: Extension description.
-              returned: always
+              returned: success
               type: dict
               contains:
                 major:
                   description: Extension major version.
-                  returned: always
+                  returned: success
                   type: int
                   sample: 1
                 minor:
                   description: Extension minor version.
-                  returned: always
+                  returned: success
                   type: int
                   sample: 0
                 raw:
                   description: Extension full version.
-                  returned: always
+                  returned: success
                   type: str
                   sample: '1.0'
             nspname:
               description: Namespace where the extension is.
-              returned: always
+              returned: success
               type: str
               sample: pg_catalog
         languages:
           description: Procedural languages U(https://www.postgresql.org/docs/current/xplang.html).
-          returned: always
+          returned: success
           type: dict
           sample: { "sql": { "lanacl": "", "lanowner": "postgres" } }
           contains:
@@ -243,32 +243,32 @@ databases:
               description:
               - Language access privileges
                 U(https://www.postgresql.org/docs/current/catalog-pg-language.html).
-              returned: always
+              returned: success
               type: str
               sample: "{postgres=UC/postgres,=U/postgres}"
             lanowner:
               description:
               - Language owner U(https://www.postgresql.org/docs/current/catalog-pg-language.html).
-              returned: always
+              returned: success
               type: str
               sample: postgres
         namespaces:
           description:
           - Namespaces (schema) U(https://www.postgresql.org/docs/current/sql-createschema.html).
-          returned: always
+          returned: success
           type: dict
           sample: { "pg_catalog": { "nspacl": "{postgres=UC/postgres,=U/postgres}", "nspowner": "postgres" } }
           contains:
             nspacl:
               description:
               - Access privileges U(https://www.postgresql.org/docs/current/catalog-pg-namespace.html).
-              returned: always
+              returned: success
               type: str
               sample: "{postgres=UC/postgres,=U/postgres}"
             nspowner:
               description:
               - Schema owner U(https://www.postgresql.org/docs/current/catalog-pg-namespace.html).
-              returned: always
+              returned: success
               type: str
               sample: postgres
         publications:
@@ -303,24 +303,24 @@ repl_slots:
     active:
       description:
       - True means that a receiver has connected to it, and it is currently reserving archives.
-      returned: always
+      returned: success
       type: bool
       sample: true
     database:
       description: Database name this slot is associated with, or null.
-      returned: always
+      returned: success
       type: str
       sample: acme
     plugin:
       description:
       - Base name of the shared object containing the output plugin
         this logical slot is using, or null for physical slots.
-      returned: always
+      returned: success
       type: str
       sample: pgoutput
     slot_type:
       description: The slot type - physical or logical.
-      returned: always
+      returned: success
       type: str
       sample: logical
 replications:
@@ -336,7 +336,7 @@ replications:
     usename:
       description:
       - Name of the user logged into this WAL sender process ('usename' is a column name in pg_stat_replication view).
-      returned: always
+      returned: success
       type: str
       sample: replication_user
     app_name:
@@ -349,30 +349,30 @@ replications:
       - IP address of the client connected to this WAL sender.
       - If this field is null, it indicates that the client is connected
         via a Unix socket on the server machine.
-      returned: always
+      returned: success
       type: str
       sample: 10.0.0.101
     client_hostname:
       description:
       - Host name of the connected client, as reported by a reverse DNS lookup of client_addr.
       - This field will only be non-null for IP connections, and only when log_hostname is enabled.
-      returned: always
+      returned: success
       type: str
       sample: dbsrv1
     backend_start:
       description: Time when this process was started, i.e., when the client connected to this WAL sender.
-      returned: always
+      returned: success
       type: str
       sample: "2019-02-03 00:14:33.908593+03"
     state:
       description: Current WAL sender state.
-      returned: always
+      returned: success
       type: str
       sample: streaming
 tablespaces:
   description:
   - Information about tablespaces U(https://www.postgresql.org/docs/current/catalog-pg-tablespace.html).
-  returned: always
+  returned: success
   type: dict
   sample:
   - { "test": { "spcacl": "{postgres=C/postgres,andreyk=C/postgres}", "spcoptions": [ "seq_page_cost=1" ],
@@ -380,23 +380,23 @@ tablespaces:
   contains:
     spcacl:
       description: Tablespace access privileges.
-      returned: always
+      returned: success
       type: str
       sample: "{postgres=C/postgres,andreyk=C/postgres}"
     spcoptions:
       description: Tablespace-level options.
-      returned: always
+      returned: success
       type: list
       sample: [ "seq_page_cost=1" ]
     spcowner:
       description: Owner of the tablespace.
-      returned: always
+      returned: success
       type: str
       sample: test_user
 roles:
   description:
   - Information about roles U(https://www.postgresql.org/docs/current/user-manag.html).
-  returned: always
+  returned: success
   type: dict
   sample:
   - { "test_role": { "canlogin": true, "member_of": [ "user_ro" ], "superuser": false,
@@ -404,37 +404,37 @@ roles:
   contains:
     canlogin:
       description: Login privilege U(https://www.postgresql.org/docs/current/role-attributes.html).
-      returned: always
+      returned: success
       type: bool
       sample: true
     member_of:
       description:
       - Role membership U(https://www.postgresql.org/docs/current/role-membership.html).
-      returned: always
+      returned: success
       type: list
       sample: [ "read_only_users" ]
     superuser:
       description: User is a superuser or not.
-      returned: always
+      returned: success
       type: bool
       sample: false
     valid_until:
       description:
       - Password expiration date U(https://www.postgresql.org/docs/current/sql-alterrole.html).
-      returned: always
+      returned: success
       type: str
       sample: "9999-12-31T23:59:59.999999+00:00"
 pending_restart_settings:
   description:
   - List of settings that are pending restart to be set.
-  returned: always
+  returned: success
   type: list
   sample: [ "shared_buffers" ]
 settings:
   description:
   - Information about run-time server parameters
     U(https://www.postgresql.org/docs/current/view-pg-settings.html).
-  returned: always
+  returned: success
   type: dict
   sample:
   - { "work_mem": { "boot_val": "4096", "context": "user", "max_val": "2147483647",
@@ -443,30 +443,30 @@ settings:
   contains:
     setting:
       description: Current value of the parameter.
-      returned: always
+      returned: success
       type: str
       sample: 49152
     unit:
       description: Implicit unit of the parameter.
-      returned: always
+      returned: success
       type: str
       sample: kB
     boot_val:
       description:
       - Parameter value assumed at server startup if the parameter is not otherwise set.
-      returned: always
+      returned: success
       type: str
       sample: 4096
     min_val:
       description:
       - Minimum allowed value of the parameter (null for non-numeric values).
-      returned: always
+      returned: success
       type: str
       sample: 64
     max_val:
       description:
       - Maximum allowed value of the parameter (null for non-numeric values).
-      returned: always
+      returned: success
       type: str
       sample: 2147483647
     sourcefile:
@@ -475,20 +475,20 @@ settings:
       - Null for values set from sources other than configuration files,
         or when examined by a user who is neither a superuser or a member of pg_read_all_settings.
       - Helpful when using include directives in configuration files.
-      returned: always
+      returned: success
       type: str
       sample: /var/lib/pgsql/10/data/postgresql.auto.conf
     context:
       description:
       - Context required to set the parameter's value.
       - For more information see U(https://www.postgresql.org/docs/current/view-pg-settings.html).
-      returned: always
+      returned: success
       type: str
       sample: user
     vartype:
       description:
       - Parameter type (bool, enum, integer, real, or string).
-      returned: always
+      returned: success
       type: str
       sample: integer
     val_in_bytes:
@@ -500,14 +500,14 @@ settings:
     pretty_val:
       description:
       - Value presented in the pretty form.
-      returned: always
+      returned: success
       type: str
       sample: 2MB
     pending_restart:
       description:
       - True if the value has been changed in the configuration file but needs a restart; or false otherwise.
       - Returns only if C(settings) is passed.
-      returned: always
+      returned: success
       type: bool
       sample: false
 '''

@@ -89,17 +89,17 @@ EXAMPLES = r'''
 RETURN = r'''
 indexes:
   description: User index statistics.
-  returned: always
+  returned: success
   type: dict
   sample: {"public": {"test_id_idx": {"idx_scan": 0, "idx_tup_fetch": 0, "idx_tup_read": 0, "relname": "test", "size": 8192, ...}}}
 tables:
   description: User table statistics.
-  returned: always
+  returned: success
   type: dict
   sample: {"public": {"test": {"analyze_count": 3, "n_dead_tup": 0, "n_live_tup": 0, "seq_scan": 2, "size": 0, "total_size": 8192, ...}}}
 functions:
   description: User function statistics.
-  returned: always
+  returned: success
   type: dict
   sample: {"public": {"inc": {"calls": 1, "funcid": 26722, "self_time": 0.23, "total_time": 0.23}}}
 '''
