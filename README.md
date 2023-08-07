@@ -67,7 +67,7 @@ Every voice is important and every idea is valuable. If you have something on yo
 ## External requirements
 
 The PostgreSQL modules rely on the [Psycopg2](https://www.psycopg.org/docs/) PostgreSQL database adapter.
-The minimum supported version of Psycopg2 is 2.8.
+The minimum supported and tested version of Psycopg2 is 2.5.1.
 
 ## Tested with ansible-core
 
@@ -81,12 +81,17 @@ Tested with the following `ansible-core` releases:
 Ansible-core versions before 2.12.0 are not supported.
 Our AZP CI includes testing with the following docker images / PostgreSQL versions:
 
-- CentOS 7: 9.2
-- RHEL 8: 10
-- Fedora 34/35: 13
-- Fedora 36/37: 14
-- Fedora 38: 15
-- Ubuntu 20.04/22.04: 15
+| Docker image | psycopg version | PostgreSQL version |
+|--------------|-----------------|--------------------|
+| CentOS 7     |           2.5.1 |                9.2 |
+| RHEL 8       |           2.7.5 |               10   |
+| Fedora 34    |           2.8.6 |               13   |
+| Fedora 35    |           2.9.1 |               13   |
+| Fedora 36    |           2.9.1 |               14   |
+| Fedora 37    |           2.9.6 |               14   |
+| Fedora 38    |           2.9.6 |               15   |
+| Ubuntu 20.04 |           2.8.6 |               15   |
+| Ubuntu 22.04 |           2.9.6 |               15   |
 
 ## Included content
 
