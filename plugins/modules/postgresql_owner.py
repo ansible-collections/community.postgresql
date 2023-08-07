@@ -74,6 +74,10 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+
+notes:
+- Functions/Procedures/Aggregate/Routines overloading is not supported
+
 seealso:
 - module: community.postgresql.postgresql_user
 - module: community.postgresql.postgresql_privs
@@ -432,7 +436,7 @@ class PgOwnership(object):
         """Set the routine owner."""
 
         query = 'ALTER ROUTINE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                      self.role)
+                                                    self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __role_exists(self, role):
