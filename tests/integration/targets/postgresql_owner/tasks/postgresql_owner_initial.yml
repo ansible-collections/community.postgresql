@@ -1164,7 +1164,7 @@
     that:
     - result is changed
     - result.queries == ['ALTER PROCEDURE "test_procedure" OWNER TO "bob"']
-  when: postgres_version_resp.stdout is version('9.4', '>=')
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
