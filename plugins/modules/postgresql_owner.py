@@ -76,7 +76,10 @@ options:
     version_added: '0.2.0'
 
 notes:
-- Functions/Procedures/Aggregate/Routines overloading is not supported
+- Function Overloading is not supported, so when I(obj_type) is C(aggregate), C(function), C(routine), or C(procedure)
+  I(obj_name) is considered the only object of same type with this name.
+- Despite Function Overloading is not supported, when I(obj_type=aggregate) I(obj_name) must contain also aggregate
+  signature because it is required by SQL syntax.
 
 seealso:
 - module: community.postgresql.postgresql_user
