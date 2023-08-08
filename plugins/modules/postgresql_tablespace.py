@@ -104,6 +104,7 @@ author:
 - Flavien Chantelot (@Dorn-)
 - Antoine Levy-Lambert (@antoinell)
 - Andrew Klychkov (@Andersson007)
+- Daniele Giudice (@RealGreenDragon)
 
 extends_documentation_fragment:
 - community.postgresql.postgres
