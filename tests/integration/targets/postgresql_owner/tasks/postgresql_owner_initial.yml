@@ -1471,7 +1471,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER routine "test_routine" OWNER TO "bob"']
+    - result.queries == ['ALTER ROUTINE "test_routine" OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1503,7 +1503,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER routine "test_routine" OWNER TO "bob"']
+    - result.queries == ['ALTER ROUTINE "test_routine" OWNER TO "bob"']
 
 - name: postgresql_owner - check that routine owner has been changed after the previous step
   become_user: '{{ pg_user }}'
