@@ -359,9 +359,10 @@ class PgOwnership(object):
                      "AND r.rolname = %(role)s")
 
         if self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
-          query_params = {'obj_name': self.obj_name.split('(')[0], 'role': self.role}
+            query_params = {'obj_name': self.obj_name.split('(')[0], 'role': self.role}
         else:
-          query_params = {'obj_name': self.obj_name, 'role': self.role}
+            query_params = {'obj_name': self.obj_name, 'role': self.role}
+
         return exec_sql(self, query, query_params, add_to_executed=False)
 
     def __set_db_owner(self):
