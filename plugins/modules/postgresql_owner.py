@@ -474,21 +474,9 @@ class PgOwnership(object):
 # Module execution.
 #
 
-VALID_OBJ_TYPES = (
-    'database',
-    'function',
-    'matview',
-    'sequence',
-    'schema',
-    'table',
-    'tablespace',
-    'view',
-    'procedure',
-    'type',
-    'aggregate',
-    'routine',
-    'language',
-    )
+VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
+                   'procedure', 'type', 'aggregate', 'routine', 'language',)
+
 
 def main():
     argument_spec = postgres_common_argument_spec()
