@@ -1583,7 +1583,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER LANGUAGE "plpgsql" OWNER TO "bob"']
+    - result.queries == ['ALTER LANGUAGE plpgsql OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1615,7 +1615,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER LANGUAGE "plpgsql" OWNER TO "bob"']
+    - result.queries == ['ALTER LANGUAGE plpgsql OWNER TO "bob"']
 
 - name: postgresql_owner - check that language owner has been changed after the previous step
   become_user: '{{ pg_user }}'
