@@ -194,6 +194,7 @@
       CREATE FUNCTION test_routine(integer) RETURNS integer AS 'select $1 + 1;'
       LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
 
+# No need to create test language as 'plpgsql' is present by default
 
 ################
 # Do main tests:
@@ -1564,6 +1565,105 @@
     that:
     - result.rowcount == 1
   when: postgres_version_resp.stdout is version('11', '>=')
+
+# Test obj_type: language
+
+- name: postgresql_owner - set language owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: plpgsql
+    obj_type: language
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LANGUAGE "plpgsql" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_language AS l
+      ON l.lanowner = r.oid WHERE l.lanname = 'plpgsql' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set language owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: plpgsql
+    obj_type: language
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LANGUAGE "plpgsql" OWNER TO "bob"']
+
+- name: postgresql_owner - check that language owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_language AS l
+      ON l.lanowner = r.oid WHERE l.lanname = 'plpgsql' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set language owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: plpgsql
+    obj_type: language
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that language owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_language AS l
+      ON l.lanowner = r.oid WHERE l.lanname = 'plpgsql' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
 
 
 # #############################
