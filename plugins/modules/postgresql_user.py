@@ -297,6 +297,8 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.six import iteritems
+from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     pg_quote_identifier,
     SQLParseError,
@@ -310,8 +312,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     pg_cursor_args,
     postgres_common_argument_spec,
 )
-from ansible.module_utils._text import to_bytes, to_native, to_text
-from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils import saslprep
 
 try:
@@ -552,17 +552,19 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             cursor.execute(statement, query_password_data)
             changed = True
             executed_queries.append(statement)
+        # We could catch psycopg.errors.ReadOnlySqlTransaction directly,
+        # but that was added only in Psycopg 2.8
         except psycopg2.InternalError as e:
-            if e.pgcode == '25006':
+            if e.diag.sqlstate == "25006":
                 # Handle errors due to read-only transactions indicated by pgcode 25006
                 # ERROR:  cannot execute ALTER ROLE in a read-only transaction
                 changed = False
-                module.fail_json(msg=e.pgerror, exception=traceback.format_exc())
+                module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
                 return changed
             else:
                 raise psycopg2.InternalError(e)
         except psycopg2.NotSupportedError as e:
-            module.fail_json(msg=e.pgerror, exception=traceback.format_exc())
+            module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
 
     elif no_password_changes and role_attr_flags != '':
         # Grab role information from pg_roles instead of pg_authid
@@ -597,12 +599,13 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             statement = ' '.join(alter)
             cursor.execute(statement)
             executed_queries.append(statement)
+
         except psycopg2.InternalError as e:
-            if e.pgcode == '25006':
+            if e.diag.sqlstate == "25006":
                 # Handle errors due to read-only transactions indicated by pgcode 25006
                 # ERROR:  cannot execute ALTER ROLE in a read-only transaction
                 changed = False
-                module.fail_json(msg=e.pgerror, exception=traceback.format_exc())
+                module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
                 return changed
             else:
                 raise psycopg2.InternalError(e)
