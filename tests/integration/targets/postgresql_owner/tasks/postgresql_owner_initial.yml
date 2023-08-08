@@ -1592,7 +1592,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_proc AS f JOIN pg_language AS l
+      SELECT 1 FROM pg_language AS l JOIN pg_roles AS r
       ON l.lanowner = r.oid WHERE l.lanname = 'plpgsql' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
@@ -1624,7 +1624,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_proc AS f JOIN pg_language AS l
+      SELECT 1 FROM pg_language AS l JOIN pg_roles AS r
       ON l.lanowner = r.oid WHERE l.lanname = 'plpgsql' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
@@ -1656,7 +1656,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_proc AS f JOIN pg_language AS l
+      SELECT 1 FROM pg_language AS l JOIN pg_roles AS r
       ON l.lanowner = r.oid WHERE l.lanname = 'plpgsql' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
