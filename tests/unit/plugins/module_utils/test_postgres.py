@@ -7,6 +7,8 @@ from os import environ
 
 import pytest
 
+from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
+
 import ansible_collections.community.postgresql.plugins.module_utils.postgres as pg
 
 
@@ -168,13 +170,13 @@ class TestEnsureReqLibs():
 
     def test_ensure_req_libs_has_not_psycopg2(self, m_ansible_module):
         """Test ensure_required_libs() with psycopg2 is None."""
-        # HAS_PSYCOPG2 is False by default
+        # HAS_PSYCOPG is False by default
         pg.ensure_required_libs(m_ansible_module)
         assert 'Failed to import the required Python library (psycopg2)' in m_ansible_module.err_msg
 
     def test_ensure_req_libs_has_psycopg2(self, m_ansible_module, monkeypatch):
         """Test ensure_required_libs() with psycopg2 is not None."""
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
+        monkeypatch.setattr(pg, 'HAS_PSYCOPG', True)
         monkeypatch.setattr(pg, 'PSYCOPG_VERSION', "2.9")
 
         pg.ensure_required_libs(m_ansible_module)
@@ -185,8 +187,8 @@ class TestEnsureReqLibs():
         Test with module.params['ca_cert'], psycopg2 version is suitable.
         """
         m_ansible_module.params['ca_cert'] = True
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
-        monkeypatch.setattr(pg, 'PSYCOPG_VERSION', "2.9")
+        monkeypatch.setattr(pg, 'HAS_PSYCOPG', True)
+        monkeypatch.setattr(pg, 'PSYCOPG_VERSION', LooseVersion("2.9.6"))
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         pg.ensure_required_libs(m_ansible_module)
@@ -197,10 +199,10 @@ class TestEnsureReqLibs():
         Test with module.params['ca_cert'], psycopg2 version is wrong.
         """
         m_ansible_module.params['ca_cert'] = True
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
+        monkeypatch.setattr(pg, 'HAS_PSYCOPG', True)
         # Set wrong psycopg2 version number:
         psycopg2 = m_psycopg2
-        monkeypatch.setattr(pg, 'PSYCOPG_VERSION', "2.4.2")
+        monkeypatch.setattr(pg, 'PSYCOPG_VERSION', LooseVersion("2.4.2"))
         monkeypatch.setattr(pg, 'psycopg2', psycopg2)
 
         pg.ensure_required_libs(m_ansible_module)
@@ -248,7 +250,7 @@ class TestConnectToDb():
 
     def test_connect_to_db(self, m_ansible_module, monkeypatch, m_psycopg2):
         """Test connect_to_db(), common test."""
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
+        monkeypatch.setattr(pg, 'HAS_PSYCOPG', True)
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
@@ -263,7 +265,7 @@ class TestConnectToDb():
 
     def test_session_role(self, m_ansible_module, monkeypatch, m_psycopg2):
         """Test connect_to_db(), switch on session_role."""
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
+        monkeypatch.setattr(pg, 'HAS_PSYCOPG', True)
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         m_ansible_module.params['session_role'] = 'test_role'
@@ -281,7 +283,6 @@ class TestConnectToDb():
         """
         Test connect_to_db(), fail_on_conn arg passed as True (the default behavior).
         """
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         m_ansible_module.params['login_user'] = 'Exception'  # causes Exception
@@ -296,7 +297,6 @@ class TestConnectToDb():
         """
         Test connect_to_db(), fail_on_conn arg passed as False.
         """
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         m_ansible_module.params['login_user'] = 'Exception'  # causes Exception
@@ -312,7 +312,6 @@ class TestConnectToDb():
         """
         Test connect_to_db(), autocommit arg passed as True (the default is False).
         """
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG2', True)
 
         # case 1: psycopg2.__version >= 2.4.2 (the default in m_psycopg2)
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)

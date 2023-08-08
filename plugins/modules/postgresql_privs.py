@@ -421,11 +421,6 @@ queries:
 
 import traceback
 
-try:
-    import psycopg2
-except ImportError:
-    psycopg2 = None
-
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
@@ -439,8 +434,12 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_conn_params,
     get_server_version,
     pg_cursor_args,
-    postgres_common_argument_spec
+    postgres_common_argument_spec,
+    HAS_PSYCOPG,
 )
+
+if HAS_PSYCOPG:
+    from psycopg2 import Error as PsycopgError
 
 VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'CREATE',
                          'CONNECT', 'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'SET', 'ALTER_SYSTEM'))
@@ -1185,7 +1184,7 @@ def main():
         conn.rollback()
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
-    except psycopg2.Error as e:
+    except PsycopgError as e:
         conn.rollback()
         module.fail_json(msg=to_native(e))
 

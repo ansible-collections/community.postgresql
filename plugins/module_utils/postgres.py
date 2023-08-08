@@ -23,16 +23,16 @@ from ansible_collections.community.postgresql.plugins.module_utils.version impor
 
 psycopg2 = None  # This line needs for unit tests
 pg_cursor_args = None
-PSYCOPG_VERSION = None
+PSYCOPG_VERSION = LooseVersion("0.0")  # This line is needed for unit tests
 
 try:
     import psycopg2
     from psycopg2.extras import DictCursor
     PSYCOPG_VERSION = LooseVersion(psycopg2.__version__)
-    HAS_PSYCOPG2 = True
+    HAS_PSYCOPG = True
     pg_cursor_args = {"cursor_factory": DictCursor}
 except ImportError:
-    HAS_PSYCOPG2 = False
+    HAS_PSYCOPG = False
 
 TYPES_NEED_TO_CONVERT = (Decimal, timedelta)
 
@@ -79,7 +79,7 @@ def postgres_common_argument_spec():
 
 def ensure_required_libs(module):
     """Check required libraries."""
-    if not HAS_PSYCOPG2:
+    if not HAS_PSYCOPG:
         module.fail_json(msg=missing_required_lib('psycopg2'))
 
     elif PSYCOPG_VERSION < LooseVersion("2.5.1"):
@@ -108,7 +108,7 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
     try:
         db_connection = psycopg2.connect(**conn_params)
         if autocommit:
-            if LooseVersion(psycopg2.__version__) >= LooseVersion('2.4.2'):
+            if PSYCOPG_VERSION >= LooseVersion("2.4.2"):
                 db_connection.set_session(autocommit=True)
             else:
                 db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
@@ -224,7 +224,7 @@ def get_conn_params(module, params_dict, warn_db_default=True):
     }
 
     # Might be different in the modules:
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('2.7.0'):
+    if PSYCOPG_VERSION >= LooseVersion("2.7.0"):
         if params_dict.get('db'):
             params_map['db'] = 'dbname'
         elif params_dict.get('database'):
@@ -479,7 +479,7 @@ def get_server_version(conn):
 
     Returns server version (int).
     """
-    if LooseVersion(psycopg2.__version__) >= LooseVersion('3.0.0'):
+    if PSYCOPG_VERSION >= LooseVersion("3.0.0"):
         return conn.info.server_version
     else:
         return conn.server_version
