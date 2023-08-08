@@ -237,9 +237,9 @@
     name: foo
     state: absent
   register: result
-  ignore_errors: true
 
 - assert:
     that:
     - result is not changed
-    - result.msg == "Tries to drop nonexistent tablespace 'foo'"
+    - result.state == 'absent'
+    - result.queries == []

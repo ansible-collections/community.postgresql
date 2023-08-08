@@ -1,0 +1,2 @@
+minor_changes:
+- "postgresql_tablespace - added idempotence when dropping a non-existing tablespace (https://github.com/ansible-collections/community.postgresql/pull/554)."
