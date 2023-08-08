@@ -257,8 +257,8 @@ class TestConnectToDb():
         db_connection, dummy = pg.connect_to_db(m_ansible_module, conn_params)
         cursor = db_connection.cursor()
         # if errors, db_connection returned as None:
-        assert type(db_connection) == DbConnection
-        assert type(cursor) == Cursor
+        assert type(db_connection) is DbConnection
+        assert type(cursor) is Cursor
         assert m_ansible_module.err_msg == ''
         # The default behaviour, normal in this case:
         assert 'Database name has not been passed' in m_ansible_module.warn_msg
@@ -273,8 +273,8 @@ class TestConnectToDb():
         db_connection, dummy = pg.connect_to_db(m_ansible_module, conn_params)
         cursor = db_connection.cursor()
         # if errors, db_connection returned as None:
-        assert type(db_connection) == DbConnection
-        assert type(cursor) == Cursor
+        assert type(db_connection) is DbConnection
+        assert type(cursor) is Cursor
         assert m_ansible_module.err_msg == ''
         # The default behaviour, normal in this case:
         assert 'Database name has not been passed' in m_ansible_module.warn_msg
@@ -321,8 +321,8 @@ class TestConnectToDb():
         cursor = db_connection.cursor()
 
         # if errors, db_connection returned as None:
-        assert type(db_connection) == DbConnection
-        assert type(cursor) == Cursor
+        assert type(db_connection) is DbConnection
+        assert type(cursor) is Cursor
         assert m_ansible_module.err_msg == ''
 
 
