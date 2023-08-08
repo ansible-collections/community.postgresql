@@ -30,6 +30,8 @@ options:
     description:
     - Type of a database object.
     - Mutually exclusive with I(reassign_owned_by).
+    - I(obj_type=matview) is available since PostgreSQL 9.3.
+    - I(obj_type=procedure) and I(obj_type=routine) are available since PostgreSQL 11.
     type: str
     choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type, aggregate, routine ]
     aliases:
@@ -318,7 +320,9 @@ class PgOwnership(object):
                      "WHERE d.datname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
-        elif self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
+        elif self.obj_type in ('aggregate', 'function', 'routine', 'procedure'):
+            if self.obj_type == 'routine' and self.pg_version < 110000:
+                raise Error("PostgreSQL version must be >= 11 for obj_type=routine. Exit")
             if self.obj_type == 'procedure' and self.pg_version < 110000:
                 raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
             query = ("SELECT 1 FROM pg_proc AS f "
@@ -439,6 +443,8 @@ class PgOwnership(object):
 
     def __set_routine_owner(self):
         """Set the routine owner."""
+        if self.pg_version < 110000:
+            raise Error("PostgreSQL version must be >= 11 for obj_type=routine. Exit")
         query = 'ALTER ROUTINE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                     self.role)
         self.changed = exec_sql(self, query, return_bool=True)

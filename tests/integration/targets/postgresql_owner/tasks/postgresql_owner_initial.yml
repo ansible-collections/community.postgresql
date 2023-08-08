@@ -1467,11 +1467,13 @@
     obj_type: routine
   check_mode: true
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result is changed
     - result.queries == ['ALTER ROUTINE "test_routine" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1484,10 +1486,12 @@
       ON f.proowner = r.oid WHERE f.proname = 'test_routine' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result.rowcount == 0
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - set routine owner
   become_user: '{{ pg_user }}'
@@ -1499,11 +1503,13 @@
     obj_name: test_routine
     obj_type: routine
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result is changed
     - result.queries == ['ALTER ROUTINE "test_routine" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - check that routine owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1516,10 +1522,12 @@
       ON f.proowner = r.oid WHERE f.proname = 'test_routine' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - set routine owner again
   become_user: '{{ pg_user }}'
@@ -1531,11 +1539,13 @@
     obj_name: test_routine
     obj_type: routine
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result is not changed
     - result.queries == []
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - check that routine owner is bob
   become_user: '{{ pg_user }}'
@@ -1548,10 +1558,13 @@
       ON f.proowner = r.oid WHERE f.proname = 'test_routine' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
 
 # #############################
 
