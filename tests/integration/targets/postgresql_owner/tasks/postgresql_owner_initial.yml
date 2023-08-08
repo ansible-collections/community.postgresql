@@ -1372,7 +1372,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER AGGREGATE "test_aggregate(float8)" OWNER TO "bob"']
+    - result.queries == ['ALTER AGGREGATE test_aggregate(float8) OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1404,7 +1404,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER AGGREGATE "test_aggregate(float8)" OWNER TO "bob"']
+    - result.queries == ['ALTER AGGREGATE test_aggregate(float8) OWNER TO "bob"']
 
 - name: postgresql_owner - check that aggregate owner has been changed after the previous step
   become_user: '{{ pg_user }}'
