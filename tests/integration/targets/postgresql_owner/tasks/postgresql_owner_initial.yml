@@ -243,6 +243,22 @@
     query: >
       CREATE CONVERSION test_conversion FOR 'UTF8' TO 'LATIN1' FROM test_conversion_func
 
+# Create test operator
+
+- name: postgresql_owner - create test operator
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE OPERATOR test_operator (
+          leftarg = float8[],
+          rightarg = float8[],
+          function = float8_avg,
+          commutator = test_operator_commutator
+      );
+
 ################
 # Do main tests:
 
@@ -1910,24 +1926,24 @@
     that:
     - result.rowcount == 1
 
-# Test obj_type: convertion
+# Test obj_type: conversion
 
-- name: postgresql_owner - set convertion owner in check_mode
+- name: postgresql_owner - set conversion owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: test_convertion
-    obj_type: convertion
+    obj_name: test_conversion
+    obj_type: conversion
   check_mode: true
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER CONVERSION "test_convertion" OWNER TO "bob"']
+    - result.queries == ['ALTER CONVERSION "test_conversion" OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1937,7 +1953,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
-      ON c.conowner = r.oid WHERE c.conname = 'test_convertion' AND r.rolname = 'bob'
+      ON c.conowner = r.oid WHERE c.conname = 'test_conversion' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
@@ -1945,23 +1961,23 @@
     that:
     - result.rowcount == 0
 
-- name: postgresql_owner - set convertion owner
+- name: postgresql_owner - set conversion owner
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: test_convertion
-    obj_type: convertion
+    obj_name: test_conversion
+    obj_type: conversion
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER CONVERSION "test_convertion" OWNER TO "bob"']
+    - result.queries == ['ALTER CONVERSION "test_conversion" OWNER TO "bob"']
 
-- name: postgresql_owner - check that convertion owner has been changed after the previous step
+- name: postgresql_owner - check that conversion owner has been changed after the previous step
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
@@ -1969,7 +1985,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
-      ON c.conowner = r.oid WHERE c.conname = 'test_convertion' AND r.rolname = 'bob'
+      ON c.conowner = r.oid WHERE c.conname = 'test_conversion' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
@@ -1977,15 +1993,15 @@
     that:
     - result.rowcount == 1
 
-- name: postgresql_owner - set convertion owner again
+- name: postgresql_owner - set conversion owner again
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: test_convertion
-    obj_type: convertion
+    obj_name: test_conversion
+    obj_type: conversion
   register: result
 
 - assert:
@@ -1993,7 +2009,7 @@
     - result is not changed
     - result.queries == []
 
-- name: postgresql_owner - check that convertion owner is bob
+- name: postgresql_owner - check that conversion owner is bob
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
@@ -2001,7 +2017,106 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
-      ON c.conowner = r.oid WHERE c.conname = 'test_convertion' AND r.rolname = 'bob'
+      ON c.conowner = r.oid WHERE c.conname = 'test_conversion' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: operator
+
+- name: postgresql_owner - set operator owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_operator
+    obj_type: operator
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER OPERATOR "test_operator" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_operator AS o JOIN pg_roles AS r
+      ON o.oprowner = r.oid WHERE o.oprname = 'test_operator' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set operator owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_operator
+    obj_type: operator
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER OPERATOR "test_operator" OWNER TO "bob"']
+
+- name: postgresql_owner - check that operator owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_operator AS o JOIN pg_roles AS r
+      ON o.oprowner = r.oid WHERE o.oprname = 'test_operator' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set operator owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_operator
+    obj_type: operator
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that operator owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_operator AS o JOIN pg_roles AS r
+      ON o.oprowner = r.oid WHERE o.oprname = 'test_operator' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
