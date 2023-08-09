@@ -33,7 +33,7 @@ options:
     - I(obj_type=matview) is available since PostgreSQL 9.3.
     - I(obj_type=procedure) and I(obj_type=routine) are available since PostgreSQL 11.
     type: str
-    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type, aggregate, routine, language ]
+    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type, aggregate, routine, language, domain ]
     aliases:
     - type
   reassign_owned_by:
@@ -310,6 +310,9 @@ class PgOwnership(object):
         elif obj_type == 'language':
             self.__set_language_owner()
 
+        elif obj_type == 'domain':
+            self.__set_domain_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -363,7 +366,7 @@ class PgOwnership(object):
                      "WHERE matviewname = %(obj_name)s "
                      "AND matviewowner = %(role)s")
 
-        elif self.obj_type == 'type':
+        elif self.obj_type in ('domain', 'type'):
             query = ("SELECT 1 FROM pg_type AS t "
                      "JOIN pg_roles AS r ON t.typowner = r.oid "
                      "WHERE t.typname = %(obj_name)s "
@@ -463,6 +466,12 @@ class PgOwnership(object):
         query = 'ALTER LANGUAGE %s OWNER TO "%s"' % (self.obj_name, self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_domain_owner(self):
+        """Set the domain owner."""
+        query = 'ALTER DOMAIN %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                   self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -475,7 +484,7 @@ class PgOwnership(object):
 #
 
 VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
-                   'procedure', 'type', 'aggregate', 'routine', 'language',)
+                   'procedure', 'type', 'aggregate', 'routine', 'language', 'domain',)
 
 
 def main():
