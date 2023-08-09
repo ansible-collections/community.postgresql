@@ -245,6 +245,16 @@
     query: >
       CREATE FOREIGN DATA WRAPPER test_foreign_data_wrapper
 
+# Create test server
+
+- name: postgresql_owner - create test foreign data wrapper
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE SERVER test_server FOREIGN DATA WRAPPER test_foreign_data_wrapper
 
 ################
 # Do main tests:
@@ -2599,6 +2609,105 @@
     query: >
       SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
       ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: server
+
+- name: postgresql_owner - set server owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_server
+    obj_type: server
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER SERVER "test_server" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_server AS f JOIN pg_roles AS r
+      ON f.srvowner = r.oid WHERE f.srvname = 'test_server' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set server owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_server
+    obj_type: server
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER SERVER "test_server" OWNER TO "bob"']
+
+- name: postgresql_owner - check that server owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_server AS f JOIN pg_roles AS r
+      ON f.srvowner = r.oid WHERE f.srvname = 'test_server' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set server owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_server
+    obj_type: server
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that server owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_server AS f JOIN pg_roles AS r
+      ON f.srvowner = r.oid WHERE f.srvname = 'test_server' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
