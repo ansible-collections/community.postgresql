@@ -13,6 +13,8 @@ DOCUMENTATION = r'''
 module: postgresql_lang
 short_description: Adds, removes or changes procedural languages with a PostgreSQL database
 description:
+- B(WARNING) The C(postgresql_lang) module has been B(deprecated) and will be removed in community.postgresql 4.0.0.
+  Please use the I(postgresql_ext) module instead.
 - Adds, removes or changes procedural languages with a PostgreSQL database.
 - This module allows you to add a language, remote a language or change the trust
   relationship with a PostgreSQL database.
@@ -168,6 +170,8 @@ queries:
   sample: ['CREATE LANGUAGE "acme"']
 '''
 
+# WARNING - The postgresql_lang module has been deprecated and will be removed in community.postgresql 4.0.0.
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -279,6 +283,8 @@ def main():
         argument_spec=argument_spec,
         supports_check_mode=True,
     )
+
+    module.warn("The postgresql_lang module has been deprecated and will be removed in community.postgresql 4.0.0")
 
     db = module.params["db"]
     lang = module.params["lang"]
