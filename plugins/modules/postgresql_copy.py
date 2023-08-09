@@ -200,11 +200,11 @@ class PgCopyData(object):
 
     Arguments:
         module (AnsibleModule) -- object of AnsibleModule class
-        cursor (cursor) -- cursor object of psycopg2 library
+        cursor (cursor) -- cursor object of psycopg library
 
     Attributes:
         module (AnsibleModule) -- object of AnsibleModule class
-        cursor (cursor) -- cursor object of psycopg2 library
+        cursor (cursor) -- cursor object of psycopg library
         changed (bool) --  something was changed after execution or not
         executed_queries (list) -- executed queries
         dst (str) -- data destination table (when copy_from)
@@ -377,7 +377,7 @@ def main():
     elif module.params.get('copy_to') and not module.params.get('src'):
         module.fail_json(msg='src param is necessary with copy_to')
 
-    # Ensure psycopg2 libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     # Connect to DB and make cursor object:
     conn_params = get_conn_params(module, module.params)

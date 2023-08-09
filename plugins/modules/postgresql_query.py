@@ -17,9 +17,8 @@ description:
 options:
   query:
     description:
-    # TODO: text may need changing, and the URL doesn't work
-    - SQL query string or list of queries to run. Variables can be escaped with psycopg2 syntax
-      U(http://initd.org/psycopg/docs/usage.html).
+    - SQL query string or list of queries to run. Variables can be escaped with psycopg syntax
+      U(https://www.psycopg.org/psycopg3/docs/basic/params.html).
     type: raw
   positional_args:
     description:

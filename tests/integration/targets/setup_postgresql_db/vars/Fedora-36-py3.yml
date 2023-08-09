@@ -1,7 +1,9 @@
+# We install both psycopg2 and psycopg3.
+# As psycopg3 is only 3.0, the modules should use psycopg2.
 postgresql_packages:
   - "postgresql-server"
-#  - "python3-psycopg2" # leave it out to only have psycopg 3.0, see what breaks
-  - "python3-psycopg3"
+  - "python3-psycopg2"
+  - "python3-psycopg3"  # psycopg 3.0.16
 
 pg_hba_location: "/var/lib/pgsql/data/pg_hba.conf"
 pg_dir: "/var/lib/pgsql/data"
