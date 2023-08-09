@@ -211,14 +211,6 @@ rowcount:
     sample: 5
 '''
 
-try:
-    from psycopg2 import ProgrammingError as Psycopg2ProgrammingError
-except ImportError:
-    # it is needed for checking 'no result to fetch' in main(),
-    # psycopg2 availability will be checked by connect_to_db() into
-    # ansible.module_utils.postgres
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 from ansible.module_utils.six import iteritems
@@ -234,8 +226,12 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     pg_cursor_args,
     postgres_common_argument_spec,
     set_search_path,
+    HAS_PSYCOPG,
     TYPES_NEED_TO_CONVERT,
 )
+
+if HAS_PSYCOPG:
+    from psycopg2 import ProgrammingError as PsycopgProgrammingError
 
 # ===========================================
 # Module execution.
@@ -283,9 +279,9 @@ def main():
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params)
-    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     if encoding is not None:
-        db_connection.set_client_encoding(encoding)
+        conn_params["client_encoding"] = encoding
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     cursor = db_connection.cursor(**pg_cursor_args)
 
     if search_path:
@@ -329,7 +325,7 @@ def main():
 
             query_result.append(row)
 
-    except Psycopg2ProgrammingError as e:
+    except PsycopgProgrammingError as e:
         if to_native(e) == "no results to fetch":
             query_result = {}
 

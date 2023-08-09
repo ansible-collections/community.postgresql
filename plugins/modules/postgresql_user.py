@@ -289,13 +289,6 @@ from hashlib import md5, sha256
 import hmac
 from base64 import b64decode
 
-try:
-    import psycopg2
-except ImportError:
-    # psycopg2 is checked by connect_to_db()
-    # from ansible.module_utils.postgres
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
 from ansible.module_utils._text import to_bytes, to_native, to_text
@@ -311,8 +304,12 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_server_version,
     pg_cursor_args,
     postgres_common_argument_spec,
+    HAS_PSYCOPG,
 )
 from ansible_collections.community.postgresql.plugins.module_utils import saslprep
+
+if HAS_PSYCOPG:
+    import psycopg2 as psycopg
 
 try:
     # pbkdf2_hmac is missing on python 2.6, we can safely assume,
@@ -488,7 +485,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             cursor.execute(select, {"user": user})
             # Grab current role attributes.
             current_role_attrs = cursor.fetchone()
-        except psycopg2.ProgrammingError:
+        except psycopg.ProgrammingError:
             current_role_attrs = None
             db_connection.rollback()
 
@@ -502,7 +499,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 cursor.execute(select, {"user": user})
                 # Grab current role attributes from pg_roles
                 current_role_attrs = cursor.fetchone()
-            except psycopg2.ProgrammingError as e:
+            except psycopg.ProgrammingError as e:
                 db_connection.rollback()
                 module.fail_json(msg="Failed to get role details for current user %s: %s" % (user, e))
 
@@ -554,7 +551,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             executed_queries.append(statement)
         # We could catch psycopg.errors.ReadOnlySqlTransaction directly,
         # but that was added only in Psycopg 2.8
-        except psycopg2.InternalError as e:
+        except psycopg.InternalError as e:
             if e.diag.sqlstate == "25006":
                 # Handle errors due to read-only transactions indicated by pgcode 25006
                 # ERROR:  cannot execute ALTER ROLE in a read-only transaction
@@ -562,8 +559,8 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
                 return changed
             else:
-                raise psycopg2.InternalError(e)
-        except psycopg2.NotSupportedError as e:
+                raise psycopg.InternalError(e)
+        except psycopg.NotSupportedError as e:
             module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
 
     elif no_password_changes and role_attr_flags != '':
@@ -600,7 +597,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             cursor.execute(statement)
             executed_queries.append(statement)
 
-        except psycopg2.InternalError as e:
+        except psycopg.InternalError as e:
             if e.diag.sqlstate == "25006":
                 # Handle errors due to read-only transactions indicated by pgcode 25006
                 # ERROR:  cannot execute ALTER ROLE in a read-only transaction
@@ -608,7 +605,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
                 return changed
             else:
-                raise psycopg2.InternalError(e)
+                raise psycopg.InternalError(e)
 
         # Grab new role attributes.
         cursor.execute(select, {"user": user})
@@ -997,7 +994,7 @@ def main():
             try:
                 changed = user_add(cursor, user, password,
                                    role_attr_flags, encrypted, expires, conn_limit)
-            except psycopg2.ProgrammingError as e:
+            except psycopg.ProgrammingError as e:
                 module.fail_json(msg="Unable to add user with given requirement "
                                      "due to : %s" % to_native(e),
                                  exception=traceback.format_exc())
