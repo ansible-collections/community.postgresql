@@ -232,6 +232,8 @@
 
 # No need to create test test search configuration as 'simple' is present by default
 
+# No need to create test test search dict as 'simple' is present by default
+
 
 ################
 # Do main tests:
@@ -2388,6 +2390,105 @@
     query: >
       SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
       ON t.cfgowner = r.oid WHERE t.cfgname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: text_search_dictionary
+
+- name: postgresql_owner - set text search dict owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_dictionary
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TEXT SEARCH DICTIONARY "simple" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
+      ON t.dictowner = r.oid WHERE t.dictname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set text search dict owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_dictionary
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TEXT SEARCH DICTIONARY "simple" OWNER TO "bob"']
+
+- name: postgresql_owner - check that text search dict owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
+      ON t.dictowner = r.oid WHERE t.dictname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set text search dict owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_dictionary
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that text search dict owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
+      ON t.dictowner = r.oid WHERE t.dictname = 'simple' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
