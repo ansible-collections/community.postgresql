@@ -222,6 +222,27 @@
     query: >
       CREATE COLLATION test_collation (locale = 'en_US.utf8');
 
+# Create test conversion
+
+- name: postgresql_owner - create test conversion support function
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE FUNCTION test_conversion_func(integer, integer, cstring, internal, integer, boolean)
+      RETURNS integer AS 'select $1 + 1;' LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT
+
+- name: postgresql_owner - create test conversion
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE CONVERSION test_conversion FOR 'UTF8' TO 'LATIN1' FROM test_conversion_func
+
 ################
 # Do main tests:
 
@@ -1882,6 +1903,105 @@
     query: >
       SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
       ON c.collowner = r.oid WHERE c.collname = 'test_collation' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: convertion
+
+- name: postgresql_owner - set convertion owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_convertion
+    obj_type: convertion
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER CONVERSION "test_convertion" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
+      ON c.conowner = r.oid WHERE c.conname = 'test_convertion' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set convertion owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_convertion
+    obj_type: convertion
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER CONVERSION "test_convertion" OWNER TO "bob"']
+
+- name: postgresql_owner - check that convertion owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
+      ON c.conowner = r.oid WHERE c.conname = 'test_convertion' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set convertion owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_convertion
+    obj_type: convertion
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that convertion owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
+      ON c.conowner = r.oid WHERE c.conname = 'test_convertion' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
