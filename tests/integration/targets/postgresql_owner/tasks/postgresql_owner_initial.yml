@@ -257,7 +257,31 @@
           rightarg = float8[],
           function = float8_avg,
           commutator = test_operator_commutator
-      );
+      )
+
+# Create test operator class
+
+- name: postgresql_owner - create test operator class
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE OPERATOR CLASS test_operator_class
+          DEFAULT FOR TYPE _int4 USING gist AS
+              OPERATOR        3       &&,
+              OPERATOR        6       = (anyarray, anyarray),
+              OPERATOR        7       @>,
+              OPERATOR        8       <@,
+              OPERATOR        20      @@ (_int4, query_int),
+              FUNCTION        1       g_int_consistent (internal, _int4, smallint, oid, internal),
+              FUNCTION        2       g_int_union (internal, internal),
+              FUNCTION        3       g_int_compress (internal),
+              FUNCTION        4       g_int_decompress (internal),
+              FUNCTION        5       g_int_penalty (internal, internal, internal),
+              FUNCTION        6       g_int_picksplit (internal, internal),
+              FUNCTION        7       g_int_same (_int4, _int4, internal)
 
 ################
 # Do main tests:
@@ -2117,6 +2141,105 @@
     query: >
       SELECT 1 FROM pg_operator AS o JOIN pg_roles AS r
       ON o.oprowner = r.oid WHERE o.oprname = 'test_operator' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: operator_class
+
+- name: postgresql_owner - set operator class owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_operator_class
+    obj_type: operator_class
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER OPERATOR CLASS "test_operator_class" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_opclass AS o JOIN pg_roles AS r
+      ON o.opcowner = r.oid WHERE o.opcname = 'test_operator_class' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set operator class owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_operator_class
+    obj_type: operator_class
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER OPERATOR CLASS "test_operator_class" OWNER TO "bob"']
+
+- name: postgresql_owner - check that operator class owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_opclass AS o JOIN pg_roles AS r
+      ON o.opcowner = r.oid WHERE o.opcname = 'test_operator_class' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set operator class owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_operator_class
+    obj_type: operator_class
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that operator class owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_opclass AS o JOIN pg_roles AS r
+      ON o.opcowner = r.oid WHERE o.opcname = 'test_operator_class' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
