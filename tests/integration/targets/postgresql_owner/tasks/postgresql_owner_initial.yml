@@ -222,7 +222,7 @@
     query: >
       CREATE COLLATION test_collation (locale = 'en_US.utf8');
 
-# No need to create test conversion as 'ascii_to_mic' is present by default
+# No need to create test conversion as 'ascii_to_utf8' is present by default
 
 # No need to create test operator family as '->>' is present by default
 
@@ -1911,7 +1911,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: ascii_to_mic
+    obj_name: ascii_to_utf8
     obj_type: conversion
   check_mode: true
   register: result
@@ -1919,7 +1919,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER CONVERSION "ascii_to_mic" OWNER TO "bob"']
+    - result.queries == ['ALTER CONVERSION "ascii_to_utf8" OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1929,7 +1929,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
-      ON c.conowner = r.oid WHERE c.conname = 'ascii_to_mic' AND r.rolname = 'bob'
+      ON c.conowner = r.oid WHERE c.conname = 'ascii_to_utf8' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
@@ -1944,14 +1944,14 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: ascii_to_mic
+    obj_name: ascii_to_utf8
     obj_type: conversion
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER CONVERSION "ascii_to_mic" OWNER TO "bob"']
+    - result.queries == ['ALTER CONVERSION "ascii_to_utf8" OWNER TO "bob"']
 
 - name: postgresql_owner - check that conversion owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1961,7 +1961,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
-      ON c.conowner = r.oid WHERE c.conname = 'ascii_to_mic' AND r.rolname = 'bob'
+      ON c.conowner = r.oid WHERE c.conname = 'ascii_to_utf8' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
@@ -1976,7 +1976,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: ascii_to_mic
+    obj_name: ascii_to_utf8
     obj_type: conversion
   register: result
 
@@ -1993,7 +1993,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
-      ON c.conowner = r.oid WHERE c.conname = 'ascii_to_mic' AND r.rolname = 'bob'
+      ON c.conowner = r.oid WHERE c.conname = 'ascii_to_utf8' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
