@@ -35,7 +35,8 @@ options:
     type: str
     choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure,
                type, aggregate, routine, language, domain, collation, conversion, operator, operator_class,
-               operator_family, text_search_configuration, text_search_dictionary, foreign_data_wrapper, server ]
+               operator_family, text_search_configuration, text_search_dictionary, foreign_data_wrapper, server,
+               foreign_table ]
     aliases:
     - type
   reassign_owned_by:
@@ -342,6 +343,9 @@ class PgOwnership(object):
         elif obj_type == 'server':
             self.__set_server_owner()
 
+        elif obj_type == 'foreign_table':
+            self.__set_foreign_table_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -459,6 +463,12 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_foreign_server AS f "
                      "JOIN pg_roles AS r ON t.srvowner = r.oid "
                      "WHERE t.srvname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'foreign_table':
+            query = ("SELECT 1 FROM pg_class AS c "
+                     "JOIN pg_roles AS r ON c.relowner = r.oid "
+                     "WHERE c.relkind = 'f' AND c.relname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         if self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
@@ -609,6 +619,12 @@ class PgOwnership(object):
                                                    self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_foreign_table_owner(self):
+        """Set the foreign table owner."""
+        query = 'ALTER FOREIGN TABLE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+                                                          self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -623,7 +639,7 @@ class PgOwnership(object):
 VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
                    'procedure', 'type', 'aggregate', 'routine', 'language', 'domain', 'collation', 'conversion',
                    'operator', 'operator_class', 'operator_family', 'text_search_configuration', 'text_search_dictionary',
-                   'foreign_data_wrapper', 'server')
+                   'foreign_data_wrapper', 'server', 'foreign_table')
 
 
 def main():
