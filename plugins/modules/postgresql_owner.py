@@ -35,7 +35,7 @@ options:
     type: str
     choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure,
                type, aggregate, routine, language, domain, collation, conversion, operator, operator_class,
-               operator_family ]
+               operator_family, text_search_configuration ]
     aliases:
     - type
   reassign_owned_by:
@@ -330,6 +330,9 @@ class PgOwnership(object):
         elif obj_type == 'operator_family':
             self.__set_operator_family_owner()
 
+        elif obj_type == 'text_search_configuration':
+            self.__set_text_search_configuration_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -423,6 +426,12 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_opfamily AS o "
                      "JOIN pg_roles AS r ON o.opfowner = r.oid "
                      "WHERE o.opfname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'text_search_configuration':
+            query = ("SELECT 1 FROM pg_ts_config AS t "
+                     "JOIN pg_roles AS r ON t.cfgowner = r.oid "
+                     "WHERE t.cfgname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         if self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
@@ -549,6 +558,12 @@ class PgOwnership(object):
                                                             self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_text_search_configuration_owner(self):
+        """Set the text search configuration owner."""
+        query = 'ALTER TEXT SEARCH CONFIGURATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+                                                                      self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -562,7 +577,7 @@ class PgOwnership(object):
 
 VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
                    'procedure', 'type', 'aggregate', 'routine', 'language', 'domain', 'collation', 'conversion',
-                   'operator', 'operator_class', 'operator_family')
+                   'operator', 'operator_class', 'operator_family', 'text_search_configuration')
 
 
 def main():

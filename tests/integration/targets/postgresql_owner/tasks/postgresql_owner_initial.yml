@@ -244,6 +244,8 @@
 
 # No need to create test operator class as 'array_ops' is present by default
 
+# No need to create test test search configuration as 'simple' is present by default
+
 
 ################
 # Do main tests:
@@ -2301,6 +2303,105 @@
     query: >
       SELECT 1 FROM pg_opfamily AS o JOIN pg_roles AS r
       ON o.opfowner = r.oid WHERE o.opfname = 'array_ops' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: text_search_configuration
+
+- name: postgresql_owner - set text search configuration owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_configuration
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TEXT SEARCH CONFIGURATION "simple" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
+      ON t.cfgowner = r.oid WHERE t.cfgname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set text search configuration owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_configuration
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TEXT SEARCH CONFIGURATION "simple" OWNER TO "bob"']
+
+- name: postgresql_owner - check that text search configuration owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
+      ON t.cfgowner = r.oid WHERE t.cfgname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set text search configuration owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_configuration
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that text search configuration owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
+      ON t.cfgowner = r.oid WHERE t.cfgname = 'simple' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
