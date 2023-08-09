@@ -176,10 +176,10 @@
     query: >
       CREATE AGGREGATE test_aggregate (float8)
       (
-          sfunc = float8_accum,
-          stype = float8[],
-          finalfunc = float8_avg,
-          initcond = '{0,0,0}'
+        sfunc = float8_accum,
+        stype = float8[],
+        finalfunc = float8_avg,
+        initcond = '{0,0,0}'
       )
 
 # Create test routine
@@ -206,10 +206,21 @@
     db: acme
     query: >
       CREATE DOMAIN test_domain AS TEXT
-      CHECK(
-        VALUE ~ '^\d{5}$'
-      OR VALUE ~ '^\d{5}-\d{4}$'
+        CHECK(
+          VALUE ~ '^\d{5}$'
+        OR VALUE ~ '^\d{5}-\d{4}$'
       );
+
+# Create test collation
+
+- name: postgresql_owner - create test collation
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE COLLATION test_collation (locale = 'en_US.utf8');
 
 ################
 # Do main tests:
@@ -1779,6 +1790,104 @@
     that:
     - result.rowcount == 1
 
+# Test obj_type: collation
+
+- name: postgresql_owner - set collation owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_collation
+    obj_type: collation
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER COLLATION "test_collation" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
+      ON c.collowner = r.oid WHERE c.collname = 'test_collation' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set collation owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_collation
+    obj_type: collation
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER COLLATION "test_collation" OWNER TO "bob"']
+
+- name: postgresql_owner - check that collation owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
+      ON c.collowner = r.oid WHERE c.collname = 'test_collation' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set collation owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_collation
+    obj_type: collation
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that collation owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
+      ON c.collowner = r.oid WHERE c.collname = 'test_collation' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
 
 # #############################
 

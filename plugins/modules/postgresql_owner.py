@@ -33,7 +33,7 @@ options:
     - I(obj_type=matview) is available since PostgreSQL 9.3.
     - I(obj_type=procedure) and I(obj_type=routine) are available since PostgreSQL 11.
     type: str
-    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type, aggregate, routine, language, domain ]
+    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure, type, aggregate, routine, language, domain, collation ]
     aliases:
     - type
   reassign_owned_by:
@@ -313,6 +313,9 @@ class PgOwnership(object):
         elif obj_type == 'domain':
             self.__set_domain_owner()
 
+        elif obj_type == 'collation':
+            self.__set_collation_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -376,6 +379,12 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_language AS l "
                      "JOIN pg_roles AS r ON l.lanowner = r.oid "
                      "WHERE l.lanname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'collation':
+            query = ("SELECT 1 FROM pg_collation AS c "
+                     "JOIN pg_roles AS r ON c.collowner = r.oid "
+                     "WHERE c.collname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         if self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
@@ -472,6 +481,12 @@ class PgOwnership(object):
                                                    self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_collation_owner(self):
+        """Set the collation owner."""
+        query = 'ALTER COLLATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                      self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -484,7 +499,7 @@ class PgOwnership(object):
 #
 
 VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
-                   'procedure', 'type', 'aggregate', 'routine', 'language', 'domain',)
+                   'procedure', 'type', 'aggregate', 'routine', 'language', 'domain', 'collation',)
 
 
 def main():
