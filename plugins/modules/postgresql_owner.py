@@ -579,49 +579,49 @@ class PgOwnership(object):
 
     def __set_operator_owner(self):
         """Set the operator owner."""
-        query = 'ALTER OPERATOR %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+        query = 'ALTER OPERATOR %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                      self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_operator_class_owner(self):
         """Set the operator class owner."""
-        query = 'ALTER OPERATOR CLASS %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+        query = 'ALTER OPERATOR CLASS %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                            self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_operator_family_owner(self):
         """Set the operator family owner."""
-        query = 'ALTER OPERATOR FAMILY %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+        query = 'ALTER OPERATOR FAMILY %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                             self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_text_search_configuration_owner(self):
         """Set the text search configuration owner."""
-        query = 'ALTER TEXT SEARCH CONFIGURATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+        query = 'ALTER TEXT SEARCH CONFIGURATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                                       self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_text_search_dictionary_owner(self):
         """Set the text search dictionary owner."""
-        query = 'ALTER TEXT SEARCH DICTIONARY %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+        query = 'ALTER TEXT SEARCH DICTIONARY %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                                    self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_foreign_data_wrapper_owner(self):
         """Set the foreign data wrapper owner."""
-        query = 'ALTER FOREIGN DATA WRAPPER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+        query = 'ALTER FOREIGN DATA WRAPPER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                                  self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_server_owner(self):
         """Set the server owner."""
-        query = 'ALTER SERVER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+        query = 'ALTER SERVER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                    self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_foreign_table_owner(self):
         """Set the foreign table owner."""
-        query = 'ALTER FOREIGN TABLE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+        query = 'ALTER FOREIGN TABLE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                           self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
