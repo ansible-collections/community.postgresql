@@ -224,7 +224,20 @@
 
 # No need to create test conversion as 'windows_1256_to_utf8' is present by default
 
-# No need to create test operator family as '->>' is present by default
+# Create test operator
+
+- name: postgresql_owner - create test operator
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE OPERATOR test_operator (
+          leftarg = point,
+          rightarg = point,
+          procedure = point_eq,
+          commutator = =)
 
 # No need to create test operator family as 'array_ops' is present by default
 
@@ -2042,7 +2055,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: "->>"
+    obj_name: test_operator
     obj_type: operator
   check_mode: true
   register: result
@@ -2050,7 +2063,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER OPERATOR "->>" OWNER TO "bob"']
+    - result.queries == ['ALTER OPERATOR "test_operator" OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -2060,7 +2073,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_operator AS o JOIN pg_roles AS r
-      ON o.oprowner = r.oid WHERE o.oprname = '->>' AND r.rolname = 'bob'
+      ON o.oprowner = r.oid WHERE o.oprname = 'test_operator' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
@@ -2075,14 +2088,14 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: "->>"
+    obj_name: test_operator
     obj_type: operator
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER OPERATOR "->>" OWNER TO "bob"']
+    - result.queries == ['ALTER OPERATOR "test_operator" OWNER TO "bob"']
 
 - name: postgresql_owner - check that operator owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -2092,7 +2105,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_operator AS o JOIN pg_roles AS r
-      ON o.oprowner = r.oid WHERE o.oprname = '->>' AND r.rolname = 'bob'
+      ON o.oprowner = r.oid WHERE o.oprname = 'test_operator' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
@@ -2107,7 +2120,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: "->>"
+    obj_name: test_operator
     obj_type: operator
   register: result
 
@@ -2124,7 +2137,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_operator AS o JOIN pg_roles AS r
-      ON o.oprowner = r.oid WHERE o.oprname = '->>' AND r.rolname = 'bob'
+      ON o.oprowner = r.oid WHERE o.oprname = 'test_operator' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
