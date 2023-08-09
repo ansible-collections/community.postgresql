@@ -35,7 +35,7 @@ options:
     type: str
     choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure,
                type, aggregate, routine, language, domain, collation, conversion, operator, operator_class,
-               operator_family, text_search_configuration, text_search_dictionary ]
+               operator_family, text_search_configuration, text_search_dictionary, foreign_data_wrapper ]
     aliases:
     - type
   reassign_owned_by:
@@ -336,6 +336,9 @@ class PgOwnership(object):
         elif obj_type == 'text_search_dictionary':
             self.__set_text_search_dictionary_owner()
 
+        elif obj_type == 'foreign_data_wrapper':
+            self.__set_foreign_data_wrapper_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -441,6 +444,12 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_ts_dict AS t "
                      "JOIN pg_roles AS r ON t.dictowner = r.oid "
                      "WHERE t.dictname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'foreign_data_wrapper':
+            query = ("SELECT 1 FROM pg_foreign_data_wrapper AS f "
+                     "JOIN pg_roles AS r ON t.fdwowner = r.oid "
+                     "WHERE t.fdwname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         if self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
@@ -579,6 +588,12 @@ class PgOwnership(object):
                                                                    self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_foreign_data_wrapper_owner(self):
+        """Set the foreign data wrapper owner."""
+        query = 'ALTER FOREIGN DATA WRAPPER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'function'),
+                                                                 self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -592,7 +607,8 @@ class PgOwnership(object):
 
 VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
                    'procedure', 'type', 'aggregate', 'routine', 'language', 'domain', 'collation', 'conversion',
-                   'operator', 'operator_class', 'operator_family', 'text_search_configuration', 'text_search_dictionary')
+                   'operator', 'operator_class', 'operator_family', 'text_search_configuration', 'text_search_dictionary',
+                   'foreign_data_wrapper')
 
 
 def main():

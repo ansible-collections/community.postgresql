@@ -192,7 +192,7 @@
     db: acme
     query: >
       CREATE FUNCTION test_routine(integer) RETURNS integer AS 'select $1 + 1;'
-      LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
+      LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT
 
 # No need to create test language as 'plpgsql' is present by default
 
@@ -209,7 +209,7 @@
         CHECK(
           VALUE ~ '^\d{5}$'
         OR VALUE ~ '^\d{5}-\d{4}$'
-      );
+      )
 
 # Create test collation
 
@@ -220,7 +220,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: >
-      CREATE COLLATION test_collation (locale = 'en_US.utf8');
+      CREATE COLLATION test_collation (locale = 'en_US.utf8')
 
 # No need to create test conversion as 'ascii_to_utf8' is present by default
 
@@ -233,6 +233,17 @@
 # No need to create test test search configuration as 'simple' is present by default
 
 # No need to create test test search dict as 'simple' is present by default
+
+# Create test foreign data wrapper
+
+- name: postgresql_owner - create test foreign data wrapper
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE FOREIGN DATA WRAPPER test_foreign_data_wrapper
 
 
 ################
@@ -2489,6 +2500,105 @@
     query: >
       SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
       ON t.dictowner = r.oid WHERE t.dictname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: foreign_data_wrapper
+
+- name: postgresql_owner - set foreign_data_wrapper owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_foreign_data_wrapper
+    obj_type: foreign_data_wrapper
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER FOREIGN DATA WRAPPER "test_foreign_data_wrapper" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_data_wrapper AS o JOIN pg_roles AS r
+      ON o.oprowner = r.oid WHERE o.oprname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set foreign_data_wrapper owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_foreign_data_wrapper
+    obj_type: foreign_data_wrapper
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER FOREIGN DATA WRAPPER "test_foreign_data_wrapper" OWNER TO "bob"']
+
+- name: postgresql_owner - check that foreign_data_wrapper owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_data_wrapper AS o JOIN pg_roles AS r
+      ON o.oprowner = r.oid WHERE o.oprname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set foreign_data_wrapper owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_foreign_data_wrapper
+    obj_type: foreign_data_wrapper
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that foreign_data_wrapper owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
+      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
