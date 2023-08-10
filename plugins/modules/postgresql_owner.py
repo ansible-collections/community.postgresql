@@ -430,8 +430,8 @@ class PgOwnership(object):
 
         elif self.obj_type == 'foreign_data_wrapper':
             query = ("SELECT 1 FROM pg_foreign_data_wrapper AS f "
-                     "JOIN pg_roles AS r ON t.fdwowner = r.oid "
-                     "WHERE t.fdwname = %(obj_name)s "
+                     "JOIN pg_roles AS r ON f.fdwowner = r.oid "
+                     "WHERE f.fdwname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'server':

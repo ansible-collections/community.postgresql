@@ -2263,8 +2263,8 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_foreign_data_wrapper AS o JOIN pg_roles AS r
-      ON o.oprowner = r.oid WHERE o.oprname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
+      SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
+      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
@@ -2295,8 +2295,8 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_foreign_data_wrapper AS o JOIN pg_roles AS r
-      ON o.oprowner = r.oid WHERE o.oprname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
+      SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
+      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
