@@ -114,6 +114,7 @@ author:
 - Sandro Santilli (@strk)
 - Andrew Klychkov (@Andersson007)
 - Keith Fiske (@keithf4)
+- Daniele Giudice (@RealGreenDragon)
 
 extends_documentation_fragment:
 - community.postgresql.postgres
