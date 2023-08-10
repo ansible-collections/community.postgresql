@@ -13,9 +13,9 @@ DOCUMENTATION = r'''
 module: postgresql_lang
 short_description: Adds, removes or changes procedural languages with a PostgreSQL database
 deprecated:
-- removed_in: "4.0.0"
-- why: As of PostgreSQL 9.1, most procedural languages have been made into extensions.
-- alternative: Use M(community.postgresql.postgresql_ext) instead.
+  removed_in: "4.0.0"
+  why: As of PostgreSQL 9.1, most procedural languages have been made into extensions.
+  alternative: Use M(community.postgresql.postgresql_ext) instead.
 description:
 - Adds, removes or changes procedural languages with a PostgreSQL database.
 - This module allows you to add a language, remote a language or change the trust
@@ -285,8 +285,6 @@ def main():
         argument_spec=argument_spec,
         supports_check_mode=True,
     )
-
-    module.warn("The postgresql_lang module has been deprecated and will be removed in community.postgresql 4.0.0")
 
     db = module.params["db"]
     lang = module.params["lang"]
