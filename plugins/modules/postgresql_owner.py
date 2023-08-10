@@ -34,7 +34,7 @@ options:
     - I(obj_type=procedure) and I(obj_type=routine) are available since PostgreSQL 11.
     type: str
     choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure,
-               type, aggregate, routine, language, domain, collation, conversion, text_search_configuration, 
+               type, aggregate, routine, language, domain, collation, conversion, text_search_configuration,
                text_search_dictionary, foreign_data_wrapper, server, foreign_table ]
     aliases:
     - type
