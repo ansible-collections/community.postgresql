@@ -1,2 +1,2 @@
-major_changes:
+deprecated_features:
 - "postgresql_lang - the module has been deprecated and will be removed in ``community.postgresql 4.0.0``. Please use the ``postgresql_ext`` module instead (https://github.com/ansible-collections/community.postgresql/issues/559)."
