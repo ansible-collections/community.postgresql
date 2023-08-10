@@ -1,6 +1,7 @@
 # We install both psycopg2 and psycopg3.
 # As psycopg3 is only 3.0, the modules should use psycopg2.
 postgresql_packages:
+  - "postgresql-contrib"
   - "postgresql-server"
   - "python3-psycopg2"
   - "python3-psycopg3"  # psycopg 3.0.16
