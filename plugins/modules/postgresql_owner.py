@@ -35,7 +35,7 @@ options:
     type: str
     choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure,
                type, aggregate, routine, language, domain, collation, conversion, text_search_configuration,
-               text_search_dictionary, foreign_data_wrapper, server, foreign_table, event_trigger ]
+               text_search_dictionary, foreign_data_wrapper, server, foreign_table, event_trigger, large_object ]
     aliases:
     - type
   reassign_owned_by:
@@ -84,6 +84,7 @@ notes:
   I(obj_name) is considered the only object of same type with this name.
 - Despite Function Overloading is not supported, when I(obj_type=aggregate) I(obj_name) must contain also aggregate
   signature because it is required by SQL syntax.
+- Large Objects has no name so I(obj_name) must be Large Object OID.
 
 seealso:
 - module: community.postgresql.postgresql_user
@@ -339,6 +340,9 @@ class PgOwnership(object):
         elif obj_type == 'event_trigger':
             self.__set_event_trigger_owner()
 
+        elif obj_type == 'large_object':
+            self.__set_large_object_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -450,6 +454,12 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_event_trigger AS e "
                      "JOIN pg_roles AS r ON e.evtowner = r.oid "
                      "WHERE e.evtname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'large_object':
+            query = ("SELECT 1 FROM pg_largeobject_metadata AS l "
+                     "JOIN pg_roles AS r ON l.lomowner = r.oid "
+                     "WHERE l.oid = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         if self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
@@ -594,6 +604,11 @@ class PgOwnership(object):
                                                           self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_large_object_owner(self):
+        """Set the large object owner."""
+        query = 'ALTER LARGE OBJECT %s OWNER TO "%s"' % (self.obj_name, self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -608,7 +623,7 @@ class PgOwnership(object):
 VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
                    'procedure', 'type', 'aggregate', 'routine', 'language', 'domain', 'collation', 'conversion',
                    'text_search_configuration', 'text_search_dictionary', 'foreign_data_wrapper', 'server', 'foreign_table',
-                   'event_trigger')
+                   'event_trigger', 'large_object')
 
 
 def main():

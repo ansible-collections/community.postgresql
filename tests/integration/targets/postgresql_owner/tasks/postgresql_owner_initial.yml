@@ -273,6 +273,22 @@
       CREATE EVENT TRIGGER test_event_trigger ON ddl_command_start
       EXECUTE FUNCTION test_function(1)
 
+# Create test large object
+
+- name: postgresql_owner - create test large object
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      SELECT lo_creat(-1);
+  register: result_large_object
+
+- name: postgresql_owner - parse test large object OID
+  set_facts:
+    test_large_object: "{{ result_large_object.query_result[0]['lo_creat'] }}"
+
 ################
 # Do main tests:
 
@@ -2629,6 +2645,105 @@
     query: >
       SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
       ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: large_object
+
+- name: postgresql_owner - set large_object owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: '{{ test_large_object }}'
+    obj_type: large_object
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LARGE OBJECT "{{ test_large_object }}" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_largeobject_metadata AS l JOIN pg_roles AS r
+      ON l.lomowner = r.oid WHERE l.oid = '{{ test_large_object }}' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set large_object owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: '{{ test_large_object }}'
+    obj_type: large_object
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LARGE OBJECT "{{ test_large_object }}" OWNER TO "bob"']
+
+- name: postgresql_owner - check that large_object owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_largeobject_metadata AS l JOIN pg_roles AS r
+      ON l.lomowner = r.oid WHERE l.oid = '{{ test_large_object }}' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set large_object owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: '{{ test_large_object }}'
+    obj_type: large_object
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that large_object owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_largeobject_metadata AS l JOIN pg_roles AS r
+      ON l.lomowner = r.oid WHERE l.oid = '{{ test_large_object }}' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
