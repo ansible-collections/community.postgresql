@@ -34,9 +34,8 @@ options:
     - I(obj_type=procedure) and I(obj_type=routine) are available since PostgreSQL 11.
     type: str
     choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure,
-               type, aggregate, routine, language, domain, collation, conversion, operator, operator_class,
-               operator_family, text_search_configuration, text_search_dictionary, foreign_data_wrapper, server,
-               foreign_table ]
+               type, aggregate, routine, language, domain, collation, conversion, text_search_configuration, 
+               text_search_dictionary, foreign_data_wrapper, server, foreign_table ]
     aliases:
     - type
   reassign_owned_by:
@@ -322,15 +321,6 @@ class PgOwnership(object):
         elif obj_type == 'conversion':
             self.__set_conversion_owner()
 
-        elif obj_type == 'operator':
-            self.__set_operator_owner()
-
-        elif obj_type == 'operator_class':
-            self.__set_operator_class_owner()
-
-        elif obj_type == 'operator_family':
-            self.__set_operator_family_owner()
-
         elif obj_type == 'text_search_configuration':
             self.__set_text_search_configuration_owner()
 
@@ -421,24 +411,6 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_conversion AS c "
                      "JOIN pg_roles AS r ON c.conowner = r.oid "
                      "WHERE c.conname = %(obj_name)s "
-                     "AND r.rolname = %(role)s")
-
-        elif self.obj_type == 'operator':
-            query = ("SELECT 1 FROM pg_operator AS o "
-                     "JOIN pg_roles AS r ON o.oprowner = r.oid "
-                     "WHERE o.oprname = %(obj_name)s "
-                     "AND r.rolname = %(role)s")
-
-        elif self.obj_type == 'operator_class':
-            query = ("SELECT 1 FROM pg_opclass AS o "
-                     "JOIN pg_roles AS r ON o.opcowner = r.oid "
-                     "WHERE o.opcname = %(obj_name)s "
-                     "AND r.rolname = %(role)s")
-
-        elif self.obj_type == 'operator_family':
-            query = ("SELECT 1 FROM pg_opfamily AS o "
-                     "JOIN pg_roles AS r ON o.opfowner = r.oid "
-                     "WHERE o.opfname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'text_search_configuration':
@@ -577,24 +549,6 @@ class PgOwnership(object):
                                                        self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
-    def __set_operator_owner(self):
-        """Set the operator owner."""
-        query = 'ALTER OPERATOR %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                     self.role)
-        self.changed = exec_sql(self, query, return_bool=True)
-
-    def __set_operator_class_owner(self):
-        """Set the operator class owner."""
-        query = 'ALTER OPERATOR CLASS %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                           self.role)
-        self.changed = exec_sql(self, query, return_bool=True)
-
-    def __set_operator_family_owner(self):
-        """Set the operator family owner."""
-        query = 'ALTER OPERATOR FAMILY %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                            self.role)
-        self.changed = exec_sql(self, query, return_bool=True)
-
     def __set_text_search_configuration_owner(self):
         """Set the text search configuration owner."""
         query = 'ALTER TEXT SEARCH CONFIGURATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
@@ -638,8 +592,7 @@ class PgOwnership(object):
 
 VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
                    'procedure', 'type', 'aggregate', 'routine', 'language', 'domain', 'collation', 'conversion',
-                   'operator', 'operator_class', 'operator_family', 'text_search_configuration', 'text_search_dictionary',
-                   'foreign_data_wrapper', 'server', 'foreign_table')
+                   'text_search_configuration', 'text_search_dictionary', 'foreign_data_wrapper', 'server', 'foreign_table')
 
 
 def main():
