@@ -35,7 +35,7 @@ options:
     type: str
     choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure,
                type, aggregate, routine, language, domain, collation, conversion, text_search_configuration,
-               text_search_dictionary, foreign_data_wrapper, server, foreign_table ]
+               text_search_dictionary, foreign_data_wrapper, server, foreign_table, event_trigger ]
     aliases:
     - type
   reassign_owned_by:
@@ -336,6 +336,9 @@ class PgOwnership(object):
         elif obj_type == 'foreign_table':
             self.__set_foreign_table_owner()
 
+        elif obj_type == 'event_trigger':
+            self.__set_event_trigger_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -441,6 +444,12 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_class AS c "
                      "JOIN pg_roles AS r ON c.relowner = r.oid "
                      "WHERE c.relkind = 'f' AND c.relname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'event_trigger':
+            query = ("SELECT 1 FROM pg_event_trigger AS e "
+                     "JOIN pg_roles AS r ON e.evtowner = r.oid "
+                     "WHERE e.evtname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         if self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
@@ -579,6 +588,12 @@ class PgOwnership(object):
                                                           self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_event_trigger_owner(self):
+        """Set the event trigger owner."""
+        query = 'ALTER EVENT TRIGGER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                          self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -592,7 +607,8 @@ class PgOwnership(object):
 
 VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
                    'procedure', 'type', 'aggregate', 'routine', 'language', 'domain', 'collation', 'conversion',
-                   'text_search_configuration', 'text_search_dictionary', 'foreign_data_wrapper', 'server', 'foreign_table')
+                   'text_search_configuration', 'text_search_dictionary', 'foreign_data_wrapper', 'server', 'foreign_table',
+                   'event_trigger')
 
 
 def main():

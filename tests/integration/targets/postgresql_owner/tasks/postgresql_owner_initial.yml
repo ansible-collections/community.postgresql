@@ -261,6 +261,18 @@
     query: >
       CREATE FOREIGN TABLE test_foreign_table (id int) SERVER test_server
 
+# Create test event trigger
+
+- name: postgresql_owner - create test event trigger
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE EVENT TRIGGER test_event_trigger ON ddl_command_start
+      EXECUTE FUNCTION test_function(1)
+
 ################
 # Do main tests:
 
@@ -2518,6 +2530,105 @@
       SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
       ON c.relowner = r.oid WHERE c.relkind = 'f'
       AND c.relname = 'test_foreign_table' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: event_trigger
+
+- name: postgresql_owner - set event_trigger owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_event_trigger
+    obj_type: event_trigger
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
+      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set event_trigger owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_event_trigger
+    obj_type: event_trigger
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob"']
+
+- name: postgresql_owner - check that event_trigger owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
+      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set event_trigger owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_event_trigger
+    obj_type: event_trigger
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that event_trigger owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
+      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
 
