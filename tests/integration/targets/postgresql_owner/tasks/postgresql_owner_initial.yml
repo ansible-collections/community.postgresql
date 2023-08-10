@@ -263,6 +263,16 @@
 
 # Create test event trigger
 
+- name: postgresql_owner - create test event trigger function
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE FUNCTION test_event_trigger_function() RETURNS event_trigger
+      LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
+
 - name: postgresql_owner - create test event trigger
   become_user: '{{ pg_user }}'
   become: true
@@ -271,7 +281,7 @@
     db: acme
     query: >
       CREATE EVENT TRIGGER test_event_trigger ON ddl_command_start
-      EXECUTE FUNCTION test_function(1)
+      EXECUTE FUNCTION test_event_trigger_function()
 
 # Create test large object
 
