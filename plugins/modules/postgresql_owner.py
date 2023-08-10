@@ -86,6 +86,7 @@ notes:
 - Despite Function Overloading is not supported, when I(obj_type=aggregate) I(obj_name) must contain also aggregate
   signature because it is required by SQL syntax.
 - Large Objects has no name so I(obj_name) must be Large Object OID.
+- To manage subscriptions use C(postgresql_subscription) module.
 
 seealso:
 - module: community.postgresql.postgresql_user
