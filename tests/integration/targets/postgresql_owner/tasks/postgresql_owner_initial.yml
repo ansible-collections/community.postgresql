@@ -314,7 +314,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: >
-      CREATE PUBBLICATION test_pubblication FOR TABLE test_table
+      CREATE PUBLICATION test_pubblication FOR TABLE test_table
 
 # Create test statistics
 
