@@ -271,7 +271,7 @@
     db: acme
     query: >
       CREATE FUNCTION test_event_trigger_function() RETURNS event_trigger
-      LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
+      LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT
 
 - name: postgresql_owner - create test event trigger
   become_user: '{{ pg_user }}'
@@ -308,7 +308,27 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: >
-      CREATE PUBBLICATION test_pubblication FOR TABLE test_table;
+      CREATE PUBBLICATION test_pubblication FOR TABLE test_table
+
+# Create test statistics
+
+- name: postgresql_owner - create test statistics table
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE TABLE test_statistics_table (a int, b int)
+
+- name: postgresql_owner - create test statistics
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE STATISTICS test_statistics (dependencies) ON a, b FROM test_statistics_table
 
 ################
 # Do main tests:
@@ -2772,17 +2792,17 @@
     that:
     - result.rowcount == 1
 
-# Test obj_type: pubblication
+# Test obj_type: publication
 
-- name: postgresql_owner - set pubblication owner in check_mode
+- name: postgresql_owner - set publication owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: test_pubblication
-    obj_type: pubblication
+    obj_name: test_publication
+    obj_type: publication
   check_mode: true
   register: result
   when: postgres_version_resp.stdout is version('11', '>=')
@@ -2790,7 +2810,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER PUBBLICATION "test_pubblication" OWNER TO "bob"']
+    - result.queries == ['ALTER PUBLICATION "test_publication" OWNER TO "bob"']
   when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - check that nothing changed after the previous step
@@ -2801,7 +2821,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_publication AS p JOIN pg_roles AS r
-      ON p.pubowner = r.oid WHERE p.pubname = 'test_pubblication' AND r.rolname = 'bob'
+      ON p.pubowner = r.oid WHERE p.pubname = 'test_publication' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('11', '>=')
@@ -2811,25 +2831,25 @@
     - result.rowcount == 0
   when: postgres_version_resp.stdout is version('11', '>=')
 
-- name: postgresql_owner - set pubblication owner
+- name: postgresql_owner - set publication owner
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: test_pubblication
-    obj_type: pubblication
+    obj_name: test_publication
+    obj_type: publication
   register: result
   when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER PUBBLICATION "test_pubblication" OWNER TO "bob"']
+    - result.queries == ['ALTER PUBLICATION "test_publication" OWNER TO "bob"']
   when: postgres_version_resp.stdout is version('11', '>=')
 
-- name: postgresql_owner - check that pubblication owner has been changed after the previous step
+- name: postgresql_owner - check that publication owner has been changed after the previous step
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
@@ -2837,7 +2857,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_publication AS p JOIN pg_roles AS r
-      ON p.pubowner = r.oid WHERE p.pubname = 'test_pubblication' AND r.rolname = 'bob'
+      ON p.pubowner = r.oid WHERE p.pubname = 'test_publication' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('11', '>=')
@@ -2847,15 +2867,15 @@
     - result.rowcount == 1
   when: postgres_version_resp.stdout is version('11', '>=')
 
-- name: postgresql_owner - set pubblication owner again
+- name: postgresql_owner - set publication owner again
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: test_pubblication
-    obj_type: pubblication
+    obj_name: test_publication
+    obj_type: publication
   register: result
   when: postgres_version_resp.stdout is version('11', '>=')
 
@@ -2865,7 +2885,7 @@
     - result.queries == []
   when: postgres_version_resp.stdout is version('11', '>=')
 
-- name: postgresql_owner - check that pubblication owner is bob
+- name: postgresql_owner - check that publication owner is bob
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
@@ -2873,7 +2893,118 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_publication AS p JOIN pg_roles AS r
-      ON p.pubowner = r.oid WHERE p.pubname = 'test_pubblication' AND r.rolname = 'bob'
+      ON p.pubowner = r.oid WHERE p.pubname = 'test_publication' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+# Test obj_type: statistics
+
+- name: postgresql_owner - set statistics owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_statistics
+    obj_type: statistics
+  check_mode: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER STATISTICS "test_statistics" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_statistics AS s JOIN pg_roles AS r
+      ON s.stxowner = r.oid WHERE s.stxname = 'test_statistics' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 0
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set statistics owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_statistics
+    obj_type: statistics
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER STATISTICS "test_statistics" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that statistics owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_statistics AS s JOIN pg_roles AS r
+      ON s.stxowner = r.oid WHERE s.stxname = 'test_statistics' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set statistics owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_statistics
+    obj_type: statistics
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that statistics owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_statistics AS s JOIN pg_roles AS r
+      ON s.stxowner = r.oid WHERE s.stxname = 'test_statistics' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('11', '>=')
