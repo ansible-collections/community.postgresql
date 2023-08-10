@@ -2679,7 +2679,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER LARGE OBJECT "{{ test_large_object }}" OWNER TO "bob"']
+    - result.queries == ['ALTER LARGE OBJECT {{ test_large_object }} OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -2711,7 +2711,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER LARGE OBJECT "{{ test_large_object }}" OWNER TO "bob"']
+    - result.queries == ['ALTER LARGE OBJECT {{ test_large_object }} OWNER TO "bob"']
 
 - name: postgresql_owner - check that large_object owner has been changed after the previous step
   become_user: '{{ pg_user }}'
