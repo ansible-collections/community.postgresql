@@ -35,7 +35,8 @@ options:
     type: str
     choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure,
                type, aggregate, routine, language, domain, collation, conversion, text_search_configuration,
-               text_search_dictionary, foreign_data_wrapper, server, foreign_table, event_trigger, large_object ]
+               text_search_dictionary, foreign_data_wrapper, server, foreign_table, event_trigger, large_object,
+               pubblication ]
     aliases:
     - type
   reassign_owned_by:
@@ -343,6 +344,9 @@ class PgOwnership(object):
         elif obj_type == 'large_object':
             self.__set_large_object_owner()
 
+        elif obj_type == 'pubblication':
+            self.__set_pubblication_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -460,6 +464,12 @@ class PgOwnership(object):
             query = ("SELECT 1 FROM pg_largeobject_metadata AS l "
                      "JOIN pg_roles AS r ON l.lomowner = r.oid "
                      "WHERE l.oid = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'pubblication':
+            query = ("SELECT 1 FROM pg_publication AS p "
+                     "JOIN pg_roles AS r ON p.pubowner = r.oid "
+                     "WHERE p.pubname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         if self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
@@ -609,6 +619,14 @@ class PgOwnership(object):
         query = 'ALTER LARGE OBJECT %s OWNER TO "%s"' % (self.obj_name, self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
+    def __set_pubblication_owner(self):
+        """Set the pubblication owner."""
+        if self.pg_version < 110000:
+            raise Error("PostgreSQL version must be >= 11 for obj_type=pubblication. Exit")
+        query = 'ALTER PUBBLICATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'pubblication'),
+                                                         self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
     def __role_exists(self, role):
         """Return True if role exists, otherwise return False."""
         query_params = {'role': role}
@@ -623,7 +641,7 @@ class PgOwnership(object):
 VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
                    'procedure', 'type', 'aggregate', 'routine', 'language', 'domain', 'collation', 'conversion',
                    'text_search_configuration', 'text_search_dictionary', 'foreign_data_wrapper', 'server', 'foreign_table',
-                   'event_trigger', 'large_object')
+                   'event_trigger', 'large_object', 'pubblication')
 
 
 def main():
