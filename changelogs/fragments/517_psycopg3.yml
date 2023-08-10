@@ -1,0 +1,2 @@
+major_changes:
+- "postgres modules - added support for Psycopg 3 library (https://github.com/ansible-collections/community.postgresql/pull/517)."
