@@ -165,6 +165,7 @@ extends_documentation_fragment:
 author:
 - Bernhard Weitzhofer (@b6d)
 - Tobias Birkefeld (@tcraxs)
+- Daniele Giudice (@RealGreenDragon)
 '''
 
 EXAMPLES = r'''

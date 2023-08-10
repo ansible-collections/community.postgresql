@@ -60,6 +60,7 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+
 notes:
 - Supported version of PostgreSQL is 9.4 and later.
 - Pay attention, change setting with 'postmaster' context can return changed is true
@@ -86,8 +87,11 @@ seealso:
 - name: PostgreSQL ALTER SYSTEM command reference
   description: Complete reference of the ALTER SYSTEM command documentation.
   link: https://www.postgresql.org/docs/current/sql-altersystem.html
+
 author:
 - Andrew Klychkov (@Andersson007)
+- Daniele Giudice (@RealGreenDragon)
+
 extends_documentation_fragment:
 - community.postgresql.postgres
 '''
