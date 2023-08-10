@@ -296,7 +296,7 @@
   register: result_large_object
 
 - name: postgresql_owner - parse test large object OID
-  set_facts:
+  set_fact:
     test_large_object: "{{ result_large_object.query_result[0]['lo_creat'] }}"
 
 # Create test pubblication
