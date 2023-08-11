@@ -25,3 +25,9 @@ action_groups:
     - postgresql_tablespace
     - postgresql_user
     - postgresql_user_obj_stat_info
+plugin_routing:
+  modules:
+    postgresql_lang:
+      deprecation:
+        removal_version: 4.0.0
+        warning_text: Use postgresql_ext instead.
