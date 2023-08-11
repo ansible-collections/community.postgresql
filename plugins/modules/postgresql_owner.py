@@ -31,12 +31,12 @@ options:
     - Type of a database object.
     - Mutually exclusive with I(reassign_owned_by).
     - I(obj_type=matview) is available since PostgreSQL 9.3.
-    - I(obj_type=procedure) and I(obj_type=routine) are available since PostgreSQL 11.
+    - I(obj_type=event_trigger), I(obj_type=procedure), I(obj_type=publication), I(obj_type=statistics), and I(obj_type=routine) are available since PostgreSQL 11.
     type: str
-    choices: [ database, function, matview, sequence, schema, table, tablespace, view, procedure,
-               type, aggregate, routine, language, domain, collation, conversion, text_search_configuration,
-               text_search_dictionary, foreign_data_wrapper, server, foreign_table, event_trigger, large_object,
-               publication, statistics ]
+    choices: [ aggregate, collation, conversion, database, domain, event_trigger, foreign_data_wrapper,
+               foreign_table, function, language, large_object, matview, procedure, publication, routine,
+               schema, sequence, server, statistics, table, tablespace, text_search_configuration,
+               text_search_dictionary, type, view ]
     aliases:
     - type
   reassign_owned_by:
@@ -81,17 +81,18 @@ options:
     version_added: '0.2.0'
 
 notes:
-- Function Overloading is not supported, so when I(obj_type) is C(aggregate), C(function), C(routine), or C(procedure)
+- Function Overloading is not supported so when I(obj_type) is C(aggregate), C(function), C(routine), or C(procedure)
   I(obj_name) is considered the only object of same type with this name.
 - Despite Function Overloading is not supported, when I(obj_type=aggregate) I(obj_name) must contain also aggregate
   signature because it is required by SQL syntax.
-- Large Objects has no name so I(obj_name) must be Large Object OID.
-- To manage subscriptions use C(postgresql_subscription) module.
+- I(new_owner) must be asuperuser if I(obj_type) is C(event_type) or C(foreign_data_wrapper).
+- To manage subscriptions ownership use C(community.postgresql.postgresql_subscription) module.
 
 seealso:
 - module: community.postgresql.postgresql_user
 - module: community.postgresql.postgresql_privs
 - module: community.postgresql.postgresql_membership
+- module: community.postgresql.postgresql_subscription
 - name: PostgreSQL REASSIGN OWNED command reference
   description: Complete reference of the PostgreSQL REASSIGN OWNED command documentation.
   link: https://www.postgresql.org/docs/current/sql-reassign-owned.html
@@ -473,12 +474,16 @@ class PgOwnership(object):
                      "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'publication':
+            if self.pg_version < 110000:
+                raise Error("PostgreSQL version must be >= 11 for obj_type=publication. Exit")
             query = ("SELECT 1 FROM pg_publication AS p "
                      "JOIN pg_roles AS r ON p.pubowner = r.oid "
                      "WHERE p.pubname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'statistics':
+            if self.pg_version < 110000:
+                raise Error("PostgreSQL version must be >= 11 for obj_type=statistics. Exit")
             query = ("SELECT 1 FROM pg_statistic_ext AS s "
                      "JOIN pg_roles AS r ON s.stxowner = r.oid "
                      "WHERE s.stxname = %(obj_name)s "
@@ -658,10 +663,10 @@ class PgOwnership(object):
 # Module execution.
 #
 
-VALID_OBJ_TYPES = ('database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view',
-                   'procedure', 'type', 'aggregate', 'routine', 'language', 'domain', 'collation', 'conversion',
-                   'text_search_configuration', 'text_search_dictionary', 'foreign_data_wrapper', 'server', 'foreign_table',
-                   'event_trigger', 'large_object', 'publication', 'statistics')
+VALID_OBJ_TYPES = ('aggregate', 'collation', 'conversion', 'database', 'domain', 'event_trigger', 'foreign_data_wrapper',
+                   'foreign_table', 'function', 'language', 'large_object', 'matview', 'procedure', 'publication',
+                   'routine', 'schema', 'sequence', 'server', 'statistics', 'table', 'tablespace', 'text_search_configuration',
+                   'text_search_dictionary', 'type', 'view')
 
 
 def main():
