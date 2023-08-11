@@ -318,16 +318,16 @@
   set_fact:
     test_large_object: "{{ result_large_object.query_result[0]['lo_creat'] }}"
 
-# Create test pubblication
+# Create test publication
 
-- name: postgresql_owner - create test pubblication
+- name: postgresql_owner - create test publication
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
     db: acme
     query: >
-      CREATE PUBLICATION test_pubblication FOR TABLE test_table
+      CREATE PUBLICATION test_publication FOR TABLE test_table
 
 # Create test statistics
 
