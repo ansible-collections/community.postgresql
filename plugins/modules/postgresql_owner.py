@@ -401,7 +401,6 @@ class PgOwnership(object):
         elif self.obj_type == 'matview':
             if self.pg_version < 90300:
                 raise Error("PostgreSQL version must be >= 9.3 for obj_type=matview. Exit")
-
             query = ("SELECT 1 FROM pg_matviews "
                      "WHERE matviewname = %(obj_name)s "
                      "AND matviewowner = %(role)s")
