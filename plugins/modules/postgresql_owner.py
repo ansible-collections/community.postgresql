@@ -31,7 +31,8 @@ options:
     - Type of a database object.
     - Mutually exclusive with I(reassign_owned_by).
     - I(obj_type=matview) is available since PostgreSQL 9.3.
-    - I(obj_type=event_trigger), I(obj_type=procedure), I(obj_type=publication), I(obj_type=statistics), and I(obj_type=routine) are available since PostgreSQL 11.
+    - I(obj_type=event_trigger), I(obj_type=procedure), I(obj_type=publication),
+      I(obj_type=statistics), and I(obj_type=routine) are available since PostgreSQL 11.
     type: str
     choices: [ aggregate, collation, conversion, database, domain, event_trigger, foreign_data_wrapper,
                foreign_table, function, language, large_object, matview, procedure, publication, routine,
