@@ -2950,7 +2950,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_statistics AS s JOIN pg_roles AS r
+      SELECT 1 FROM pg_statistic_ext AS s JOIN pg_roles AS r
       ON s.stxowner = r.oid WHERE s.stxname = 'test_statistics' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
@@ -2986,7 +2986,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_statistics AS s JOIN pg_roles AS r
+      SELECT 1 FROM pg_statistic_ext AS s JOIN pg_roles AS r
       ON s.stxowner = r.oid WHERE s.stxname = 'test_statistics' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
@@ -3022,7 +3022,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_statistics AS s JOIN pg_roles AS r
+      SELECT 1 FROM pg_statistic_ext AS s JOIN pg_roles AS r
       ON s.stxowner = r.oid WHERE s.stxname = 'test_statistics' AND r.rolname = 'bob'
   ignore_errors: true
   register: result

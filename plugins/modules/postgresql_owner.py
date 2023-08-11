@@ -477,7 +477,7 @@ class PgOwnership(object):
                      "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'statistics':
-            query = ("SELECT 1 FROM pg_statistics AS s "
+            query = ("SELECT 1 FROM pg_statistic_ext AS s "
                      "JOIN pg_roles AS r ON s.stxowner = r.oid "
                      "WHERE s.stxname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
