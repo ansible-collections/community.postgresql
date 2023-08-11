@@ -21,6 +21,19 @@
   - alice
   - bob
 
+- name: postgresql_owner - create test roles superuser
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_user:
+    login_user: '{{ pg_user }}'
+    db: postgres
+    name: '{{ item }}'
+    role_attr_flags: SUPERUSER
+  ignore_errors: true
+  with_items:
+  - alice_super
+  - bob_super
+
 # Create test database
 
 - name: postgresql_owner - create test database
@@ -241,7 +254,7 @@
 
 # Create test server
 
-- name: postgresql_owner - create test foreign data wrapper
+- name: postgresql_owner - create test server
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
@@ -2308,7 +2321,7 @@
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
-    new_owner: bob
+    new_owner: bob_super
     obj_name: test_foreign_data_wrapper
     obj_type: foreign_data_wrapper
   check_mode: true
@@ -2317,7 +2330,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER FOREIGN DATA WRAPPER "test_foreign_data_wrapper" OWNER TO "bob"']
+    - result.queries == ['ALTER FOREIGN DATA WRAPPER "test_foreign_data_wrapper" OWNER TO "bob_super"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -2327,7 +2340,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
-      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
+      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob_super'
   ignore_errors: true
   register: result
 
@@ -2341,7 +2354,7 @@
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
-    new_owner: bob
+    new_owner: bob_super
     obj_name: test_foreign_data_wrapper
     obj_type: foreign_data_wrapper
   register: result
@@ -2349,7 +2362,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER FOREIGN DATA WRAPPER "test_foreign_data_wrapper" OWNER TO "bob"']
+    - result.queries == ['ALTER FOREIGN DATA WRAPPER "test_foreign_data_wrapper" OWNER TO "bob_super"']
 
 - name: postgresql_owner - check that foreign_data_wrapper owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -2359,7 +2372,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
-      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
+      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob_super'
   ignore_errors: true
   register: result
 
@@ -2373,7 +2386,7 @@
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
-    new_owner: bob
+    new_owner: bob_super
     obj_name: test_foreign_data_wrapper
     obj_type: foreign_data_wrapper
   register: result
@@ -2383,7 +2396,7 @@
     - result is not changed
     - result.queries == []
 
-- name: postgresql_owner - check that foreign_data_wrapper owner is bob
+- name: postgresql_owner - check that foreign_data_wrapper owner is bob_super
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
@@ -2391,7 +2404,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
-      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob'
+      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob_super'
   ignore_errors: true
   register: result
 
