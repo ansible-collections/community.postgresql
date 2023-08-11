@@ -291,6 +291,7 @@
         PERFORM pg_is_in_recovery();
       END;
       $$
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - create test event trigger
   become_user: '{{ pg_user }}'
@@ -301,6 +302,7 @@
     query: >
       CREATE EVENT TRIGGER test_event_trigger ON ddl_command_start
       EXECUTE FUNCTION test_event_trigger_function()
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 # Create test large object
 
@@ -2626,11 +2628,13 @@
     obj_type: event_trigger
   check_mode: true
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result is changed
     - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob_super"']
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -2643,10 +2647,12 @@
       ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob_super'
   ignore_errors: true
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result.rowcount == 0
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - set event_trigger owner
   become_user: '{{ pg_user }}'
@@ -2658,11 +2664,13 @@
     obj_name: test_event_trigger
     obj_type: event_trigger
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result is changed
     - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob_super"']
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - check that event_trigger owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -2675,10 +2683,12 @@
       ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob_super'
   ignore_errors: true
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - set event_trigger owner again
   become_user: '{{ pg_user }}'
@@ -2690,11 +2700,13 @@
     obj_name: test_event_trigger
     obj_type: event_trigger
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result is not changed
     - result.queries == []
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - name: postgresql_owner - check that event_trigger owner is bob_super
   become_user: '{{ pg_user }}'
@@ -2707,10 +2719,12 @@
       ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob_super'
   ignore_errors: true
   register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 - assert:
     that:
     - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
 
 # Test obj_type: large_object
 

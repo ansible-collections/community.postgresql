@@ -459,6 +459,8 @@ class PgOwnership(object):
                      "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'event_trigger':
+            if self.pg_version < 110000:
+                raise Error("PostgreSQL version must be >= 11 for obj_type=event_trigger. Exit")
             query = ("SELECT 1 FROM pg_event_trigger AS e "
                      "JOIN pg_roles AS r ON e.evtowner = r.oid "
                      "WHERE e.evtname = %(obj_name)s "
