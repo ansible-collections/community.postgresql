@@ -2621,7 +2621,7 @@
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
-    new_owner: bob
+    new_owner: bob_super
     obj_name: test_event_trigger
     obj_type: event_trigger
   check_mode: true
@@ -2630,7 +2630,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob"']
+    - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob_super"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -2640,7 +2640,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
-      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob'
+      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob_super'
   ignore_errors: true
   register: result
 
@@ -2654,7 +2654,7 @@
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
-    new_owner: bob
+    new_owner: bob_super
     obj_name: test_event_trigger
     obj_type: event_trigger
   register: result
@@ -2662,7 +2662,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob"']
+    - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob_super"']
 
 - name: postgresql_owner - check that event_trigger owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -2672,7 +2672,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
-      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob'
+      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob_super'
   ignore_errors: true
   register: result
 
@@ -2686,7 +2686,7 @@
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
-    new_owner: bob
+    new_owner: bob_super
     obj_name: test_event_trigger
     obj_type: event_trigger
   register: result
@@ -2696,7 +2696,7 @@
     - result is not changed
     - result.queries == []
 
-- name: postgresql_owner - check that event_trigger owner is bob
+- name: postgresql_owner - check that event_trigger owner is bob_super
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
@@ -2704,7 +2704,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
-      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob'
+      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob_super'
   ignore_errors: true
   register: result
 
