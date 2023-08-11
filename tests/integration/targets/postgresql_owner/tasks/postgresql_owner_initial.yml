@@ -275,7 +275,7 @@
       LANGUAGE plpgsql
         AS $$
       BEGIN
-        SELECT 1;
+        PERFORM pg_is_in_recovery();
       END;
       $$
 
