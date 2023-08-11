@@ -448,8 +448,8 @@ class PgOwnership(object):
 
         elif self.obj_type == 'server':
             query = ("SELECT 1 FROM pg_foreign_server AS f "
-                     "JOIN pg_roles AS r ON t.srvowner = r.oid "
-                     "WHERE t.srvname = %(obj_name)s "
+                     "JOIN pg_roles AS r ON f.srvowner = r.oid "
+                     "WHERE f.srvname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
         elif self.obj_type == 'foreign_table':
