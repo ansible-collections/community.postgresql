@@ -529,3 +529,21 @@ releases:
     - 0-postgresql_info.yml
     - 2.4.2.yml
     release_date: '2023-06-09'
+  2.4.3:
+    changes:
+      bugfixes:
+      - postgresql_set - fixed error message in param_set function (https://github.com/ansible-collections/community.postgresql/pull/505).
+      deprecated_features:
+      - postgresql_lang - the module has been deprecated and will be removed in ``community.postgresql
+        4.0.0``. Please use the ``postgresql_ext`` module instead (https://github.com/ansible-collections/community.postgresql/issues/559).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been added after the release of ``community.postgresql`` 2.4.2.'
+    fragments:
+    - 2.4.3.yml
+    - 505-postgresql_set.yml
+    - 559-postgresql_lang-deprecate.yml
+    release_date: '2023-08-14'
