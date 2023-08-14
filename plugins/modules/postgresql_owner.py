@@ -181,10 +181,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 )
 
 
-class Error(Exception):
-    pass
-
-
 class PgOwnership(object):
 
     """Class for changing ownership of PostgreSQL objects.
@@ -368,9 +364,9 @@ class PgOwnership(object):
 
         elif self.obj_type in ('aggregate', 'function', 'routine', 'procedure'):
             if self.obj_type == 'routine' and self.pg_version < 110000:
-                raise Error("PostgreSQL version must be >= 11 for obj_type=routine. Exit")
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=routine.")
             if self.obj_type == 'procedure' and self.pg_version < 110000:
-                raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=procedure.")
             query = ("SELECT 1 FROM pg_proc AS f "
                      "JOIN pg_roles AS r ON f.proowner = r.oid "
                      "WHERE f.proname = %(obj_name)s "
@@ -400,7 +396,7 @@ class PgOwnership(object):
 
         elif self.obj_type == 'matview':
             if self.pg_version < 90300:
-                raise Error("PostgreSQL version must be >= 9.3 for obj_type=matview. Exit")
+                self.module.fail_json(msg="PostgreSQL version must be >= 9.3 for obj_type=matview.")
             query = ("SELECT 1 FROM pg_matviews "
                      "WHERE matviewname = %(obj_name)s "
                      "AND matviewowner = %(role)s")
@@ -461,7 +457,7 @@ class PgOwnership(object):
 
         elif self.obj_type == 'event_trigger':
             if self.pg_version < 110000:
-                raise Error("PostgreSQL version must be >= 11 for obj_type=event_trigger. Exit")
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=event_trigger.")
             query = ("SELECT 1 FROM pg_event_trigger AS e "
                      "JOIN pg_roles AS r ON e.evtowner = r.oid "
                      "WHERE e.evtname = %(obj_name)s "
@@ -475,7 +471,7 @@ class PgOwnership(object):
 
         elif self.obj_type == 'publication':
             if self.pg_version < 110000:
-                raise Error("PostgreSQL version must be >= 11 for obj_type=publication. Exit")
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=publication.")
             query = ("SELECT 1 FROM pg_publication AS p "
                      "JOIN pg_roles AS r ON p.pubowner = r.oid "
                      "WHERE p.pubname = %(obj_name)s "
@@ -483,7 +479,7 @@ class PgOwnership(object):
 
         elif self.obj_type == 'statistics':
             if self.pg_version < 110000:
-                raise Error("PostgreSQL version must be >= 11 for obj_type=statistics. Exit")
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=statistics.")
             query = ("SELECT 1 FROM pg_statistic_ext AS s "
                      "JOIN pg_roles AS r ON s.stxowner = r.oid "
                      "WHERE s.stxname = %(obj_name)s "
@@ -538,7 +534,7 @@ class PgOwnership(object):
     def __set_mat_view_owner(self):
         """Set the materialized view owner."""
         if self.pg_version < 90300:
-            raise Error("PostgreSQL version must be >= 9.3 for obj_type=matview. Exit")
+            self.module.fail_json(msg="PostgreSQL version must be >= 9.3 for obj_type=matview.")
 
         query = 'ALTER MATERIALIZED VIEW %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                               self.role)
@@ -547,7 +543,7 @@ class PgOwnership(object):
     def __set_procedure_owner(self):
         """Set the procedure owner."""
         if self.pg_version < 110000:
-            raise Error("PostgreSQL version must be >= 11 for obj_type=procedure. Exit")
+            self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=procedure.")
 
         query = 'ALTER PROCEDURE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                       self.role)
@@ -567,7 +563,7 @@ class PgOwnership(object):
     def __set_routine_owner(self):
         """Set the routine owner."""
         if self.pg_version < 110000:
-            raise Error("PostgreSQL version must be >= 11 for obj_type=routine. Exit")
+            self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=routine.")
         query = 'ALTER ROUTINE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                     self.role)
         self.changed = exec_sql(self, query, return_bool=True)
@@ -639,7 +635,7 @@ class PgOwnership(object):
     def __set_publication_owner(self):
         """Set the publication owner."""
         if self.pg_version < 110000:
-            raise Error("PostgreSQL version must be >= 11 for obj_type=publication. Exit")
+            self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=publication.")
         query = 'ALTER PUBLICATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'publication'),
                                                         self.role)
         self.changed = exec_sql(self, query, return_bool=True)
@@ -647,7 +643,7 @@ class PgOwnership(object):
     def __set_statistics_owner(self):
         """Set the statistics owner."""
         if self.pg_version < 110000:
-            raise Error("PostgreSQL version must be >= 11 for obj_type=statistics. Exit")
+            self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=statistics.")
         query = 'ALTER STATISTICS %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                        self.role)
         self.changed = exec_sql(self, query, return_bool=True)
