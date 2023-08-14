@@ -81,7 +81,7 @@ notes:
 - To avoid "Peer authentication failed for user postgres" error,
   use postgres user as a I(become_user).
 - This module uses C(psycopg), a Python PostgreSQL database adapter. You must
-  ensure that C(psycopg2 >= 2.5.1) or C(psycopg3 >= 3.1) is installed on the host before using this module.
+  ensure that C(psycopg2 >= 2.5.1) or C(psycopg3 >= 3.1.8) is installed on the host before using this module.
 - If the remote host is the PostgreSQL server (which is the default case), then
   PostgreSQL must also be installed on the remote host.
 - For Ubuntu-based systems, install the C(postgresql), C(libpq-dev), and C(python3-psycopg2) packages
