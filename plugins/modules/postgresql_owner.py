@@ -181,6 +181,12 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 )
 
 
+VALID_OBJ_TYPES = ('aggregate', 'collation', 'conversion', 'database', 'domain', 'event_trigger', 'foreign_data_wrapper',
+                   'foreign_table', 'function', 'language', 'large_object', 'matview', 'procedure', 'publication',
+                   'routine', 'schema', 'sequence', 'server', 'statistics', 'table', 'tablespace', 'text_search_configuration',
+                   'text_search_dictionary', 'type', 'view')
+
+
 class PgOwnership(object):
 
     """Class for changing ownership of PostgreSQL objects.
@@ -658,12 +664,6 @@ class PgOwnership(object):
 # ===========================================
 # Module execution.
 #
-
-VALID_OBJ_TYPES = ('aggregate', 'collation', 'conversion', 'database', 'domain', 'event_trigger', 'foreign_data_wrapper',
-                   'foreign_table', 'function', 'language', 'large_object', 'matview', 'procedure', 'publication',
-                   'routine', 'schema', 'sequence', 'server', 'statistics', 'table', 'tablespace', 'text_search_configuration',
-                   'text_search_dictionary', 'type', 'view')
-
 
 def main():
     argument_spec = postgres_common_argument_spec()
