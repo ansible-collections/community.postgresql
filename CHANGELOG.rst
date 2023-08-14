@@ -5,6 +5,26 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v2.4.3
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been added after the release of ``community.postgresql`` 2.4.2.
+
+Deprecated Features
+-------------------
+
+- postgresql_lang - the module has been deprecated and will be removed in ``community.postgresql 4.0.0``. Please use the ``postgresql_ext`` module instead (https://github.com/ansible-collections/community.postgresql/issues/559).
+
+Bugfixes
+--------
+
+- postgresql_set - fixed error message in param_set function (https://github.com/ansible-collections/community.postgresql/pull/505).
+
 v2.4.2
 ======
 
