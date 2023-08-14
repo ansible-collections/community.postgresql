@@ -1,2 +1,0 @@
-minor_changes:
-- Collection core functions - use ``get_server_version`` in all modules (https://github.com/ansible-collections/community.postgresql/pull/518)."

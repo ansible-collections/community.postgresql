@@ -5,6 +5,49 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v3.1.0
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Major Changes
+-------------
+
+- postgres modules - the minimum version of psycopg2 library the collection supports is 2.5.1 (https://github.com/ansible-collections/community.postgresql/pull/556).
+
+Minor Changes
+-------------
+
+- Collection core functions - use ``get_server_version`` in all modules (https://github.com/ansible-collections/community.postgresql/pull/518)."
+- Collection core functions - use common cursor arguments in all modules (https://github.com/ansible-collections/community.postgresql/pull/522)."
+- postgresql_ext - added idempotence always both in standard and in check mode (https://github.com/ansible-collections/community.postgresql/pull/545).
+- postgresql_ext - added idempotence when version=latest (https://github.com/ansible-collections/community.postgresql/pull/504).
+- postgresql_ext - added prev_version and version return values (https://github.com/ansible-collections/community.postgresql/pull/545).
+- postgresql_ext - added queries in module output also in check mode (https://github.com/ansible-collections/community.postgresql/pull/545).
+- postgresql_ext - improved error messages (https://github.com/ansible-collections/community.postgresql/pull/545).
+- postgresql_privs - added idempotence when roles=PUBLIC (https://github.com/ansible-collections/community.postgresql/pull/502).
+- postgresql_privs - added parameters privileges support for PostgreSQL 15 or higher (https://github.com/ansible-collections/community.postgresql/issues/481).
+- postgresql_privs - added support for implicit roles CURRENT_ROLE, CURRENT_USER, and SESSION_USER (https://github.com/ansible-collections/community.postgresql/pull/502).
+- postgresql_tablespace - added idempotence when dropping a non-existing tablespace (https://github.com/ansible-collections/community.postgresql/pull/554).
+
+Deprecated Features
+-------------------
+
+- postgresql_lang - the module has been deprecated and will be removed in ``community.postgresql 4.0.0``. Please use the ``postgresql_ext`` module instead (https://github.com/ansible-collections/community.postgresql/issues/559).
+
+Bugfixes
+--------
+
+- postgresql_ext - fixed queries return value name in documentation (https://github.com/ansible-collections/community.postgresql/pull/545).
+- postgresql_privs - fixed error message and documentation (https://github.com/ansible-collections/community.postgresql/pull/510).
+- postgresql_set - fixed GUC_LIST_QUOTE parameters (https://github.com/ansible-collections/community.postgresql/pull/521).
+- postgresql_set - fixed error message in param_set function (https://github.com/ansible-collections/community.postgresql/pull/505).
+
 v3.0.0
 ======
 

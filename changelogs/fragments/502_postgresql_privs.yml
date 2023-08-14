@@ -1,3 +1,0 @@
-minor_changes:
-- "postgresql_privs - added support for implicit roles CURRENT_ROLE, CURRENT_USER, and SESSION_USER (https://github.com/ansible-collections/community.postgresql/pull/502)."
-- "postgresql_privs - added idempotence when roles=PUBLIC (https://github.com/ansible-collections/community.postgresql/pull/502)."
