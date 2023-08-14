@@ -13,7 +13,7 @@ If you encounter abusive behavior violating the [Ansible Code of Conduct](https:
 
 ## Contributing to this collection
 
-The content of this collection is made by [people](https://github.com/ansible-collections/community.postgresql/blob/main/CONTRIBUTORS) just like you, a community of individuals collaborating on making the world better through developing automation software.
+The content of this collection is made by [people](https://github.com/ansible-collections/community.postgresql/graphs/contributors) just like you; a community of individuals collaborating on making the world better through developing automation software.
 
 We are actively accepting new contributors.
 
