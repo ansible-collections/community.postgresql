@@ -557,3 +557,53 @@ releases:
     - 4-postgresql_user.yml
     - 5-postgresql_pg_hba.yml
     release_date: '2023-06-09'
+  3.1.0:
+    changes:
+      bugfixes:
+      - postgresql_ext - fixed queries return value name in documentation (https://github.com/ansible-collections/community.postgresql/pull/545).
+      - postgresql_privs - fixed error message and documentation (https://github.com/ansible-collections/community.postgresql/pull/510).
+      - postgresql_set - fixed GUC_LIST_QUOTE parameters (https://github.com/ansible-collections/community.postgresql/pull/521).
+      - postgresql_set - fixed error message in param_set function (https://github.com/ansible-collections/community.postgresql/pull/505).
+      deprecated_features:
+      - postgresql_lang - the module has been deprecated and will be removed in ``community.postgresql
+        4.0.0``. Please use the ``postgresql_ext`` module instead (https://github.com/ansible-collections/community.postgresql/issues/559).
+      major_changes:
+      - postgres modules - the minimum version of psycopg2 library the collection
+        supports is 2.5.1 (https://github.com/ansible-collections/community.postgresql/pull/556).
+      minor_changes:
+      - Collection core functions - use ``get_server_version`` in all modules (https://github.com/ansible-collections/community.postgresql/pull/518)."
+      - Collection core functions - use common cursor arguments in all modules (https://github.com/ansible-collections/community.postgresql/pull/522)."
+      - postgresql_ext - added idempotence always both in standard and in check mode
+        (https://github.com/ansible-collections/community.postgresql/pull/545).
+      - postgresql_ext - added idempotence when version=latest (https://github.com/ansible-collections/community.postgresql/pull/504).
+      - postgresql_ext - added prev_version and version return values (https://github.com/ansible-collections/community.postgresql/pull/545).
+      - postgresql_ext - added queries in module output also in check mode (https://github.com/ansible-collections/community.postgresql/pull/545).
+      - postgresql_ext - improved error messages (https://github.com/ansible-collections/community.postgresql/pull/545).
+      - postgresql_privs - added idempotence when roles=PUBLIC (https://github.com/ansible-collections/community.postgresql/pull/502).
+      - postgresql_privs - added parameters privileges support for PostgreSQL 15 or
+        higher (https://github.com/ansible-collections/community.postgresql/issues/481).
+      - postgresql_privs - added support for implicit roles CURRENT_ROLE, CURRENT_USER,
+        and SESSION_USER (https://github.com/ansible-collections/community.postgresql/pull/502).
+      - postgresql_tablespace - added idempotence when dropping a non-existing tablespace
+        (https://github.com/ansible-collections/community.postgresql/pull/554).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 3.1.0.yml
+    - 481-postgresql_privs.yml
+    - 502_postgresql_privs.yml
+    - 504_postgresql_ext.yml
+    - 505-postgresql_set.yml
+    - 510-postgresql_privs.yml
+    - 518-psycopg-server_version.yml
+    - 521-postgresql_set.yml
+    - 522-psycopg-cursor_args.yml
+    - 545_postgresql_ext.yml
+    - 554_postgresql_tablespace.yml
+    - 556_psycopg251.yml
+    - 559-postgresql_lang-deprecate.yml
+    release_date: '2023-08-14'

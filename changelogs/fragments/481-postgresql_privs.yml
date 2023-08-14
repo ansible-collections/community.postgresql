@@ -1,2 +1,0 @@
-minor_changes:
-- "postgresql_privs - added parameters privileges support for PostgreSQL 15 or higher (https://github.com/ansible-collections/community.postgresql/issues/481)."

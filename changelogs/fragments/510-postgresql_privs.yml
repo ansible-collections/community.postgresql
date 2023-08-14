@@ -1,2 +1,0 @@
-bugfixes:
-- "postgresql_privs - fixed error message and documentation (https://github.com/ansible-collections/community.postgresql/pull/510)."
