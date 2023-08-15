@@ -86,7 +86,7 @@ notes:
   I(obj_name) is considered the only object of same type with this name.
 - Despite Function Overloading is not supported, when I(obj_type=aggregate) I(obj_name) must contain also aggregate
   signature because it is required by SQL syntax.
-- I(new_owner) must be asuperuser if I(obj_type) is C(event_type) or C(foreign_data_wrapper).
+- I(new_owner) must be a superuser if I(obj_type) is C(event_type) or C(foreign_data_wrapper).
 - To manage subscriptions ownership use C(community.postgresql.postgresql_subscription) module.
 
 seealso:
