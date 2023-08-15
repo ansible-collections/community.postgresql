@@ -292,6 +292,7 @@ from base64 import b64decode
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
 from ansible.module_utils._text import to_bytes, to_native, to_text
+from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     pg_quote_identifier,
     SQLParseError,
@@ -305,11 +306,14 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     pg_cursor_args,
     postgres_common_argument_spec,
     HAS_PSYCOPG,
+    PSYCOPG_VERSION
 )
 from ansible_collections.community.postgresql.plugins.module_utils import saslprep
 
-if HAS_PSYCOPG:
+if HAS_PSYCOPG and PSYCOPG_VERSION < LooseVersion("3.0"):
     import psycopg2 as psycopg
+elif HAS_PSYCOPG:
+    import psycopg
 
 try:
     # pbkdf2_hmac is missing on python 2.6, we can safely assume,

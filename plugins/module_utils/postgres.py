@@ -21,18 +21,32 @@ from ansible.module_utils._text import to_native
 from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 
-psycopg2 = None  # This line needs for unit tests
-pg_cursor_args = None
+psycopg = None  # This line is needed for unit tests
+psycopg2 = None  # This line is needed for unit tests
+pg_cursor_args = None  # This line is needed for unit tests
 PSYCOPG_VERSION = LooseVersion("0.0")  # This line is needed for unit tests
 
 try:
-    import psycopg2
-    from psycopg2.extras import DictCursor
-    PSYCOPG_VERSION = LooseVersion(psycopg2.__version__)
+    import psycopg
+    from psycopg import ClientCursor
+    from psycopg.rows import dict_row
+    # We need Psycopg 3 to be at least 3.1.0 because we need Client-side-binding cursors
+    # When a Linux distribution provides both Psycopg2 and Psycopg 3.0 we will use Psycopg2
+    PSYCOPG_VERSION = LooseVersion(psycopg.__version__)
+    if PSYCOPG_VERSION < LooseVersion("3.1"):
+        raise ImportError
     HAS_PSYCOPG = True
-    pg_cursor_args = {"cursor_factory": DictCursor}
+    pg_cursor_args = {"row_factory": psycopg.rows.dict_row}
 except ImportError:
-    HAS_PSYCOPG = False
+    try:
+        import psycopg2
+        psycopg = psycopg2
+        from psycopg2.extras import DictCursor
+        PSYCOPG_VERSION = LooseVersion(psycopg2.__version__)
+        HAS_PSYCOPG = True
+        pg_cursor_args = {"cursor_factory": DictCursor}
+    except ImportError:
+        HAS_PSYCOPG = False
 
 TYPES_NEED_TO_CONVERT = (Decimal, timedelta)
 
@@ -80,6 +94,7 @@ def postgres_common_argument_spec():
 def ensure_required_libs(module):
     """Check required libraries."""
     if not HAS_PSYCOPG:
+        # TODO: Should we raise it as psycopg? That will be a breaking change
         module.fail_json(msg=missing_required_lib('psycopg2'))
 
     elif PSYCOPG_VERSION < LooseVersion("2.5.1"):
@@ -106,16 +121,25 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
     db_connection = None
     conn_err = None
     try:
-        db_connection = psycopg2.connect(**conn_params)
-        if autocommit:
-            if PSYCOPG_VERSION >= LooseVersion("2.4.2"):
-                db_connection.set_session(autocommit=True)
-            else:
-                db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        if PSYCOPG_VERSION >= LooseVersion("3.0"):
+            conn_params["autocommit"] = autocommit
+            conn_params["cursor_factory"] = ClientCursor
+            conn_params["row_factory"] = dict_row
+            db_connection = psycopg.connect(**conn_params)
+        else:
+            db_connection = psycopg2.connect(**conn_params)
+            if autocommit:
+                if PSYCOPG_VERSION >= LooseVersion("2.4.2"):
+                    db_connection.set_session(autocommit=True)
+                else:
+                    db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 
         # Switch role, if specified:
         if module.params.get('session_role'):
-            cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            if PSYCOPG_VERSION >= LooseVersion("3.0"):
+                cursor = db_connection.cursor(row_factory=psycopg.rows.dict_row)
+            else:
+                cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
             try:
                 cursor.execute('SET ROLE "%s"' % module.params['session_role'])
@@ -487,6 +511,7 @@ def get_server_version(conn):
 
 def set_autocommit(conn, autocommit):
     """Set autocommit.
+
     Args:
         conn (psycopg.Connection) -- Psycopg connection object.
         autocommit -- bool.

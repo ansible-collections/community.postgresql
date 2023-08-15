@@ -148,7 +148,7 @@ def is_input_dangerous(string):
     Can be used to prevent SQL injections.
 
     Note: use this function only when you can't use
-      psycopg2's cursor.execute method parametrized
+      psycopg's cursor.execute method parametrized
       (typically with DDL queries).
     """
     if not string:

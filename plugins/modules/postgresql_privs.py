@@ -429,6 +429,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
     pg_quote_identifier,
     check_input,
 )
+from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
@@ -437,10 +438,13 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     pg_cursor_args,
     postgres_common_argument_spec,
     HAS_PSYCOPG,
+    PSYCOPG_VERSION
 )
 
-if HAS_PSYCOPG:
+if HAS_PSYCOPG and PSYCOPG_VERSION < LooseVersion("3.0"):
     from psycopg2 import Error as PsycopgError
+elif HAS_PSYCOPG:
+    from psycopg import Error as PsycopgError
 
 VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'CREATE',
                          'CONNECT', 'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'SET', 'ALTER_SYSTEM'))
@@ -854,7 +858,8 @@ class Connection(object):
             # to compare NoneType elements by sort method.
             if e is None:
                 return ''
-            return e
+            # With Psycopg 3 we get a list of dicts, it is easier to sort it as strings
+            return str(e)
 
         status_before.sort(key=nonesorted)
         status_after.sort(key=nonesorted)

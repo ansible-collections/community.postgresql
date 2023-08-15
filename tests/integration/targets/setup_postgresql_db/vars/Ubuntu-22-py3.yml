@@ -4,11 +4,11 @@ postgresql_packages:
   - "apt-utils"
   - "postgresql-{{ pg_ver }}"
   - "postgresql-common"
-  - "python3-psycopg2"
+  # - "python3-psycopg2"
   - "postgresql-client"
 
 pip_packages:
-  - "psycopg>=3.1" # We need Client-side-binding cursors
+  - "psycopg==3.1.9" # We need at least 3.1 for Client-side-binding cursors
 
 pg_hba_location: "/etc/postgresql/{{ pg_ver }}/main/pg_hba.conf"
 pg_dir: "/var/lib/postgresql/{{ pg_ver }}/main"

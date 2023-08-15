@@ -189,7 +189,7 @@ class TestEnsureReqLibs():
         m_ansible_module.params['ca_cert'] = True
         monkeypatch.setattr(pg, 'HAS_PSYCOPG', True)
         monkeypatch.setattr(pg, 'PSYCOPG_VERSION', LooseVersion("2.9.6"))
-        monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
+        monkeypatch.setattr(pg, 'psycopg', m_psycopg2)
 
         pg.ensure_required_libs(m_ansible_module)
         assert m_ansible_module.err_msg == ''
@@ -199,11 +199,10 @@ class TestEnsureReqLibs():
         Test with module.params['ca_cert'], psycopg2 version is wrong.
         """
         m_ansible_module.params['ca_cert'] = True
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG', True)
+        psycopg = m_psycopg2
+        monkeypatch.setattr(pg, 'psycopg', psycopg)
         # Set wrong psycopg2 version number:
-        psycopg2 = m_psycopg2
         monkeypatch.setattr(pg, 'PSYCOPG_VERSION', LooseVersion("2.4.2"))
-        monkeypatch.setattr(pg, 'psycopg2', psycopg2)
 
         pg.ensure_required_libs(m_ansible_module)
         assert 'psycopg2 must be at least 2.4.3' in m_ansible_module.err_msg
@@ -250,7 +249,7 @@ class TestConnectToDb():
 
     def test_connect_to_db(self, m_ansible_module, monkeypatch, m_psycopg2):
         """Test connect_to_db(), common test."""
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG', True)
+        monkeypatch.setattr(pg, 'psycopg', m_psycopg2)
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
@@ -265,7 +264,7 @@ class TestConnectToDb():
 
     def test_session_role(self, m_ansible_module, monkeypatch, m_psycopg2):
         """Test connect_to_db(), switch on session_role."""
-        monkeypatch.setattr(pg, 'HAS_PSYCOPG', True)
+        monkeypatch.setattr(pg, 'psycopg', m_psycopg2)
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         m_ansible_module.params['session_role'] = 'test_role'
@@ -283,7 +282,7 @@ class TestConnectToDb():
         """
         Test connect_to_db(), fail_on_conn arg passed as True (the default behavior).
         """
-        monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
+        monkeypatch.setattr(pg, 'psycopg', m_psycopg2)
 
         m_ansible_module.params['login_user'] = 'Exception'  # causes Exception
 
@@ -297,7 +296,7 @@ class TestConnectToDb():
         """
         Test connect_to_db(), fail_on_conn arg passed as False.
         """
-        monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
+        monkeypatch.setattr(pg, 'psycopg', m_psycopg2)
 
         m_ansible_module.params['login_user'] = 'Exception'  # causes Exception
 
@@ -314,6 +313,7 @@ class TestConnectToDb():
         """
 
         # case 1: psycopg2.__version >= 2.4.2 (the default in m_psycopg2)
+        monkeypatch.setattr(pg, 'psycopg', m_psycopg2)
         monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
 
         conn_params = pg.get_conn_params(m_ansible_module, m_ansible_module.params)
@@ -332,12 +332,12 @@ class TestGetConnParams():
 
     def test_get_conn_params_def(self, m_ansible_module, m_psycopg2, monkeypatch):
         """Test get_conn_params(), warn_db_default kwarg is default."""
-        monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
+        monkeypatch.setattr(pg, 'psycopg', m_psycopg2)
         assert pg.get_conn_params(m_ansible_module, INPUT_DICT) == EXPECTED_DICT
         assert m_ansible_module.warn_msg == 'Database name has not been passed, used default database to connect to.'
 
     def test_get_conn_params_warn_db_def_false(self, m_ansible_module, m_psycopg2, monkeypatch):
         """Test get_conn_params(), warn_db_default kwarg is False."""
-        monkeypatch.setattr(pg, 'psycopg2', m_psycopg2)
+        monkeypatch.setattr(pg, 'psycopg', m_psycopg2)
         assert pg.get_conn_params(m_ansible_module, INPUT_DICT, warn_db_default=False) == EXPECTED_DICT
         assert m_ansible_module.warn_msg == ''

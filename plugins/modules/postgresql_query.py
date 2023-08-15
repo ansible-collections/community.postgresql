@@ -17,8 +17,8 @@ description:
 options:
   query:
     description:
-    - SQL query string or list of queries to run. Variables can be escaped with psycopg2 syntax
-      U(http://initd.org/psycopg/docs/usage.html).
+    - SQL query string or list of queries to run. Variables can be escaped with psycopg syntax
+      U(https://www.psycopg.org/psycopg3/docs/basic/params.html).
     type: raw
   positional_args:
     description:
@@ -258,6 +258,7 @@ from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
 )
+from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     convert_elements_to_pg_arrays,
@@ -268,11 +269,15 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     postgres_common_argument_spec,
     set_search_path,
     HAS_PSYCOPG,
+    PSYCOPG_VERSION,
     TYPES_NEED_TO_CONVERT,
 )
 
-if HAS_PSYCOPG:
+if HAS_PSYCOPG and PSYCOPG_VERSION < LooseVersion("3.0"):
     from psycopg2 import ProgrammingError as PsycopgProgrammingError
+elif HAS_PSYCOPG:
+    from psycopg import ProgrammingError as PsycopgProgrammingError
+
 
 # ===========================================
 # Module execution.
@@ -385,12 +390,17 @@ def main():
 
                     query_result.append(row)
 
+            # Psycopg 3 doesn't fail with 'no results to fetch'
+            # This exception will be triggered only in Psycopg 2
             except PsycopgProgrammingError as e:
                 if to_native(e) == 'no results to fetch':
                     query_result = {}
 
             except Exception as e:
                 module.fail_json(msg="Cannot fetch rows from cursor: %s" % to_native(e))
+
+            if query_result == []:
+                query_result = {}
 
             query_all_results.append(query_result)
 
