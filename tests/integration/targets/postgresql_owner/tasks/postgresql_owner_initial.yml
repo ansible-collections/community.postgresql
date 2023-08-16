@@ -2,9 +2,13 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 ####################
-# Prepare for tests:
 
-# Create test roles:
+#
+# Prepare for tests
+#
+
+# Create test roles
+
 - name: postgresql_owner - create test roles
   become_user: '{{ pg_user }}'
   become: true
@@ -17,6 +21,21 @@
   - alice
   - bob
 
+- name: postgresql_owner - create test roles superuser
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_user:
+    login_user: '{{ pg_user }}'
+    db: postgres
+    name: '{{ item }}'
+    role_attr_flags: SUPERUSER
+  ignore_errors: true
+  with_items:
+  - alice_super
+  - bob_super
+
+# Create test database
+
 - name: postgresql_owner - create test database
   become_user: '{{ pg_user }}'
   become: true
@@ -24,13 +43,15 @@
     login_user: '{{ pg_user }}'
     db: acme
 
+# Create test table
+
 - name: postgresql_owner - create test table
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
     db: acme
-    query: CREATE TABLE my_table (id int)
+    query: CREATE TABLE test_table (id int)
 
 - name: postgresql_owner - set owner
   become_user: '{{ pg_user }}'
@@ -39,8 +60,10 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: my_table
+    obj_name: test_table
     obj_type: table
+
+# Create test sequence
 
 - name: postgresql_owner - create test sequence
   become_user: '{{ pg_user }}'
@@ -50,6 +73,8 @@
     db: acme
     query: CREATE SEQUENCE test_seq
 
+# Create test function
+
 - name: postgresql_owner - create test function
   become_user: '{{ pg_user }}'
   become: true
@@ -57,8 +82,10 @@
     login_user: '{{ pg_user }}'
     db: acme
     query: >
-      CREATE FUNCTION increment(integer) RETURNS integer AS 'select $1 + 1;'
+      CREATE FUNCTION test_function(integer) RETURNS integer AS 'select $1 + 1;'
       LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
+
+# Create test schema
 
 - name: postgresql_owner - create test schema
   become_user: '{{ pg_user }}'
@@ -68,13 +95,17 @@
     db: acme
     query: CREATE SCHEMA test_schema
 
+# Create test view
+
 - name: postgresql_owner - create test view
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
     db: acme
-    query: CREATE VIEW test_view AS SELECT * FROM my_table
+    query: CREATE VIEW test_view AS SELECT * FROM test_table
+
+# Create test materialized view
 
 - name: postgresql_owner - create test materialized view
   become_user: '{{ pg_user }}'
@@ -82,8 +113,10 @@
   postgresql_query:
     login_user: '{{ pg_user }}'
     db: acme
-    query: CREATE MATERIALIZED VIEW test_mat_view AS SELECT * FROM my_table
+    query: CREATE MATERIALIZED VIEW test_mat_view AS SELECT * FROM test_table
   when: postgres_version_resp.stdout is version('9.4', '>=')
+
+# Create test materialized tablespace
 
 - name: postgresql_owner - drop dir for test tablespace
   become: true
@@ -119,12 +152,212 @@
     owner: alice
     location: '{{ test_tablespace_path }}'
 
+# Create test procedure
+
+- name: postgresql_owner - create test procedure
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE OR REPLACE PROCEDURE test_procedure(id integer)
+      LANGUAGE SQL
+      AS $$
+      INSERT INTO test_table VALUES (id);
+      $$
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+# Create test type
+
+- name: postgresql_owner - create test type
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: CREATE TYPE test_type AS ENUM ('new', 'open', 'closed')
+
+# Create test aggregate
+
+- name: postgresql_owner - create test aggregate
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE AGGREGATE test_aggregate (float8)
+      (
+        sfunc = float8_accum,
+        stype = float8[],
+        finalfunc = float8_avg,
+        initcond = '{0,0,0}'
+      )
+
+# Create test routine
+
+- name: postgresql_owner - create test routine
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE FUNCTION test_routine(integer) RETURNS integer AS 'select $1 + 1;'
+      LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT
+
+# No need to create test language as 'plpgsql' is present by default
+
+# Create test domain
+
+- name: postgresql_owner - create test domain
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE DOMAIN test_domain AS TEXT
+        CHECK(
+          VALUE ~ '^\d{5}$'
+        OR VALUE ~ '^\d{5}-\d{4}$'
+      )
+
+# Create test collation
+
+- name: postgresql_owner - create test collation
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE COLLATION test_collation (locale = 'en_US.utf8')
+
+# No need to create test conversion as 'windows_1256_to_utf8' is present by default
+
+# No need to create test test search configuration as 'simple' is present by default
+
+# No need to create test test search dict as 'simple' is present by default
+
+# Create test foreign data wrapper
+
+- name: postgresql_owner - create test foreign data wrapper
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE FOREIGN DATA WRAPPER test_foreign_data_wrapper
+
+# Create test server
+
+- name: postgresql_owner - create test server
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE SERVER test_server FOREIGN DATA WRAPPER test_foreign_data_wrapper
+
+# Create test foreign table
+
+- name: postgresql_owner - create test foreign table
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE FOREIGN TABLE test_foreign_table (id int) SERVER test_server
+
+# Create test event trigger
+
+- name: postgresql_owner - create test event trigger function
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE FUNCTION test_event_trigger_function()
+        RETURNS event_trigger
+      LANGUAGE plpgsql
+        AS $$
+      BEGIN
+        PERFORM pg_is_in_recovery();
+      END;
+      $$
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - create test event trigger
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE EVENT TRIGGER test_event_trigger ON ddl_command_start
+      EXECUTE FUNCTION test_event_trigger_function()
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+# Create test large object
+
+- name: postgresql_owner - create test large object
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      SELECT lo_creat(-1);
+  register: result_large_object
+
+- name: postgresql_owner - parse test large object OID
+  set_fact:
+    test_large_object: "{{ result_large_object.query_result[0]['lo_creat'] }}"
+
+# Create test publication
+
+- name: postgresql_owner - create test publication
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE PUBLICATION test_publication FOR TABLE test_table
+
+# Create test statistics
+
+- name: postgresql_owner - create test statistics table
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE TABLE test_statistics_table (a int, b int)
+
+- name: postgresql_owner - create test statistics
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >
+      CREATE STATISTICS test_statistics (dependencies) ON a, b FROM test_statistics_table
+
 ################
 # Do main tests:
 
 #
 # check reassign_owned_by param
 #
+
 # try to reassign ownership to non existent user:
 - name: postgresql_owner - reassign_owned_by to non existent user
   become_user: '{{ pg_user }}'
@@ -179,7 +412,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_tables WHERE tablename = 'my_table'
+      SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
       AND tableowner = 'alice'
   ignore_errors: true
   register: result
@@ -210,7 +443,7 @@
   postgresql_query:
     db: acme
     login_user: '{{ pg_user }}'
-    query: SELECT 1 FROM pg_tables WHERE tablename = 'my_table' AND tableowner = 'alice'
+    query: SELECT 1 FROM pg_tables WHERE tablename = 'test_table' AND tableowner = 'alice'
   ignore_errors: true
   register: result
 
@@ -260,7 +493,9 @@
 #
 
 # #############################
-# check_mode obj_type: database
+
+# Test obj_type: database
+
 - name: postgresql_owner - set db owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
@@ -358,6 +593,8 @@
     that:
     - result.rowcount == 1
 
+# Test obj_type: table
+
 - name: postgresql_owner - set table owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
@@ -365,7 +602,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: my_table
+    obj_name: test_table
     obj_type: table
   check_mode: true
   register: result
@@ -373,7 +610,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER TABLE "my_table" OWNER TO "bob"']
+    - result.queries == ['ALTER TABLE "test_table" OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -382,7 +619,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_tables WHERE tablename = 'my_table'
+      SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
       AND tableowner = 'bob'
   ignore_errors: true
   register: result
@@ -391,21 +628,21 @@
     that:
     - result.rowcount == 0
 
-- name: postgresql_owner - set db owner
+- name: postgresql_owner - set table owner
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: my_table
+    obj_name: test_table
     obj_type: table
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER TABLE "my_table" OWNER TO "bob"']
+    - result.queries == ['ALTER TABLE "test_table" OWNER TO "bob"']
 
 - name: postgresql_owner - check that table owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -414,7 +651,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_tables WHERE tablename = 'my_table'
+      SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
       AND tableowner = 'bob'
   ignore_errors: true
   register: result
@@ -423,14 +660,14 @@
     that:
     - result.rowcount == 1
 
-- name: postgresql_owner - set db owner again
+- name: postgresql_owner - set table owner again
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: my_table
+    obj_name: test_table
     obj_type: table
   register: result
 
@@ -446,7 +683,7 @@
     db: acme
     login_user: '{{ pg_user }}'
     query: >
-      SELECT 1 FROM pg_tables WHERE tablename = 'my_table'
+      SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
       AND tableowner = 'bob'
   ignore_errors: true
   register: result
@@ -454,6 +691,8 @@
 - assert:
     that:
     - result.rowcount == 1
+
+# Test obj_type: sequence
 
 - name: postgresql_owner - set sequence owner in check_mode
   become_user: '{{ pg_user }}'
@@ -489,7 +728,7 @@
     that:
     - result.rowcount == 0
 
-- name: postgresql_owner - set db owner
+- name: postgresql_owner - set sequence owner
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -522,7 +761,7 @@
     that:
     - result.rowcount == 1
 
-- name: postgresql_owner - set db owner again
+- name: postgresql_owner - set sequence owner again
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
@@ -555,6 +794,8 @@
     that:
     - result.rowcount == 1
 
+# Test obj_type: function
+
 - name: postgresql_owner - set function owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
@@ -562,7 +803,7 @@
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: increment
+    obj_name: test_function
     obj_type: function
   check_mode: true
   register: result
@@ -571,7 +812,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER FUNCTION increment OWNER TO "bob"']
+    - result.queries == ['ALTER FUNCTION test_function OWNER TO "bob"']
   when: postgres_version_resp.stdout is version('10', '>=')
 
 - name: postgresql_owner - check that nothing changed after the previous step
@@ -582,7 +823,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
-      ON f.proowner = r.oid WHERE f.proname = 'increment' AND r.rolname = 'bob'
+      ON f.proowner = r.oid WHERE f.proname = 'test_function' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -592,14 +833,14 @@
     - result.rowcount == 0
   when: postgres_version_resp.stdout is version('10', '>=')
 
-- name: postgresql_owner - set func owner
+- name: postgresql_owner - set function owner
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: increment
+    obj_name: test_function
     obj_type: function
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -607,10 +848,10 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER FUNCTION increment OWNER TO "bob"']
+    - result.queries == ['ALTER FUNCTION test_function OWNER TO "bob"']
   when: postgres_version_resp.stdout is version('10', '>=')
 
-- name: postgresql_owner - check that func owner has been changed after the previous step
+- name: postgresql_owner - check that function owner has been changed after the previous step
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
@@ -618,7 +859,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
-      ON f.proowner = r.oid WHERE f.proname = 'increment' AND r.rolname = 'bob'
+      ON f.proowner = r.oid WHERE f.proname = 'test_function' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -628,14 +869,14 @@
     - result.rowcount == 1
   when: postgres_version_resp.stdout is version('10', '>=')
 
-- name: postgresql_owner - set func owner again
+- name: postgresql_owner - set function owner again
   become_user: '{{ pg_user }}'
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
     db: acme
     new_owner: bob
-    obj_name: increment
+    obj_name: test_function
     obj_type: function
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -654,7 +895,7 @@
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
-      ON f.proowner = r.oid WHERE f.proname = 'increment' AND r.rolname = 'bob'
+      ON f.proowner = r.oid WHERE f.proname = 'test_function' AND r.rolname = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('10', '>=')
@@ -663,6 +904,8 @@
     that:
     - result.rowcount == 1
   when: postgres_version_resp.stdout is version('10', '>=')
+
+# Test obj_type: schema
 
 - name: postgresql_owner - set schema owner in check_mode
   become_user: '{{ pg_user }}'
@@ -761,6 +1004,8 @@
     that:
     - result.rowcount == 1
 
+# Test obj_type: view
+
 - name: postgresql_owner - set view owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
@@ -852,6 +1097,8 @@
     that:
     - result.rowcount == 1
 
+# Test obj_type: matview
+
 - name: postgresql_owner - set matview owner in check_mode
   become_user: '{{ pg_user }}'
   become: true
@@ -877,7 +1124,7 @@
   postgresql_query:
     db: acme
     login_user: '{{ pg_user }}'
-    query: SELECT 1 FROM pg_matviews WHERE matviewname = 'test_view' AND matviewowner = 'bob'
+    query: SELECT 1 FROM pg_matviews WHERE matviewname = 'test_mat_view' AND matviewowner = 'bob'
   ignore_errors: true
   register: result
   when: postgres_version_resp.stdout is version('9.4', '>=')
@@ -954,6 +1201,8 @@
     that:
     - result.rowcount == 1
   when: postgres_version_resp.stdout is version('9.4', '>=')
+
+# Test obj_type: tablespace
 
 - name: postgresql_owner - set tablespace owner in check_mode
   become_user: '{{ pg_user }}'
@@ -1052,9 +1301,1758 @@
     that:
     - result.rowcount == 1
 
+# Test obj_type: procedure
+
+- name: postgresql_owner - set procedure owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_procedure
+    obj_type: procedure
+  check_mode: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER PROCEDURE "test_procedure" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_procedure' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 0
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set procedure owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_procedure
+    obj_type: procedure
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER PROCEDURE "test_procedure" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that procedure owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_procedure' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set procedure owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_procedure
+    obj_type: procedure
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that procedure owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_procedure' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+# Test obj_type: type
+
+- name: postgresql_owner - set type owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_type
+    obj_type: type
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TYPE "test_type" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
+      ON t.typowner = r.oid WHERE t.typname = 'test_type' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set type owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_type
+    obj_type: type
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TYPE "test_type" OWNER TO "bob"']
+
+- name: postgresql_owner - check that type owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
+      ON t.typowner = r.oid WHERE t.typname = 'test_type' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set type owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_type
+    obj_type: type
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that type owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
+      ON t.typowner = r.oid WHERE t.typname = 'test_type' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: aggregate
+
+- name: postgresql_owner - set aggregate owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_aggregate(float8)
+    obj_type: aggregate
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER AGGREGATE test_aggregate(float8) OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_aggregate' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set aggregate owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_aggregate(float8)
+    obj_type: aggregate
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER AGGREGATE test_aggregate(float8) OWNER TO "bob"']
+
+- name: postgresql_owner - check that aggregate owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_aggregate' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set aggregate owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_aggregate(float8)
+    obj_type: aggregate
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that aggregate owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_aggregate' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: routine
+
+- name: postgresql_owner - set routine owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_routine
+    obj_type: routine
+  check_mode: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER ROUTINE "test_routine" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_routine' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 0
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set routine owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_routine
+    obj_type: routine
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER ROUTINE "test_routine" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that routine owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_routine' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set routine owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_routine
+    obj_type: routine
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that routine owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
+      ON f.proowner = r.oid WHERE f.proname = 'test_routine' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+# Test obj_type: language
+
+- name: postgresql_owner - set language owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: plpgsql
+    obj_type: language
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LANGUAGE plpgsql OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_language AS l JOIN pg_roles AS r
+      ON l.lanowner = r.oid WHERE l.lanname = 'plpgsql' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set language owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: plpgsql
+    obj_type: language
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LANGUAGE plpgsql OWNER TO "bob"']
+
+- name: postgresql_owner - check that language owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_language AS l JOIN pg_roles AS r
+      ON l.lanowner = r.oid WHERE l.lanname = 'plpgsql' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set language owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: plpgsql
+    obj_type: language
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that language owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_language AS l JOIN pg_roles AS r
+      ON l.lanowner = r.oid WHERE l.lanname = 'plpgsql' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: domain
+
+- name: postgresql_owner - set domain owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_domain
+    obj_type: domain
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER DOMAIN "test_domain" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
+      ON t.typowner = r.oid WHERE t.typname = 'test_domain' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set domain owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_domain
+    obj_type: domain
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER DOMAIN "test_domain" OWNER TO "bob"']
+
+- name: postgresql_owner - check that domain owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
+      ON t.typowner = r.oid WHERE t.typname = 'test_domain' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set domain owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_domain
+    obj_type: domain
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that domain owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
+      ON t.typowner = r.oid WHERE t.typname = 'test_domain' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: collation
+
+- name: postgresql_owner - set collation owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_collation
+    obj_type: collation
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER COLLATION "test_collation" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
+      ON c.collowner = r.oid WHERE c.collname = 'test_collation' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set collation owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_collation
+    obj_type: collation
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER COLLATION "test_collation" OWNER TO "bob"']
+
+- name: postgresql_owner - check that collation owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
+      ON c.collowner = r.oid WHERE c.collname = 'test_collation' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set collation owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_collation
+    obj_type: collation
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that collation owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
+      ON c.collowner = r.oid WHERE c.collname = 'test_collation' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: conversion
+
+- name: postgresql_owner - set conversion owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: windows_1256_to_utf8
+    obj_type: conversion
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER CONVERSION "windows_1256_to_utf8" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
+      ON c.conowner = r.oid WHERE c.conname = 'windows_1256_to_utf8' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set conversion owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: windows_1256_to_utf8
+    obj_type: conversion
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER CONVERSION "windows_1256_to_utf8" OWNER TO "bob"']
+
+- name: postgresql_owner - check that conversion owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
+      ON c.conowner = r.oid WHERE c.conname = 'windows_1256_to_utf8' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set conversion owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: windows_1256_to_utf8
+    obj_type: conversion
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that conversion owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
+      ON c.conowner = r.oid WHERE c.conname = 'windows_1256_to_utf8' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: text_search_configuration
+
+- name: postgresql_owner - set text search configuration owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_configuration
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TEXT SEARCH CONFIGURATION "simple" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
+      ON t.cfgowner = r.oid WHERE t.cfgname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set text search configuration owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_configuration
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TEXT SEARCH CONFIGURATION "simple" OWNER TO "bob"']
+
+- name: postgresql_owner - check that text search configuration owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
+      ON t.cfgowner = r.oid WHERE t.cfgname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set text search configuration owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_configuration
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that text search configuration owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
+      ON t.cfgowner = r.oid WHERE t.cfgname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: text_search_dictionary
+
+- name: postgresql_owner - set text search dict owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_dictionary
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TEXT SEARCH DICTIONARY "simple" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
+      ON t.dictowner = r.oid WHERE t.dictname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set text search dict owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_dictionary
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TEXT SEARCH DICTIONARY "simple" OWNER TO "bob"']
+
+- name: postgresql_owner - check that text search dict owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
+      ON t.dictowner = r.oid WHERE t.dictname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set text search dict owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: simple
+    obj_type: text_search_dictionary
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that text search dict owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
+      ON t.dictowner = r.oid WHERE t.dictname = 'simple' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: foreign_data_wrapper
+
+- name: postgresql_owner - set foreign_data_wrapper owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob_super
+    obj_name: test_foreign_data_wrapper
+    obj_type: foreign_data_wrapper
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER FOREIGN DATA WRAPPER "test_foreign_data_wrapper" OWNER TO "bob_super"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
+      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob_super'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set foreign_data_wrapper owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob_super
+    obj_name: test_foreign_data_wrapper
+    obj_type: foreign_data_wrapper
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER FOREIGN DATA WRAPPER "test_foreign_data_wrapper" OWNER TO "bob_super"']
+
+- name: postgresql_owner - check that foreign_data_wrapper owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
+      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob_super'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set foreign_data_wrapper owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob_super
+    obj_name: test_foreign_data_wrapper
+    obj_type: foreign_data_wrapper
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that foreign_data_wrapper owner is bob_super
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
+      ON f.fdwowner = r.oid WHERE f.fdwname = 'test_foreign_data_wrapper' AND r.rolname = 'bob_super'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: server
+
+- name: postgresql_owner - set server owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_server
+    obj_type: server
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER SERVER "test_server" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_server AS f JOIN pg_roles AS r
+      ON f.srvowner = r.oid WHERE f.srvname = 'test_server' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set server owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_server
+    obj_type: server
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER SERVER "test_server" OWNER TO "bob"']
+
+- name: postgresql_owner - check that server owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_server AS f JOIN pg_roles AS r
+      ON f.srvowner = r.oid WHERE f.srvname = 'test_server' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set server owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_server
+    obj_type: server
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that server owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_foreign_server AS f JOIN pg_roles AS r
+      ON f.srvowner = r.oid WHERE f.srvname = 'test_server' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: foreign_table
+
+- name: postgresql_owner - set foreign_table owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_foreign_table
+    obj_type: foreign_table
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER FOREIGN TABLE "test_foreign_table" OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
+      ON c.relowner = r.oid WHERE c.relkind = 'f'
+      AND c.relname = 'test_foreign_table' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set foreign_table owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_foreign_table
+    obj_type: foreign_table
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER FOREIGN TABLE "test_foreign_table" OWNER TO "bob"']
+
+- name: postgresql_owner - check that foreign_table owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
+      ON c.relowner = r.oid WHERE c.relkind = 'f'
+      AND c.relname = 'test_foreign_table' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set foreign_table owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_foreign_table
+    obj_type: foreign_table
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that foreign_table owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
+      ON c.relowner = r.oid WHERE c.relkind = 'f'
+      AND c.relname = 'test_foreign_table' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: event_trigger
+
+- name: postgresql_owner - set event_trigger owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob_super
+    obj_name: test_event_trigger
+    obj_type: event_trigger
+  check_mode: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob_super"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
+      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob_super'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 0
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set event_trigger owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob_super
+    obj_name: test_event_trigger
+    obj_type: event_trigger
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER EVENT TRIGGER "test_event_trigger" OWNER TO "bob_super"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that event_trigger owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
+      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob_super'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set event_trigger owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob_super
+    obj_name: test_event_trigger
+    obj_type: event_trigger
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that event_trigger owner is bob_super
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
+      ON e.evtowner = r.oid WHERE e.evtname = 'test_event_trigger' AND r.rolname = 'bob_super'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+# Test obj_type: large_object
+
+- name: postgresql_owner - set large_object owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: '{{ test_large_object }}'
+    obj_type: large_object
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LARGE OBJECT {{ test_large_object }} OWNER TO "bob"']
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_largeobject_metadata AS l JOIN pg_roles AS r
+      ON l.lomowner = r.oid WHERE l.oid = '{{ test_large_object }}' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 0
+
+- name: postgresql_owner - set large_object owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: '{{ test_large_object }}'
+    obj_type: large_object
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LARGE OBJECT {{ test_large_object }} OWNER TO "bob"']
+
+- name: postgresql_owner - check that large_object owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_largeobject_metadata AS l JOIN pg_roles AS r
+      ON l.lomowner = r.oid WHERE l.oid = '{{ test_large_object }}' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+- name: postgresql_owner - set large_object owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: '{{ test_large_object }}'
+    obj_type: large_object
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: postgresql_owner - check that large_object owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_largeobject_metadata AS l JOIN pg_roles AS r
+      ON l.lomowner = r.oid WHERE l.oid = '{{ test_large_object }}' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result.rowcount == 1
+
+# Test obj_type: publication
+
+- name: postgresql_owner - set publication owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_publication
+    obj_type: publication
+  check_mode: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER PUBLICATION "test_publication" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_publication AS p JOIN pg_roles AS r
+      ON p.pubowner = r.oid WHERE p.pubname = 'test_publication' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 0
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set publication owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_publication
+    obj_type: publication
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER PUBLICATION "test_publication" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that publication owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_publication AS p JOIN pg_roles AS r
+      ON p.pubowner = r.oid WHERE p.pubname = 'test_publication' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set publication owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_publication
+    obj_type: publication
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that publication owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_publication AS p JOIN pg_roles AS r
+      ON p.pubowner = r.oid WHERE p.pubname = 'test_publication' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+# Test obj_type: statistics
+
+- name: postgresql_owner - set statistics owner in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_statistics
+    obj_type: statistics
+  check_mode: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER STATISTICS "test_statistics" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that nothing changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_statistic_ext AS s JOIN pg_roles AS r
+      ON s.stxowner = r.oid WHERE s.stxname = 'test_statistics' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 0
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set statistics owner
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_statistics
+    obj_type: statistics
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER STATISTICS "test_statistics" OWNER TO "bob"']
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that statistics owner has been changed after the previous step
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_statistic_ext AS s JOIN pg_roles AS r
+      ON s.stxowner = r.oid WHERE s.stxname = 'test_statistics' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - set statistics owner again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: bob
+    obj_name: test_statistics
+    obj_type: statistics
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- name: postgresql_owner - check that statistics owner is bob
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: acme
+    login_user: '{{ pg_user }}'
+    query: >
+      SELECT 1 FROM pg_statistic_ext AS s JOIN pg_roles AS r
+      ON s.stxowner = r.oid WHERE s.stxname = 'test_statistics' AND r.rolname = 'bob'
+  ignore_errors: true
+  register: result
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+- assert:
+    that:
+    - result.rowcount == 1
+  when: postgres_version_resp.stdout is version('11', '>=')
+
+# #############################
+
 #
-# Crean up
+# Clean up
 #
+
 - name: postgresql_owner - drop test database
   become_user: '{{ pg_user }}'
   become: true

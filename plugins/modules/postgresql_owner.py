@@ -30,8 +30,14 @@ options:
     description:
     - Type of a database object.
     - Mutually exclusive with I(reassign_owned_by).
+    - I(obj_type=matview) is available since PostgreSQL 9.3.
+    - I(obj_type=event_trigger), I(obj_type=procedure), I(obj_type=publication),
+      I(obj_type=statistics), and I(obj_type=routine) are available since PostgreSQL 11.
     type: str
-    choices: [ database, function, matview, sequence, schema, table, tablespace, view ]
+    choices: [ aggregate, collation, conversion, database, domain, event_trigger, foreign_data_wrapper,
+               foreign_table, function, language, large_object, matview, procedure, publication, routine,
+               schema, sequence, server, statistics, table, tablespace, text_search_configuration,
+               text_search_dictionary, type, view ]
     aliases:
     - type
   reassign_owned_by:
@@ -74,10 +80,20 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+
+notes:
+- Function Overloading is not supported so when I(obj_type) is C(aggregate), C(function), C(routine), or C(procedure)
+  I(obj_name) is considered the only object of same type with this name.
+- Despite Function Overloading is not supported, when I(obj_type=aggregate) I(obj_name) must contain also aggregate
+  signature because it is required by SQL syntax.
+- I(new_owner) must be a superuser if I(obj_type) is C(event_type) or C(foreign_data_wrapper).
+- To manage subscriptions ownership use C(community.postgresql.postgresql_subscription) module.
+
 seealso:
 - module: community.postgresql.postgresql_user
 - module: community.postgresql.postgresql_privs
 - module: community.postgresql.postgresql_membership
+- module: community.postgresql.postgresql_subscription
 - name: PostgreSQL REASSIGN OWNED command reference
   description: Complete reference of the PostgreSQL REASSIGN OWNED command documentation.
   link: https://www.postgresql.org/docs/current/sql-reassign-owned.html
@@ -88,6 +104,7 @@ attributes:
 
 author:
 - Andrew Klychkov (@Andersson007)
+- Daniele Giudice (@RealGreenDragon)
 
 extends_documentation_fragment:
 - community.postgresql.postgres
@@ -160,7 +177,14 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_conn_params,
     pg_cursor_args,
     postgres_common_argument_spec,
+    get_server_version,
 )
+
+
+VALID_OBJ_TYPES = ('aggregate', 'collation', 'conversion', 'database', 'domain', 'event_trigger', 'foreign_data_wrapper',
+                   'foreign_table', 'function', 'language', 'large_object', 'matview', 'procedure', 'publication',
+                   'routine', 'schema', 'sequence', 'server', 'statistics', 'table', 'tablespace', 'text_search_configuration',
+                   'text_search_dictionary', 'type', 'view')
 
 
 class PgOwnership(object):
@@ -181,9 +205,10 @@ class PgOwnership(object):
         That's all.
     """
 
-    def __init__(self, module, cursor, role):
+    def __init__(self, module, cursor, pg_version, role):
         self.module = module
         self.cursor = cursor
+        self.pg_version = pg_version
         self.check_role_exists(role)
         self.role = role
         self.changed = False
@@ -279,6 +304,57 @@ class PgOwnership(object):
         elif obj_type == 'matview':
             self.__set_mat_view_owner()
 
+        elif obj_type == 'procedure':
+            self.__set_procedure_owner()
+
+        elif obj_type == 'type':
+            self.__set_type_owner()
+
+        elif obj_type == 'aggregate':
+            self.__set_aggregate_owner()
+
+        elif obj_type == 'routine':
+            self.__set_routine_owner()
+
+        elif obj_type == 'language':
+            self.__set_language_owner()
+
+        elif obj_type == 'domain':
+            self.__set_domain_owner()
+
+        elif obj_type == 'collation':
+            self.__set_collation_owner()
+
+        elif obj_type == 'conversion':
+            self.__set_conversion_owner()
+
+        elif obj_type == 'text_search_configuration':
+            self.__set_text_search_configuration_owner()
+
+        elif obj_type == 'text_search_dictionary':
+            self.__set_text_search_dictionary_owner()
+
+        elif obj_type == 'foreign_data_wrapper':
+            self.__set_foreign_data_wrapper_owner()
+
+        elif obj_type == 'server':
+            self.__set_server_owner()
+
+        elif obj_type == 'foreign_table':
+            self.__set_foreign_table_owner()
+
+        elif obj_type == 'event_trigger':
+            self.__set_event_trigger_owner()
+
+        elif obj_type == 'large_object':
+            self.__set_large_object_owner()
+
+        elif obj_type == 'publication':
+            self.__set_publication_owner()
+
+        elif obj_type == 'statistics':
+            self.__set_statistics_owner()
+
     def __is_owner(self):
         """Return True if self.role is the current object owner."""
         if self.obj_type == 'table':
@@ -292,7 +368,11 @@ class PgOwnership(object):
                      "WHERE d.datname = %(obj_name)s "
                      "AND r.rolname = %(role)s")
 
-        elif self.obj_type == 'function':
+        elif self.obj_type in ('aggregate', 'function', 'routine', 'procedure'):
+            if self.obj_type == 'routine' and self.pg_version < 110000:
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=routine.")
+            if self.obj_type == 'procedure' and self.pg_version < 110000:
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=procedure.")
             query = ("SELECT 1 FROM pg_proc AS f "
                      "JOIN pg_roles AS r ON f.proowner = r.oid "
                      "WHERE f.proname = %(obj_name)s "
@@ -321,11 +401,101 @@ class PgOwnership(object):
                      "AND viewowner = %(role)s")
 
         elif self.obj_type == 'matview':
+            if self.pg_version < 90300:
+                self.module.fail_json(msg="PostgreSQL version must be >= 9.3 for obj_type=matview.")
             query = ("SELECT 1 FROM pg_matviews "
                      "WHERE matviewname = %(obj_name)s "
                      "AND matviewowner = %(role)s")
 
-        query_params = {'obj_name': self.obj_name, 'role': self.role}
+        elif self.obj_type in ('domain', 'type'):
+            query = ("SELECT 1 FROM pg_type AS t "
+                     "JOIN pg_roles AS r ON t.typowner = r.oid "
+                     "WHERE t.typname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'language':
+            query = ("SELECT 1 FROM pg_language AS l "
+                     "JOIN pg_roles AS r ON l.lanowner = r.oid "
+                     "WHERE l.lanname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'collation':
+            query = ("SELECT 1 FROM pg_collation AS c "
+                     "JOIN pg_roles AS r ON c.collowner = r.oid "
+                     "WHERE c.collname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'conversion':
+            query = ("SELECT 1 FROM pg_conversion AS c "
+                     "JOIN pg_roles AS r ON c.conowner = r.oid "
+                     "WHERE c.conname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'text_search_configuration':
+            query = ("SELECT 1 FROM pg_ts_config AS t "
+                     "JOIN pg_roles AS r ON t.cfgowner = r.oid "
+                     "WHERE t.cfgname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'text_search_dictionary':
+            query = ("SELECT 1 FROM pg_ts_dict AS t "
+                     "JOIN pg_roles AS r ON t.dictowner = r.oid "
+                     "WHERE t.dictname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'foreign_data_wrapper':
+            query = ("SELECT 1 FROM pg_foreign_data_wrapper AS f "
+                     "JOIN pg_roles AS r ON f.fdwowner = r.oid "
+                     "WHERE f.fdwname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'server':
+            query = ("SELECT 1 FROM pg_foreign_server AS f "
+                     "JOIN pg_roles AS r ON f.srvowner = r.oid "
+                     "WHERE f.srvname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'foreign_table':
+            query = ("SELECT 1 FROM pg_class AS c "
+                     "JOIN pg_roles AS r ON c.relowner = r.oid "
+                     "WHERE c.relkind = 'f' AND c.relname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'event_trigger':
+            if self.pg_version < 110000:
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=event_trigger.")
+            query = ("SELECT 1 FROM pg_event_trigger AS e "
+                     "JOIN pg_roles AS r ON e.evtowner = r.oid "
+                     "WHERE e.evtname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'large_object':
+            query = ("SELECT 1 FROM pg_largeobject_metadata AS l "
+                     "JOIN pg_roles AS r ON l.lomowner = r.oid "
+                     "WHERE l.oid = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'publication':
+            if self.pg_version < 110000:
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=publication.")
+            query = ("SELECT 1 FROM pg_publication AS p "
+                     "JOIN pg_roles AS r ON p.pubowner = r.oid "
+                     "WHERE p.pubname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        elif self.obj_type == 'statistics':
+            if self.pg_version < 110000:
+                self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=statistics.")
+            query = ("SELECT 1 FROM pg_statistic_ext AS s "
+                     "JOIN pg_roles AS r ON s.stxowner = r.oid "
+                     "WHERE s.stxname = %(obj_name)s "
+                     "AND r.rolname = %(role)s")
+
+        if self.obj_type in ('function', 'aggregate', 'procedure', 'routine'):
+            query_params = {'obj_name': self.obj_name.split('(')[0], 'role': self.role}
+        else:
+            query_params = {'obj_name': self.obj_name, 'role': self.role}
+
         return exec_sql(self, query, query_params, add_to_executed=False)
 
     def __set_db_owner(self):
@@ -340,7 +510,7 @@ class PgOwnership(object):
 
     def __set_seq_owner(self):
         """Set the sequence owner."""
-        query = 'ALTER SEQUENCE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+        query = 'ALTER SEQUENCE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'sequence'),
                                                      self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
@@ -369,8 +539,119 @@ class PgOwnership(object):
 
     def __set_mat_view_owner(self):
         """Set the materialized view owner."""
+        if self.pg_version < 90300:
+            self.module.fail_json(msg="PostgreSQL version must be >= 9.3 for obj_type=matview.")
+
         query = 'ALTER MATERIALIZED VIEW %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
                                                               self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_procedure_owner(self):
+        """Set the procedure owner."""
+        if self.pg_version < 110000:
+            self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=procedure.")
+
+        query = 'ALTER PROCEDURE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                      self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_type_owner(self):
+        """Set the type owner."""
+        query = 'ALTER TYPE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                 self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_aggregate_owner(self):
+        """Set the aggregate owner."""
+        query = 'ALTER AGGREGATE %s OWNER TO "%s"' % (self.obj_name, self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_routine_owner(self):
+        """Set the routine owner."""
+        if self.pg_version < 110000:
+            self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=routine.")
+        query = 'ALTER ROUTINE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                    self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_language_owner(self):
+        """Set the language owner."""
+        query = 'ALTER LANGUAGE %s OWNER TO "%s"' % (self.obj_name, self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_domain_owner(self):
+        """Set the domain owner."""
+        query = 'ALTER DOMAIN %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                   self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_collation_owner(self):
+        """Set the collation owner."""
+        query = 'ALTER COLLATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                      self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_conversion_owner(self):
+        """Set the conversion owner."""
+        query = 'ALTER CONVERSION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                       self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_text_search_configuration_owner(self):
+        """Set the text search configuration owner."""
+        query = 'ALTER TEXT SEARCH CONFIGURATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                                      self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_text_search_dictionary_owner(self):
+        """Set the text search dictionary owner."""
+        query = 'ALTER TEXT SEARCH DICTIONARY %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                                   self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_foreign_data_wrapper_owner(self):
+        """Set the foreign data wrapper owner."""
+        query = 'ALTER FOREIGN DATA WRAPPER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                                 self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_server_owner(self):
+        """Set the server owner."""
+        query = 'ALTER SERVER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                   self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_foreign_table_owner(self):
+        """Set the foreign table owner."""
+        query = 'ALTER FOREIGN TABLE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                          self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_event_trigger_owner(self):
+        """Set the event trigger owner."""
+        query = 'ALTER EVENT TRIGGER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                          self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_large_object_owner(self):
+        """Set the large object owner."""
+        query = 'ALTER LARGE OBJECT %s OWNER TO "%s"' % (self.obj_name, self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_publication_owner(self):
+        """Set the publication owner."""
+        if self.pg_version < 110000:
+            self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=publication.")
+        query = 'ALTER PUBLICATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'publication'),
+                                                        self.role)
+        self.changed = exec_sql(self, query, return_bool=True)
+
+    def __set_statistics_owner(self):
+        """Set the statistics owner."""
+        if self.pg_version < 110000:
+            self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=statistics.")
+        query = 'ALTER STATISTICS %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                       self.role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __role_exists(self, role):
@@ -384,14 +665,12 @@ class PgOwnership(object):
 # Module execution.
 #
 
-
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         new_owner=dict(type='str', required=True),
         obj_name=dict(type='str'),
-        obj_type=dict(type='str', aliases=['type'], choices=[
-            'database', 'function', 'matview', 'sequence', 'schema', 'table', 'tablespace', 'view']),
+        obj_type=dict(type='str', aliases=['type'], choices=VALID_OBJ_TYPES),
         reassign_owned_by=dict(type='list', elements='str'),
         fail_on_role=dict(type='bool', default=True),
         db=dict(type='str', aliases=['login_db']),
@@ -425,10 +704,11 @@ def main():
     conn_params = get_conn_params(module, module.params)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor(**pg_cursor_args)
+    pg_version = get_server_version(db_connection)
 
     ##############
     # Create the object and do main job:
-    pg_ownership = PgOwnership(module, cursor, new_owner)
+    pg_ownership = PgOwnership(module, cursor, pg_version, new_owner)
 
     # if we want to change ownership:
     if obj_name:
