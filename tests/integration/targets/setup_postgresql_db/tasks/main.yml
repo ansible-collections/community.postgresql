@@ -216,6 +216,9 @@
     path: '{{ pg_conf_location }}'
     regexp: '^wal_level '
     line: 'wal_level = logical'
+  when:
+    - replica_db_required is defined and replica_db_required
+    - ansible_distribution_major_version != "7"  # CentOS 7 with Postgres 9.2 doesn't support 'logical'
 
 - name: Pause between stop and start
   pause:
@@ -287,4 +290,6 @@
 
 # Create a second database
 - import_tasks: replica.yml
-  when: replica_db_required is defined and replica_db_required
+  when:
+    - replica_db_required is defined and replica_db_required
+    - ansible_distribution_major_version != "7"  # CentOS 7 with Postgres 9.2 doesn't support 'logical'

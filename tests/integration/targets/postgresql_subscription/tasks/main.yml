@@ -6,5 +6,9 @@
 # Initial tests of postgresql_subscription module:
 
 - import_tasks: setup_publication.yml
+  when:
+    - ansible_distribution_major_version != "7"  # CentOS 7 with Postgres 9.2 doesn't support logical replication
 
 - import_tasks: postgresql_subscription_initial.yml
+  when:
+    - ansible_distribution_major_version != "7"  # CentOS 7 with Postgres 9.2 doesn't support logical replication
