@@ -1008,7 +1008,7 @@ class PgClusterInfo(object):
         # Name, Owner, Encoding, Collate, Ctype, Access Priv, Size
         query = ("SELECT d.datname, "
                  "pg_catalog.pg_get_userbyid(d.datdba) username, "
-                 "pg_catalog.pg_encoding_to_char(d.encoding) encoding, "
+                 "pg_catalog.pg_encoding_to_char(d.encoding) AS encoding, "
                  "d.datcollate, "
                  "d.datctype, "
                  "pg_catalog.array_to_string(d.datacl, E'\n') aclstring, "
