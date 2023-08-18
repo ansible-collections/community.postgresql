@@ -1,3 +1,9 @@
+- name: Replica - remove old db
+  file:
+    path: '{{ replica_data_dir }}'
+    state: absent
+  ignore_errors: true
+
 - name: Replica - create data dir
   file:
     state: directory
