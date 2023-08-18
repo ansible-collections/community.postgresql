@@ -210,7 +210,12 @@
 
 - name: Stop postgresql service
   service: name={{ postgresql_service }} state=stopped
-  when: terminate is not succeeded
+
+- name: Configure postgresql.conf
+  ansible.builtin.lineinfile:
+    path: '{{ pg_conf_location }}'
+    regexp: '^wal_level '
+    line: 'wal_level = logical'
 
 - name: Pause between stop and start
   pause:
@@ -279,3 +284,7 @@
   when:
   - ansible_os_family == 'Debian'
   - postgres_version_resp.stdout is version('9.4', '>=')
+
+# Create a second database
+- import_tasks: replica.yml
+  when: replica_db_required is defined and replica_db_required

@@ -11,3 +11,8 @@ test_db: acme_db
 test_subscription: test
 test_subscription2: test2
 conn_timeout: 100
+
+primary_port: 5432
+
+# The info module tests require a replica db to test subscriptions info
+replica_db_required: true

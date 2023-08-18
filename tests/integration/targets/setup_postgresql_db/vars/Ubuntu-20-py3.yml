@@ -7,6 +7,7 @@ postgresql_packages:
   - "python3-psycopg2"
   - "postgresql-client"
 
+pg_conf_location: "/etc/postgresql/{{ pg_ver }}/main/postgresql.conf"
 pg_hba_location: "/etc/postgresql/{{ pg_ver }}/main/pg_hba.conf"
 pg_dir: "/var/lib/postgresql/{{ pg_ver }}/main"
 pg_auto_conf: "{{ pg_dir }}/postgresql.auto.conf"
