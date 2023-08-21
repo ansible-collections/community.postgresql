@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_info - fix SQL syntax issue (https://github.com/ansible-collections/community.postgresql/issues/570).
