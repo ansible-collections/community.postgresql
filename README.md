@@ -5,6 +5,19 @@
 
 This collection is a part of the Ansible package.
 
+## Our mission
+
+At `community.postgresql` Ansible collection project,
+our mission is to produce and maintain simple, flexible,
+and powerful open-source software tailored to automating PostgreSQL-related tasks.
+
+We welcome members from all skill levels to participate actively in our open, inclusive, and vibrant community.
+Whether you are a expert or just beginning your journey with Ansible and PostgreSQL,
+you are encouraged to contribute, share insights, and collaborate with fellow enthusiasts.
+
+We strive to make managing PostgreSQL deployments as effortless and efficient as possible with automation,
+enabling users to focus on their core objectives.
+
 ## Code of Conduct
 
 We follow the [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html) in all our interactions within this project.
