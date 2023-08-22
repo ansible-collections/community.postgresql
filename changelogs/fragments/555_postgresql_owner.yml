@@ -1,2 +1,0 @@
-minor_changes:
-- "postgresql_owner - added support at new object types (https://github.com/ansible-collections/community.postgresql/pull/555)."

@@ -5,6 +5,27 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v3.2.0
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- postgres modules - added support for Psycopg 3 library (https://github.com/ansible-collections/community.postgresql/pull/517).
+- postgresql_owner - added support at new object types (https://github.com/ansible-collections/community.postgresql/pull/555).
+
+Bugfixes
+--------
+
+- postgresql_info - fix SQL syntax issue (https://github.com/ansible-collections/community.postgresql/issues/570).
+
 v3.1.0
 ======
 
