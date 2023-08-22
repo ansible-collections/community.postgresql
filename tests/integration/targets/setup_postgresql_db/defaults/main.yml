@@ -9,6 +9,11 @@ pip_packages: []
 pg_user: postgres
 pg_group: root
 
+pg_dir: "/var/lib/pgsql/data"
+pg_hba_location: "{{ pg_dir }}/pg_hba.conf"
+pg_conf_location: "{{ pg_dir }}/postgresql.conf"
+pg_auto_conf: "{{ pg_dir }}/postgresql.auto.conf"
+
 locale_latin_suffix:
 locale_utf8_suffix:
 
@@ -21,3 +26,7 @@ ssl_pass: 'ssl_pass'
 ssl_rootcert: '/etc/server-ca.crt'
 ssl_cert: '/etc/client.crt'
 ssl_key: '/etc/client.key'
+
+# second database, for logical replication testing
+replica_data_dir: "/var/lib/pgsql_replica"
+replica_port: 5533

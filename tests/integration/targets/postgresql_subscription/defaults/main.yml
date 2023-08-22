@@ -11,3 +11,7 @@ test_subscription: test
 test_role1: alice
 test_role2: bob
 conn_timeout: 100
+
+primary_port: 5432
+
+replica_db_required: true

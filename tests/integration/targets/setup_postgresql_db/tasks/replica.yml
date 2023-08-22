@@ -1,0 +1,59 @@
+- name: Replica - find pg_ctl
+  shell: find /usr/lib /usr/bin -type f -name "pg_ctl"
+  register: result
+
+- name: Replica - set path to pg_ctl
+  set_fact:
+    pg_ctl: '{{ result.stdout }}'
+
+- name: Replica - stop database
+  become: true
+  become_user: '{{ pg_user }}'
+  shell: '{{ pg_ctl }} -D {{ replica_data_dir }} stop'
+  ignore_errors: true
+
+- name: Replica - remove old db
+  file:
+    path: '{{ replica_data_dir }}'
+    state: absent
+  ignore_errors: true
+
+- name: Replica - create data dir
+  file:
+    state: directory
+    recurse: true
+    path: "{{ replica_data_dir }}"
+    owner: "{{ pg_user }}"
+    mode: "0700"
+
+- name: Replica - find initdb
+  shell: find /usr/lib /usr/bin -type f -name "initdb"
+  register: result
+
+- name: Replica - set path to initdb
+  set_fact:
+    initdb: '{{ result.stdout }}'
+
+- name: Replica - initialize database
+  become: true
+  become_user: '{{ pg_user }}'
+  shell: '{{ initdb }} --pgdata {{ replica_data_dir }}'
+
+- name: Replica - configure postgresql.conf
+  ansible.builtin.lineinfile:
+    path: '{{ replica_data_dir }}/postgresql.conf'
+    regexp: '^wal_level '
+    line: 'wal_level = logical'
+
+- name: Replica - start database
+  become: true
+  become_user: '{{ pg_user }}'
+  shell: '{{ pg_ctl }} -D {{ replica_data_dir }} -o "-p {{ replica_port }}" -l {{ replica_data_dir }}/replica.log start'
+
+- name: Replica - check connectivity
+  become: true
+  become_user: '{{ pg_user }}'
+  postgresql_ping:
+    db: '{{ pg_user }}'
+    login_user: '{{ pg_user }}'
+    login_port: '{{ replica_port }}'

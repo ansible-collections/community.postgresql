@@ -5,8 +5,10 @@
 
 # For testing getting publication and subscription info
 - import_tasks: setup_publication.yml
-  when: ansible_distribution == 'Ubuntu' and ansible_distribution_major_version >= '18'
+  when:
+    - ansible_distribution_major_version != "7"  # CentOS 7 with Postgres 9.2 doesn't support logical replication
 
 # Initial CI tests of postgresql_info module
 - import_tasks: postgresql_info_initial.yml
-  when: ansible_distribution == 'Ubuntu' and ansible_distribution_major_version >= '18'
+  when:
+    - ansible_distribution_major_version != "7"  # CentOS 7 with Postgres 9.2 doesn't support logical replication
