@@ -7,7 +7,7 @@ This collection is a part of the Ansible package.
 
 ## Our mission
 
-At `community.postgresql` Ansible collection project,
+At the `community.postgresql` Ansible collection project,
 our mission is to produce and maintain simple, flexible,
 and powerful open-source software tailored to automating PostgreSQL-related tasks.
 
