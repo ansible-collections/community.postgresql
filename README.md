@@ -12,7 +12,7 @@ our mission is to produce and maintain simple, flexible,
 and powerful open-source software tailored to automating PostgreSQL-related tasks.
 
 We welcome members from all skill levels to participate actively in our open, inclusive, and vibrant community.
-Whether you are a expert or just beginning your journey with Ansible and PostgreSQL,
+Whether you are an expert or just beginning your journey with Ansible and PostgreSQL,
 you are encouraged to contribute, share insights, and collaborate with fellow enthusiasts.
 
 We strive to make managing PostgreSQL deployments as effortless and efficient as possible with automation,
