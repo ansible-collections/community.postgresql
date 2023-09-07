@@ -61,6 +61,7 @@ Join [our team](https://forum.ansible.com/g/PostgreSQLTeam?asc=true&order=) on:
     * [News & Announcements](https://forum.ansible.com/c/news/5/none)
     * [Get Help](https://forum.ansible.com/c/help/6/none)
     * [Social Spaces](https://forum.ansible.com/c/chat/4)
+    * [Posts tagged 'postgresql'](https://forum.ansible.com/tag/postgresql)
 * Matrix:
     * `#postgresql:ansible.com` [room](https://matrix.to/#/#postgresql:ansible.com): questions on how to contribute and use this collection.
     * `#users:ansible.com` [room](https://matrix.to/#/#users:ansible.com): general use questions and support.
