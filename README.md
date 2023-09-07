@@ -56,7 +56,7 @@ They also should be subscribed to Ansible's [The Bullhorn newsletter](https://do
 
 We announce important development changes and releases through Ansible's [The Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn). If you are a collection developer, be sure you are subscribed.
 
-Join [us](https://forum.ansible.com/g/PostgreSQLTeam?asc=true&order=) on:
+Join [our team](https://forum.ansible.com/g/PostgreSQLTeam?asc=true&order=) on:
 * The Ansible forums:
     * [News & Announcements](https://forum.ansible.com/c/news/5/none)
     * [Get Help](https://forum.ansible.com/c/help/6/none)
