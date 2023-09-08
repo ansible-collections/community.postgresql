@@ -28,9 +28,7 @@ If you encounter abusive behavior violating the [Ansible Code of Conduct](https:
 
 The content of this collection is made by [people](https://github.com/ansible-collections/community.postgresql/graphs/contributors) just like you; a community of individuals collaborating on making the world better through developing automation software.
 
-We are actively accepting new contributors.
-
-All types of contributions are very welcome.
+We are actively accepting new contributors and all types of contributions are very welcome.
 
 You don't know how to start? Refer to our [contribution guide](https://github.com/ansible-collections/community.postgresql/blob/main/CONTRIBUTING.md)!
 
@@ -58,12 +56,17 @@ They also should be subscribed to Ansible's [The Bullhorn newsletter](https://do
 
 We announce important development changes and releases through Ansible's [The Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn). If you are a collection developer, be sure you are subscribed.
 
-Join us on Matrix in:
-
-* `#postgresql:ansible.com` [room](https://matrix.to/#/#postgresql:ansible.com): questions on how to contribute and use this collection.
-* `#users:ansible.com` [room](https://matrix.to/#/#users:ansible.com): general use questions and support.
-* `#ansible-community:ansible.com` [room](https://matrix.to/#/#community:ansible.com): community and collection development questions.
-* other Matrix rooms or corresponding bridged Libera.Chat channels. See the [Ansible Communication Guide](https://docs.ansible.com/ansible/devel/community/communication.html) for details.
+Join [our team](https://forum.ansible.com/g/PostgreSQLTeam?asc=true&order=) on:
+* The Ansible forums:
+    * [News & Announcements](https://forum.ansible.com/c/news/5/none)
+    * [Get Help](https://forum.ansible.com/c/help/6/none)
+    * [Social Spaces](https://forum.ansible.com/c/chat/4)
+    * [Posts tagged 'postgresql'](https://forum.ansible.com/tag/postgresql)
+* Matrix:
+    * `#postgresql:ansible.com` [room](https://matrix.to/#/#postgresql:ansible.com): questions on how to contribute and use this collection.
+    * `#users:ansible.com` [room](https://matrix.to/#/#users:ansible.com): general use questions and support.
+    * `#ansible-community:ansible.com` [room](https://matrix.to/#/#community:ansible.com): community and collection development questions.
+    * other Matrix rooms or corresponding bridged Libera.Chat channels. See the [Ansible Communication Guide](https://docs.ansible.com/ansible/devel/community/communication.html) for details.
 
 We take part in the global quarterly [Ansible Contributor Summit](https://github.com/ansible/community/wiki/Contributor-Summit) virtually or in-person. Track [The Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn) and join us.
 
