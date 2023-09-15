@@ -4,6 +4,7 @@
 """Provide version object to compare version numbers."""
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 # Once we drop support for Ansible 2.11, we can

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright: (c) 2021, Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
-
-from ansible_collections.community.postgresql.plugins.modules.postgresql_set import pretty_to_bytes
+from ansible_collections.community.postgresql.plugins.modules.postgresql_set import \
+    pretty_to_bytes
 
 
 @pytest.mark.parametrize('input_,expected', [

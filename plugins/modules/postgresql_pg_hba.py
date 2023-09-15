@@ -260,8 +260,9 @@ try:
 except ImportError:
     IPADDRESS_IMP_ERR = traceback.format_exc()
 
-import tempfile
 import shutil
+import tempfile
+
 from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 # from ansible.module_utils.postgres import postgres_common_argument_spec

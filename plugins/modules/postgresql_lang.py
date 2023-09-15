@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
@@ -175,14 +176,11 @@ queries:
 # WARNING - The postgresql_lang module has been deprecated and will be removed in community.postgresql 4.0.0.
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import \
+    check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db,
-    ensure_required_libs,
-    get_conn_params,
-    pg_cursor_args,
-    postgres_common_argument_spec,
-)
+    connect_to_db, ensure_required_libs, get_conn_params, pg_cursor_args,
+    postgres_common_argument_spec)
 
 executed_queries = []
 

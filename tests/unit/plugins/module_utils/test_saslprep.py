@@ -2,13 +2,13 @@
 # Copyright: (c) 2019, Andrey Tuzhilin <andrei.tuzhilin@gmail.com>
 # Copyright: (c) 2020, Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
-
-from ansible_collections.community.postgresql.plugins.module_utils.saslprep import saslprep
-
+from ansible_collections.community.postgresql.plugins.module_utils.saslprep import \
+    saslprep
 
 VALID = [
     (u'', u''),

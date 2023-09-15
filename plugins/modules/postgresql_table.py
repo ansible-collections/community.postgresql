@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -244,22 +245,15 @@ storage_params:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    check_input,
-    pg_quote_identifier,
-)
+    check_input, pg_quote_identifier)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db,
-    exec_sql,
-    ensure_required_libs,
-    get_conn_params,
-    pg_cursor_args,
-    postgres_common_argument_spec,
-)
-
+    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
+    pg_cursor_args, postgres_common_argument_spec)
 
 # ===========================================
 # PostgreSQL module specific support methods.
 #
+
 
 class Table(object):
     def __init__(self, name, module, cursor):

@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -268,21 +269,14 @@ import os
 import subprocess
 import traceback
 
+from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves import shlex_quote
-from ansible.module_utils._text import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    check_input,
-    SQLParseError,
-)
+    SQLParseError, check_input)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db,
-    ensure_required_libs,
-    get_conn_params,
-    get_server_version,
-    pg_cursor_args,
-    postgres_common_argument_spec
-)
+    connect_to_db, ensure_required_libs, get_conn_params, get_server_version,
+    pg_cursor_args, postgres_common_argument_spec)
 
 executed_commands = []
 

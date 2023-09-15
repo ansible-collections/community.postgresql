@@ -10,24 +10,14 @@
 #
 # Simplified BSD License (see simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-from stringprep import (
-    in_table_a1,
-    in_table_b1,
-    in_table_c3,
-    in_table_c4,
-    in_table_c5,
-    in_table_c6,
-    in_table_c7,
-    in_table_c8,
-    in_table_c9,
-    in_table_c12,
-    in_table_c21_c22,
-    in_table_d1,
-    in_table_d2,
-)
+from stringprep import (in_table_a1, in_table_b1, in_table_c3, in_table_c4,
+                        in_table_c5, in_table_c6, in_table_c7, in_table_c8,
+                        in_table_c9, in_table_c12, in_table_c21_c22,
+                        in_table_d1, in_table_d2)
 from unicodedata import normalize
 
 from ansible.module_utils.six import text_type

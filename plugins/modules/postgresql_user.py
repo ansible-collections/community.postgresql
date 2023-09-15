@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -282,33 +283,26 @@ queries:
   sample: ['CREATE USER "alice"', 'GRANT CONNECT ON DATABASE "acme" TO "alice"']
 '''
 
+import hmac
 import itertools
 import re
 import traceback
-from hashlib import md5, sha256
-import hmac
 from base64 import b64decode
+from hashlib import md5, sha256
 
+from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-from ansible.module_utils._text import to_bytes, to_native, to_text
-from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
+from ansible_collections.community.postgresql.plugins.module_utils import \
+    saslprep
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    pg_quote_identifier,
-    SQLParseError,
-    check_input,
-)
+    SQLParseError, check_input, pg_quote_identifier)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db,
-    ensure_required_libs,
-    get_conn_params,
-    get_server_version,
-    pg_cursor_args,
-    postgres_common_argument_spec,
-    HAS_PSYCOPG,
-    PSYCOPG_VERSION
-)
-from ansible_collections.community.postgresql.plugins.module_utils import saslprep
+    HAS_PSYCOPG, PSYCOPG_VERSION, connect_to_db, ensure_required_libs,
+    get_conn_params, get_server_version, pg_cursor_args,
+    postgres_common_argument_spec)
+from ansible_collections.community.postgresql.plugins.module_utils.version import \
+    LooseVersion
 
 if HAS_PSYCOPG and PSYCOPG_VERSION < LooseVersion("3.0"):
     import psycopg2 as psycopg
