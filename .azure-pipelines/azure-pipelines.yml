@@ -41,6 +41,24 @@ resources:
 pool: Standard
 
 stages:
+  - stage: Python_qualtiy_tools
+    displayName: Python quality
+    dependsOn: []
+    jobs:
+      - job: 'Test'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UsePythonVersion@0
+            displayName: Get Python for Python tools.
+            inputs:
+              versionSpec: '3.11'
+              addToPath: false
+            name: pyTools
+          - script: $(pyTools.pythonLocation)/bin/pip install --upgrade tox
+            displayName: Upgrade/Install tox.
+          - script: $(pyTools.pythonLocation)/bin/tox -e lint
+            displayName: Run tox -e lint
 ## Sanity & units
   - stage: Ansible_devel
     displayName: Sanity & Units devel

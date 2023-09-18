@@ -519,11 +519,11 @@ class PgHbaRule(dict):
         # Some sanity checks
         for key in ['method', 'type']:
             if key not in self:
-                raise PgHbaRuleError('Missing {0} in rule {1}'.format(key, self))
+                raise PgHbaRuleError('Missing {method} in rule {rule}'.format(method=key, rule=self))
 
         if self['method'] not in PG_HBA_METHODS:
-            msg = "invalid method {0} (should be one of '{1}')."
-            raise PgHbaRuleValueError(msg.format(self['method'], "', '".join(PG_HBA_METHODS)))
+            msg = "invalid method {method} (should be one of '{valid_methods}')."
+            raise PgHbaRuleValueError(msg.format(method=self['method'], valid_methods="', '".join(PG_HBA_METHODS)))
 
         if self['type'] not in PG_HBA_TYPES:
             msg = "invalid connection type {0} (should be one of '{1}')."
@@ -533,7 +533,7 @@ class PgHbaRule(dict):
             self.unset('src')
             self.unset('mask')
         elif 'src' not in self:
-            raise PgHbaRuleError('Missing src in rule {1}'.format(self))
+            raise PgHbaRuleError('Missing src in rule {rule}'.format(rule=self))
         elif '/' in self['src']:
             self.unset('mask')
         else:
@@ -706,7 +706,7 @@ class PgHbaRule(dict):
             # hostname, let's assume only one host matches, which is
             # IPv4/32 or IPv6/128 (both have weight 128)
             return 128
-        raise PgHbaValueError('Cannot deduct the source weight of this source {1}'.format(sourceobj))
+        raise PgHbaValueError('Cannot deduct the source weight of this source {sourceobj}'.format(sourceobj=sourceobj))
 
     def source_type_weight(self):
         """Give a weight on the type of this source.
