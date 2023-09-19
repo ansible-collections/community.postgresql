@@ -835,16 +835,16 @@
     - result is changed
   when: postgres_version_resp.stdout is version('11', '>=')
 
-#################################################
-# Test ALL_IN_SCHEMA for 'partioned tables type #
-#################################################
+###################################################
+# Test ALL_IN_SCHEMA for 'partitioned tables type #
+###################################################
 
 # Partitioning tables is a feature introduced in Postgresql 10.
 # (see https://www.postgresql.org/docs/10/ddl-partitioning.html )
 # The test below check for this version
 
 # Function ALL_IN_SCHEMA Setup
-- name: Create partioned table for test purpose
+- name: Create partitioned table for test purpose
   postgresql_query:
     query: CREATE TABLE public.testpt (id int not null, logdate date not null) PARTITION BY RANGE (logdate);
     db: "{{ db_name }}"

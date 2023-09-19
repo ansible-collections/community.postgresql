@@ -237,10 +237,10 @@ class TestConnectToDb():
     """
     Namespace for testing connect_to_db() function.
 
-    When some connection errors occure connect_to_db() caught any of them
+    When some connection errors occur connect_to_db() caught any of them
     and invoke fail_json() or warn() methods of AnsibleModule object
     depending on the passed parameters.
-    connect_to_db may return db_connection object or None if errors occured.
+    connect_to_db may return db_connection object or None if errors occurred.
     Therefore we must check:
     1. Values of err_msg and warn_msg attributes of m_ansible_module mock object.
     2. Types of return objects (db_connection and cursor).
