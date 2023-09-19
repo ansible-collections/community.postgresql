@@ -1,16 +1,15 @@
 # Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 from os import environ
 
-import pytest
-
-from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
-
 import ansible_collections.community.postgresql.plugins.module_utils.postgres as pg
-
+import pytest
+from ansible_collections.community.postgresql.plugins.module_utils.version import \
+    LooseVersion
 
 INPUT_DICT = dict(
     session_role=dict(default=''),

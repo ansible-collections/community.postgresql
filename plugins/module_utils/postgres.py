@@ -9,17 +9,19 @@
 #
 # Simplified BSD License (see simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from datetime import timedelta
 from decimal import Decimal
 from os import environ
 
-from ansible.module_utils.basic import missing_required_lib
 from ansible.module_utils._text import to_native
+from ansible.module_utils.basic import missing_required_lib
 from ansible.module_utils.six import iteritems
-from ansible_collections.community.postgresql.plugins.module_utils.version import LooseVersion
+from ansible_collections.community.postgresql.plugins.module_utils.version import \
+    LooseVersion
 
 psycopg = None  # This line is needed for unit tests
 psycopg2 = None  # This line is needed for unit tests
@@ -30,6 +32,7 @@ try:
     import psycopg
     from psycopg import ClientCursor
     from psycopg.rows import dict_row
+
     # We need Psycopg 3 to be at least 3.1.0 because we need Client-side-binding cursors
     # When a Linux distribution provides both Psycopg2 and Psycopg 3.0 we will use Psycopg2
     PSYCOPG_VERSION = LooseVersion(psycopg.__version__)

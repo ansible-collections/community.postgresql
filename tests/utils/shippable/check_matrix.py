@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Verify the currently executing Shippable test matrix matches the one defined in the "shippable.yml" file."""
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import datetime

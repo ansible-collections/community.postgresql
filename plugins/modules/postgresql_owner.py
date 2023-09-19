@@ -4,7 +4,8 @@
 # Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r'''
@@ -167,19 +168,10 @@ queries:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    check_input,
-    pg_quote_identifier,
-)
+    check_input, pg_quote_identifier)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db,
-    exec_sql,
-    ensure_required_libs,
-    get_conn_params,
-    pg_cursor_args,
-    postgres_common_argument_spec,
-    get_server_version,
-)
-
+    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
+    get_server_version, pg_cursor_args, postgres_common_argument_spec)
 
 VALID_OBJ_TYPES = ('aggregate', 'collation', 'conversion', 'database', 'domain', 'event_trigger', 'foreign_data_wrapper',
                    'foreign_table', 'function', 'language', 'large_object', 'matview', 'procedure', 'publication',
