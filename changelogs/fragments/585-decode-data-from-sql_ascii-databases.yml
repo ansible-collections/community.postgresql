@@ -1,0 +1,6 @@
+bugfixes:
+  - postgresql_user - module failed when running against an SQL_ASCII encoded
+    database as the user's current password was returned as bytes as opposed
+    to a str. Fix now checks for this case and decodes the bytes as an ascii
+    encoded string.
+    (https://github.com/ansible-collections/community.postgresql/issues/584).
