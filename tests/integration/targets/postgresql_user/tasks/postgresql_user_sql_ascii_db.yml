@@ -1,0 +1,8 @@
+- name: Execute module with no changes
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_user:
+    name: '{{ sql_ascii_user }}'
+    db: '{{ sql_ascii_db }}'
+    role_attr_flags: SUPERUSER
+    password: '{{ sql_ascii_pass }}'

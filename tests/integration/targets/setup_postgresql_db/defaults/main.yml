@@ -30,3 +30,8 @@ ssl_key: '/etc/client.key'
 # second database, for logical replication testing
 replica_data_dir: "/var/lib/pgsql_replica"
 replica_port: 5533
+
+# defaults for test sql_ascii database
+sql_ascii_db: 'sql_ascii'
+sql_ascii_user: 'sql_ascii_user'
+sql_ascii_pass: 'sql_ascii_pass'
