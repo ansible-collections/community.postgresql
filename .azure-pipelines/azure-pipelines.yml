@@ -251,8 +251,8 @@ stages:
         parameters:
           testFormat: 2.16/{0}/1
           targets:
-            - name: RHEL 8.7
-              test: rhel/8.7
+            - name: RHEL 8.8
+              test: rhel/8.8
 
   - stage: Remote_2_15
     displayName: Remote 2.15
