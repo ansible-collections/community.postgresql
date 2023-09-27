@@ -208,7 +208,7 @@ def ext_delete(check_mode, cursor, ext, cascade):
     Args:
       cursor (cursor) -- cursor object of psycopg library
       ext (str) -- extension name
-      cascade (boolean) -- Pass the CASCADE flag to the DROP commmand
+      cascade (boolean) -- Pass the CASCADE flag to the DROP command
     """
     query = "DROP EXTENSION \"%s\"" % ext
 
@@ -256,7 +256,7 @@ def ext_create(check_mode, cursor, ext, schema, cascade, version):
       cursor (cursor) -- cursor object of psycopg library
       ext (str) -- extension name
       schema (str) -- target schema for extension objects
-      cascade (boolean) -- Pass the CASCADE flag to the CREATE commmand
+      cascade (boolean) -- Pass the CASCADE flag to the CREATE command
       version (str) -- extension version
     """
     query = "CREATE EXTENSION \"%s\"" % ext
@@ -344,7 +344,7 @@ def ext_valid_update_path(cursor, ext, current_version, version):
     Return True if a valid path exists. Otherwise return False.
 
     Note: 'latest' is not a valid value for version here as it can be
-          replaced with default_version specificed in extension control file.
+          replaced with default_version specified in extension control file.
 
     Args:
       cursor (cursor) -- cursor object of psycopg library
@@ -428,12 +428,12 @@ def main():
                 module.fail_json(msg="Extension %s is not available" % ext)
             # Check default_version is available
             if default_version:
-                # 'latest' version matches default_version specificed in extension control file
+                # 'latest' version matches default_version specified in extension control file
                 real_version = default_version
             else:
-                # Passed version is 'latest', versions are available, but no default_version is specificed
+                # Passed version is 'latest', versions are available, but no default_version is specified
                 # in extension control file. In this situation CREATE/ALTER EXTENSION commands fail if
-                # a specific version is not passed ('latest' cannot be determinated).
+                # a specific version is not passed ('latest' cannot be determined).
                 module.fail_json(msg="Passed version 'latest' but no default_version available "
                                      "in extension control file")
         else:

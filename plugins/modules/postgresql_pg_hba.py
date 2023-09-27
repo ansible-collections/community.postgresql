@@ -497,7 +497,7 @@ class PgHbaRule(dict):
     def __init__(self, contype=None, databases=None, users=None, source=None, netmask=None,
                  method=None, options=None, line=None, comment=None):
         '''
-        This function can be called with a comma seperated list of databases and a comma seperated
+        This function can be called with a comma separated list of databases and a comma separated
         list of users and it will act as a generator that returns a expanded list of rules one by
         one.
         '''
