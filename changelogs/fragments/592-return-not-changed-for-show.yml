@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_query - now reports not changed for queries starting with "SHOW"
