@@ -19,3 +19,8 @@ ssl_db: 'ssl_db'
 ssl_user: 'ssl_user'
 ssl_pass: 'ssl_pass'
 ssl_rootcert: '~{{ pg_user }}/root.crt'
+
+# defaults for test sql_ascii database
+sql_ascii_db: 'sql_ascii'
+sql_ascii_user: 'sql_ascii_user'
+sql_ascii_pass: 'sql_ascii_pass'
