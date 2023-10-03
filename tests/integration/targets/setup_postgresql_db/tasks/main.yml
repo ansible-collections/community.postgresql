@@ -293,3 +293,8 @@
   when:
     - replica_db_required is defined and replica_db_required
     - ansible_distribution_major_version != "7"  # CentOS 7 with Postgres 9.2 doesn't support 'logical'
+
+# Create an SQL_ASCII encoded database
+- import_tasks: sql_ascii.yml
+  when:
+    - sql_ascii_db_required is defined and sql_ascii_db_required
