@@ -75,7 +75,7 @@
     become: true
     apt:
       autoremove: true
-  
+
   - name: Create the file repository configuration
     lineinfile:
       create: true
@@ -279,3 +279,8 @@
   when:
   - ansible_os_family == 'Debian'
   - postgres_version_resp.stdout is version('9.4', '>=')
+
+# Create an SQL_ASCII encoded database
+- import_tasks: sql_ascii.yml
+  when:
+    - sql_ascii_db_required is defined and sql_ascii_db_required

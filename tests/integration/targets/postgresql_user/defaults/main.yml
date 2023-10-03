@@ -2,3 +2,6 @@ db_name: 'ansible_db'
 db_user1: 'ansible_db_user1'
 db_user2: 'ansible_db_user2'
 dangerous_name: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
+
+# The user module tests require an sql_ascii encoded db to test client decoding
+sql_ascii_db_required: true

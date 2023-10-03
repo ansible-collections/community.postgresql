@@ -428,24 +428,29 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
     # Do we actually need to do anything?
     pwchanging = False
     if password is not None:
+        current_password = current_role_attrs['rolpassword']
+        # Handle SQL_ASCII encoded databases
+        if isinstance(current_password, bytes):
+            current_password = current_password.decode('ascii')
+
         # Empty password means that the role shouldn't have a password, which
         # means we need to check if the current password is None.
         if password == '':
-            if current_role_attrs['rolpassword'] is not None:
+            if current_password is not None:
                 pwchanging = True
         # If the provided password is a SCRAM hash, compare it directly to the current password
         elif re.match(SCRAM_SHA256_REGEX, password):
-            if password != current_role_attrs['rolpassword']:
+            if password != current_password:
                 pwchanging = True
 
         # SCRAM hashes are represented as a special object, containing hash data:
         # `SCRAM-SHA-256$<iteration count>:<salt>$<StoredKey>:<ServerKey>`
         # for reference, see https://www.postgresql.org/docs/current/catalog-pg-authid.html
-        elif current_role_attrs['rolpassword'] is not None \
+        elif current_password is not None \
                 and pbkdf2_found \
-                and re.match(SCRAM_SHA256_REGEX, current_role_attrs['rolpassword']):
+                and re.match(SCRAM_SHA256_REGEX, current_password):
 
-            r = re.match(SCRAM_SHA256_REGEX, current_role_attrs['rolpassword'])
+            r = re.match(SCRAM_SHA256_REGEX, current_password)
             try:
                 # extract SCRAM params from rolpassword
                 it = int(r.group(1))
@@ -475,11 +480,11 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
         # When the provided password looks like a MD5-hash, value of
         # 'encrypted' is ignored.
         elif (password.startswith('md5') and len(password) == 32 + 3) or encrypted == 'UNENCRYPTED':
-            if password != current_role_attrs['rolpassword']:
+            if password != current_password:
                 pwchanging = True
         elif encrypted == 'ENCRYPTED':
             hashed_password = 'md5{0}'.format(md5(to_bytes(password) + to_bytes(user)).hexdigest())
-            if hashed_password != current_role_attrs['rolpassword']:
+            if hashed_password != current_password:
                 pwchanging = True
 
     return pwchanging
