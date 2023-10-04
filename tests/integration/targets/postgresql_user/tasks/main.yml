@@ -10,3 +10,7 @@
 # General tests:
 - import_tasks: postgresql_user_general.yml
   when: postgres_version_resp.stdout is version('9.4', '>=')
+
+# SQL_ASCII database tests:
+- import_tasks: postgresql_user_sql_ascii_db.yml
+  when: postgres_version_resp.stdout is version('9.4', '>=')

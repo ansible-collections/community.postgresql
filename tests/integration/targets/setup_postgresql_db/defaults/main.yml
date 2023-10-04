@@ -21,3 +21,8 @@ ssl_pass: 'ssl_pass'
 ssl_rootcert: '/etc/server-ca.crt'
 ssl_cert: '/etc/client.crt'
 ssl_key: '/etc/client.key'
+
+# defaults for test sql_ascii database
+sql_ascii_db: 'sql_ascii'
+sql_ascii_user: 'sql_ascii_user'
+sql_ascii_pass: 'sql_ascii_pass'
