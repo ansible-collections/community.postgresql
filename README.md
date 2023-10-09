@@ -159,7 +159,7 @@ collections:
   - name: community.postgresql
 ```
 
-You can also download the tarball from [Ansible Galaxy](https://galaxy.ansible.com/community/postgresql) and install the collection manually wherever you need.
+You can also download the tarball from [Ansible Galaxy](https://galaxy.ansible.com/ui/repo/published/community/postgresql) and install the collection manually wherever you need.
 
 Note that if you install the collection from Ansible Galaxy with the command-line tool or tarball, it will not be upgraded automatically when you upgrade the Ansible package. To upgrade the collection to the latest available version, run the following command:
 
