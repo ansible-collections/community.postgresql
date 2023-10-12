@@ -602,3 +602,15 @@
       - result.rowcount == 3
       - result.query_result == [{"?column?": 1}]
       - 'result.query_all_results == [[{"?column?": 1}], [{"?column?": 1}], [{"?column?": 1}]]'
+
+  - name: Run SHOW query
+    become_user: '{{ pg_user }}'
+    become: true
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SHOW hba_file"
+    register: result
+  
+  - assert:
+      that:
+      - result is not changed

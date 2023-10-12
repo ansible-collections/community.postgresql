@@ -487,7 +487,7 @@ def main():
 
             query_all_results.append(query_result)
 
-            if 'SELECT' not in statusmessage:
+            if 'SELECT' not in statusmessage and 'SHOW' not in statusmessage:
                 if re.search(re.compile(r'(UPDATE|INSERT|DELETE)'), statusmessage):
                     s = statusmessage.split()
                     if len(s) == 3:
