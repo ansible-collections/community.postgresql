@@ -59,6 +59,7 @@ stages:
             displayName: Upgrade/Install tox.
           - script: $(pyTools.pythonLocation)/bin/tox -e lint
             displayName: Run tox -e lint
+
 ## Sanity & units
   - stage: Ansible_devel
     displayName: Sanity & Units devel
@@ -122,18 +123,6 @@ stages:
             - name: Units
               test: '2.13/units/1'
 
-  - stage: Ansible_2_12
-    displayName: Sanity & Units 2.12
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          targets:
-            - name: Sanity
-              test: '2.12/sanity/1'
-            - name: Units
-              test: '2.12/units/1'
-
 ## Docker
   - stage: Docker_devel
     displayName: Docker devel
@@ -143,8 +132,6 @@ stages:
         parameters:
           testFormat: devel/linux/{0}/1
           targets:
-            - name: CentOS 7
-              test: centos7
             - name: Fedora 38
               test: fedora38
             - name: Ubuntu 20.04
@@ -216,21 +203,6 @@ stages:
             - name: Ubuntu 20.04
               test: ubuntu2004
 
-  - stage: Docker_2_12
-    displayName: Docker 2.12
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.12/linux/{0}/1
-          targets:
-            - name: CentOS 7
-              test: centos7
-            - name: Fedora 34
-              test: fedora34
-            - name: Ubuntu 20.04
-              test: ubuntu2004
-
 ## Remote
   - stage: Remote_devel
     displayName: Remote devel
@@ -240,8 +212,8 @@ stages:
         parameters:
           testFormat: devel/{0}/1
           targets:
-            - name: RHEL 8.8
-              test: rhel/8.8
+            - name: RHEL 9.2
+              test: rhel/9.2
 
   - stage: Remote_2_16
     displayName: Remote 2.16
@@ -287,17 +259,6 @@ stages:
             - name: RHEL 8.5
               test: rhel/8.5
 
-  - stage: Remote_2_12
-    displayName: Remote 2.12
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.12/{0}/1
-          targets:
-            - name: RHEL 8.4
-              test: rhel/8.4
-
 ## Finally
 
   - stage: Summary
@@ -308,18 +269,15 @@ stages:
       - Ansible_2_15
       - Ansible_2_14
       - Ansible_2_13
-      - Ansible_2_12
       - Docker_devel
       - Docker_2_16
       - Docker_2_15
       - Docker_2_14
       - Docker_2_13
-      - Docker_2_12
       - Remote_devel
       - Remote_2_16
       - Remote_2_15
       - Remote_2_14
       - Remote_2_13
-      - Remote_2_12
     jobs:
       - template: templates/coverage.yml
