@@ -1,2 +1,2 @@
 [codespell]
-exclude-file = .codespell-exclude-file
+ignore-words = .codespell-exclude-words
