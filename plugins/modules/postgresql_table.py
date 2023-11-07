@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_table
 short_description: Create, drop, or modify a PostgreSQL table
@@ -136,9 +136,9 @@ author:
 - Andrei Klychkov (@Andersson007)
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Create tbl2 in the acme database with the DDL like tbl1 with testuser as an owner
   community.postgresql.postgresql_table:
     db: acme
@@ -208,9 +208,9 @@ EXAMPLES = r'''
     name: bar
     state: absent
     cascade: true
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 table:
   description: Name of a table.
   returned: success
@@ -241,14 +241,21 @@ storage_params:
   returned: success
   type: list
   sample: [ "fillfactor=100", "autovacuum_analyze_threshold=1" ]
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    check_input, pg_quote_identifier)
+    check_input,
+    pg_quote_identifier,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 # ===========================================
 # PostgreSQL module specific support methods.
@@ -261,9 +268,9 @@ class Table(object):
         self.module = module
         self.cursor = cursor
         self.info = {
-            'owner': '',
-            'tblspace': '',
-            'storage_params': [],
+            "owner": "",
+            "tblspace": "",
+            "storage_params": [],
         }
         self.exists = False
         self.__exists_in_db()
@@ -276,25 +283,31 @@ class Table(object):
     def __exists_in_db(self):
         """Check table exists and refresh info"""
         if "." in self.name:
-            schema = self.name.split('.')[-2]
-            tblname = self.name.split('.')[-1]
+            schema = self.name.split(".")[-2]
+            tblname = self.name.split(".")[-1]
         else:
-            schema = 'public'
+            schema = "public"
             tblname = self.name
 
-        query = ("SELECT t.tableowner, t.tablespace, c.reloptions "
-                 "FROM pg_tables AS t "
-                 "INNER JOIN pg_class AS c ON  c.relname = t.tablename "
-                 "INNER JOIN pg_namespace AS n ON c.relnamespace = n.oid "
-                 "WHERE t.tablename = %(tblname)s "
-                 "AND n.nspname = %(schema)s")
-        res = exec_sql(self, query, query_params={'tblname': tblname, 'schema': schema},
-                       add_to_executed=False)
+        query = (
+            "SELECT t.tableowner, t.tablespace, c.reloptions "
+            "FROM pg_tables AS t "
+            "INNER JOIN pg_class AS c ON  c.relname = t.tablename "
+            "INNER JOIN pg_namespace AS n ON c.relnamespace = n.oid "
+            "WHERE t.tablename = %(tblname)s "
+            "AND n.nspname = %(schema)s"
+        )
+        res = exec_sql(
+            self,
+            query,
+            query_params={"tblname": tblname, "schema": schema},
+            add_to_executed=False,
+        )
         if res:
             self.exists = True
             self.info = dict(
                 owner=res[0]["tableowner"],
-                tblspace=res[0]["tablespace"] if res[0]["tablespace"] else '',
+                tblspace=res[0]["tablespace"] if res[0]["tablespace"] else "",
                 storage_params=res[0]["reloptions"] if res[0]["reloptions"] else [],
             )
 
@@ -303,8 +316,7 @@ class Table(object):
             self.exists = False
             return False
 
-    def create(self, columns='', params='', tblspace='',
-               unlogged=False, owner=''):
+    def create(self, columns="", params="", tblspace="", unlogged=False, owner=""):
         """
         Create table.
         If table exists, check passed args (params, tblspace, owner) and,
@@ -317,27 +329,27 @@ class Table(object):
         unlogged - create unlogged table.
         columns - column string (comma separated).
         """
-        name = pg_quote_identifier(self.name, 'table')
+        name = pg_quote_identifier(self.name, "table")
 
         changed = False
 
         if self.exists:
-            if tblspace == 'pg_default' and self.info['tblspace'] is None:
+            if tblspace == "pg_default" and self.info["tblspace"] is None:
                 pass  # Because they have the same meaning
-            elif tblspace and self.info['tblspace'] != tblspace:
+            elif tblspace and self.info["tblspace"] != tblspace:
                 self.set_tblspace(tblspace)
                 changed = True
 
-            if owner and self.info['owner'] != owner:
+            if owner and self.info["owner"] != owner:
                 self.set_owner(owner)
                 changed = True
 
             if params:
-                param_list = [p.strip(' ') for p in params.split(',')]
+                param_list = [p.strip(" ") for p in params.split(",")]
 
                 new_param = False
                 for p in param_list:
-                    if p not in self.info['storage_params']:
+                    if p not in self.info["storage_params"]:
                         new_param = True
 
                 if new_param:
@@ -373,8 +385,9 @@ class Table(object):
 
         return changed
 
-    def create_like(self, src_table, including='', tblspace='',
-                    unlogged=False, params='', owner=''):
+    def create_like(
+        self, src_table, including="", tblspace="", unlogged=False, params="", owner=""
+    ):
         """
         Create table like another table (with similar DDL).
         Arguments:
@@ -389,7 +402,7 @@ class Table(object):
         """
         changed = False
 
-        name = pg_quote_identifier(self.name, 'table')
+        name = pg_quote_identifier(self.name, "table")
 
         query = "CREATE"
         if unlogged:
@@ -397,14 +410,14 @@ class Table(object):
         else:
             query += " TABLE %s" % name
 
-        query += " (LIKE %s" % pg_quote_identifier(src_table, 'table')
+        query += " (LIKE %s" % pg_quote_identifier(src_table, "table")
 
         if including:
-            including = including.split(',')
+            including = including.split(",")
             for i in including:
                 query += " INCLUDING %s" % i
 
-        query += ')'
+        query += ")"
 
         if params:
             query += " WITH (%s)" % params
@@ -421,33 +434,44 @@ class Table(object):
         return changed
 
     def truncate(self):
-        query = "TRUNCATE TABLE %s" % pg_quote_identifier(self.name, 'table')
+        query = "TRUNCATE TABLE %s" % pg_quote_identifier(self.name, "table")
         return exec_sql(self, query, return_bool=True)
 
     def rename(self, newname):
-        query = "ALTER TABLE %s RENAME TO %s" % (pg_quote_identifier(self.name, 'table'),
-                                                 pg_quote_identifier(newname, 'table'))
+        query = "ALTER TABLE %s RENAME TO %s" % (
+            pg_quote_identifier(self.name, "table"),
+            pg_quote_identifier(newname, "table"),
+        )
         return exec_sql(self, query, return_bool=True)
 
     def set_owner(self, username):
-        query = 'ALTER TABLE %s OWNER TO "%s"' % (pg_quote_identifier(self.name, 'table'), username)
+        query = 'ALTER TABLE %s OWNER TO "%s"' % (
+            pg_quote_identifier(self.name, "table"),
+            username,
+        )
         return exec_sql(self, query, return_bool=True)
 
     def drop(self, cascade=False):
         if not self.exists:
             return False
 
-        query = "DROP TABLE %s" % pg_quote_identifier(self.name, 'table')
+        query = "DROP TABLE %s" % pg_quote_identifier(self.name, "table")
         if cascade:
             query += " CASCADE"
         return exec_sql(self, query, return_bool=True)
 
     def set_tblspace(self, tblspace):
-        query = 'ALTER TABLE %s SET TABLESPACE "%s"' % (pg_quote_identifier(self.name, 'table'), tblspace)
+        query = 'ALTER TABLE %s SET TABLESPACE "%s"' % (
+            pg_quote_identifier(self.name, "table"),
+            tblspace,
+        )
         return exec_sql(self, query, return_bool=True)
 
     def set_stor_params(self, params):
-        query = "ALTER TABLE %s SET (%s)" % (pg_quote_identifier(self.name, 'table'), params)
+        query = "ALTER TABLE %s SET (%s)" % (
+            pg_quote_identifier(self.name, "table"),
+            params,
+        )
         return exec_sql(self, query, return_bool=True)
 
 
@@ -459,68 +483,113 @@ class Table(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        table=dict(type='str', required=True, aliases=['name']),
-        state=dict(type='str', default='present', choices=['absent', 'present']),
-        db=dict(type='str', default='', aliases=['login_db']),
-        tablespace=dict(type='str'),
-        owner=dict(type='str'),
-        unlogged=dict(type='bool', default=False),
-        like=dict(type='str'),
-        including=dict(type='str'),
-        rename=dict(type='str'),
-        truncate=dict(type='bool', default=False),
-        columns=dict(type='list', elements='str'),
-        storage_params=dict(type='list', elements='str'),
-        session_role=dict(type='str'),
-        cascade=dict(type='bool', default=False),
-        trust_input=dict(type='bool', default=True),
+        table=dict(type="str", required=True, aliases=["name"]),
+        state=dict(type="str", default="present", choices=["absent", "present"]),
+        db=dict(type="str", default="", aliases=["login_db"]),
+        tablespace=dict(type="str"),
+        owner=dict(type="str"),
+        unlogged=dict(type="bool", default=False),
+        like=dict(type="str"),
+        including=dict(type="str"),
+        rename=dict(type="str"),
+        truncate=dict(type="bool", default=False),
+        columns=dict(type="list", elements="str"),
+        storage_params=dict(type="list", elements="str"),
+        session_role=dict(type="str"),
+        cascade=dict(type="bool", default=False),
+        trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
     )
 
-    table = module.params['table']
-    state = module.params['state']
-    tablespace = module.params['tablespace']
-    owner = module.params['owner']
-    unlogged = module.params['unlogged']
-    like = module.params['like']
-    including = module.params['including']
-    newname = module.params['rename']
-    storage_params = module.params['storage_params']
-    truncate = module.params['truncate']
-    columns = module.params['columns']
-    cascade = module.params['cascade']
-    session_role = module.params['session_role']
-    trust_input = module.params['trust_input']
+    table = module.params["table"]
+    state = module.params["state"]
+    tablespace = module.params["tablespace"]
+    owner = module.params["owner"]
+    unlogged = module.params["unlogged"]
+    like = module.params["like"]
+    including = module.params["including"]
+    newname = module.params["rename"]
+    storage_params = module.params["storage_params"]
+    truncate = module.params["truncate"]
+    columns = module.params["columns"]
+    cascade = module.params["cascade"]
+    session_role = module.params["session_role"]
+    trust_input = module.params["trust_input"]
 
     if not trust_input:
         # Check input for potentially dangerous elements:
-        check_input(module, table, tablespace, owner, like, including,
-                    newname, storage_params, columns, session_role)
+        check_input(
+            module,
+            table,
+            tablespace,
+            owner,
+            like,
+            including,
+            newname,
+            storage_params,
+            columns,
+            session_role,
+        )
 
-    if state == 'present' and cascade:
+    if state == "present" and cascade:
         module.warn("cascade=true is ignored when state=present")
 
     # Check mutual exclusive parameters:
-    if state == 'absent' and (truncate or newname or columns or tablespace or like or storage_params or unlogged or owner or including):
-        module.fail_json(msg="%s: state=absent is mutually exclusive with: "
-                             "truncate, rename, columns, tablespace, "
-                             "including, like, storage_params, unlogged, owner" % table)
+    if state == "absent" and (
+        truncate
+        or newname
+        or columns
+        or tablespace
+        or like
+        or storage_params
+        or unlogged
+        or owner
+        or including
+    ):
+        module.fail_json(
+            msg="%s: state=absent is mutually exclusive with: "
+            "truncate, rename, columns, tablespace, "
+            "including, like, storage_params, unlogged, owner" % table
+        )
 
-    if truncate and (newname or columns or like or unlogged or storage_params or owner or tablespace or including):
-        module.fail_json(msg="%s: truncate is mutually exclusive with: "
-                             "rename, columns, like, unlogged, including, "
-                             "storage_params, owner, tablespace" % table)
+    if truncate and (
+        newname
+        or columns
+        or like
+        or unlogged
+        or storage_params
+        or owner
+        or tablespace
+        or including
+    ):
+        module.fail_json(
+            msg="%s: truncate is mutually exclusive with: "
+            "rename, columns, like, unlogged, including, "
+            "storage_params, owner, tablespace" % table
+        )
 
-    if newname and (columns or like or unlogged or storage_params or owner or tablespace or including):
-        module.fail_json(msg="%s: rename is mutually exclusive with: "
-                             "columns, like, unlogged, including, "
-                             "storage_params, owner, tablespace" % table)
+    if newname and (
+        columns
+        or like
+        or unlogged
+        or storage_params
+        or owner
+        or tablespace
+        or including
+    ):
+        module.fail_json(
+            msg="%s: rename is mutually exclusive with: "
+            "columns, like, unlogged, including, "
+            "storage_params, owner, tablespace" % table
+        )
 
     if like and columns:
-        module.fail_json(msg="%s: like and columns params are mutually exclusive" % table)
+        module.fail_json(
+            msg="%s: like and columns params are mutually exclusive" % table
+        )
     if including and not like:
         module.fail_json(msg="%s: including param needs like param specified" % table)
 
@@ -531,10 +600,10 @@ def main():
     cursor = db_connection.cursor(**pg_cursor_args)
 
     if storage_params:
-        storage_params = ','.join(storage_params)
+        storage_params = ",".join(storage_params)
 
     if columns:
-        columns = ','.join(columns)
+        columns = ",".join(columns)
 
     ##############
     # Do main job:
@@ -543,18 +612,18 @@ def main():
     # Set default returned values:
     changed = False
     kw = {}
-    kw['table'] = table
-    kw['state'] = ''
+    kw["table"] = table
+    kw["state"] = ""
     if table_obj.exists:
         kw = dict(
             table=table,
-            state='present',
-            owner=table_obj.info['owner'],
-            tablespace=table_obj.info['tblspace'],
-            storage_params=table_obj.info['storage_params'],
+            state="present",
+            owner=table_obj.info["owner"],
+            tablespace=table_obj.info["tblspace"],
+            storage_params=table_obj.info["storage_params"],
         )
 
-    if state == 'absent':
+    if state == "absent":
         changed = table_obj.drop(cascade=cascade)
 
     elif truncate:
@@ -566,13 +635,13 @@ def main():
         table_obj = Table(newname, module, cursor)
         table_obj.executed_queries = q
 
-    elif state == 'present' and not like:
-        changed = table_obj.create(columns, storage_params,
-                                   tablespace, unlogged, owner)
+    elif state == "present" and not like:
+        changed = table_obj.create(columns, storage_params, tablespace, unlogged, owner)
 
-    elif state == 'present' and like:
-        changed = table_obj.create_like(like, including, tablespace,
-                                        unlogged, storage_params)
+    elif state == "present" and like:
+        changed = table_obj.create_like(
+            like, including, tablespace, unlogged, storage_params
+        )
 
     if changed:
         if module.check_mode:
@@ -587,21 +656,21 @@ def main():
         if table_obj.exists:
             kw = dict(
                 table=table,
-                state='present',
-                owner=table_obj.info['owner'],
-                tablespace=table_obj.info['tblspace'],
-                storage_params=table_obj.info['storage_params'],
+                state="present",
+                owner=table_obj.info["owner"],
+                tablespace=table_obj.info["tblspace"],
+                storage_params=table_obj.info["storage_params"],
             )
         else:
             # We just change the table state here
             # to keep other information about the dropped table:
-            kw['state'] = 'absent'
+            kw["state"] = "absent"
 
-    kw['queries'] = table_obj.executed_queries
-    kw['changed'] = changed
+    kw["queries"] = table_obj.executed_queries
+    kw["changed"] = changed
     db_connection.close()
     module.exit_json(**kw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

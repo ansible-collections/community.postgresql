@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_subscription
 short_description: Add, update, or remove PostgreSQL subscription
@@ -119,9 +119,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: >
     Create acme subscription in mydb database using acme_publication and
     the following connection parameters to connect to the publisher.
@@ -170,9 +170,9 @@ EXAMPLES = r'''
     state: present
     subsparams:
       enabled: false
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 name:
   description:
   - Name of the subscription.
@@ -200,26 +200,34 @@ final_state:
   returned: success
   type: dict
   sample: {"conninfo": {}, "enabled": true, "owner": "postgres", "slotname": "test", "synccommit": true}
-'''
+"""
 
 from copy import deepcopy
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    get_server_version, pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    get_server_version,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 SUPPORTED_PG_VERSION = 10000
 
-SUBSPARAMS_KEYS_FOR_UPDATE = ('enabled', 'synchronous_commit', 'slot_name')
+SUBSPARAMS_KEYS_FOR_UPDATE = ("enabled", "synchronous_commit", "slot_name")
 
 
 ################################
 # Module functions and classes #
 ################################
+
 
 def convert_conn_params(conn_dict):
     """Converts the passed connection dictionary to string.
@@ -231,10 +239,10 @@ def convert_conn_params(conn_dict):
         Connection string.
     """
     conn_list = []
-    for (param, val) in iteritems(conn_dict):
-        conn_list.append('%s=%s' % (param, val))
+    for param, val in iteritems(conn_dict):
+        conn_list.append("%s=%s" % (param, val))
 
-    return ' '.join(conn_list)
+    return " ".join(conn_list)
 
 
 def convert_subscr_params(params_dict):
@@ -247,15 +255,15 @@ def convert_subscr_params(params_dict):
         Parameters string.
     """
     params_list = []
-    for (param, val) in iteritems(params_dict):
+    for param, val in iteritems(params_dict):
         if val is False:
-            val = 'false'
+            val = "false"
         elif val is True:
-            val = 'true'
+            val = "true"
 
-        params_list.append('%s = %s' % (param, val))
+        params_list.append("%s = %s" % (param, val))
 
-    return ', '.join(params_list)
+    return ", ".join(params_list)
 
 
 def cast_connparams(connparams_dict):
@@ -264,7 +272,7 @@ def cast_connparams(connparams_dict):
     Returns:
         Dictionary
     """
-    for (param, val) in iteritems(connparams_dict):
+    for param, val in iteritems(connparams_dict):
         try:
             connparams_dict[param] = int(val)
         except ValueError:
@@ -273,7 +281,7 @@ def cast_connparams(connparams_dict):
     return connparams_dict
 
 
-class PgSubscription():
+class PgSubscription:
     """Class to work with PostgreSQL subscription.
 
     Args:
@@ -298,12 +306,12 @@ class PgSubscription():
         self.db = db
         self.executed_queries = []
         self.attrs = {
-            'owner': None,
-            'enabled': None,
-            'synccommit': None,
-            'conninfo': {},
-            'slotname': None,
-            'publications': [],
+            "owner": None,
+            "enabled": None,
+            "synccommit": None,
+            "conninfo": {},
+            "slotname": None,
+            "publications": [],
         }
         self.empty_attrs = deepcopy(self.attrs)
         self.exists = self.check_subscr()
@@ -331,18 +339,18 @@ class PgSubscription():
             self.attrs = deepcopy(self.empty_attrs)
             return False
 
-        self.attrs['owner'] = subscr_info.get('rolname')
-        self.attrs['enabled'] = subscr_info.get('subenabled')
-        self.attrs['synccommit'] = subscr_info.get('subenabled')
-        self.attrs['slotname'] = subscr_info.get('subslotname')
-        self.attrs['publications'] = subscr_info.get('subpublications')
-        if subscr_info.get('subconninfo'):
-            for param in subscr_info['subconninfo'].split(' '):
-                tmp = param.split('=')
+        self.attrs["owner"] = subscr_info.get("rolname")
+        self.attrs["enabled"] = subscr_info.get("subenabled")
+        self.attrs["synccommit"] = subscr_info.get("subenabled")
+        self.attrs["slotname"] = subscr_info.get("subslotname")
+        self.attrs["publications"] = subscr_info.get("subpublications")
+        if subscr_info.get("subconninfo"):
+            for param in subscr_info["subconninfo"].split(" "):
+                tmp = param.split("=")
                 try:
-                    self.attrs['conninfo'][tmp[0]] = int(tmp[1])
+                    self.attrs["conninfo"][tmp[0]] = int(tmp[1])
                 except ValueError:
-                    self.attrs['conninfo'][tmp[0]] = tmp[1]
+                    self.attrs["conninfo"][tmp[0]] = tmp[1]
 
         return True
 
@@ -362,13 +370,15 @@ class PgSubscription():
             changed (bool): True if the subscription has been created, otherwise False.
         """
         query_fragments = []
-        query_fragments.append("CREATE SUBSCRIPTION %s CONNECTION '%s' "
-                               "PUBLICATION %s" % (self.name, connparams, ', '.join(publications)))
+        query_fragments.append(
+            "CREATE SUBSCRIPTION %s CONNECTION '%s' "
+            "PUBLICATION %s" % (self.name, connparams, ", ".join(publications))
+        )
 
         if subsparams:
             query_fragments.append("WITH (%s)" % subsparams)
 
-        changed = self.__exec_sql(' '.join(query_fragments), check_mode=check_mode)
+        changed = self.__exec_sql(" ".join(query_fragments), check_mode=check_mode)
 
         return changed
 
@@ -390,37 +400,41 @@ class PgSubscription():
         changed = False
 
         if connparams:
-            if connparams != self.attrs['conninfo']:
-                changed = self.__set_conn_params(convert_conn_params(connparams),
-                                                 check_mode=check_mode)
+            if connparams != self.attrs["conninfo"]:
+                changed = self.__set_conn_params(
+                    convert_conn_params(connparams), check_mode=check_mode
+                )
 
         if publications:
-            if sorted(self.attrs['publications']) != sorted(publications):
+            if sorted(self.attrs["publications"]) != sorted(publications):
                 changed = self.__set_publications(publications, check_mode=check_mode)
 
         if subsparams:
             params_to_update = []
 
-            for (param, value) in iteritems(subsparams):
-                if param == 'enabled':
-                    if self.attrs['enabled'] and value is False:
+            for param, value in iteritems(subsparams):
+                if param == "enabled":
+                    if self.attrs["enabled"] and value is False:
                         changed = self.enable(enabled=False, check_mode=check_mode)
-                    elif not self.attrs['enabled'] and value is True:
+                    elif not self.attrs["enabled"] and value is True:
                         changed = self.enable(enabled=True, check_mode=check_mode)
 
-                elif param == 'synchronous_commit':
-                    if self.attrs['synccommit'] is True and value is False:
+                elif param == "synchronous_commit":
+                    if self.attrs["synccommit"] is True and value is False:
                         params_to_update.append("%s = false" % param)
-                    elif self.attrs['synccommit'] is False and value is True:
+                    elif self.attrs["synccommit"] is False and value is True:
                         params_to_update.append("%s = true" % param)
 
-                elif param == 'slot_name':
-                    if self.attrs['slotname'] and self.attrs['slotname'] != value:
+                elif param == "slot_name":
+                    if self.attrs["slotname"] and self.attrs["slotname"] != value:
                         params_to_update.append("%s = %s" % (param, value))
 
                 else:
-                    self.module.warn("Parameter '%s' is not in params supported "
-                                     "for update '%s', ignored..." % (param, SUBSPARAMS_KEYS_FOR_UPDATE))
+                    self.module.warn(
+                        "Parameter '%s' is not in params supported "
+                        "for update '%s', ignored..."
+                        % (param, SUBSPARAMS_KEYS_FOR_UPDATE)
+                    )
 
             if params_to_update:
                 changed = self.__set_params(params_to_update, check_mode=check_mode)
@@ -444,7 +458,7 @@ class PgSubscription():
             if cascade:
                 query_fragments.append("CASCADE")
 
-            return self.__exec_sql(' '.join(query_fragments), check_mode=check_mode)
+            return self.__exec_sql(" ".join(query_fragments), check_mode=check_mode)
 
     def set_owner(self, role, check_mode=True):
         """Set a subscription owner.
@@ -474,7 +488,7 @@ class PgSubscription():
         Returns:
             True if successful, False otherwise.
         """
-        query = 'ALTER SUBSCRIPTION %s REFRESH PUBLICATION' % self.name
+        query = "ALTER SUBSCRIPTION %s REFRESH PUBLICATION" % self.name
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __set_params(self, params_to_update, check_mode=True):
@@ -490,7 +504,10 @@ class PgSubscription():
         Returns:
             True if successful, False otherwise.
         """
-        query = 'ALTER SUBSCRIPTION %s SET (%s)' % (self.name, ', '.join(params_to_update))
+        query = "ALTER SUBSCRIPTION %s SET (%s)" % (
+            self.name,
+            ", ".join(params_to_update),
+        )
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __set_conn_params(self, connparams, check_mode=True):
@@ -522,7 +539,10 @@ class PgSubscription():
         Returns:
             True if successful, False otherwise.
         """
-        query = 'ALTER SUBSCRIPTION %s SET PUBLICATION %s' % (self.name, ', '.join(publications))
+        query = "ALTER SUBSCRIPTION %s SET PUBLICATION %s" % (
+            self.name,
+            ", ".join(publications),
+        )
         return self.__exec_sql(query, check_mode=check_mode)
 
     def enable(self, enabled=True, check_mode=True):
@@ -538,9 +558,9 @@ class PgSubscription():
             True if successful, False otherwise.
         """
         if enabled:
-            query = 'ALTER SUBSCRIPTION %s ENABLE' % self.name
+            query = "ALTER SUBSCRIPTION %s ENABLE" % self.name
         else:
-            query = 'ALTER SUBSCRIPTION %s DISABLE' % self.name
+            query = "ALTER SUBSCRIPTION %s DISABLE" % self.name
 
         return self.__exec_sql(query, check_mode=check_mode)
 
@@ -550,16 +570,23 @@ class PgSubscription():
         Returns:
             Dict with subscription information if successful, False otherwise.
         """
-        query = ("SELECT d.datname, r.rolname, s.subenabled, "
-                 "s.subconninfo, s.subslotname, s.subsynccommit, "
-                 "s.subpublications FROM pg_catalog.pg_subscription s "
-                 "JOIN pg_catalog.pg_database d "
-                 "ON s.subdbid = d.oid "
-                 "JOIN pg_catalog.pg_roles AS r "
-                 "ON s.subowner = r.oid "
-                 "WHERE s.subname = %(name)s AND d.datname = %(db)s")
+        query = (
+            "SELECT d.datname, r.rolname, s.subenabled, "
+            "s.subconninfo, s.subslotname, s.subsynccommit, "
+            "s.subpublications FROM pg_catalog.pg_subscription s "
+            "JOIN pg_catalog.pg_database d "
+            "ON s.subdbid = d.oid "
+            "JOIN pg_catalog.pg_roles AS r "
+            "ON s.subowner = r.oid "
+            "WHERE s.subname = %(name)s AND d.datname = %(db)s"
+        )
 
-        result = exec_sql(self, query, query_params={'name': self.name, 'db': self.db}, add_to_executed=False)
+        result = exec_sql(
+            self,
+            query,
+            query_params={"name": self.name, "db": self.db},
+            add_to_executed=False,
+        )
         if result:
             return result[0]
         else:
@@ -596,16 +623,18 @@ class PgSubscription():
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        name=dict(type='str', required=True),
-        db=dict(type='str', required=True, aliases=['login_db']),
-        state=dict(type='str', default='present', choices=['absent', 'present', 'refresh']),
-        publications=dict(type='list', elements='str'),
-        connparams=dict(type='dict'),
-        cascade=dict(type='bool', default=False),
-        owner=dict(type='str'),
-        subsparams=dict(type='dict'),
-        session_role=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
+        name=dict(type="str", required=True),
+        db=dict(type="str", required=True, aliases=["login_db"]),
+        state=dict(
+            type="str", default="present", choices=["absent", "present", "refresh"]
+        ),
+        publications=dict(type="list", elements="str"),
+        connparams=dict(type="dict"),
+        cascade=dict(type="bool", default=False),
+        owner=dict(type="str"),
+        subsparams=dict(type="dict"),
+        session_role=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -613,16 +642,16 @@ def main():
     )
 
     # Parameters handling:
-    db = module.params['db']
-    name = module.params['name']
-    state = module.params['state']
-    publications = module.params['publications']
-    cascade = module.params['cascade']
-    owner = module.params['owner']
-    subsparams = module.params['subsparams']
-    connparams = module.params['connparams']
-    session_role = module.params['session_role']
-    trust_input = module.params['trust_input']
+    db = module.params["db"]
+    name = module.params["name"]
+    state = module.params["state"]
+    publications = module.params["publications"]
+    cascade = module.params["cascade"]
+    owner = module.params["owner"]
+    subsparams = module.params["subsparams"]
+    connparams = module.params["connparams"]
+    session_role = module.params["session_role"]
+    trust_input = module.params["trust_input"]
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -636,17 +665,26 @@ def main():
         else:
             connparams_str = convert_conn_params(connparams)
 
-        check_input(module, name, publications, owner, session_role,
-                    connparams_str, subsparams_str)
+        check_input(
+            module,
+            name,
+            publications,
+            owner,
+            session_role,
+            connparams_str,
+            subsparams_str,
+        )
 
-    if state == 'present' and cascade:
+    if state == "present" and cascade:
         module.warn('parameter "cascade" is ignored when state is not absent')
 
-    if state != 'present':
+    if state != "present":
         if owner:
             module.warn("parameter 'owner' is ignored when state is not 'present'")
         if publications:
-            module.warn("parameter 'publications' is ignored when state is not 'present'")
+            module.warn(
+                "parameter 'publications' is ignored when state is not 'present'"
+            )
         if connparams:
             module.warn("parameter 'connparams' is ignored when state is not 'present'")
         if subsparams:
@@ -677,7 +715,7 @@ def main():
         initial_state = deepcopy(subscription.attrs)
         final_state = deepcopy(initial_state)
 
-    if state == 'present':
+    if state == "present":
         if not subscription.exists:
             if subsparams:
                 subsparams = convert_subscr_params(subsparams)
@@ -685,29 +723,31 @@ def main():
             if connparams:
                 connparams = convert_conn_params(connparams)
 
-            changed = subscription.create(connparams,
-                                          publications,
-                                          subsparams,
-                                          check_mode=module.check_mode)
+            changed = subscription.create(
+                connparams, publications, subsparams, check_mode=module.check_mode
+            )
 
         else:
             if connparams:
                 connparams = cast_connparams(connparams)
 
-            changed = subscription.update(connparams,
-                                          publications,
-                                          subsparams,
-                                          check_mode=module.check_mode)
+            changed = subscription.update(
+                connparams, publications, subsparams, check_mode=module.check_mode
+            )
 
-        if owner and subscription.attrs['owner'] != owner:
-            changed = subscription.set_owner(owner, check_mode=module.check_mode) or changed
+        if owner and subscription.attrs["owner"] != owner:
+            changed = (
+                subscription.set_owner(owner, check_mode=module.check_mode) or changed
+            )
 
-    elif state == 'absent':
+    elif state == "absent":
         changed = subscription.drop(cascade, check_mode=module.check_mode)
 
-    elif state == 'refresh':
+    elif state == "refresh":
         if not subscription.exists:
-            module.fail_json(msg="Refresh failed: subscription '%s' does not exist" % name)
+            module.fail_json(
+                msg="Refresh failed: subscription '%s' does not exist" % name
+            )
 
         # Always returns True:
         changed = subscription.refresh(check_mode=module.check_mode)
@@ -720,13 +760,15 @@ def main():
     db_connection.close()
 
     # Return ret values and exit:
-    module.exit_json(changed=changed,
-                     name=name,
-                     exists=subscription.exists,
-                     queries=subscription.executed_queries,
-                     initial_state=initial_state,
-                     final_state=final_state)
+    module.exit_json(
+        changed=changed,
+        name=name,
+        exists=subscription.exists,
+        queries=subscription.executed_queries,
+        initial_state=initial_state,
+        final_state=final_state,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

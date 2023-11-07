@@ -9,7 +9,7 @@ __metaclass__ = type
 
 class ModuleDocFragment(object):
     # Postgres documentation fragment
-    DOCUMENTATION = r'''
+    DOCUMENTATION = r"""
 options:
   login_user:
     description:
@@ -89,4 +89,4 @@ notes:
   on the remote host before using this module.
 
 requirements: [ 'psycopg2 >= 2.5.1' ]
-'''
+"""

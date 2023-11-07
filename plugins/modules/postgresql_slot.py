@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_slot
 short_description: Add or remove replication slots from a PostgreSQL database
@@ -100,9 +100,9 @@ author:
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Create physical_one physical slot if doesn't exist
   become_user: postgres
   community.postgresql.postgresql_slot:
@@ -132,9 +132,9 @@ EXAMPLES = r'''
     login_user: ourSuperuser
     login_password: thePassword
     state: absent
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 name:
   description: Name of the slot.
   returned: success
@@ -145,14 +145,21 @@ queries:
   returned: success
   type: str
   sample: [ "SELECT pg_create_physical_replication_slot('physical_one', False, False)" ]
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    get_server_version, pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    get_server_version,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 # ===========================================
 # PostgreSQL module specific support methods.
@@ -165,24 +172,32 @@ class PgSlot(object):
         self.cursor = cursor
         self.name = name
         self.exists = False
-        self.kind = ''
+        self.kind = ""
         self.__slot_exists()
         self.changed = False
         self.executed_queries = []
 
-    def create(self, kind='physical', immediately_reserve=False, output_plugin=False, just_check=False):
+    def create(
+        self,
+        kind="physical",
+        immediately_reserve=False,
+        output_plugin=False,
+        just_check=False,
+    ):
         if self.exists:
             if self.kind == kind:
                 return False
             else:
-                self.module.warn("slot with name '%s' already exists "
-                                 "but has another type '%s'" % (self.name, self.kind))
+                self.module.warn(
+                    "slot with name '%s' already exists "
+                    "but has another type '%s'" % (self.name, self.kind)
+                )
                 return False
 
         if just_check:
             return None
 
-        if kind == 'physical':
+        if kind == "physical":
             # Check server version (immediately_reserved needs 9.6+):
             if get_server_version(self.cursor.connection) < 90600:
                 query = "SELECT pg_create_physical_replication_slot(%(name)s)"
@@ -190,25 +205,36 @@ class PgSlot(object):
             else:
                 query = "SELECT pg_create_physical_replication_slot(%(name)s, %(i_reserve)s)"
 
-            self.changed = exec_sql(self, query,
-                                    query_params={'name': self.name, 'i_reserve': immediately_reserve},
-                                    return_bool=True)
+            self.changed = exec_sql(
+                self,
+                query,
+                query_params={"name": self.name, "i_reserve": immediately_reserve},
+                return_bool=True,
+            )
 
-        elif kind == 'logical':
+        elif kind == "logical":
             query = "SELECT pg_create_logical_replication_slot(%(name)s, %(o_plugin)s)"
-            self.changed = exec_sql(self, query,
-                                    query_params={'name': self.name, 'o_plugin': output_plugin}, return_bool=True)
+            self.changed = exec_sql(
+                self,
+                query,
+                query_params={"name": self.name, "o_plugin": output_plugin},
+                return_bool=True,
+            )
 
     def drop(self):
         if not self.exists:
             return False
 
         query = "SELECT pg_drop_replication_slot(%(name)s)"
-        self.changed = exec_sql(self, query, query_params={'name': self.name}, return_bool=True)
+        self.changed = exec_sql(
+            self, query, query_params={"name": self.name}, return_bool=True
+        )
 
     def __slot_exists(self):
         query = "SELECT slot_type FROM pg_replication_slots WHERE slot_name = %(name)s"
-        res = exec_sql(self, query, query_params={'name': self.name}, add_to_executed=False)
+        res = exec_sql(
+            self, query, query_params={"name": self.name}, add_to_executed=False
+        )
         if res:
             self.exists = True
             self.kind = res[0]["slot_type"]
@@ -244,10 +270,12 @@ def main():
     output_plugin = module.params["output_plugin"]
 
     if not module.params["trust_input"]:
-        check_input(module, module.params['session_role'])
+        check_input(module, module.params["session_role"])
 
-    if immediately_reserve and slot_type == 'logical':
-        module.fail_json(msg="Module parameters immediately_reserve and slot_type=logical are mutually exclusive")
+    if immediately_reserve and slot_type == "logical":
+        module.fail_json(
+            msg="Module parameters immediately_reserve and slot_type=logical are mutually exclusive"
+        )
 
     # When slot_type is logical and parameter db is not passed,
     # the default database will be used to create the slot and
@@ -255,14 +283,16 @@ def main():
     # When the slot type is physical,
     # it doesn't matter which database will be used
     # because physical slots are global objects.
-    if slot_type == 'logical':
+    if slot_type == "logical":
         warn_db_default = True
     else:
         warn_db_default = False
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
-    conn_params = get_conn_params(module, module.params, warn_db_default=warn_db_default)
+    conn_params = get_conn_params(
+        module, module.params, warn_db_default=warn_db_default
+    )
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     cursor = db_connection.cursor(**pg_cursor_args)
 
@@ -277,7 +307,9 @@ def main():
             if not pg_slot.exists:
                 changed = True
 
-            pg_slot.create(slot_type, immediately_reserve, output_plugin, just_check=True)
+            pg_slot.create(
+                slot_type, immediately_reserve, output_plugin, just_check=True
+            )
 
         elif state == "absent":
             if pg_slot.exists:
@@ -295,5 +327,5 @@ def main():
     module.exit_json(changed=changed, name=name, queries=pg_slot.executed_queries)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

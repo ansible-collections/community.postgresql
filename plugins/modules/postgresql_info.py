@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_info
 short_description: Gather information about PostgreSQL servers
@@ -61,9 +61,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Display info from postgres hosts.
 # ansible postgres -m postgresql_info
 
@@ -105,9 +105,9 @@ EXAMPLES = r'''
   community.postgresql.postgresql_info:
     filter:
     - "!databases"
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 version:
   description: Database server version U(https://www.postgresql.org/support/versioning/).
   returned: success
@@ -511,7 +511,7 @@ settings:
       returned: success
       type: bool
       sample: false
-'''
+"""
 
 import re
 from fnmatch import fnmatch
@@ -519,11 +519,17 @@ from fnmatch import fnmatch
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, get_conn_params, get_server_version,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    get_server_version,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 # ===========================================
 # PostgreSQL module specific support methods.
@@ -550,8 +556,12 @@ class PgDbConn(object):
         """
         # Ensure psycopg libraries are available before connecting to DB:
         ensure_required_libs(self.module)
-        conn_params = get_conn_params(self.module, self.module.params, warn_db_default=False)
-        self.db_conn, dummy = connect_to_db(self.module, conn_params, fail_on_conn=fail_on_conn)
+        conn_params = get_conn_params(
+            self.module, self.module.params, warn_db_default=False
+        )
+        self.db_conn, dummy = connect_to_db(
+            self.module, conn_params, fail_on_conn=fail_on_conn
+        )
         if self.db_conn is None:
             # only happens if fail_on_conn is False and there actually was an issue connecting to the DB
             return None
@@ -567,9 +577,9 @@ class PgDbConn(object):
             self.db_conn.close()
 
         # the lines below seem redundant but they are actually needed for connect to work as expected
-        self.module.params['db'] = dbname
-        self.module.params['database'] = dbname
-        self.module.params['login_db'] = dbname
+        self.module.params["db"] = dbname
+        self.module.params["database"] = dbname
+        self.module.params["login_db"] = dbname
         return self.connect(fail_on_conn=False)
 
 
@@ -618,10 +628,10 @@ class PgClusterInfo(object):
         # only values from it:
         if val_list:
             for i in val_list:
-                if i[0] != '!':
+                if i[0] != "!":
                     incl_list.append(i)
                 else:
-                    excl_list.append(i.lstrip('!'))
+                    excl_list.append(i.lstrip("!"))
 
             if incl_list:
                 for s in subset_map:
@@ -655,10 +665,12 @@ class PgClusterInfo(object):
 
     def get_pub_info(self):
         """Get publication statistics."""
-        query = ("SELECT p.*, r.rolname AS ownername "
-                 "FROM pg_catalog.pg_publication AS p "
-                 "JOIN pg_catalog.pg_roles AS r "
-                 "ON p.pubowner = r.oid")
+        query = (
+            "SELECT p.*, r.rolname AS ownername "
+            "FROM pg_catalog.pg_publication AS p "
+            "JOIN pg_catalog.pg_roles AS r "
+            "ON p.pubowner = r.oid"
+        )
 
         result = self.__exec_sql(query)
 
@@ -670,30 +682,36 @@ class PgClusterInfo(object):
         publications = {}
 
         for elem in result:
-            if not publications.get(elem['pubname']):
-                publications[elem['pubname']] = {}
+            if not publications.get(elem["pubname"]):
+                publications[elem["pubname"]] = {}
 
             for key, val in iteritems(elem):
-                if key != 'pubname':
-                    publications[elem['pubname']][key] = val
+                if key != "pubname":
+                    publications[elem["pubname"]][key] = val
 
         return publications
 
     def get_subscr_info(self):
         """Get subscription statistics."""
-        columns_sub_table = ("SELECT column_name "
-                             "FROM information_schema.columns "
-                             "WHERE table_schema = 'pg_catalog' "
-                             "AND table_name = 'pg_subscription'")
+        columns_sub_table = (
+            "SELECT column_name "
+            "FROM information_schema.columns "
+            "WHERE table_schema = 'pg_catalog' "
+            "AND table_name = 'pg_subscription'"
+        )
         columns_result = self.__exec_sql(columns_sub_table)
-        columns = ", ".join(["s.%s" % column["column_name"] for column in columns_result])
+        columns = ", ".join(
+            ["s.%s" % column["column_name"] for column in columns_result]
+        )
 
-        query = ("SELECT %s, r.rolname AS ownername, d.datname AS dbname "
-                 "FROM pg_catalog.pg_subscription s "
-                 "JOIN pg_catalog.pg_database d "
-                 "ON s.subdbid = d.oid "
-                 "JOIN pg_catalog.pg_roles AS r "
-                 "ON s.subowner = r.oid" % columns)
+        query = (
+            "SELECT %s, r.rolname AS ownername, d.datname AS dbname "
+            "FROM pg_catalog.pg_subscription s "
+            "JOIN pg_catalog.pg_database d "
+            "ON s.subdbid = d.oid "
+            "JOIN pg_catalog.pg_roles AS r "
+            "ON s.subowner = r.oid" % columns
+        )
 
         result = self.__exec_sql(query)
 
@@ -705,32 +723,38 @@ class PgClusterInfo(object):
         subscr_info = {}
 
         for elem in result:
-            if not subscr_info.get(elem['dbname']):
-                subscr_info[elem['dbname']] = {}
+            if not subscr_info.get(elem["dbname"]):
+                subscr_info[elem["dbname"]] = {}
 
-            if not subscr_info[elem['dbname']].get(elem['subname']):
-                subscr_info[elem['dbname']][elem['subname']] = {}
+            if not subscr_info[elem["dbname"]].get(elem["subname"]):
+                subscr_info[elem["dbname"]][elem["subname"]] = {}
 
                 for key, val in iteritems(elem):
-                    if key not in ('subname', 'dbname'):
-                        subscr_info[elem['dbname']][elem['subname']][key] = val
+                    if key not in ("subname", "dbname"):
+                        subscr_info[elem["dbname"]][elem["subname"]][key] = val
 
         return subscr_info
 
     def get_tablespaces(self):
         """Get information about tablespaces."""
         # Check spcoption exists:
-        opt = self.__exec_sql("SELECT column_name "
-                              "FROM information_schema.columns "
-                              "WHERE table_name = 'pg_tablespace' "
-                              "AND column_name = 'spcoptions'")
+        opt = self.__exec_sql(
+            "SELECT column_name "
+            "FROM information_schema.columns "
+            "WHERE table_name = 'pg_tablespace' "
+            "AND column_name = 'spcoptions'"
+        )
 
         if not opt:
-            query = ("SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl::text "
-                     "FROM pg_tablespace AS s ")
+            query = (
+                "SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl::text "
+                "FROM pg_tablespace AS s "
+            )
         else:
-            query = ("SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl::text, s.spcoptions "
-                     "FROM pg_tablespace AS s ")
+            query = (
+                "SELECT s.spcname, pg_catalog.pg_get_userbyid(s.spcowner) as rolname, s.spcacl::text, s.spcoptions "
+                "FROM pg_tablespace AS s "
+            )
 
         res = self.__exec_sql(query)
         ts_dict = {}
@@ -738,7 +762,7 @@ class PgClusterInfo(object):
             ts_name = i["spcname"]
             ts_info = dict(
                 spcowner=i["rolname"],
-                spcacl=i["spcacl"] if i["spcacl"] else '',
+                spcacl=i["spcacl"] if i["spcacl"] else "",
             )
             if opt:
                 ts_info["spcoptions"] = i["spcoptions"] if i["spcoptions"] else []
@@ -750,34 +774,43 @@ class PgClusterInfo(object):
     def get_ext_info(self):
         """Get information about existing extensions."""
         # Check that pg_extension exists:
-        res = self.__exec_sql("SELECT EXISTS (SELECT 1 FROM "
-                              "information_schema.tables "
-                              "WHERE table_name = 'pg_extension')")
+        res = self.__exec_sql(
+            "SELECT EXISTS (SELECT 1 FROM "
+            "information_schema.tables "
+            "WHERE table_name = 'pg_extension')"
+        )
         if not res[0]["exists"]:
             return True
 
-        query = ("SELECT e.extname, e.extversion, n.nspname, c.description "
-                 "FROM pg_catalog.pg_extension AS e "
-                 "LEFT JOIN pg_catalog.pg_namespace AS n "
-                 "ON n.oid = e.extnamespace "
-                 "LEFT JOIN pg_catalog.pg_description AS c "
-                 "ON c.objoid = e.oid "
-                 "AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass")
+        query = (
+            "SELECT e.extname, e.extversion, n.nspname, c.description "
+            "FROM pg_catalog.pg_extension AS e "
+            "LEFT JOIN pg_catalog.pg_namespace AS n "
+            "ON n.oid = e.extnamespace "
+            "LEFT JOIN pg_catalog.pg_description AS c "
+            "ON c.objoid = e.oid "
+            "AND c.classoid = 'pg_catalog.pg_extension'::pg_catalog.regclass"
+        )
         res = self.__exec_sql(query)
         ext_dict = {}
         for i in res:
             ext_ver_raw = i["extversion"]
 
-            if re.search(r'^([0-9]+([\-]*[0-9]+)?\.)*[0-9]+([\-]*[0-9]+)?$', i["extversion"]) is None:
+            if (
+                re.search(
+                    r"^([0-9]+([\-]*[0-9]+)?\.)*[0-9]+([\-]*[0-9]+)?$", i["extversion"]
+                )
+                is None
+            ):
                 ext_ver = [None, None]
             else:
-                ext_ver = i["extversion"].split('.')
-                if re.search(r'-', ext_ver[0]) is not None:
-                    ext_ver = ext_ver[0].split('-')
+                ext_ver = i["extversion"].split(".")
+                if re.search(r"-", ext_ver[0]) is not None:
+                    ext_ver = ext_ver[0].split("-")
                 else:
                     try:
-                        if re.search(r'-', ext_ver[1]) is not None:
-                            ext_ver[1] = ext_ver[1].split('-')[0]
+                        if re.search(r"-", ext_ver[1]) is not None:
+                            ext_ver[1] = ext_ver[1].split("-")[0]
                     except IndexError:
                         ext_ver.append(None)
 
@@ -795,14 +828,16 @@ class PgClusterInfo(object):
 
     def get_role_info(self):
         """Get information about roles (in PgSQL groups and users are roles)."""
-        query = ("SELECT r.rolname, r.rolsuper, r.rolcanlogin, "
-                 "r.rolvaliduntil, "
-                 "ARRAY(SELECT b.rolname "
-                 "FROM pg_catalog.pg_auth_members AS m "
-                 "JOIN pg_catalog.pg_roles AS b ON (m.roleid = b.oid) "
-                 "WHERE m.member = r.oid) AS memberof "
-                 "FROM pg_catalog.pg_roles AS r "
-                 "WHERE r.rolname !~ '^pg_'")
+        query = (
+            "SELECT r.rolname, r.rolsuper, r.rolcanlogin, "
+            "r.rolvaliduntil, "
+            "ARRAY(SELECT b.rolname "
+            "FROM pg_catalog.pg_auth_members AS m "
+            "JOIN pg_catalog.pg_roles AS b ON (m.roleid = b.oid) "
+            "WHERE m.member = r.oid) AS memberof "
+            "FROM pg_catalog.pg_roles AS r "
+            "WHERE r.rolname !~ '^pg_'"
+        )
 
         res = self.__exec_sql(query)
         rol_dict = {}
@@ -810,7 +845,7 @@ class PgClusterInfo(object):
             rol_dict[i["rolname"]] = dict(
                 superuser=i["rolsuper"],
                 canlogin=i["rolcanlogin"],
-                valid_until=i["rolvaliduntil"] if i["rolvaliduntil"] else '',
+                valid_until=i["rolvaliduntil"] if i["rolvaliduntil"] else "",
                 member_of=i["memberof"] if i["memberof"] else [],
             )
 
@@ -819,14 +854,18 @@ class PgClusterInfo(object):
     def get_rslot_info(self):
         """Get information about replication slots if exist."""
         # Check that pg_replication_slots exists:
-        res = self.__exec_sql("SELECT EXISTS (SELECT 1 FROM "
-                              "information_schema.tables "
-                              "WHERE table_name = 'pg_replication_slots')")
+        res = self.__exec_sql(
+            "SELECT EXISTS (SELECT 1 FROM "
+            "information_schema.tables "
+            "WHERE table_name = 'pg_replication_slots')"
+        )
         if not res[0]["exists"]:
             return True
 
-        query = ("SELECT slot_name, plugin, slot_type, database, "
-                 "active FROM pg_replication_slots")
+        query = (
+            "SELECT slot_name, plugin, slot_type, database, "
+            "active FROM pg_replication_slots"
+        )
         res = self.__exec_sql(query)
 
         # If there is no replication:
@@ -847,17 +886,23 @@ class PgClusterInfo(object):
     def get_settings(self):
         """Get server settings."""
         # Check pending restart column exists:
-        pend_rest_col_exists = self.__exec_sql("SELECT 1 FROM information_schema.columns "
-                                               "WHERE table_name = 'pg_settings' "
-                                               "AND column_name = 'pending_restart'")
+        pend_rest_col_exists = self.__exec_sql(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'pg_settings' "
+            "AND column_name = 'pending_restart'"
+        )
         if not pend_rest_col_exists:
-            query = ("SELECT name, setting, unit, context, vartype, "
-                     "boot_val, min_val, max_val, sourcefile "
-                     "FROM pg_settings")
+            query = (
+                "SELECT name, setting, unit, context, vartype, "
+                "boot_val, min_val, max_val, sourcefile "
+                "FROM pg_settings"
+            )
         else:
-            query = ("SELECT name, setting, unit, context, vartype, "
-                     "boot_val, min_val, max_val, sourcefile, pending_restart "
-                     "FROM pg_settings")
+            query = (
+                "SELECT name, setting, unit, context, vartype, "
+                "boot_val, min_val, max_val, sourcefile, pending_restart "
+                "FROM pg_settings"
+            )
 
         res = self.__exec_sql(query)
 
@@ -868,15 +913,15 @@ class PgClusterInfo(object):
             if i["unit"]:
                 unit = i["unit"]
             else:
-                unit = ''
+                unit = ""
 
-            if unit == 'kB':
+            if unit == "kB":
                 val_in_bytes = int(setting) * 1024
 
-            elif unit == '8kB':
+            elif unit == "8kB":
                 val_in_bytes = int(setting) * 1024 * 8
 
-            elif unit == 'MB':
+            elif unit == "MB":
                 val_in_bytes = int(setting) * 1024 * 1024
 
             if val_in_bytes is not None and val_in_bytes < 0:
@@ -894,17 +939,17 @@ class PgClusterInfo(object):
                 unit=unit,
                 context=i["context"],
                 vartype=i["vartype"],
-                boot_val=i["boot_val"] if i["boot_val"] else '',
-                min_val=i["min_val"] if i["min_val"] else '',
-                max_val=i["max_val"] if i["max_val"] else '',
-                sourcefile=i["sourcefile"] if i["sourcefile"] else '',
+                boot_val=i["boot_val"] if i["boot_val"] else "",
+                min_val=i["min_val"] if i["min_val"] else "",
+                max_val=i["max_val"] if i["max_val"] else "",
+                sourcefile=i["sourcefile"] if i["sourcefile"] else "",
                 pretty_val=pretty_val,
             )
             if val_in_bytes is not None:
-                set_dict[setting_name]['val_in_bytes'] = val_in_bytes
+                set_dict[setting_name]["val_in_bytes"] = val_in_bytes
 
             if pending_restart is not None:
-                set_dict[setting_name]['pending_restart'] = pending_restart
+                set_dict[setting_name]["pending_restart"] = pending_restart
                 if pending_restart:
                     self.pg_info["pending_restart_settings"].append(setting_name)
 
@@ -913,15 +958,19 @@ class PgClusterInfo(object):
     def get_repl_info(self):
         """Get information about replication if the server is a primary."""
         # Check that pg_replication_slots exists:
-        res = self.__exec_sql("SELECT EXISTS (SELECT 1 FROM "
-                              "information_schema.tables "
-                              "WHERE table_name = 'pg_stat_replication')")
+        res = self.__exec_sql(
+            "SELECT EXISTS (SELECT 1 FROM "
+            "information_schema.tables "
+            "WHERE table_name = 'pg_stat_replication')"
+        )
         if not res[0]["exists"]:
             return True
 
-        query = ("SELECT r.pid, pg_catalog.pg_get_userbyid(r.usesysid) AS rolname, r.application_name, r.client_addr::text, "
-                 "r.client_hostname, r.backend_start::text, r.state "
-                 "FROM pg_stat_replication AS r ")
+        query = (
+            "SELECT r.pid, pg_catalog.pg_get_userbyid(r.usesysid) AS rolname, r.application_name, r.client_addr::text, "
+            "r.client_hostname, r.backend_start::text, r.state "
+            "FROM pg_stat_replication AS r "
+        )
         res = self.__exec_sql(query)
 
         # If there is no replication:
@@ -932,9 +981,9 @@ class PgClusterInfo(object):
         for i in res:
             repl_dict[i["pid"]] = dict(
                 usename=i["rolname"],
-                app_name=i["application_name"] if i["application_name"] else '',
+                app_name=i["application_name"] if i["application_name"] else "",
                 client_addr=i["client_addr"],
-                client_hostname=i["client_hostname"] if i["client_hostname"] else '',
+                client_hostname=i["client_hostname"] if i["client_hostname"] else "",
                 backend_start=i["backend_start"],
                 state=i["state"],
             )
@@ -943,29 +992,33 @@ class PgClusterInfo(object):
 
     def get_lang_info(self):
         """Get information about current supported languages."""
-        query = ("SELECT l.lanname, pg_catalog.pg_get_userbyid(l.lanowner) AS rolname, l.lanacl::text "
-                 "FROM pg_language AS l ")
+        query = (
+            "SELECT l.lanname, pg_catalog.pg_get_userbyid(l.lanowner) AS rolname, l.lanacl::text "
+            "FROM pg_language AS l "
+        )
         res = self.__exec_sql(query)
         lang_dict = {}
         for i in res:
             lang_dict[i["lanname"]] = dict(
                 lanowner=i["rolname"],
-                lanacl=i["lanacl"] if i["lanacl"] else '',
+                lanacl=i["lanacl"] if i["lanacl"] else "",
             )
 
         return lang_dict
 
     def get_namespaces(self):
         """Get information about namespaces."""
-        query = ("SELECT n.nspname, pg_catalog.pg_get_userbyid(n.nspowner) AS rolname, n.nspacl::text "
-                 "FROM pg_catalog.pg_namespace AS n ")
+        query = (
+            "SELECT n.nspname, pg_catalog.pg_get_userbyid(n.nspowner) AS rolname, n.nspacl::text "
+            "FROM pg_catalog.pg_namespace AS n "
+        )
         res = self.__exec_sql(query)
 
         nsp_dict = {}
         for i in res:
             nsp_dict[i["nspname"]] = dict(
                 nspowner=i["rolname"],
-                nspacl=i["nspacl"] if i["nspacl"] else '',
+                nspacl=i["nspacl"] if i["nspacl"] else "",
             )
 
         return nsp_dict
@@ -995,25 +1048,29 @@ class PgClusterInfo(object):
 
     def get_recovery_state(self):
         """Get if the service is in recovery mode."""
-        self.pg_info["in_recovery"] = self.__exec_sql("SELECT pg_is_in_recovery()")[0]["pg_is_in_recovery"]
+        self.pg_info["in_recovery"] = self.__exec_sql("SELECT pg_is_in_recovery()")[0][
+            "pg_is_in_recovery"
+        ]
 
     def get_db_info(self):
         """Get information about the current database."""
         # Following query returns:
         # Name, Owner, Encoding, Collate, Ctype, Access Priv, Size
-        query = ("SELECT d.datname, "
-                 "pg_catalog.pg_get_userbyid(d.datdba) AS username, "
-                 "pg_catalog.pg_encoding_to_char(d.encoding) AS encoding, "
-                 "d.datcollate, "
-                 "d.datctype, "
-                 "pg_catalog.array_to_string(d.datacl, E'\n') aclstring, "
-                 "CASE WHEN pg_catalog.has_database_privilege(d.datname, 'CONNECT') "
-                 "THEN pg_catalog.pg_database_size(d.datname)::text "
-                 "ELSE 'No Access' END as dbsize, "
-                 "t.spcname "
-                 "FROM pg_catalog.pg_database AS d "
-                 "JOIN pg_catalog.pg_tablespace t ON d.dattablespace = t.oid "
-                 "WHERE d.datname != 'template0'")
+        query = (
+            "SELECT d.datname, "
+            "pg_catalog.pg_get_userbyid(d.datdba) AS username, "
+            "pg_catalog.pg_encoding_to_char(d.encoding) AS encoding, "
+            "d.datcollate, "
+            "d.datctype, "
+            "pg_catalog.array_to_string(d.datacl, E'\n') aclstring, "
+            "CASE WHEN pg_catalog.has_database_privilege(d.datname, 'CONNECT') "
+            "THEN pg_catalog.pg_database_size(d.datname)::text "
+            "ELSE 'No Access' END as dbsize, "
+            "t.spcname "
+            "FROM pg_catalog.pg_database AS d "
+            "JOIN pg_catalog.pg_tablespace t ON d.dattablespace = t.oid "
+            "WHERE d.datname != 'template0'"
+        )
 
         res = self.__exec_sql(query)
 
@@ -1024,7 +1081,7 @@ class PgClusterInfo(object):
                 encoding=i["encoding"],
                 collate=i["datcollate"],
                 ctype=i["datctype"],
-                access_priv=i["aclstring"] if i["aclstring"] else '',
+                access_priv=i["aclstring"] if i["aclstring"] else "",
                 size=i["dbsize"],
             )
 
@@ -1035,17 +1092,17 @@ class PgClusterInfo(object):
             self.cursor = self.db_obj.reconnect(datname)
             if self.cursor is None:
                 # that means we don't have permission to access these database
-                db_dict[datname]['namespaces'] = {}
-                db_dict[datname]['extensions'] = {}
-                db_dict[datname]['languages'] = {}
-                db_dict[datname]['error'] = "Could not connect to the database."
+                db_dict[datname]["namespaces"] = {}
+                db_dict[datname]["extensions"] = {}
+                db_dict[datname]["languages"] = {}
+                db_dict[datname]["error"] = "Could not connect to the database."
                 continue
-            db_dict[datname]['namespaces'] = self.get_namespaces()
-            db_dict[datname]['extensions'] = self.get_ext_info()
-            db_dict[datname]['languages'] = self.get_lang_info()
+            db_dict[datname]["namespaces"] = self.get_namespaces()
+            db_dict[datname]["extensions"] = self.get_ext_info()
+            db_dict[datname]["languages"] = self.get_lang_info()
             if get_server_version(self.cursor.connection) >= 100000:
-                db_dict[datname]['publications'] = self.get_pub_info()
-                db_dict[datname]['subscriptions'] = subscr_info.get(datname, {})
+                db_dict[datname]["publications"] = self.get_pub_info()
+                db_dict[datname]["subscriptions"] = subscr_info.get(datname, {})
 
         self.pg_info["databases"] = db_dict
 
@@ -1061,9 +1118,12 @@ class PgClusterInfo(object):
             if res:
                 return res
         except Exception as e:
-            self.module.fail_json(msg="Cannot execute SQL '%s': %s" % (query, to_native(e)))
+            self.module.fail_json(
+                msg="Cannot execute SQL '%s': %s" % (query, to_native(e))
+            )
             self.cursor.close()
         return False
+
 
 # ===========================================
 # Module execution.
@@ -1073,21 +1133,21 @@ class PgClusterInfo(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        db=dict(type='str', aliases=['login_db']),
-        filter=dict(type='list', elements='str'),
-        session_role=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
+        db=dict(type="str", aliases=["login_db"]),
+        filter=dict(type="list", elements="str"),
+        session_role=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
     )
 
-    filter_ = module.params['filter']
+    filter_ = module.params["filter"]
 
-    if not module.params['trust_input']:
+    if not module.params["trust_input"]:
         # Check input for potentially dangerous elements:
-        check_input(module, module.params['session_role'])
+        check_input(module, module.params["session_role"])
 
     db_conn_obj = PgDbConn(module)
 
@@ -1097,5 +1157,5 @@ def main():
     module.exit_json(**pg_info.collect(filter_))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_membership
 short_description: Add or remove PostgreSQL roles from groups
@@ -98,9 +98,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Grant role read_only to alice and bob
   community.postgresql.postgresql_membership:
     group: read_only
@@ -139,9 +139,9 @@ EXAMPLES = r'''
     - alice
     - bob
     state: exact
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 queries:
     description: List of executed queries.
     returned: success
@@ -162,14 +162,20 @@ state:
     returned: success
     type: str
     sample: "present"
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    PgMembership, connect_to_db, ensure_required_libs, get_conn_params,
-    pg_cursor_args, postgres_common_argument_spec)
+    PgMembership,
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 # ===========================================
 # Module execution.
@@ -179,13 +185,25 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        groups=dict(type='list', elements='str', required=True, aliases=['group', 'source_role', 'source_roles']),
-        target_roles=dict(type='list', elements='str', required=True, aliases=['target_role', 'user', 'users']),
-        fail_on_role=dict(type='bool', default=True),
-        state=dict(type='str', default='present', choices=['absent', 'exact', 'present']),
-        db=dict(type='str', aliases=['login_db']),
-        session_role=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
+        groups=dict(
+            type="list",
+            elements="str",
+            required=True,
+            aliases=["group", "source_role", "source_roles"],
+        ),
+        target_roles=dict(
+            type="list",
+            elements="str",
+            required=True,
+            aliases=["target_role", "user", "users"],
+        ),
+        fail_on_role=dict(type="bool", default=True),
+        state=dict(
+            type="str", default="present", choices=["absent", "exact", "present"]
+        ),
+        db=dict(type="str", aliases=["login_db"]),
+        session_role=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
     )
 
     module = AnsibleModule(
@@ -193,12 +211,12 @@ def main():
         supports_check_mode=True,
     )
 
-    groups = module.params['groups']
-    target_roles = module.params['target_roles']
-    fail_on_role = module.params['fail_on_role']
-    state = module.params['state']
-    session_role = module.params['session_role']
-    trust_input = module.params['trust_input']
+    groups = module.params["groups"]
+    target_roles = module.params["target_roles"]
+    fail_on_role = module.params["fail_on_role"]
+    state = module.params["state"]
+    session_role = module.params["session_role"]
+    trust_input = module.params["trust_input"]
     if not trust_input:
         # Check input for potentially dangerous elements:
         check_input(module, groups, target_roles, session_role)
@@ -214,13 +232,13 @@ def main():
 
     pg_membership = PgMembership(module, cursor, groups, target_roles, fail_on_role)
 
-    if state == 'present':
+    if state == "present":
         pg_membership.grant()
 
-    elif state == 'exact':
+    elif state == "exact":
         pg_membership.match()
 
-    elif state == 'absent':
+    elif state == "absent":
         pg_membership.revoke()
 
     # Rollback if it's possible and check_mode:
@@ -241,16 +259,16 @@ def main():
         queries=pg_membership.executed_queries,
     )
 
-    if state == 'present':
-        return_dict['granted'] = pg_membership.granted
-    elif state == 'absent':
-        return_dict['revoked'] = pg_membership.revoked
-    elif state == 'exact':
-        return_dict['granted'] = pg_membership.granted
-        return_dict['revoked'] = pg_membership.revoked
+    if state == "present":
+        return_dict["granted"] = pg_membership.granted
+    elif state == "absent":
+        return_dict["revoked"] = pg_membership.revoked
+    elif state == "exact":
+        return_dict["granted"] = pg_membership.granted
+        return_dict["revoked"] = pg_membership.revoked
 
     module.exit_json(**return_dict)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -15,17 +15,15 @@ def main():
     paths = sys.argv[1:] or sys.stdin.read().splitlines()
 
     allowed_extensions = (
-        '.cs',
-        '.ps1',
-        '.psm1',
-        '.py',
+        ".cs",
+        ".ps1",
+        ".psm1",
+        ".py",
     )
 
-    skip_paths = set([
-    ])
+    skip_paths = set([])
 
-    skip_directories = (
-    )
+    skip_directories = ()
 
     for path in paths:
         if path in skip_paths:
@@ -37,8 +35,11 @@ def main():
         ext = os.path.splitext(path)[1]
 
         if ext not in allowed_extensions:
-            print('%s: extension must be one of: %s' % (path, ', '.join(allowed_extensions)))
+            print(
+                "%s: extension must be one of: %s"
+                % (path, ", ".join(allowed_extensions))
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_lang
 short_description: Adds, removes or changes procedural languages with a PostgreSQL database
@@ -121,9 +121,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Add language pltclu to database testdb if it doesn't exist
   community.postgresql.postgresql_lang: db=testdb lang=pltclu state=present
 
@@ -163,24 +163,29 @@ EXAMPLES = r'''
     db: testdb
     lang: mylang
     owner: alice
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 queries:
   description: List of executed queries.
   returned: success
   type: list
   sample: ['CREATE LANGUAGE "acme"']
-'''
+"""
 
 # WARNING - The postgresql_lang module has been deprecated and will be removed in community.postgresql 4.0.0.
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, get_conn_params, pg_cursor_args,
-    postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 executed_queries = []
 
@@ -188,22 +193,22 @@ executed_queries = []
 def lang_exists(cursor, lang):
     """Checks if language exists for db"""
     query = "SELECT lanname FROM pg_language WHERE lanname = %(lang)s"
-    cursor.execute(query, {'lang': lang})
+    cursor.execute(query, {"lang": lang})
     return cursor.rowcount > 0
 
 
 def lang_istrusted(cursor, lang):
     """Checks if language is trusted for db"""
     query = "SELECT lanpltrusted FROM pg_language WHERE lanname = %(lang)s"
-    cursor.execute(query, {'lang': lang})
+    cursor.execute(query, {"lang": lang})
     return cursor.fetchone()["lanpltrusted"]
 
 
 def lang_altertrust(cursor, lang, trust):
     """Changes if language is trusted for db"""
     query = "UPDATE pg_language SET lanpltrusted = %(trust)s WHERE lanname = %(lang)s"
-    cursor.execute(query, {'trust': trust, 'lang': lang})
-    executed_queries.append(cursor.mogrify(query, {'trust': trust, 'lang': lang}))
+    cursor.execute(query, {"trust": trust, "lang": lang})
+    executed_queries.append(cursor.mogrify(query, {"trust": trust, "lang": lang}))
     return True
 
 
@@ -223,9 +228,9 @@ def lang_drop(cursor, lang, cascade):
     cursor.execute("SAVEPOINT ansible_pgsql_lang_drop")
     try:
         if cascade:
-            query = "DROP LANGUAGE \"%s\" CASCADE" % lang
+            query = 'DROP LANGUAGE "%s" CASCADE' % lang
         else:
-            query = "DROP LANGUAGE \"%s\"" % lang
+            query = 'DROP LANGUAGE "%s"' % lang
         executed_queries.append(query)
         cursor.execute(query)
     except Exception:
@@ -243,10 +248,12 @@ def get_lang_owner(cursor, lang):
         cursor (cursor): psycopg cursor object.
         lang (str): language name.
     """
-    query = ("SELECT r.rolname FROM pg_language l "
-             "JOIN pg_roles r ON l.lanowner = r.oid "
-             "WHERE l.lanname = %(lang)s")
-    cursor.execute(query, {'lang': lang})
+    query = (
+        "SELECT r.rolname FROM pg_language l "
+        "JOIN pg_roles r ON l.lanowner = r.oid "
+        "WHERE l.lanname = %(lang)s"
+    )
+    cursor.execute(query, {"lang": lang})
     return cursor.fetchone()["rolname"]
 
 
@@ -258,7 +265,7 @@ def set_lang_owner(cursor, lang, owner):
         lang (str): language name.
         owner (str): name of new owner.
     """
-    query = "ALTER LANGUAGE \"%s\" OWNER TO \"%s\"" % (lang, owner)
+    query = 'ALTER LANGUAGE "%s" OWNER TO "%s"' % (lang, owner)
     executed_queries.append(query)
     cursor.execute(query)
     return True
@@ -276,7 +283,7 @@ def main():
         fail_on_drop=dict(type="bool", default="true"),
         session_role=dict(type="str"),
         owner=dict(type="str"),
-        trust_input=dict(type="bool", default="true")
+        trust_input=dict(type="bool", default="true"),
     )
 
     module = AnsibleModule(
@@ -306,7 +313,7 @@ def main():
     cursor = db_connection.cursor(**pg_cursor_args)
 
     changed = False
-    kw = {'db': db, 'lang': lang, 'trust': trust}
+    kw = {"db": db, "lang": lang, "trust": trust}
 
     if state == "present":
         if lang_exists(cursor, lang):
@@ -328,16 +335,18 @@ def main():
         if lang_exists(cursor, lang):
             if module.check_mode:
                 changed = True
-                kw['lang_dropped'] = True
+                kw["lang_dropped"] = True
             else:
                 changed = lang_drop(cursor, lang, cascade)
                 if fail_on_drop and not changed:
-                    msg = ("unable to drop language, use cascade "
-                           "to delete dependencies or fail_on_drop=false to ignore")
+                    msg = (
+                        "unable to drop language, use cascade "
+                        "to delete dependencies or fail_on_drop=false to ignore"
+                    )
                     module.fail_json(msg=msg)
-                kw['lang_dropped'] = changed
+                kw["lang_dropped"] = changed
 
-    if owner and state == 'present':
+    if owner and state == "present":
         if lang_exists(cursor, lang):
             if owner != get_lang_owner(cursor, lang):
                 changed = set_lang_owner(cursor, lang, owner)
@@ -348,11 +357,11 @@ def main():
         else:
             db_connection.commit()
 
-    kw['changed'] = changed
-    kw['queries'] = executed_queries
+    kw["changed"] = changed
+    kw["queries"] = executed_queries
     db_connection.close()
     module.exit_json(**kw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

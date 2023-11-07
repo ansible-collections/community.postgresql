@@ -20,8 +20,9 @@ from os import environ
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import missing_required_lib
 from ansible.module_utils.six import iteritems
-from ansible_collections.community.postgresql.plugins.module_utils.version import \
-    LooseVersion
+from ansible_collections.community.postgresql.plugins.module_utils.version import (
+    LooseVersion,
+)
 
 psycopg = None  # This line is needed for unit tests
 psycopg2 = None  # This line is needed for unit tests
@@ -43,8 +44,10 @@ try:
 except ImportError:
     try:
         import psycopg2
+
         psycopg = psycopg2
         from psycopg2.extras import DictCursor
+
         PSYCOPG_VERSION = LooseVersion(psycopg2.__version__)
         HAS_PSYCOPG = True
         pg_cursor_args = {"cursor_factory": DictCursor}
@@ -65,32 +68,34 @@ def postgres_common_argument_spec():
 
     return dict(
         login_user=dict(
-            default='postgres' if not env_vars.get("PGUSER") else env_vars.get("PGUSER"),
-            aliases=['login']
+            default="postgres"
+            if not env_vars.get("PGUSER")
+            else env_vars.get("PGUSER"),
+            aliases=["login"],
         ),
-        login_password=dict(default='', no_log=True),
-        login_host=dict(default='', aliases=['host']),
-        login_unix_socket=dict(default='', aliases=['unix_socket']),
+        login_password=dict(default="", no_log=True),
+        login_host=dict(default="", aliases=["host"]),
+        login_unix_socket=dict(default="", aliases=["unix_socket"]),
         port=dict(
-            type='int',
+            type="int",
             default=int(env_vars.get("PGPORT", 5432)),
-            aliases=['login_port']
+            aliases=["login_port"],
         ),
         ssl_mode=dict(
-            default='prefer',
+            default="prefer",
             choices=[
-                'allow',
-                'disable',
-                'prefer',
-                'require',
-                'verify-ca',
-                'verify-full'
-            ]
+                "allow",
+                "disable",
+                "prefer",
+                "require",
+                "verify-ca",
+                "verify-full",
+            ],
         ),
-        ca_cert=dict(aliases=['ssl_rootcert']),
-        ssl_cert=dict(type='path'),
-        ssl_key=dict(type='path'),
-        connect_params=dict(default={}, type='dict'),
+        ca_cert=dict(aliases=["ssl_rootcert"]),
+        ssl_cert=dict(type="path"),
+        ssl_key=dict(type="path"),
+        connect_params=dict(default={}, type="dict"),
     )
 
 
@@ -98,13 +103,17 @@ def ensure_required_libs(module):
     """Check required libraries."""
     if not HAS_PSYCOPG:
         # TODO: Should we raise it as psycopg? That will be a breaking change
-        module.fail_json(msg=missing_required_lib('psycopg2'))
+        module.fail_json(msg=missing_required_lib("psycopg2"))
 
     elif PSYCOPG_VERSION < LooseVersion("2.5.1"):
-        module.warn("psycopg should be at least 2.5.1 to support all modules functionality")
+        module.warn(
+            "psycopg should be at least 2.5.1 to support all modules functionality"
+        )
 
-    if module.params.get('ca_cert') and PSYCOPG_VERSION < LooseVersion('2.4.3'):
-        module.fail_json(msg='psycopg2 must be at least 2.4.3 in order to use the ca_cert parameter')
+    if module.params.get("ca_cert") and PSYCOPG_VERSION < LooseVersion("2.4.3"):
+        module.fail_json(
+            msg="psycopg2 must be at least 2.4.3 in order to use the ca_cert parameter"
+        )
 
 
 def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
@@ -135,26 +144,30 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
                 if PSYCOPG_VERSION >= LooseVersion("2.4.2"):
                     db_connection.set_session(autocommit=True)
                 else:
-                    db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+                    db_connection.set_isolation_level(
+                        psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
+                    )
 
         # Switch role, if specified:
-        if module.params.get('session_role'):
+        if module.params.get("session_role"):
             if PSYCOPG_VERSION >= LooseVersion("3.0"):
                 cursor = db_connection.cursor(row_factory=psycopg.rows.dict_row)
             else:
                 cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
             try:
-                cursor.execute('SET ROLE "%s"' % module.params['session_role'])
+                cursor.execute('SET ROLE "%s"' % module.params["session_role"])
             except Exception as e:
                 module.fail_json(msg="Could not switch role: %s" % to_native(e))
             finally:
                 cursor.close()
 
     except TypeError as e:
-        if 'sslrootcert' in e.args[0]:
-            module.fail_json(msg='Postgresql server must be at least '
-                                 'version 8.4 to support sslrootcert')
+        if "sslrootcert" in e.args[0]:
+            module.fail_json(
+                msg="Postgresql server must be at least "
+                "version 8.4 to support sslrootcert"
+            )
 
         conn_err = to_native(e)
 
@@ -171,7 +184,14 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
     return db_connection, conn_err
 
 
-def exec_sql(obj, query, query_params=None, return_bool=False, add_to_executed=True, dont_exec=False):
+def exec_sql(
+    obj,
+    query,
+    query_params=None,
+    return_bool=False,
+    add_to_executed=True,
+    dont_exec=False,
+):
     """Execute SQL.
 
     Auxiliary function for PostgreSQL user classes.
@@ -252,34 +272,41 @@ def get_conn_params(module, params_dict, warn_db_default=True):
 
     # Might be different in the modules:
     if PSYCOPG_VERSION >= LooseVersion("2.7.0"):
-        if params_dict.get('db'):
-            params_map['db'] = 'dbname'
-        elif params_dict.get('database'):
-            params_map['database'] = 'dbname'
-        elif params_dict.get('login_db'):
-            params_map['login_db'] = 'dbname'
+        if params_dict.get("db"):
+            params_map["db"] = "dbname"
+        elif params_dict.get("database"):
+            params_map["database"] = "dbname"
+        elif params_dict.get("login_db"):
+            params_map["login_db"] = "dbname"
         else:
             if warn_db_default:
-                module.warn('Database name has not been passed, '
-                            'used default database to connect to.')
+                module.warn(
+                    "Database name has not been passed, "
+                    "used default database to connect to."
+                )
     else:
-        if params_dict.get('db'):
-            params_map['db'] = 'database'
-        elif params_dict.get('database'):
-            params_map['database'] = 'database'
-        elif params_dict.get('login_db'):
-            params_map['login_db'] = 'database'
+        if params_dict.get("db"):
+            params_map["db"] = "database"
+        elif params_dict.get("database"):
+            params_map["database"] = "database"
+        elif params_dict.get("login_db"):
+            params_map["login_db"] = "database"
         else:
             if warn_db_default:
-                module.warn('Database name has not been passed, '
-                            'used default database to connect to.')
+                module.warn(
+                    "Database name has not been passed, "
+                    "used default database to connect to."
+                )
 
-    kw = dict((params_map[k], v) for (k, v) in iteritems(params_dict)
-              if k in params_map and v != '' and v is not None)
+    kw = dict(
+        (params_map[k], v)
+        for (k, v) in iteritems(params_dict)
+        if k in params_map and v != "" and v is not None
+    )
 
     # If a login_unix_socket is specified, incorporate it here.
     is_localhost = False
-    if 'host' not in kw or kw['host'] in [None, 'localhost']:
+    if "host" not in kw or kw["host"] in [None, "localhost"]:
         is_localhost = True
 
     if is_localhost and params_dict["login_unix_socket"] != "":
@@ -292,7 +319,7 @@ def get_conn_params(module, params_dict, warn_db_default=True):
     return kw
 
 
-class PgRole():
+class PgRole:
     def __init__(self, module, cursor, name):
         self.module = module
         self.cursor = cursor
@@ -300,15 +327,18 @@ class PgRole():
         self.memberof = self.__fetch_members()
 
     def __fetch_members(self):
-        query = ("SELECT ARRAY(SELECT b.rolname FROM "
-                 "pg_catalog.pg_auth_members m "
-                 "JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) "
-                 "WHERE m.member = r.oid) "
-                 "FROM pg_catalog.pg_roles r "
-                 "WHERE r.rolname = %(dst_role)s")
+        query = (
+            "SELECT ARRAY(SELECT b.rolname FROM "
+            "pg_catalog.pg_auth_members m "
+            "JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) "
+            "WHERE m.member = r.oid) "
+            "FROM pg_catalog.pg_roles r "
+            "WHERE r.rolname = %(dst_role)s"
+        )
 
-        res = exec_sql(self, query, query_params={'dst_role': self.name},
-                       add_to_executed=False)
+        res = exec_sql(
+            self, query, query_params={"dst_role": self.name}, add_to_executed=False
+        )
         if res:
             return res[0]["array"]
         else:
@@ -419,19 +449,26 @@ class PgMembership(object):
 
                 else:
                     if self.fail_on_role:
-                        self.module.exit_json(msg="Role role '%s' is a member of role '%s'" % (role, role))
+                        self.module.exit_json(
+                            msg="Role role '%s' is a member of role '%s'" % (role, role)
+                        )
                     else:
-                        self.module.warn("Role role '%s' is a member of role '%s', pass" % (role, role))
+                        self.module.warn(
+                            "Role role '%s' is a member of role '%s', pass"
+                            % (role, role)
+                        )
 
         # Update role lists, excluding non existent roles:
         if self.groups:
             self.groups = [g for g in self.groups if g not in self.non_existent_roles]
 
-        self.target_roles = [r for r in self.target_roles if r not in self.non_existent_roles]
+        self.target_roles = [
+            r for r in self.target_roles if r not in self.non_existent_roles
+        ]
 
     def __roles_exist(self, roles):
         tmp = ["'" + x + "'" for x in roles]
-        query = "SELECT rolname FROM pg_roles WHERE rolname IN (%s)" % ','.join(tmp)
+        query = "SELECT rolname FROM pg_roles WHERE rolname IN (%s)" % ",".join(tmp)
         return [x["rolname"] for x in exec_sql(self, query, add_to_executed=False)]
 
 
@@ -442,7 +479,7 @@ def set_search_path(cursor, search_path):
         cursor (Psycopg cursor): Database cursor object.
         search_path (str): String containing comma-separated schema names.
     """
-    cursor.execute('SET search_path TO %s' % search_path)
+    cursor.execute("SET search_path TO %s" % search_path)
 
 
 def convert_elements_to_pg_arrays(obj):
@@ -456,7 +493,7 @@ def convert_elements_to_pg_arrays(obj):
         obj (dict or list): Object with converted elements.
     """
     if isinstance(obj, dict):
-        for (key, elem) in iteritems(obj):
+        for key, elem in iteritems(obj):
             if isinstance(elem, list):
                 obj[key] = list_to_pg_array(elem)
 
@@ -478,8 +515,8 @@ def list_to_pg_array(elem):
     Returns:
         elem (str): String representation of PostgreSQL array.
     """
-    elem = str(elem).strip('[]')
-    elem = '{' + elem + '}'
+    elem = str(elem).strip("[]")
+    elem = "{" + elem + "}"
     return elem
 
 

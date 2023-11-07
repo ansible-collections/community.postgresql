@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_privs
 short_description: Grant or revoke privileges on PostgreSQL database objects
@@ -167,9 +167,9 @@ author:
 - Bernhard Weitzhofer (@b6d)
 - Tobias Birkefeld (@tcraxs)
 - Daniele Giudice (@RealGreenDragon)
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # On database "library":
 # GRANT SELECT, INSERT, UPDATE ON TABLE public.books, public.authors
 # TO librarian, reader WITH GRANT OPTION
@@ -411,46 +411,87 @@ EXAMPLES = r'''
     type: parameter
     objs: primary_conninfo,synchronous_standby_names
     roles: replicamgr
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 queries:
   description: List of executed queries.
   returned: success
   type: list
   sample: ['REVOKE GRANT OPTION FOR INSERT ON TABLE "books" FROM "reader";']
-'''
+"""
 
 import traceback
 
 from ansible.module_utils._text import to_native
+
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    check_input, pg_quote_identifier)
+    check_input,
+    pg_quote_identifier,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    HAS_PSYCOPG, PSYCOPG_VERSION, connect_to_db, ensure_required_libs,
-    get_conn_params, get_server_version, pg_cursor_args,
-    postgres_common_argument_spec)
-from ansible_collections.community.postgresql.plugins.module_utils.version import \
-    LooseVersion
+    HAS_PSYCOPG,
+    PSYCOPG_VERSION,
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    get_server_version,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
+from ansible_collections.community.postgresql.plugins.module_utils.version import (
+    LooseVersion,
+)
 
 if HAS_PSYCOPG and PSYCOPG_VERSION < LooseVersion("3.0"):
     from psycopg2 import Error as PsycopgError
 elif HAS_PSYCOPG:
     from psycopg import Error as PsycopgError
 
-VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'CREATE',
-                         'CONNECT', 'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'SET', 'ALTER_SYSTEM'))
-VALID_DEFAULT_OBJS = {'TABLES': ('ALL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'),
-                      'SEQUENCES': ('ALL', 'SELECT', 'UPDATE', 'USAGE'),
-                      'FUNCTIONS': ('ALL', 'EXECUTE'),
-                      'TYPES': ('ALL', 'USAGE'),
-                      'SCHEMAS': ('CREATE', 'USAGE'), }
-VALID_IMPLICIT_ROLES = {'PUBLIC': 0,
-                        'CURRENT_USER': 95000,
-                        'SESSION_USER': 95000,
-                        'CURRENT_ROLE': 140000, }
+VALID_PRIVS = frozenset(
+    (
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER",
+        "CREATE",
+        "CONNECT",
+        "TEMPORARY",
+        "TEMP",
+        "EXECUTE",
+        "USAGE",
+        "ALL",
+        "SET",
+        "ALTER_SYSTEM",
+    )
+)
+VALID_DEFAULT_OBJS = {
+    "TABLES": (
+        "ALL",
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER",
+    ),
+    "SEQUENCES": ("ALL", "SELECT", "UPDATE", "USAGE"),
+    "FUNCTIONS": ("ALL", "EXECUTE"),
+    "TYPES": ("ALL", "USAGE"),
+    "SCHEMAS": ("CREATE", "USAGE"),
+}
+VALID_IMPLICIT_ROLES = {
+    "PUBLIC": 0,
+    "CURRENT_USER": 95000,
+    "SESSION_USER": 95000,
+    "CURRENT_ROLE": 140000,
+}
 
 executed_queries = []
 
@@ -491,14 +532,18 @@ class Connection(object):
 
         # implicit roles in current pg version
         self.pg_implicit_roles = tuple(
-            implicit_role for implicit_role, version_min in VALID_IMPLICIT_ROLES.items() if self.pg_version >= version_min
+            implicit_role
+            for implicit_role, version_min in VALID_IMPLICIT_ROLES.items()
+            if self.pg_version >= version_min
         )
 
     def execute(self, query, input_vars=None):
         try:
             self.cursor.execute(query, input_vars)
         except Exception as e:
-            self.module.fail_json(msg="Cannot execute SQL '%s': %s" % (query, to_native(e)))
+            self.module.fail_json(
+                msg="Cannot execute SQL '%s': %s" % (query, to_native(e))
+            )
 
     def commit(self):
         self.connection.commit()
@@ -544,8 +589,10 @@ class Connection(object):
                        WHERE nspname = %s AND relkind in ('r', 'v', 'm', 'p')"""
             self.execute(query, (schema,))
         else:
-            query = ("SELECT relname FROM pg_catalog.pg_class "
-                     "WHERE relkind in ('r', 'v', 'm', 'p')")
+            query = (
+                "SELECT relname FROM pg_catalog.pg_class "
+                "WHERE relkind in ('r', 'v', 'm', 'p')"
+            )
             self.execute(query)
         return [t["relname"] for t in self.cursor.fetchall()]
 
@@ -567,17 +614,21 @@ class Connection(object):
             if not self.schema_exists(schema):
                 raise Error('Schema "%s" does not exist.' % schema)
 
-            query = ("SELECT p.proname, oidvectortypes(p.proargtypes) ptypes "
-                     "FROM pg_catalog.pg_proc p "
-                     "JOIN pg_namespace n ON n.oid = p.pronamespace "
-                     "WHERE nspname = %s")
+            query = (
+                "SELECT p.proname, oidvectortypes(p.proargtypes) ptypes "
+                "FROM pg_catalog.pg_proc p "
+                "JOIN pg_namespace n ON n.oid = p.pronamespace "
+                "WHERE nspname = %s"
+            )
 
             if self.pg_version >= 110000:
                 query += " and p.prokind = 'f'"
 
             self.execute(query, (schema,))
         else:
-            self.execute("SELECT p.proname, oidvectortypes(p.proargtypes) ptypes FROM pg_catalog.pg_proc p")
+            self.execute(
+                "SELECT p.proname, oidvectortypes(p.proargtypes) ptypes FROM pg_catalog.pg_proc p"
+            )
         return ["%s(%s)" % (t["proname"], t["ptypes"]) for t in self.cursor.fetchall()]
 
     def get_all_procedures_in_schema(self, schema):
@@ -588,15 +639,19 @@ class Connection(object):
             if not self.schema_exists(schema):
                 raise Error('Schema "%s" does not exist.' % schema)
 
-            query = ("SELECT p.proname, oidvectortypes(p.proargtypes) ptypes "
-                     "FROM pg_catalog.pg_proc p "
-                     "JOIN pg_namespace n ON n.oid = p.pronamespace "
-                     "WHERE nspname = %s and p.prokind = 'p'")
+            query = (
+                "SELECT p.proname, oidvectortypes(p.proargtypes) ptypes "
+                "FROM pg_catalog.pg_proc p "
+                "JOIN pg_namespace n ON n.oid = p.pronamespace "
+                "WHERE nspname = %s and p.prokind = 'p'"
+            )
 
             self.execute(query, (schema,))
         else:
-            query = ("SELECT p.proname, oidvectortypes(p.proargtypes) ptypes "
-                     "FROM pg_catalog.pg_proc p WHERE p.prokind = 'p'")
+            query = (
+                "SELECT p.proname, oidvectortypes(p.proargtypes) ptypes "
+                "FROM pg_catalog.pg_proc p WHERE p.prokind = 'p'"
+            )
             self.execute(query)
         return ["%s(%s)" % (t["proname"], t["ptypes"]) for t in self.cursor.fetchall()]
 
@@ -617,9 +672,11 @@ class Connection(object):
                        ORDER BY relname"""
             self.execute(query, (schema, tables))
         else:
-            query = ("SELECT relacl::text FROM pg_catalog.pg_class "
-                     "WHERE relkind in ('r','p','v','m') AND relname = ANY (%s) "
-                     "ORDER BY relname")
+            query = (
+                "SELECT relacl::text FROM pg_catalog.pg_class "
+                "WHERE relkind in ('r','p','v','m') AND relname = ANY (%s) "
+                "ORDER BY relname"
+            )
             self.execute(query)
         return [t["relacl"] for t in self.cursor.fetchall()]
 
@@ -632,13 +689,15 @@ class Connection(object):
                        ORDER BY relname"""
             self.execute(query, (schema, sequences))
         else:
-            query = ("SELECT relacl::text FROM pg_catalog.pg_class "
-                     "WHERE  relkind = 'S' AND relname = ANY (%s) ORDER BY relname")
+            query = (
+                "SELECT relacl::text FROM pg_catalog.pg_class "
+                "WHERE  relkind = 'S' AND relname = ANY (%s) ORDER BY relname"
+            )
             self.execute(query)
         return [t["relacl"] for t in self.cursor.fetchall()]
 
     def get_function_acls(self, schema, function_signatures):
-        funcnames = [f.split('(', 1)[0] for f in function_signatures]
+        funcnames = [f.split("(", 1)[0] for f in function_signatures]
         if schema:
             query = """SELECT proacl::text
                        FROM pg_catalog.pg_proc p
@@ -647,8 +706,10 @@ class Connection(object):
                        ORDER BY proname, proargtypes"""
             self.execute(query, (schema, funcnames))
         else:
-            query = ("SELECT proacl::text FROM pg_catalog.pg_proc WHERE proname = ANY (%s) "
-                     "ORDER BY proname, proargtypes")
+            query = (
+                "SELECT proacl::text FROM pg_catalog.pg_proc WHERE proname = ANY (%s) "
+                "ORDER BY proname, proargtypes"
+            )
             self.execute(query)
         return [t["proacl"] for t in self.cursor.fetchall()]
 
@@ -730,8 +791,19 @@ class Connection(object):
 
     # Manipulating privileges
 
-    def manipulate_privs(self, obj_type, privs, objs, orig_objs, roles, target_roles,
-                         state, grant_option, schema_qualifier=None, fail_on_role=True):
+    def manipulate_privs(
+        self,
+        obj_type,
+        privs,
+        objs,
+        orig_objs,
+        roles,
+        target_roles,
+        state,
+        grant_option,
+        schema_qualifier=None,
+        fail_on_role=True,
+    ):
         """Manipulate database object privileges.
 
         :param obj_type: Type of database object to grant/revoke
@@ -753,31 +825,31 @@ class Connection(object):
                                  Ignored for other Types.
         """
         # get_status: function to get current status
-        if obj_type == 'table':
+        if obj_type == "table":
             get_status = partial(self.get_table_acls, schema_qualifier)
-        elif obj_type == 'sequence':
+        elif obj_type == "sequence":
             get_status = partial(self.get_sequence_acls, schema_qualifier)
-        elif obj_type in ('function', 'procedure'):
+        elif obj_type in ("function", "procedure"):
             get_status = partial(self.get_function_acls, schema_qualifier)
-        elif obj_type == 'schema':
+        elif obj_type == "schema":
             get_status = self.get_schema_acls
-        elif obj_type == 'language':
+        elif obj_type == "language":
             get_status = self.get_language_acls
-        elif obj_type == 'tablespace':
+        elif obj_type == "tablespace":
             get_status = self.get_tablespace_acls
-        elif obj_type == 'database':
+        elif obj_type == "database":
             get_status = self.get_database_acls
-        elif obj_type == 'group':
+        elif obj_type == "group":
             get_status = self.get_group_memberships
-        elif obj_type == 'default_privs':
+        elif obj_type == "default_privs":
             get_status = partial(self.get_default_privs, schema_qualifier)
-        elif obj_type == 'foreign_data_wrapper':
+        elif obj_type == "foreign_data_wrapper":
             get_status = self.get_foreign_data_wrapper_acls
-        elif obj_type == 'foreign_server':
+        elif obj_type == "foreign_server":
             get_status = self.get_foreign_server_acls
-        elif obj_type == 'type':
+        elif obj_type == "type":
             get_status = partial(self.get_type_acls, schema_qualifier)
-        elif obj_type == 'parameter':
+        elif obj_type == "parameter":
             get_status = self.get_parameter_acls
         else:
             raise Error('Unsupported database object type "%s".' % obj_type)
@@ -786,61 +858,73 @@ class Connection(object):
         if not objs:
             return False
 
-        quoted_schema_qualifier = '"%s"' % schema_qualifier.replace('"', '""') if schema_qualifier else None
+        quoted_schema_qualifier = (
+            '"%s"' % schema_qualifier.replace('"', '""') if schema_qualifier else None
+        )
         # obj_ids: quoted db object identifiers (sometimes schema-qualified)
-        if obj_type in ('function', 'procedure'):
+        if obj_type in ("function", "procedure"):
             obj_ids = []
             for obj in objs:
                 try:
-                    f, args = obj.split('(', 1)
+                    f, args = obj.split("(", 1)
                 except Exception:
                     raise Error('Illegal function / procedure signature: "%s".' % obj)
                 obj_ids.append('%s."%s"(%s' % (quoted_schema_qualifier, f, args))
-        elif obj_type in ['table', 'sequence', 'type']:
+        elif obj_type in ["table", "sequence", "type"]:
             obj_ids = ['%s."%s"' % (quoted_schema_qualifier, o) for o in objs]
         else:
             obj_ids = ['"%s"' % o for o in objs]
 
         # set_what: SQL-fragment specifying what to set for the target roles:
         # Either group membership or privileges on objects of a certain type
-        if obj_type == 'group':
-            set_what = ','.join(obj_ids)
-        elif obj_type == 'default_privs':
+        if obj_type == "group":
+            set_what = ",".join(obj_ids)
+        elif obj_type == "default_privs":
             # We don't want privs to be quoted here
-            set_what = ','.join(privs)
+            set_what = ",".join(privs)
         else:
             # function types are already quoted above
-            if obj_type not in ('function', 'procedure'):
-                obj_ids = [pg_quote_identifier(i, 'table') for i in obj_ids]
+            if obj_type not in ("function", "procedure"):
+                obj_ids = [pg_quote_identifier(i, "table") for i in obj_ids]
             # Note: obj_type has been checked against a set of string literals
             # and privs was escaped when it was parsed
             # Note: Underscores are replaced with spaces to support multi-word privs and obj_type
             if orig_objs is not None:
-                set_what = '%s ON %s %s' % (','.join(privs).replace('_', ' '), orig_objs, quoted_schema_qualifier)
+                set_what = "%s ON %s %s" % (
+                    ",".join(privs).replace("_", " "),
+                    orig_objs,
+                    quoted_schema_qualifier,
+                )
             else:
-                set_what = '%s ON %s %s' % (','.join(privs).replace('_', ' '), obj_type.replace('_', ' '), ','.join(obj_ids))
+                set_what = "%s ON %s %s" % (
+                    ",".join(privs).replace("_", " "),
+                    obj_type.replace("_", " "),
+                    ",".join(obj_ids),
+                )
 
         # for_whom: SQL-fragment specifying for whom to set the above
         if not roles:
             return False
-        for_whom = ','.join(roles)
+        for_whom = ",".join(roles)
 
         # as_who: SQL-fragment specifying to who to set the above
         as_who = None
         if target_roles:
-            as_who = ','.join('"%s"' % r for r in target_roles)
+            as_who = ",".join('"%s"' % r for r in target_roles)
 
         status_before = get_status(objs)
 
-        query = QueryBuilder(state) \
-            .for_objtype(obj_type) \
-            .with_grant_option(grant_option) \
-            .for_whom(for_whom) \
-            .as_who(as_who) \
-            .for_schema(quoted_schema_qualifier) \
-            .set_what(set_what) \
-            .for_objs(objs) \
+        query = (
+            QueryBuilder(state)
+            .for_objtype(obj_type)
+            .with_grant_option(grant_option)
+            .for_whom(for_whom)
+            .as_who(as_who)
+            .for_schema(quoted_schema_qualifier)
+            .set_what(set_what)
+            .for_objs(objs)
             .build()
+        )
 
         executed_queries.append(query)
         self.execute(query)
@@ -851,7 +935,7 @@ class Connection(object):
             # For python 3+ that can fail trying
             # to compare NoneType elements by sort method.
             if e is None:
-                return ''
+                return ""
             # With Psycopg 3 we get a list of dicts, it is easier to sort it as strings
             return str(e)
 
@@ -877,7 +961,7 @@ class QueryBuilder(object):
         return self
 
     def for_schema(self, schema):
-        self._schema = ' IN SCHEMA %s' % schema if schema is not None else ''
+        self._schema = " IN SCHEMA %s" % schema if schema is not None else ""
         return self
 
     def with_grant_option(self, option):
@@ -901,120 +985,141 @@ class QueryBuilder(object):
         return self
 
     def build(self):
-        if self._state == 'present':
+        if self._state == "present":
             self.build_present()
-        elif self._state == 'absent':
+        elif self._state == "absent":
             self.build_absent()
         else:
             self.build_absent()
-        return '\n'.join(self.query)
+        return "\n".join(self.query)
 
     def add_default_revoke(self):
         for obj in self._objs:
             if self._as_who:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} REVOKE ALL ON {2} FROM {3};'.format(self._as_who,
-                                                                                                  self._schema, obj,
-                                                                                                  self._for_whom))
+                    "ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} REVOKE ALL ON {2} FROM {3};".format(
+                        self._as_who, self._schema, obj, self._for_whom
+                    )
+                )
             else:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES{0} REVOKE ALL ON {1} FROM {2};'.format(self._schema, obj,
-                                                                                     self._for_whom))
+                    "ALTER DEFAULT PRIVILEGES{0} REVOKE ALL ON {1} FROM {2};".format(
+                        self._schema, obj, self._for_whom
+                    )
+                )
 
     def add_grant_option(self):
         if self._grant_option:
-            if self._obj_type == 'group':
-                self.query[-1] += ' WITH ADMIN OPTION;'
+            if self._obj_type == "group":
+                self.query[-1] += " WITH ADMIN OPTION;"
             else:
-                self.query[-1] += ' WITH GRANT OPTION;'
+                self.query[-1] += " WITH GRANT OPTION;"
         elif self._grant_option is False:
-            self.query[-1] += ';'
-            if self._obj_type == 'group':
-                self.query.append('REVOKE ADMIN OPTION FOR {0} FROM {1};'.format(self._set_what, self._for_whom))
-            elif not self._obj_type == 'default_privs':
-                self.query.append('REVOKE GRANT OPTION FOR {0} FROM {1};'.format(self._set_what, self._for_whom))
+            self.query[-1] += ";"
+            if self._obj_type == "group":
+                self.query.append(
+                    "REVOKE ADMIN OPTION FOR {0} FROM {1};".format(
+                        self._set_what, self._for_whom
+                    )
+                )
+            elif not self._obj_type == "default_privs":
+                self.query.append(
+                    "REVOKE GRANT OPTION FOR {0} FROM {1};".format(
+                        self._set_what, self._for_whom
+                    )
+                )
         else:
-            self.query[-1] += ';'
+            self.query[-1] += ";"
 
     def add_default_priv(self):
         for obj in self._objs:
             if self._as_who:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} GRANT {2} ON {3} TO {4}'.format(self._as_who,
-                                                                                              self._schema,
-                                                                                              self._set_what,
-                                                                                              obj,
-                                                                                              self._for_whom))
+                    "ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} GRANT {2} ON {3} TO {4}".format(
+                        self._as_who, self._schema, self._set_what, obj, self._for_whom
+                    )
+                )
             else:
                 self.query.append(
-                    'ALTER DEFAULT PRIVILEGES{0} GRANT {1} ON {2} TO {3}'.format(self._schema,
-                                                                                 self._set_what,
-                                                                                 obj,
-                                                                                 self._for_whom))
+                    "ALTER DEFAULT PRIVILEGES{0} GRANT {1} ON {2} TO {3}".format(
+                        self._schema, self._set_what, obj, self._for_whom
+                    )
+                )
             self.add_grant_option()
 
         self.add_grant_option()
 
     def build_present(self):
-        if self._obj_type == 'default_privs':
+        if self._obj_type == "default_privs":
             self.add_default_revoke()
             self.add_default_priv()
         else:
-            self.query.append('GRANT {0} TO {1}'.format(self._set_what, self._for_whom))
+            self.query.append("GRANT {0} TO {1}".format(self._set_what, self._for_whom))
             self.add_grant_option()
 
     def build_absent(self):
-        if self._obj_type == 'default_privs':
+        if self._obj_type == "default_privs":
             self.query = []
-            for obj in ['TABLES', 'SEQUENCES', 'TYPES']:
+            for obj in ["TABLES", "SEQUENCES", "TYPES"]:
                 if self._as_who:
                     self.query.append(
-                        'ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} REVOKE ALL ON {2} FROM {3};'.format(self._as_who,
-                                                                                                      self._schema, obj,
-                                                                                                      self._for_whom))
+                        "ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} REVOKE ALL ON {2} FROM {3};".format(
+                            self._as_who, self._schema, obj, self._for_whom
+                        )
+                    )
                 else:
                     self.query.append(
-                        'ALTER DEFAULT PRIVILEGES{0} REVOKE ALL ON {1} FROM {2};'.format(self._schema, obj,
-                                                                                         self._for_whom))
+                        "ALTER DEFAULT PRIVILEGES{0} REVOKE ALL ON {1} FROM {2};".format(
+                            self._schema, obj, self._for_whom
+                        )
+                    )
         else:
-            self.query.append('REVOKE {0} FROM {1};'.format(self._set_what, self._for_whom))
+            self.query.append(
+                "REVOKE {0} FROM {1};".format(self._set_what, self._for_whom)
+            )
 
 
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        database=dict(required=True, aliases=['db', 'login_db']),
-        state=dict(default='present', choices=['present', 'absent']),
-        privs=dict(required=False, aliases=['priv']),
-        type=dict(default='table',
-                  choices=['table',
-                           'sequence',
-                           'function',
-                           'procedure',
-                           'database',
-                           'schema',
-                           'language',
-                           'tablespace',
-                           'group',
-                           'default_privs',
-                           'foreign_data_wrapper',
-                           'foreign_server',
-                           'type',
-                           'parameter', ]),
-        objs=dict(required=False, aliases=['obj']),
+        database=dict(required=True, aliases=["db", "login_db"]),
+        state=dict(default="present", choices=["present", "absent"]),
+        privs=dict(required=False, aliases=["priv"]),
+        type=dict(
+            default="table",
+            choices=[
+                "table",
+                "sequence",
+                "function",
+                "procedure",
+                "database",
+                "schema",
+                "language",
+                "tablespace",
+                "group",
+                "default_privs",
+                "foreign_data_wrapper",
+                "foreign_server",
+                "type",
+                "parameter",
+            ],
+        ),
+        objs=dict(required=False, aliases=["obj"]),
         schema=dict(required=False),
-        roles=dict(required=True, aliases=['role']),
+        roles=dict(required=True, aliases=["role"]),
         session_role=dict(required=False),
         target_roles=dict(required=False),
-        grant_option=dict(required=False, type='bool',
-                          aliases=['admin_option']),
+        grant_option=dict(required=False, type="bool", aliases=["admin_option"]),
         # WARNING: password is deprecated and will  be removed in community.postgresql 4.0.0,
         # login_password should be used instead
-        password=dict(default='', no_log=True,
-                      removed_in_version='4.0.0',
-                      removed_from_collection='community.postgreql'),
-        fail_on_role=dict(type='bool', default=True),
-        trust_input=dict(type='bool', default=True),
+        password=dict(
+            default="",
+            no_log=True,
+            removed_in_version="4.0.0",
+            removed_from_collection="community.postgreql",
+        ),
+        fail_on_role=dict(type="bool", default=True),
+        trust_input=dict(type="bool", default=True),
     )
 
     module = AnsibleModule(
@@ -1022,52 +1127,66 @@ def main():
         supports_check_mode=True,
     )
 
-    fail_on_role = module.params['fail_on_role']
+    fail_on_role = module.params["fail_on_role"]
 
     # Create type object as namespace for module params
-    p = type('Params', (), module.params)
+    p = type("Params", (), module.params)
 
     # WARNING: password is deprecated and will  be removed in community.postgresql 4.0.0,
     # login_password should be used instead
     # https://github.com/ansible-collections/community.postgresql/issues/406
     if p.password:
         if p.login_password:
-            module.fail_json(msg='Use the "password" or "login_password" option but not both '
-                                 'to pass a password to log in with.')
+            module.fail_json(
+                msg='Use the "password" or "login_password" option but not both '
+                "to pass a password to log in with."
+            )
         p.login_password = p.password
 
     # param "schema": default, allowed depends on param "type"
-    if p.type in ['table', 'sequence', 'function', 'procedure', 'type', 'default_privs']:
-        if p.objs == 'schemas' or p.schema == 'not-specified':
+    if p.type in [
+        "table",
+        "sequence",
+        "function",
+        "procedure",
+        "type",
+        "default_privs",
+    ]:
+        if p.objs == "schemas" or p.schema == "not-specified":
             p.schema = None
         else:
-            p.schema = p.schema or 'public'
+            p.schema = p.schema or "public"
     elif p.schema:
-        module.fail_json(msg='Argument "schema" is not allowed '
-                             'for type "%s".' % p.type)
+        module.fail_json(
+            msg='Argument "schema" is not allowed ' 'for type "%s".' % p.type
+        )
 
     # param "objs": ALL_IN_SCHEMA can be used only
     # when param "type" is table, sequence, function or procedure
-    if p.objs == 'ALL_IN_SCHEMA' and p.type not in ('table', 'sequence', 'function', 'procedure'):
-        module.fail_json(msg='Argument "objs": ALL_IN_SCHEMA can be used only for '
-                             'type: table, sequence, function or procedure, '
-                             '%s was passed.' % p.type)
+    if p.objs == "ALL_IN_SCHEMA" and p.type not in (
+        "table",
+        "sequence",
+        "function",
+        "procedure",
+    ):
+        module.fail_json(
+            msg='Argument "objs": ALL_IN_SCHEMA can be used only for '
+            "type: table, sequence, function or procedure, "
+            "%s was passed." % p.type
+        )
 
     # param "objs": default, required depends on param "type"
-    if p.type == 'database':
+    if p.type == "database":
         p.objs = p.objs or p.database
     elif not p.objs:
-        module.fail_json(msg='Argument "objs" is required '
-                             'for type "%s".' % p.type)
+        module.fail_json(msg='Argument "objs" is required ' 'for type "%s".' % p.type)
 
     # param "privs": allowed, required depends on param "type"
-    if p.type == 'group':
+    if p.type == "group":
         if p.privs:
-            module.fail_json(msg='Argument "privs" is not allowed '
-                                 'for type "group".')
+            module.fail_json(msg='Argument "privs" is not allowed ' 'for type "group".')
     elif not p.privs:
-        module.fail_json(msg='Argument "privs" is required '
-                             'for type "%s".' % p.type)
+        module.fail_json(msg='Argument "privs" is required ' 'for type "%s".' % p.type)
 
     # Check input
     if not p.trust_input:
@@ -1081,70 +1200,82 @@ def main():
         try:
             conn.cursor.execute('SET ROLE "%s"' % p.session_role)
         except Exception as e:
-            module.fail_json(msg="Could not switch to role %s: %s" % (p.session_role, to_native(e)), exception=traceback.format_exc())
+            module.fail_json(
+                msg="Could not switch to role %s: %s" % (p.session_role, to_native(e)),
+                exception=traceback.format_exc(),
+            )
 
     try:
         # privs
         if p.privs:
-            privs = frozenset(pr.upper() for pr in p.privs.split(','))
+            privs = frozenset(pr.upper() for pr in p.privs.split(","))
             if not privs.issubset(VALID_PRIVS):
-                module.fail_json(msg='Invalid privileges specified: %s' % privs.difference(VALID_PRIVS))
+                module.fail_json(
+                    msg="Invalid privileges specified: %s"
+                    % privs.difference(VALID_PRIVS)
+                )
         else:
             privs = None
         # objs:
         orig_objs = None
-        if p.objs == 'ALL_IN_SCHEMA':
-            if p.type == 'table':
+        if p.objs == "ALL_IN_SCHEMA":
+            if p.type == "table":
                 objs = conn.get_all_tables_in_schema(p.schema)
-            elif p.type == 'sequence':
+            elif p.type == "sequence":
                 objs = conn.get_all_sequences_in_schema(p.schema)
-            elif p.type == 'function':
+            elif p.type == "function":
                 objs = conn.get_all_functions_in_schema(p.schema)
-            elif p.type == 'procedure':
+            elif p.type == "procedure":
                 objs = conn.get_all_procedures_in_schema(p.schema)
 
             if conn.pg_version >= 90000:
-                if p.type == 'table':
-                    orig_objs = 'ALL TABLES IN SCHEMA'
-                elif p.type == 'sequence':
-                    orig_objs = 'ALL SEQUENCES IN SCHEMA'
-                elif p.type == 'function':
-                    orig_objs = 'ALL FUNCTIONS IN SCHEMA'
-                elif p.type == 'procedure':
-                    orig_objs = 'ALL PROCEDURES IN SCHEMA'
+                if p.type == "table":
+                    orig_objs = "ALL TABLES IN SCHEMA"
+                elif p.type == "sequence":
+                    orig_objs = "ALL SEQUENCES IN SCHEMA"
+                elif p.type == "function":
+                    orig_objs = "ALL FUNCTIONS IN SCHEMA"
+                elif p.type == "procedure":
+                    orig_objs = "ALL PROCEDURES IN SCHEMA"
 
-        elif p.type == 'default_privs':
-            if p.objs == 'ALL_DEFAULT':
-                VALID_DEFAULT_OBJS.pop('SCHEMAS')
+        elif p.type == "default_privs":
+            if p.objs == "ALL_DEFAULT":
+                VALID_DEFAULT_OBJS.pop("SCHEMAS")
                 objs = frozenset(VALID_DEFAULT_OBJS.keys())
             else:
-                objs = frozenset(obj.upper() for obj in p.objs.split(','))
+                objs = frozenset(obj.upper() for obj in p.objs.split(","))
                 if not objs.issubset(VALID_DEFAULT_OBJS):
                     module.fail_json(
-                        msg='Invalid Object set specified: %s' % objs.difference(VALID_DEFAULT_OBJS.keys()))
+                        msg="Invalid Object set specified: %s"
+                        % objs.difference(VALID_DEFAULT_OBJS.keys())
+                    )
             # Again, do we have valid privs specified for object type:
-            valid_objects_for_priv = frozenset(obj for obj in objs if privs.issubset(VALID_DEFAULT_OBJS[obj]))
+            valid_objects_for_priv = frozenset(
+                obj for obj in objs if privs.issubset(VALID_DEFAULT_OBJS[obj])
+            )
             if not valid_objects_for_priv == objs:
                 module.fail_json(
-                    msg='Invalid priv specified. Valid object for priv: {0}. Objects: {1}'.format(
-                        valid_objects_for_priv, objs))
+                    msg="Invalid priv specified. Valid object for priv: {0}. Objects: {1}".format(
+                        valid_objects_for_priv, objs
+                    )
+                )
         else:
-            objs = p.objs.split(',')
+            objs = p.objs.split(",")
 
             # function signatures are encoded using ':' to separate args
-            if p.type in ('function', 'procedure'):
-                objs = [obj.replace(':', ',') for obj in objs]
+            if p.type in ("function", "procedure"):
+                objs = [obj.replace(":", ",") for obj in objs]
 
         # roles
         roles = []
-        roles_raw = p.roles.split(',')
+        roles_raw = p.roles.split(",")
         for r in roles_raw:
             if conn.role_exists(r):
                 if conn.is_implicit_role(r):
                     # Some implicit roles (as PUBLIC) works in uppercase without double quotes and in lowercase with double quotes.
                     # Other implicit roles (as SESSION_USER) works only in uppercase without double quotes.
                     # So the approach that works for all implicit roles is uppercase without double quotes.
-                    roles.append('%s' % r.upper())
+                    roles.append("%s" % r.upper())
                 else:
                     roles.append('"%s"' % r.replace('"', '""'))
             else:
@@ -1157,13 +1288,15 @@ def main():
             module.exit_json(changed=False, queries=executed_queries)
 
         # check if target_roles is set with type: default_privs
-        if p.target_roles and not p.type == 'default_privs':
-            module.warn('"target_roles" will be ignored '
-                        'Argument "type: default_privs" is required for usage of "target_roles".')
+        if p.target_roles and not p.type == "default_privs":
+            module.warn(
+                '"target_roles" will be ignored '
+                'Argument "type: default_privs" is required for usage of "target_roles".'
+            )
 
         # target roles
         if p.target_roles:
-            target_roles = p.target_roles.split(',')
+            target_roles = p.target_roles.split(",")
         else:
             target_roles = None
 
@@ -1199,5 +1332,5 @@ def main():
     module.exit_json(changed=changed, queries=executed_queries)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

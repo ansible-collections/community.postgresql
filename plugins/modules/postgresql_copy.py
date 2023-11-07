@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_copy
 short_description: Copy data between a file/program and a PostgreSQL table
@@ -101,9 +101,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Copy text TAB-separated data from file /tmp/data.txt to acme table
   community.postgresql.postgresql_copy:
     copy_from: /tmp/data.txt
@@ -159,9 +159,9 @@ EXAMPLES = r'''
     options:
       delimiter: '|'
       null: 'N'
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 queries:
   description: List of executed queries.
   returned: success
@@ -177,15 +177,22 @@ dst:
   returned: success
   type: str
   sample: "/tmp/data.csv"
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    check_input, pg_quote_identifier)
+    check_input,
+    pg_quote_identifier,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 
 class PgCopyData(object):
@@ -212,34 +219,34 @@ class PgCopyData(object):
         self.cursor = cursor
         self.executed_queries = []
         self.changed = False
-        self.dst = ''
-        self.src = ''
+        self.dst = ""
+        self.src = ""
         self.opt_need_quotes = (
-            'DELIMITER',
-            'NULL',
-            'QUOTE',
-            'ESCAPE',
-            'ENCODING',
+            "DELIMITER",
+            "NULL",
+            "QUOTE",
+            "ESCAPE",
+            "ENCODING",
         )
 
     def copy_from(self):
         """Implements COPY FROM command behavior."""
-        self.src = self.module.params['copy_from']
-        self.dst = self.module.params['dst']
+        self.src = self.module.params["copy_from"]
+        self.dst = self.module.params["dst"]
 
-        query_fragments = ['COPY %s' % pg_quote_identifier(self.dst, 'table')]
+        query_fragments = ["COPY %s" % pg_quote_identifier(self.dst, "table")]
 
-        if self.module.params.get('columns'):
-            query_fragments.append('(%s)' % ','.join(self.module.params['columns']))
+        if self.module.params.get("columns"):
+            query_fragments.append("(%s)" % ",".join(self.module.params["columns"]))
 
-        query_fragments.append('FROM')
+        query_fragments.append("FROM")
 
-        if self.module.params.get('program'):
-            query_fragments.append('PROGRAM')
+        if self.module.params.get("program"):
+            query_fragments.append("PROGRAM")
 
         query_fragments.append("'%s'" % self.src)
 
-        if self.module.params.get('options'):
+        if self.module.params.get("options"):
             query_fragments.append(self.__transform_options())
 
         # Note: check mode is implemented here:
@@ -247,34 +254,34 @@ class PgCopyData(object):
             self.changed = self.__check_table(self.dst)
 
             if self.changed:
-                self.executed_queries.append(' '.join(query_fragments))
+                self.executed_queries.append(" ".join(query_fragments))
         else:
-            if exec_sql(self, ' '.join(query_fragments), return_bool=True):
+            if exec_sql(self, " ".join(query_fragments), return_bool=True):
                 self.changed = True
 
     def copy_to(self):
         """Implements COPY TO command behavior."""
-        self.src = self.module.params['src']
-        self.dst = self.module.params['copy_to']
+        self.src = self.module.params["src"]
+        self.dst = self.module.params["copy_to"]
 
-        if 'SELECT ' in self.src.upper():
+        if "SELECT " in self.src.upper():
             # If src is SQL SELECT statement:
-            query_fragments = ['COPY (%s)' % self.src]
+            query_fragments = ["COPY (%s)" % self.src]
         else:
             # If src is a table:
-            query_fragments = ['COPY %s' % pg_quote_identifier(self.src, 'table')]
+            query_fragments = ["COPY %s" % pg_quote_identifier(self.src, "table")]
 
-        if self.module.params.get('columns'):
-            query_fragments.append('(%s)' % ','.join(self.module.params['columns']))
+        if self.module.params.get("columns"):
+            query_fragments.append("(%s)" % ",".join(self.module.params["columns"]))
 
-        query_fragments.append('TO')
+        query_fragments.append("TO")
 
-        if self.module.params.get('program'):
-            query_fragments.append('PROGRAM')
+        if self.module.params.get("program"):
+            query_fragments.append("PROGRAM")
 
         query_fragments.append("'%s'" % self.dst)
 
-        if self.module.params.get('options'):
+        if self.module.params.get("options"):
             query_fragments.append(self.__transform_options())
 
         # Note: check mode is implemented here:
@@ -282,19 +289,22 @@ class PgCopyData(object):
             self.changed = self.__check_table(self.src)
 
             if self.changed:
-                self.executed_queries.append(' '.join(query_fragments))
+                self.executed_queries.append(" ".join(query_fragments))
         else:
-            if exec_sql(self, ' '.join(query_fragments), return_bool=True):
+            if exec_sql(self, " ".join(query_fragments), return_bool=True):
                 self.changed = True
 
     def __transform_options(self):
         """Transform options dict into a suitable string."""
-        for (key, val) in iteritems(self.module.params['options']):
+        for key, val in iteritems(self.module.params["options"]):
             if key.upper() in self.opt_need_quotes:
-                self.module.params['options'][key] = "'%s'" % val
+                self.module.params["options"][key] = "'%s'" % val
 
-        opt = ['%s %s' % (key, val) for (key, val) in iteritems(self.module.params['options'])]
-        return '(%s)' % ', '.join(opt)
+        opt = [
+            "%s %s" % (key, val)
+            for (key, val) in iteritems(self.module.params["options"])
+        ]
+        return "(%s)" % ", ".join(opt)
 
     def __check_table(self, table):
         """Check table or SQL in transaction mode for check_mode.
@@ -306,15 +316,18 @@ class PgCopyData(object):
                 It can be SQL SELECT statement that was passed
                 instead of the table name.
         """
-        if 'SELECT ' in table.upper():
+        if "SELECT " in table.upper():
             # In this case table is actually SQL SELECT statement.
             # If SQL fails, it's handled by exec_sql():
             exec_sql(self, table, add_to_executed=False)
             # If exec_sql was passed, it means all is OK:
             return True
 
-        exec_sql(self, 'SELECT 1 FROM %s' % pg_quote_identifier(table, 'table'),
-                 add_to_executed=False)
+        exec_sql(
+            self,
+            "SELECT 1 FROM %s" % pg_quote_identifier(table, "table"),
+            add_to_executed=False,
+        )
         # If SQL was executed successfully:
         return True
 
@@ -327,49 +340,54 @@ class PgCopyData(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        copy_to=dict(type='path', aliases=['to']),
-        copy_from=dict(type='path', aliases=['from']),
-        src=dict(type='str', aliases=['source']),
-        dst=dict(type='str', aliases=['destination']),
-        columns=dict(type='list', elements='str', aliases=['column']),
-        options=dict(type='dict'),
-        program=dict(type='bool', default=False),
-        db=dict(type='str', aliases=['login_db']),
-        session_role=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
+        copy_to=dict(type="path", aliases=["to"]),
+        copy_from=dict(type="path", aliases=["from"]),
+        src=dict(type="str", aliases=["source"]),
+        dst=dict(type="str", aliases=["destination"]),
+        columns=dict(type="list", elements="str", aliases=["column"]),
+        options=dict(type="dict"),
+        program=dict(type="bool", default=False),
+        db=dict(type="str", aliases=["login_db"]),
+        session_role=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
         mutually_exclusive=[
-            ['copy_from', 'copy_to'],
-            ['copy_from', 'src'],
-            ['copy_to', 'dst'],
-        ]
+            ["copy_from", "copy_to"],
+            ["copy_from", "src"],
+            ["copy_to", "dst"],
+        ],
     )
 
-    if not module.params['trust_input']:
+    if not module.params["trust_input"]:
         # Check input for potentially dangerous elements:
         opt_list = None
-        if module.params['options']:
-            opt_list = ['%s %s' % (key, val) for (key, val) in iteritems(module.params['options'])]
+        if module.params["options"]:
+            opt_list = [
+                "%s %s" % (key, val)
+                for (key, val) in iteritems(module.params["options"])
+            ]
 
-        check_input(module,
-                    module.params['copy_to'],
-                    module.params['copy_from'],
-                    module.params['src'],
-                    module.params['dst'],
-                    opt_list,
-                    module.params['columns'],
-                    module.params['session_role'])
+        check_input(
+            module,
+            module.params["copy_to"],
+            module.params["copy_from"],
+            module.params["src"],
+            module.params["dst"],
+            opt_list,
+            module.params["columns"],
+            module.params["session_role"],
+        )
 
     # Note: we don't need to check mutually exclusive params here, because they are
     # checked automatically by AnsibleModule (mutually_exclusive=[] list above).
-    if module.params.get('copy_from') and not module.params.get('dst'):
-        module.fail_json(msg='dst param is necessary with copy_from')
+    if module.params.get("copy_from") and not module.params.get("dst"):
+        module.fail_json(msg="dst param is necessary with copy_from")
 
-    elif module.params.get('copy_to') and not module.params.get('src'):
-        module.fail_json(msg='src param is necessary with copy_to')
+    elif module.params.get("copy_to") and not module.params.get("src"):
+        module.fail_json(msg="src param is necessary with copy_to")
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -387,10 +405,10 @@ def main():
     # Therefore not need to pass args to the methods below.
     # Note: check mode is implemented inside the methods below
     # by checking passed module.check_mode arg.
-    if module.params.get('copy_to'):
+    if module.params.get("copy_to"):
         data.copy_to()
 
-    elif module.params.get('copy_from'):
+    elif module.params.get("copy_from"):
         data.copy_from()
 
     # Finish:
@@ -411,5 +429,5 @@ def main():
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

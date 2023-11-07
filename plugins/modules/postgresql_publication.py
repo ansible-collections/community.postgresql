@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_publication
 short_description: Add, update, or remove PostgreSQL publication
@@ -98,9 +98,9 @@ author:
 - Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Create a new publication with name "acme" targeting all tables in database "test"
   community.postgresql.postgresql_publication:
     db: test
@@ -137,9 +137,9 @@ EXAMPLES = r'''
     db: test
     name: acme
     state: absent
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 exists:
   description:
   - Flag indicates the publication exists or not at the end of runtime.
@@ -174,16 +174,24 @@ parameters:
   returned: if publication exists
   type: dict
   sample: {'publish': {'insert': false, 'delete': false, 'update': true}}
-'''
+"""
 
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    check_input, pg_quote_identifier)
+    check_input,
+    pg_quote_identifier,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    get_server_version, pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    get_server_version,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 SUPPORTED_PG_VERSION = 10000
 
@@ -191,6 +199,7 @@ SUPPORTED_PG_VERSION = 10000
 ################################
 # Module functions and classes #
 ################################
+
 
 def transform_tables_representation(tbl_list):
     """Add 'public.' to names of tables where a schema identifier is absent
@@ -203,15 +212,15 @@ def transform_tables_representation(tbl_list):
         tbl_list (list): Changed list.
     """
     for i, table in enumerate(tbl_list):
-        if '.' not in table:
-            tbl_list[i] = pg_quote_identifier('public.%s' % table.strip(), 'table')
+        if "." not in table:
+            tbl_list[i] = pg_quote_identifier("public.%s" % table.strip(), "table")
         else:
-            tbl_list[i] = pg_quote_identifier(table.strip(), 'table')
+            tbl_list[i] = pg_quote_identifier(table.strip(), "table")
 
     return tbl_list
 
 
-class PgPublication():
+class PgPublication:
     """Class to work with PostgreSQL publication.
 
     Args:
@@ -234,10 +243,10 @@ class PgPublication():
         self.name = name
         self.executed_queries = []
         self.attrs = {
-            'alltables': False,
-            'tables': [],
-            'parameters': {},
-            'owner': '',
+            "alltables": False,
+            "tables": [],
+            "parameters": {},
+            "owner": "",
         }
         self.exists = self.check_pub()
 
@@ -263,25 +272,29 @@ class PgPublication():
             # Publication does not exist:
             return False
 
-        self.attrs['owner'] = pub_info.get('pubowner')
+        self.attrs["owner"] = pub_info.get("pubowner")
 
         # Publication DML operations:
-        self.attrs['parameters']['publish'] = {}
-        self.attrs['parameters']['publish']['insert'] = pub_info.get('pubinsert', False)
-        self.attrs['parameters']['publish']['update'] = pub_info.get('pubupdate', False)
-        self.attrs['parameters']['publish']['delete'] = pub_info.get('pubdelete', False)
-        if pub_info.get('pubtruncate'):
-            self.attrs['parameters']['publish']['truncate'] = pub_info.get('pubtruncate')
+        self.attrs["parameters"]["publish"] = {}
+        self.attrs["parameters"]["publish"]["insert"] = pub_info.get("pubinsert", False)
+        self.attrs["parameters"]["publish"]["update"] = pub_info.get("pubupdate", False)
+        self.attrs["parameters"]["publish"]["delete"] = pub_info.get("pubdelete", False)
+        if pub_info.get("pubtruncate"):
+            self.attrs["parameters"]["publish"]["truncate"] = pub_info.get(
+                "pubtruncate"
+            )
 
         # If alltables flag is False, get the list of targeted tables:
-        if not pub_info.get('puballtables'):
+        if not pub_info.get("puballtables"):
             table_info = self.__get_tables_pub_info()
             for i, schema_and_table in enumerate(table_info):
-                table_info[i] = pg_quote_identifier(schema_and_table["schema_dot_table"], 'table')
+                table_info[i] = pg_quote_identifier(
+                    schema_and_table["schema_dot_table"], "table"
+                )
 
-            self.attrs['tables'] = table_info
+            self.attrs["tables"] = table_info
         else:
-            self.attrs['alltables'] = True
+            self.attrs["alltables"] = True
 
         # Publication exists:
         return True
@@ -303,23 +316,25 @@ class PgPublication():
         """
         changed = True
 
-        query_fragments = ["CREATE PUBLICATION %s" % pg_quote_identifier(self.name, 'publication')]
+        query_fragments = [
+            "CREATE PUBLICATION %s" % pg_quote_identifier(self.name, "publication")
+        ]
 
         if tables:
-            query_fragments.append("FOR TABLE %s" % ', '.join(tables))
+            query_fragments.append("FOR TABLE %s" % ", ".join(tables))
         else:
             query_fragments.append("FOR ALL TABLES")
 
         if params:
             params_list = []
             # Make list ["param = 'value'", ...] from params dict:
-            for (key, val) in iteritems(params):
+            for key, val in iteritems(params):
                 params_list.append("%s = '%s'" % (key, val))
 
             # Add the list to query_fragments:
-            query_fragments.append("WITH (%s)" % ', '.join(params_list))
+            query_fragments.append("WITH (%s)" % ", ".join(params_list))
 
-        changed = self.__exec_sql(' '.join(query_fragments), check_mode=check_mode)
+        changed = self.__exec_sql(" ".join(query_fragments), check_mode=check_mode)
 
         if owner:
             # If check_mode, just add possible SQL to
@@ -346,36 +361,34 @@ class PgPublication():
         changed = False
 
         # Add or drop tables from published tables suit:
-        if tables and not self.attrs['alltables']:
-
+        if tables and not self.attrs["alltables"]:
             # 1. If needs to add table to the publication:
             for tbl in tables:
-                if tbl not in self.attrs['tables']:
+                if tbl not in self.attrs["tables"]:
                     # If needs to add table to the publication:
                     changed = self.__pub_add_table(tbl, check_mode=check_mode)
 
             # 2. if there is a table in targeted tables
             # that's not presented in the passed tables:
-            for tbl in self.attrs['tables']:
+            for tbl in self.attrs["tables"]:
                 if tbl not in tables:
                     changed = self.__pub_drop_table(tbl, check_mode=check_mode)
 
-        elif tables and self.attrs['alltables']:
+        elif tables and self.attrs["alltables"]:
             changed = self.__pub_set_tables(tables, check_mode=check_mode)
 
         # Update pub parameters:
         if params:
             for key, val in iteritems(params):
-                if self.attrs['parameters'].get(key):
-
+                if self.attrs["parameters"].get(key):
                     # In PostgreSQL 10/11 only 'publish' optional parameter is presented.
-                    if key == 'publish':
+                    if key == "publish":
                         # 'publish' value can be only a string with comma-separated items
                         # of allowed DML operations like 'insert,update' or
                         # 'insert,update,delete', etc.
                         # Make dictionary to compare with current attrs later:
-                        val_dict = self.attrs['parameters']['publish'].copy()
-                        val_list = val.split(',')
+                        val_dict = self.attrs["parameters"]["publish"].copy()
+                        val_list = val.split(",")
                         for v in val_dict:
                             if v in val_list:
                                 val_dict[v] = True
@@ -384,11 +397,13 @@ class PgPublication():
 
                         # Compare val_dict and the dict with current 'publish' parameters,
                         # if they're different, set new values:
-                        if val_dict != self.attrs['parameters']['publish']:
-                            changed = self.__pub_set_param(key, val, check_mode=check_mode)
+                        if val_dict != self.attrs["parameters"]["publish"]:
+                            changed = self.__pub_set_param(
+                                key, val, check_mode=check_mode
+                            )
 
                     # Default behavior for other cases:
-                    elif self.attrs['parameters'][key] != val:
+                    elif self.attrs["parameters"][key] != val:
                         changed = self.__pub_set_param(key, val, check_mode=check_mode)
 
                 else:
@@ -397,7 +412,7 @@ class PgPublication():
 
         # Update pub owner:
         if owner:
-            if owner != self.attrs['owner']:
+            if owner != self.attrs["owner"]:
                 changed = self.__pub_set_owner(owner, check_mode=check_mode)
 
         return changed
@@ -416,11 +431,13 @@ class PgPublication():
         """
         if self.exists:
             query_fragments = []
-            query_fragments.append("DROP PUBLICATION %s" % pg_quote_identifier(self.name, 'publication'))
+            query_fragments.append(
+                "DROP PUBLICATION %s" % pg_quote_identifier(self.name, "publication")
+            )
             if cascade:
                 query_fragments.append("CASCADE")
 
-            return self.__exec_sql(' '.join(query_fragments), check_mode=check_mode)
+            return self.__exec_sql(" ".join(query_fragments), check_mode=check_mode)
 
     def __get_general_pub_info(self):
         """Get and return general publication information.
@@ -429,24 +446,36 @@ class PgPublication():
             Dict with publication information if successful, False otherwise.
         """
         # Check pg_publication.pubtruncate exists (supported from PostgreSQL 11):
-        pgtrunc_sup = exec_sql(self, ("SELECT 1 FROM information_schema.columns "
-                                      "WHERE table_name = 'pg_publication' "
-                                      "AND column_name = 'pubtruncate'"), add_to_executed=False)
+        pgtrunc_sup = exec_sql(
+            self,
+            (
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name = 'pg_publication' "
+                "AND column_name = 'pubtruncate'"
+            ),
+            add_to_executed=False,
+        )
 
         if pgtrunc_sup:
-            query = ("SELECT r.rolname AS pubowner, p.puballtables, p.pubinsert, "
-                     "p.pubupdate , p.pubdelete, p.pubtruncate FROM pg_publication AS p "
-                     "JOIN pg_catalog.pg_roles AS r "
-                     "ON p.pubowner = r.oid "
-                     "WHERE p.pubname = %(pname)s")
+            query = (
+                "SELECT r.rolname AS pubowner, p.puballtables, p.pubinsert, "
+                "p.pubupdate , p.pubdelete, p.pubtruncate FROM pg_publication AS p "
+                "JOIN pg_catalog.pg_roles AS r "
+                "ON p.pubowner = r.oid "
+                "WHERE p.pubname = %(pname)s"
+            )
         else:
-            query = ("SELECT r.rolname AS pubowner, p.puballtables, p.pubinsert, "
-                     "p.pubupdate , p.pubdelete FROM pg_publication AS p "
-                     "JOIN pg_catalog.pg_roles AS r "
-                     "ON p.pubowner = r.oid "
-                     "WHERE p.pubname = %(pname)s")
+            query = (
+                "SELECT r.rolname AS pubowner, p.puballtables, p.pubinsert, "
+                "p.pubupdate , p.pubdelete FROM pg_publication AS p "
+                "JOIN pg_catalog.pg_roles AS r "
+                "ON p.pubowner = r.oid "
+                "WHERE p.pubname = %(pname)s"
+            )
 
-        result = exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
+        result = exec_sql(
+            self, query, query_params={"pname": self.name}, add_to_executed=False
+        )
         if result:
             return result[0]
         else:
@@ -458,9 +487,13 @@ class PgPublication():
         Returns:
             List of dicts with published tables.
         """
-        query = ("SELECT schemaname || '.' || tablename as schema_dot_table "
-                 "FROM pg_publication_tables WHERE pubname = %(pname)s")
-        return exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
+        query = (
+            "SELECT schemaname || '.' || tablename as schema_dot_table "
+            "FROM pg_publication_tables WHERE pubname = %(pname)s"
+        )
+        return exec_sql(
+            self, query, query_params={"pname": self.name}, add_to_executed=False
+        )
 
     def __pub_add_table(self, table, check_mode=False):
         """Add a table to the publication.
@@ -475,8 +508,10 @@ class PgPublication():
         Returns:
             True if successful, False otherwise.
         """
-        query = ("ALTER PUBLICATION %s ADD TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
-                                                        pg_quote_identifier(table, 'table')))
+        query = "ALTER PUBLICATION %s ADD TABLE %s" % (
+            pg_quote_identifier(self.name, "publication"),
+            pg_quote_identifier(table, "table"),
+        )
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_drop_table(self, table, check_mode=False):
@@ -492,8 +527,10 @@ class PgPublication():
         Returns:
             True if successful, False otherwise.
         """
-        query = ("ALTER PUBLICATION %s DROP TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
-                                                         pg_quote_identifier(table, 'table')))
+        query = "ALTER PUBLICATION %s DROP TABLE %s" % (
+            pg_quote_identifier(self.name, "publication"),
+            pg_quote_identifier(table, "table"),
+        )
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_set_tables(self, tables, check_mode=False):
@@ -509,9 +546,11 @@ class PgPublication():
         Returns:
             True if successful, False otherwise.
         """
-        quoted_tables = [pg_quote_identifier(t, 'table') for t in tables]
-        query = ("ALTER PUBLICATION %s SET TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
-                                                        ', '.join(quoted_tables)))
+        quoted_tables = [pg_quote_identifier(t, "table") for t in tables]
+        query = "ALTER PUBLICATION %s SET TABLE %s" % (
+            pg_quote_identifier(self.name, "publication"),
+            ", ".join(quoted_tables),
+        )
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_set_param(self, param, value, check_mode=False):
@@ -528,8 +567,11 @@ class PgPublication():
         Returns:
             True if successful, False otherwise.
         """
-        query = ("ALTER PUBLICATION %s SET (%s = '%s')" % (pg_quote_identifier(self.name, 'publication'),
-                                                           param, value))
+        query = "ALTER PUBLICATION %s SET (%s = '%s')" % (
+            pg_quote_identifier(self.name, "publication"),
+            param,
+            value,
+        )
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_set_owner(self, role, check_mode=False):
@@ -545,8 +587,10 @@ class PgPublication():
         Returns:
             True if successful, False otherwise.
         """
-        query = ('ALTER PUBLICATION %s '
-                 'OWNER TO "%s"' % (pg_quote_identifier(self.name, 'publication'), role))
+        query = "ALTER PUBLICATION %s " 'OWNER TO "%s"' % (
+            pg_quote_identifier(self.name, "publication"),
+            role,
+        )
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __exec_sql(self, query, check_mode=False):
@@ -581,14 +625,14 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         name=dict(required=True),
-        db=dict(type='str', aliases=['login_db']),
-        state=dict(type='str', default='present', choices=['absent', 'present']),
-        tables=dict(type='list', elements='str'),
-        parameters=dict(type='dict'),
-        owner=dict(type='str'),
-        cascade=dict(type='bool', default=False),
-        session_role=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
+        db=dict(type="str", aliases=["login_db"]),
+        state=dict(type="str", default="present", choices=["absent", "present"]),
+        tables=dict(type="list", elements="str"),
+        parameters=dict(type="dict"),
+        owner=dict(type="str"),
+        cascade=dict(type="bool", default=False),
+        session_role=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -596,25 +640,25 @@ def main():
     )
 
     # Parameters handling:
-    name = module.params['name']
-    state = module.params['state']
-    tables = module.params['tables']
-    params = module.params['parameters']
-    owner = module.params['owner']
-    cascade = module.params['cascade']
-    session_role = module.params['session_role']
-    trust_input = module.params['trust_input']
+    name = module.params["name"]
+    state = module.params["state"]
+    tables = module.params["tables"]
+    params = module.params["parameters"]
+    owner = module.params["owner"]
+    cascade = module.params["cascade"]
+    session_role = module.params["session_role"]
+    trust_input = module.params["trust_input"]
 
     if not trust_input:
         # Check input for potentially dangerous elements:
         if not params:
             params_list = None
         else:
-            params_list = ['%s = %s' % (k, v) for k, v in iteritems(params)]
+            params_list = ["%s = %s" % (k, v) for k, v in iteritems(params)]
 
         check_input(module, name, tables, owner, session_role, params_list)
 
-    if state == 'absent':
+    if state == "absent":
         if tables:
             module.warn('parameter "tables" is ignored when "state=absent"')
         if params:
@@ -622,7 +666,7 @@ def main():
         if owner:
             module.warn('parameter "owner" is ignored when "state=absent"')
 
-    if state == 'present' and cascade:
+    if state == "present" and cascade:
         module.warn('parameter "cascade" is ignored when "state=present"')
 
     # Ensure psycopg libraries are available before connecting to DB:
@@ -648,21 +692,25 @@ def main():
         tables = transform_tables_representation(tables)
 
     # If module.check_mode=True, nothing will be changed:
-    if state == 'present':
+    if state == "present":
         if not publication.exists:
-            changed = publication.create(tables, params, owner, check_mode=module.check_mode)
+            changed = publication.create(
+                tables, params, owner, check_mode=module.check_mode
+            )
 
         else:
-            changed = publication.update(tables, params, owner, check_mode=module.check_mode)
+            changed = publication.update(
+                tables, params, owner, check_mode=module.check_mode
+            )
 
-    elif state == 'absent':
+    elif state == "absent":
         changed = publication.drop(cascade=cascade, check_mode=module.check_mode)
 
     # Get final publication info:
     pub_fin_info = {}
-    if state == 'present' or (state == 'absent' and module.check_mode):
+    if state == "present" or (state == "absent" and module.check_mode):
         pub_fin_info = publication.get_info()
-    elif state == 'absent' and not module.check_mode:
+    elif state == "absent" and not module.check_mode:
         publication.exists = False
 
     # Connection is not needed any more:
@@ -670,8 +718,13 @@ def main():
     db_connection.close()
 
     # Update publication info and return ret values:
-    module.exit_json(changed=changed, queries=publication.executed_queries, exists=publication.exists, **pub_fin_info)
+    module.exit_json(
+        changed=changed,
+        queries=publication.executed_queries,
+        exists=publication.exists,
+        **pub_fin_info
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

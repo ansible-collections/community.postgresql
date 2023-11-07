@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_user
 short_description: Create, alter, or remove a user (role) from a PostgreSQL server instance
@@ -188,9 +188,9 @@ author:
 - Ansible Core Team
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # This example uses the 'priv' argument which is deprecated.
 # You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database, create django user, and grant access to database and products table
@@ -273,15 +273,15 @@ EXAMPLES = r'''
   community.postgresql.postgresql_user:
     name: monitoring
     priv: 'pg_catalog.pg_stat_database:SELECT'
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 queries:
   description: List of executed queries.
   returned: success
   type: list
   sample: ['CREATE USER "alice"', 'GRANT CONNECT ON DATABASE "acme" TO "alice"']
-'''
+"""
 
 import hmac
 import itertools
@@ -293,16 +293,25 @@ from hashlib import md5, sha256
 from ansible.module_utils._text import to_bytes, to_native, to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-from ansible_collections.community.postgresql.plugins.module_utils import \
-    saslprep
+from ansible_collections.community.postgresql.plugins.module_utils import saslprep
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    SQLParseError, check_input, pg_quote_identifier)
+    SQLParseError,
+    check_input,
+    pg_quote_identifier,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    HAS_PSYCOPG, PSYCOPG_VERSION, connect_to_db, ensure_required_libs,
-    get_conn_params, get_server_version, pg_cursor_args,
-    postgres_common_argument_spec)
-from ansible_collections.community.postgresql.plugins.module_utils.version import \
-    LooseVersion
+    HAS_PSYCOPG,
+    PSYCOPG_VERSION,
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    get_server_version,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
+from ansible_collections.community.postgresql.plugins.module_utils.version import (
+    LooseVersion,
+)
 
 if HAS_PSYCOPG and PSYCOPG_VERSION < LooseVersion("3.0"):
     import psycopg2 as psycopg
@@ -313,26 +322,46 @@ try:
     # pbkdf2_hmac is missing on python 2.6, we can safely assume,
     # that postresql 10 capable instance have at least python 2.7 installed
     from hashlib import pbkdf2_hmac
+
     pbkdf2_found = True
 except ImportError:
     pbkdf2_found = False
 
 
-FLAGS = ('SUPERUSER', 'CREATEROLE', 'CREATEDB', 'INHERIT', 'LOGIN', 'REPLICATION')
-FLAGS_BY_VERSION = {'BYPASSRLS': 90500}
+FLAGS = ("SUPERUSER", "CREATEROLE", "CREATEDB", "INHERIT", "LOGIN", "REPLICATION")
+FLAGS_BY_VERSION = {"BYPASSRLS": 90500}
 
-SCRAM_SHA256_REGEX = r'^SCRAM-SHA-256\$(\d+):([A-Za-z0-9+\/=]+)\$([A-Za-z0-9+\/=]+):([A-Za-z0-9+\/=]+)$'
+SCRAM_SHA256_REGEX = (
+    r"^SCRAM-SHA-256\$(\d+):([A-Za-z0-9+\/=]+)\$([A-Za-z0-9+\/=]+):([A-Za-z0-9+\/=]+)$"
+)
 
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
-VALID_PRIVS = dict(table=frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'ALL')),
-                   database=frozenset(
-                       ('CREATE', 'CONNECT', 'TEMPORARY', 'TEMP', 'ALL')),
-                   )
+VALID_PRIVS = dict(
+    table=frozenset(
+        (
+            "SELECT",
+            "INSERT",
+            "UPDATE",
+            "DELETE",
+            "TRUNCATE",
+            "REFERENCES",
+            "TRIGGER",
+            "ALL",
+        )
+    ),
+    database=frozenset(("CREATE", "CONNECT", "TEMPORARY", "TEMP", "ALL")),
+)
 
 # map to cope with idiosyncrasies of SUPERUSER and LOGIN
-PRIV_TO_AUTHID_COLUMN = dict(SUPERUSER='rolsuper', CREATEROLE='rolcreaterole',
-                             CREATEDB='rolcreatedb', INHERIT='rolinherit', LOGIN='rolcanlogin',
-                             REPLICATION='rolreplication', BYPASSRLS='rolbypassrls')
+PRIV_TO_AUTHID_COLUMN = dict(
+    SUPERUSER="rolsuper",
+    CREATEROLE="rolcreaterole",
+    CREATEDB="rolcreatedb",
+    INHERIT="rolinherit",
+    LOGIN="rolcanlogin",
+    REPLICATION="rolreplication",
+    BYPASSRLS="rolbypassrls",
+)
 
 executed_queries = []
 
@@ -352,6 +381,7 @@ class InvalidFlagsError(Exception):
 class InvalidPrivsError(Exception):
     pass
 
+
 # ===========================================
 # PostgreSQL module specific support methods.
 #
@@ -359,10 +389,10 @@ class InvalidPrivsError(Exception):
 
 def user_exists(cursor, user):
     # The PUBLIC user is a special case that is always there
-    if user == 'PUBLIC':
+    if user == "PUBLIC":
         return True
     query = "SELECT rolname FROM pg_roles WHERE rolname=%(user)s"
-    cursor.execute(query, {'user': user})
+    cursor.execute(query, {"user": user})
     return cursor.rowcount > 0
 
 
@@ -371,9 +401,8 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
     # Note: role_attr_flags escaped by parse_role_attrs and encrypted is a
     # literal
     query_password_data = dict(password=password, expires=expires)
-    query = ['CREATE USER "%(user)s"' %
-             {"user": user}]
-    if password is not None and password != '':
+    query = ['CREATE USER "%(user)s"' % {"user": user}]
+    if password is not None and password != "":
         query.append("WITH %(crypt)s" % {"crypt": encrypted})
         query.append("PASSWORD %(password)s")
     if expires is not None:
@@ -381,7 +410,7 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
     if conn_limit is not None:
         query.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
     query.append(role_attr_flags)
-    query = ' '.join(query)
+    query = " ".join(query)
     executed_queries.append(query)
     cursor.execute(query, query_password_data)
     return True
@@ -403,14 +432,14 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
     # Do we actually need to do anything?
     pwchanging = False
     if password is not None:
-        current_password = current_role_attrs['rolpassword']
+        current_password = current_role_attrs["rolpassword"]
         # Handle SQL_ASCII encoded databases
         if isinstance(current_password, bytes):
-            current_password = current_password.decode('ascii')
+            current_password = current_password.decode("ascii")
 
         # Empty password means that the role shouldn't have a password, which
         # means we need to check if the current password is None.
-        if password == '':
+        if password == "":
             if current_password is not None:
                 pwchanging = True
         # If the provided password is a SCRAM hash, compare it directly to the current password
@@ -421,10 +450,11 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
         # SCRAM hashes are represented as a special object, containing hash data:
         # `SCRAM-SHA-256$<iteration count>:<salt>$<StoredKey>:<ServerKey>`
         # for reference, see https://www.postgresql.org/docs/current/catalog-pg-authid.html
-        elif current_password is not None \
-                and pbkdf2_found \
-                and re.match(SCRAM_SHA256_REGEX, current_password):
-
+        elif (
+            current_password is not None
+            and pbkdf2_found
+            and re.match(SCRAM_SHA256_REGEX, current_password)
+        ):
             r = re.match(SCRAM_SHA256_REGEX, current_password)
             try:
                 # extract SCRAM params from rolpassword
@@ -438,10 +468,12 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
                 # SaltedPassword  := Hi(Normalize(password), salt, i)
                 # ServerKey       := HMAC(SaltedPassword, "Server Key")
                 normalized_password = saslprep.saslprep(to_text(password))
-                salted_password = pbkdf2_hmac('sha256', to_bytes(normalized_password), salt, it)
+                salted_password = pbkdf2_hmac(
+                    "sha256", to_bytes(normalized_password), salt, it
+                )
 
                 server_key_verifier = hmac.new(salted_password, digestmod=sha256)
-                server_key_verifier.update(b'Server Key')
+                server_key_verifier.update(b"Server Key")
 
                 if server_key_verifier.digest() != server_key:
                     pwchanging = True
@@ -454,34 +486,53 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
         #  3: The size of the 'md5' prefix
         # When the provided password looks like a MD5-hash, value of
         # 'encrypted' is ignored.
-        elif (password.startswith('md5') and len(password) == 32 + 3) or encrypted == 'UNENCRYPTED':
+        elif (
+            password.startswith("md5") and len(password) == 32 + 3
+        ) or encrypted == "UNENCRYPTED":
             if password != current_password:
                 pwchanging = True
-        elif encrypted == 'ENCRYPTED':
-            hashed_password = 'md5{0}'.format(md5(to_bytes(password) + to_bytes(user)).hexdigest())
+        elif encrypted == "ENCRYPTED":
+            hashed_password = "md5{0}".format(
+                md5(to_bytes(password) + to_bytes(user)).hexdigest()
+            )
             if hashed_password != current_password:
                 pwchanging = True
 
     return pwchanging
 
 
-def user_alter(db_connection, module, user, password, role_attr_flags, encrypted, expires, no_password_changes, conn_limit):
+def user_alter(
+    db_connection,
+    module,
+    user,
+    password,
+    role_attr_flags,
+    encrypted,
+    expires,
+    no_password_changes,
+    conn_limit,
+):
     """Change user password and/or attributes. Return True if changed, False otherwise."""
     changed = False
 
     cursor = db_connection.cursor(**pg_cursor_args)
     # Note: role_attr_flags escaped by parse_role_attrs and encrypted is a
     # literal
-    if user == 'PUBLIC':
+    if user == "PUBLIC":
         if password is not None:
             module.fail_json(msg="cannot change the password for PUBLIC user")
-        elif role_attr_flags != '':
+        elif role_attr_flags != "":
             module.fail_json(msg="cannot change the role_attr_flags for PUBLIC user")
         else:
             return False
 
     # Handle passwords.
-    if not no_password_changes and (password is not None or role_attr_flags != '' or expires is not None or conn_limit is not None):
+    if not no_password_changes and (
+        password is not None
+        or role_attr_flags != ""
+        or expires is not None
+        or conn_limit is not None
+    ):
         # Select password and all flag-like columns in order to verify changes.
         try:
             select = "SELECT * FROM pg_authid where rolname=%(user)s"
@@ -492,7 +543,9 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             current_role_attrs = None
             db_connection.rollback()
 
-        pwchanging = user_should_we_change_password(current_role_attrs, user, password, encrypted)
+        pwchanging = user_should_we_change_password(
+            current_role_attrs, user, password, encrypted
+        )
 
         if current_role_attrs is None:
             try:
@@ -504,43 +557,57 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 current_role_attrs = cursor.fetchone()
             except psycopg.ProgrammingError as e:
                 db_connection.rollback()
-                module.fail_json(msg="Failed to get role details for current user %s: %s" % (user, e))
+                module.fail_json(
+                    msg="Failed to get role details for current user %s: %s" % (user, e)
+                )
 
         role_attr_flags_changing = False
         if role_attr_flags:
             role_attr_flags_dict = {}
-            for r in role_attr_flags.split(' '):
-                if r.startswith('NO'):
-                    role_attr_flags_dict[r.replace('NO', '', 1)] = False
+            for r in role_attr_flags.split(" "):
+                if r.startswith("NO"):
+                    role_attr_flags_dict[r.replace("NO", "", 1)] = False
                 else:
                     role_attr_flags_dict[r] = True
 
             for role_attr_name, role_attr_value in role_attr_flags_dict.items():
-                if current_role_attrs[PRIV_TO_AUTHID_COLUMN[role_attr_name]] != role_attr_value:
+                if (
+                    current_role_attrs[PRIV_TO_AUTHID_COLUMN[role_attr_name]]
+                    != role_attr_value
+                ):
                     role_attr_flags_changing = True
 
         if expires is not None:
             cursor.execute("SELECT %s::timestamptz exp_timestamp", (expires,))
             expires_with_tz = cursor.fetchone()["exp_timestamp"]
-            expires_changing = expires_with_tz != current_role_attrs.get('rolvaliduntil')
+            expires_changing = expires_with_tz != current_role_attrs.get(
+                "rolvaliduntil"
+            )
         else:
             expires_changing = False
 
-        conn_limit_changing = (conn_limit is not None and conn_limit != current_role_attrs['rolconnlimit'])
+        conn_limit_changing = (
+            conn_limit is not None and conn_limit != current_role_attrs["rolconnlimit"]
+        )
 
-        if not pwchanging and not role_attr_flags_changing and not expires_changing and not conn_limit_changing:
+        if (
+            not pwchanging
+            and not role_attr_flags_changing
+            and not expires_changing
+            and not conn_limit_changing
+        ):
             return False
 
         alter = ['ALTER USER "%(user)s"' % {"user": user}]
         if pwchanging:
-            if password != '':
+            if password != "":
                 alter.append("WITH %(crypt)s" % {"crypt": encrypted})
                 alter.append("PASSWORD %(password)s")
             else:
                 alter.append("WITH PASSWORD NULL")
             alter.append(role_attr_flags)
         elif role_attr_flags:
-            alter.append('WITH %s' % role_attr_flags)
+            alter.append("WITH %s" % role_attr_flags)
         if expires is not None:
             alter.append("VALID UNTIL %(expires)s")
         if conn_limit is not None:
@@ -548,7 +615,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
         query_password_data = dict(password=password, expires=expires)
         try:
-            statement = ' '.join(alter)
+            statement = " ".join(alter)
             cursor.execute(statement, query_password_data)
             changed = True
             executed_queries.append(statement)
@@ -559,14 +626,18 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 # Handle errors due to read-only transactions indicated by pgcode 25006
                 # ERROR:  cannot execute ALTER ROLE in a read-only transaction
                 changed = False
-                module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
+                module.fail_json(
+                    msg=e.diag.message_primary, exception=traceback.format_exc()
+                )
                 return changed
             else:
                 raise psycopg.InternalError(e)
         except psycopg.NotSupportedError as e:
-            module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
+            module.fail_json(
+                msg=e.diag.message_primary, exception=traceback.format_exc()
+            )
 
-    elif no_password_changes and role_attr_flags != '':
+    elif no_password_changes and role_attr_flags != "":
         # Grab role information from pg_roles instead of pg_authid
         select = "SELECT * FROM pg_roles where rolname=%(user)s"
         cursor.execute(select, {"user": user})
@@ -577,26 +648,28 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
         if role_attr_flags:
             role_attr_flags_dict = {}
-            for r in role_attr_flags.split(' '):
-                if r.startswith('NO'):
-                    role_attr_flags_dict[r.replace('NO', '', 1)] = False
+            for r in role_attr_flags.split(" "):
+                if r.startswith("NO"):
+                    role_attr_flags_dict[r.replace("NO", "", 1)] = False
                 else:
                     role_attr_flags_dict[r] = True
 
             for role_attr_name, role_attr_value in role_attr_flags_dict.items():
-                if current_role_attrs[PRIV_TO_AUTHID_COLUMN[role_attr_name]] != role_attr_value:
+                if (
+                    current_role_attrs[PRIV_TO_AUTHID_COLUMN[role_attr_name]]
+                    != role_attr_value
+                ):
                     role_attr_flags_changing = True
 
         if not role_attr_flags_changing:
             return False
 
-        alter = ['ALTER USER "%(user)s"' %
-                 {"user": user}]
+        alter = ['ALTER USER "%(user)s"' % {"user": user}]
         if role_attr_flags:
-            alter.append('WITH %s' % role_attr_flags)
+            alter.append("WITH %s" % role_attr_flags)
 
         try:
-            statement = ' '.join(alter)
+            statement = " ".join(alter)
             cursor.execute(statement)
             executed_queries.append(statement)
 
@@ -605,7 +678,9 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 # Handle errors due to read-only transactions indicated by pgcode 25006
                 # ERROR:  cannot execute ALTER ROLE in a read-only transaction
                 changed = False
-                module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
+                module.fail_json(
+                    msg=e.diag.message_primary, exception=traceback.format_exc()
+                )
                 return changed
             else:
                 raise psycopg.InternalError(e)
@@ -656,22 +731,27 @@ def has_table_privileges(cursor, user, table, privs):
 
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def get_table_privileges(cursor, user, table):
-    if '.' in table:
-        schema, table = table.split('.', 1)
+    if "." in table:
+        schema, table = table.split(".", 1)
     else:
-        schema = 'public'
-    query = ("SELECT privilege_type FROM information_schema.role_table_grants "
-             "WHERE grantee=%(user)s AND table_name=%(table)s AND table_schema=%(schema)s")
-    cursor.execute(query, {'user': user, 'table': table, 'schema': schema})
+        schema = "public"
+    query = (
+        "SELECT privilege_type FROM information_schema.role_table_grants "
+        "WHERE grantee=%(user)s AND table_name=%(table)s AND table_schema=%(schema)s"
+    )
+    cursor.execute(query, {"user": user, "table": table, "schema": schema})
     return frozenset([x["privilege_type"] for x in cursor.fetchall()])
 
 
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def grant_table_privileges(cursor, user, table, privs):
     # Note: priv escaped by parse_privs
-    privs = ', '.join(privs)
+    privs = ", ".join(privs)
     query = 'GRANT %s ON TABLE %s TO "%s"' % (
-        privs, pg_quote_identifier(table, 'table'), user)
+        privs,
+        pg_quote_identifier(table, "table"),
+        user,
+    )
     executed_queries.append(query)
     cursor.execute(query)
 
@@ -679,9 +759,12 @@ def grant_table_privileges(cursor, user, table, privs):
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def revoke_table_privileges(cursor, user, table, privs):
     # Note: priv escaped by parse_privs
-    privs = ', '.join(privs)
+    privs = ", ".join(privs)
     query = 'REVOKE %s ON TABLE %s FROM "%s"' % (
-        privs, pg_quote_identifier(table, 'table'), user)
+        privs,
+        pg_quote_identifier(table, "table"),
+        user,
+    )
     executed_queries.append(query)
     cursor.execute(query)
 
@@ -689,11 +772,11 @@ def revoke_table_privileges(cursor, user, table, privs):
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def get_database_privileges(cursor, user, db):
     priv_map = {
-        'C': 'CREATE',
-        'T': 'TEMPORARY',
-        'c': 'CONNECT',
+        "C": "CREATE",
+        "T": "TEMPORARY",
+        "c": "CONNECT",
     }
-    query = 'SELECT datacl::text FROM pg_database WHERE datname = %s'
+    query = "SELECT datacl::text FROM pg_database WHERE datname = %s"
     cursor.execute(query, (db,))
     datacl = cursor.fetchone()["datacl"]
     if datacl is None:
@@ -704,7 +787,7 @@ def get_database_privileges(cursor, user, db):
     o = set()
     for v in r.group(1):
         o.add(priv_map[v])
-    return normalize_privileges(o, 'database')
+    return normalize_privileges(o, "database")
 
 
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
@@ -728,13 +811,18 @@ def has_database_privileges(cursor, user, db, privs):
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def grant_database_privileges(cursor, user, db, privs):
     # Note: priv escaped by parse_privs
-    privs = ', '.join(privs)
+    privs = ", ".join(privs)
     if user == "PUBLIC":
-        query = 'GRANT %s ON DATABASE %s TO PUBLIC' % (
-                privs, pg_quote_identifier(db, 'database'))
+        query = "GRANT %s ON DATABASE %s TO PUBLIC" % (
+            privs,
+            pg_quote_identifier(db, "database"),
+        )
     else:
         query = 'GRANT %s ON DATABASE %s TO "%s"' % (
-                privs, pg_quote_identifier(db, 'database'), user)
+            privs,
+            pg_quote_identifier(db, "database"),
+            user,
+        )
 
     executed_queries.append(query)
     cursor.execute(query)
@@ -743,13 +831,18 @@ def grant_database_privileges(cursor, user, db, privs):
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def revoke_database_privileges(cursor, user, db, privs):
     # Note: priv escaped by parse_privs
-    privs = ', '.join(privs)
+    privs = ", ".join(privs)
     if user == "PUBLIC":
-        query = 'REVOKE %s ON DATABASE %s FROM PUBLIC' % (
-                privs, pg_quote_identifier(db, 'database'))
+        query = "REVOKE %s ON DATABASE %s FROM PUBLIC" % (
+            privs,
+            pg_quote_identifier(db, "database"),
+        )
     else:
         query = 'REVOKE %s ON DATABASE %s FROM "%s"' % (
-                privs, pg_quote_identifier(db, 'database'), user)
+            privs,
+            pg_quote_identifier(db, "database"),
+            user,
+        )
 
     executed_queries.append(query)
     cursor.execute(query)
@@ -760,10 +853,10 @@ def revoke_privileges(cursor, user, privs):
     if privs is None:
         return False
 
-    revoke_funcs = dict(table=revoke_table_privileges,
-                        database=revoke_database_privileges)
-    check_funcs = dict(table=has_table_privileges,
-                       database=has_database_privileges)
+    revoke_funcs = dict(
+        table=revoke_table_privileges, database=revoke_database_privileges
+    )
+    check_funcs = dict(table=has_table_privileges, database=has_database_privileges)
 
     changed = False
     for type_ in privs:
@@ -782,10 +875,8 @@ def grant_privileges(cursor, user, privs):
     if privs is None:
         return False
 
-    grant_funcs = dict(table=grant_table_privileges,
-                       database=grant_database_privileges)
-    check_funcs = dict(table=has_table_privileges,
-                       database=has_database_privileges)
+    grant_funcs = dict(table=grant_table_privileges, database=grant_database_privileges)
+    check_funcs = dict(table=has_table_privileges, database=has_database_privileges)
 
     changed = False
     for type_ in privs:
@@ -817,27 +908,33 @@ def parse_role_attrs(role_attr_flags, srv_version):
     Note: "[NO]CREATEUSER" role attribute is deprecated.
 
     """
-    flags = frozenset(role.upper() for role in role_attr_flags.split(',') if role)
+    flags = frozenset(role.upper() for role in role_attr_flags.split(",") if role)
 
-    valid_flags = frozenset(itertools.chain(FLAGS, get_valid_flags_by_version(srv_version)))
-    valid_flags = frozenset(itertools.chain(valid_flags, ('NO%s' % flag for flag in valid_flags)))
+    valid_flags = frozenset(
+        itertools.chain(FLAGS, get_valid_flags_by_version(srv_version))
+    )
+    valid_flags = frozenset(
+        itertools.chain(valid_flags, ("NO%s" % flag for flag in valid_flags))
+    )
 
     if not flags.issubset(valid_flags):
-        raise InvalidFlagsError('Invalid role_attr_flags specified: %s' %
-                                ' '.join(flags.difference(valid_flags)))
+        raise InvalidFlagsError(
+            "Invalid role_attr_flags specified: %s"
+            % " ".join(flags.difference(valid_flags))
+        )
 
-    return ' '.join(flags)
+    return " ".join(flags)
 
 
 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
 def normalize_privileges(privs, type_):
     new_privs = set(privs)
-    if 'ALL' in new_privs:
+    if "ALL" in new_privs:
         new_privs.update(VALID_PRIVS[type_])
-        new_privs.remove('ALL')
-    if 'TEMP' in new_privs:
-        new_privs.add('TEMPORARY')
-        new_privs.remove('TEMP')
+        new_privs.remove("ALL")
+    if "TEMP" in new_privs:
+        new_privs.add("TEMPORARY")
+        new_privs.remove("TEMP")
 
     return new_privs
 
@@ -858,25 +955,26 @@ def parse_privs(privs, db):
     if privs is None:
         return privs
 
-    o_privs = {
-        'database': {},
-        'table': {}
-    }
-    for token in privs.split('/'):
-        if ':' not in token:
-            type_ = 'database'
+    o_privs = {"database": {}, "table": {}}
+    for token in privs.split("/"):
+        if ":" not in token:
+            type_ = "database"
             name = db
-            priv_set = frozenset(x.strip().upper()
-                                 for x in token.split(',') if x.strip())
+            priv_set = frozenset(
+                x.strip().upper() for x in token.split(",") if x.strip()
+            )
         else:
-            type_ = 'table'
-            name, privileges = token.split(':', 1)
-            priv_set = frozenset(x.strip().upper()
-                                 for x in privileges.split(',') if x.strip())
+            type_ = "table"
+            name, privileges = token.split(":", 1)
+            priv_set = frozenset(
+                x.strip().upper() for x in privileges.split(",") if x.strip()
+            )
 
         if not priv_set.issubset(VALID_PRIVS[type_]):
-            raise InvalidPrivsError('Invalid privs specified for %s: %s' %
-                                    (type_, ' '.join(priv_set.difference(VALID_PRIVS[type_]))))
+            raise InvalidPrivsError(
+                "Invalid privs specified for %s: %s"
+                % (type_, " ".join(priv_set.difference(VALID_PRIVS[type_])))
+            )
 
         priv_set = normalize_privileges(priv_set, type_)
         o_privs[type_][name] = priv_set
@@ -898,10 +996,12 @@ def get_valid_flags_by_version(srv_version):
 
 def get_comment(cursor, user):
     """Get user's comment."""
-    query = ("SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') obj_desc "
-             "FROM pg_catalog.pg_roles r "
-             "WHERE r.rolname = %(user)s")
-    cursor.execute(query, {'user': user})
+    query = (
+        "SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') obj_desc "
+        "FROM pg_catalog.pg_roles r "
+        "WHERE r.rolname = %(user)s"
+    )
+    cursor.execute(query, {"user": user})
     return cursor.fetchone()["obj_desc"]
 
 
@@ -909,8 +1009,10 @@ def add_comment(cursor, user, comment):
     """Add comment on user."""
     if comment != get_comment(cursor, user):
         query = 'COMMENT ON ROLE "%s" IS ' % user
-        cursor.execute(query + '%(comment)s', {'comment': comment})
-        executed_queries.append(cursor.mogrify(query + '%(comment)s', {'comment': comment}))
+        cursor.execute(query + "%(comment)s", {"comment": comment})
+        executed_queries.append(
+            cursor.mogrify(query + "%(comment)s", {"comment": comment})
+        )
         return True
     else:
         return False
@@ -920,35 +1022,38 @@ def add_comment(cursor, user, comment):
 # Module execution.
 #
 
+
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        user=dict(type='str', required=True, aliases=['name']),
-        password=dict(type='str', default=None, no_log=True),
-        state=dict(type='str', default='present', choices=['absent', 'present']),
-        priv=dict(type='str', default=None, removed_in_version='4.0.0', removed_from_collection='community.postgreql'),
-        db=dict(type='str', default='', aliases=['login_db']),
-        fail_on_user=dict(type='bool', default=True, aliases=['fail_on_role']),
-        role_attr_flags=dict(type='str', default=''),
-        encrypted=dict(type='bool', default=True),
-        no_password_changes=dict(type='bool', default=False, no_log=False),
-        expires=dict(type='str', default=None),
-        conn_limit=dict(type='int', default=None),
-        session_role=dict(type='str'),
-        comment=dict(type='str', default=None),
-        trust_input=dict(type='bool', default=True),
+        user=dict(type="str", required=True, aliases=["name"]),
+        password=dict(type="str", default=None, no_log=True),
+        state=dict(type="str", default="present", choices=["absent", "present"]),
+        priv=dict(
+            type="str",
+            default=None,
+            removed_in_version="4.0.0",
+            removed_from_collection="community.postgreql",
+        ),
+        db=dict(type="str", default="", aliases=["login_db"]),
+        fail_on_user=dict(type="bool", default=True, aliases=["fail_on_role"]),
+        role_attr_flags=dict(type="str", default=""),
+        encrypted=dict(type="bool", default=True),
+        no_password_changes=dict(type="bool", default=False, no_log=False),
+        expires=dict(type="str", default=None),
+        conn_limit=dict(type="int", default=None),
+        session_role=dict(type="str"),
+        comment=dict(type="str", default=None),
+        trust_input=dict(type="bool", default=True),
     )
-    module = AnsibleModule(
-        argument_spec=argument_spec,
-        supports_check_mode=True
-    )
+    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
 
     user = module.params["user"]
     password = module.params["password"]
     state = module.params["state"]
     fail_on_user = module.params["fail_on_user"]
     # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
-    if module.params['db'] == '' and module.params["priv"] is not None:
+    if module.params["db"] == "" and module.params["priv"] is not None:
         module.fail_json(msg="privileges require a database to be specified")
     # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
     privs = parse_privs(module.params["priv"], module.params["db"])
@@ -961,13 +1066,21 @@ def main():
     conn_limit = module.params["conn_limit"]
     role_attr_flags = module.params["role_attr_flags"]
     comment = module.params["comment"]
-    session_role = module.params['session_role']
+    session_role = module.params["session_role"]
 
-    trust_input = module.params['trust_input']
+    trust_input = module.params["trust_input"]
     if not trust_input:
         # Check input for potentially dangerous elements:
-        check_input(module, user, password, privs, expires,
-                    role_attr_flags, comment, session_role)
+        check_input(
+            module,
+            user,
+            password,
+            privs,
+            expires,
+            role_attr_flags,
+            comment,
+            session_role,
+        )
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -989,18 +1102,36 @@ def main():
     if state == "present":
         if user_exists(cursor, user):
             try:
-                changed = user_alter(db_connection, module, user, password,
-                                     role_attr_flags, encrypted, expires, no_password_changes, conn_limit)
+                changed = user_alter(
+                    db_connection,
+                    module,
+                    user,
+                    password,
+                    role_attr_flags,
+                    encrypted,
+                    expires,
+                    no_password_changes,
+                    conn_limit,
+                )
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
         else:
             try:
-                changed = user_add(cursor, user, password,
-                                   role_attr_flags, encrypted, expires, conn_limit)
+                changed = user_add(
+                    cursor,
+                    user,
+                    password,
+                    role_attr_flags,
+                    encrypted,
+                    expires,
+                    conn_limit,
+                )
             except psycopg.ProgrammingError as e:
-                module.fail_json(msg="Unable to add user with given requirement "
-                                     "due to : %s" % to_native(e),
-                                 exception=traceback.format_exc())
+                module.fail_json(
+                    msg="Unable to add user with given requirement "
+                    "due to : %s" % to_native(e),
+                    exception=traceback.format_exc(),
+                )
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
         # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
@@ -1013,14 +1144,16 @@ def main():
             try:
                 changed = add_comment(cursor, user, comment) or changed
             except Exception as e:
-                module.fail_json(msg='Unable to add comment on role: %s' % to_native(e),
-                                 exception=traceback.format_exc())
+                module.fail_json(
+                    msg="Unable to add comment on role: %s" % to_native(e),
+                    exception=traceback.format_exc(),
+                )
 
     else:
         if user_exists(cursor, user):
             if module.check_mode:
                 changed = True
-                kw['user_removed'] = True
+                kw["user_removed"] = True
             else:
                 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
                 try:
@@ -1032,7 +1165,7 @@ def main():
                 if fail_on_user and not user_removed:
                     msg = "Unable to remove user"
                     module.fail_json(msg=msg)
-                kw['user_removed'] = user_removed
+                kw["user_removed"] = user_removed
 
     if module.check_mode:
         db_connection.rollback()
@@ -1042,12 +1175,12 @@ def main():
     cursor.close()
     db_connection.close()
 
-    kw['changed'] = changed
-    kw['queries'] = executed_queries
+    kw["changed"] = changed
+    kw["queries"] = executed_queries
     if debug_info:
-        kw['debug_info'] = debug_info
+        kw["debug_info"] = debug_info
     module.exit_json(**kw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

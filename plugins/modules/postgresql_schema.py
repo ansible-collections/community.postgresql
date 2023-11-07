@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_schema
 short_description: Add or remove PostgreSQL schema
@@ -84,9 +84,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Create a new schema with name acme in test database
   community.postgresql.postgresql_schema:
     db: test
@@ -102,9 +102,9 @@ EXAMPLES = r'''
     name: acme
     state: absent
     cascade_drop: true
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 schema:
   description: Name of the schema.
   returned: success
@@ -115,17 +115,24 @@ queries:
   returned: success
   type: list
   sample: ["CREATE SCHEMA \"acme\""]
-'''
+"""
 
 import traceback
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    SQLParseError, check_input, pg_quote_identifier)
+    SQLParseError,
+    check_input,
+    pg_quote_identifier,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, get_conn_params, pg_cursor_args,
-    postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 executed_queries = []
 
@@ -138,32 +145,39 @@ class NotSupportedError(Exception):
 # PostgreSQL module specific support methods.
 #
 
+
 def set_owner(cursor, schema, owner):
     query = 'ALTER SCHEMA %s OWNER TO "%s"' % (
-            pg_quote_identifier(schema, 'schema'), owner)
+        pg_quote_identifier(schema, "schema"),
+        owner,
+    )
     cursor.execute(query)
     executed_queries.append(query)
     return True
 
 
 def get_schema_info(cursor, schema):
-    query = ("SELECT schema_owner AS owner "
-             "FROM information_schema.schemata "
-             "WHERE schema_name = %(schema)s")
-    cursor.execute(query, {'schema': schema})
+    query = (
+        "SELECT schema_owner AS owner "
+        "FROM information_schema.schemata "
+        "WHERE schema_name = %(schema)s"
+    )
+    cursor.execute(query, {"schema": schema})
     return cursor.fetchone()
 
 
 def schema_exists(cursor, schema):
-    query = ("SELECT schema_name FROM information_schema.schemata "
-             "WHERE schema_name = %(schema)s")
-    cursor.execute(query, {'schema': schema})
+    query = (
+        "SELECT schema_name FROM information_schema.schemata "
+        "WHERE schema_name = %(schema)s"
+    )
+    cursor.execute(query, {"schema": schema})
     return cursor.rowcount == 1
 
 
 def schema_delete(cursor, schema, cascade):
     if schema_exists(cursor, schema):
-        query = "DROP SCHEMA %s" % pg_quote_identifier(schema, 'schema')
+        query = "DROP SCHEMA %s" % pg_quote_identifier(schema, "schema")
         if cascade:
             query += " CASCADE"
         cursor.execute(query)
@@ -175,16 +189,16 @@ def schema_delete(cursor, schema, cascade):
 
 def schema_create(cursor, schema, owner):
     if not schema_exists(cursor, schema):
-        query_fragments = ['CREATE SCHEMA %s' % pg_quote_identifier(schema, 'schema')]
+        query_fragments = ["CREATE SCHEMA %s" % pg_quote_identifier(schema, "schema")]
         if owner:
             query_fragments.append('AUTHORIZATION "%s"' % owner)
-        query = ' '.join(query_fragments)
+        query = " ".join(query_fragments)
         cursor.execute(query)
         executed_queries.append(query)
         return True
     else:
         schema_info = get_schema_info(cursor, schema)
-        if owner and owner != schema_info['owner']:
+        if owner and owner != schema_info["owner"]:
             return set_owner(cursor, schema, owner)
         else:
             return False
@@ -195,10 +209,11 @@ def schema_matches(cursor, schema, owner):
         return False
     else:
         schema_info = get_schema_info(cursor, schema)
-        if owner and owner != schema_info['owner']:
+        if owner and owner != schema_info["owner"]:
             return False
         else:
             return True
+
 
 # ===========================================
 # Module execution.
@@ -208,7 +223,7 @@ def schema_matches(cursor, schema, owner):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        schema=dict(type="str", required=True, aliases=['name']),
+        schema=dict(type="str", required=True, aliases=["name"]),
         owner=dict(type="str", default=""),
         database=dict(type="str", default="postgres", aliases=["db", "login_db"]),
         cascade_drop=dict(type="bool", default=False),
@@ -266,11 +281,14 @@ def main():
         # Avoid catching this on Python 2.4
         raise
     except Exception as e:
-        module.fail_json(msg="Database query failed: %s" % to_native(e), exception=traceback.format_exc())
+        module.fail_json(
+            msg="Database query failed: %s" % to_native(e),
+            exception=traceback.format_exc(),
+        )
 
     db_connection.close()
     module.exit_json(changed=changed, schema=schema, queries=executed_queries)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

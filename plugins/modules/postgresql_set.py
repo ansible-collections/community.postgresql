@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_set
 short_description: Change a PostgreSQL server configuration parameter
@@ -95,9 +95,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Restore wal_keep_segments parameter to initial state
   community.postgresql.postgresql_set:
     name: wal_keep_segments
@@ -134,9 +134,9 @@ EXAMPLES = r'''
     name: TimeZone
     value: 'Europe/Paris'
 
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 name:
   description: Name of PostgreSQL server parameter.
   returned: success
@@ -171,17 +171,23 @@ context:
   returned: success
   type: str
   sample: user
-'''
+"""
 
 from copy import deepcopy
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, get_conn_params, get_server_version,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    get_server_version,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 PG_REQ_VER = 90400
 
@@ -191,21 +197,27 @@ LOWERCASE_SIZE_UNITS = ("mb", "gb", "tb")
 # GUC_LIST_QUOTE parameters list for each version where they changed (from PG_REQ_VER).
 # It is a tuple of tuples as we need to iterate it in order.
 PARAMETERS_GUC_LIST_QUOTE = (
-    (140000, (
-        'local_preload_libraries',
-        'search_path',
-        'session_preload_libraries',
-        'shared_preload_libraries',
-        'temp_tablespaces',
-        'unix_socket_directories'
-    )),
-    (90400, (
-        'local_preload_libraries',
-        'search_path',
-        'session_preload_libraries',
-        'shared_preload_libraries',
-        'temp_tablespaces'
-    )),
+    (
+        140000,
+        (
+            "local_preload_libraries",
+            "search_path",
+            "session_preload_libraries",
+            "shared_preload_libraries",
+            "temp_tablespaces",
+            "unix_socket_directories",
+        ),
+    ),
+    (
+        90400,
+        (
+            "local_preload_libraries",
+            "search_path",
+            "session_preload_libraries",
+            "shared_preload_libraries",
+            "temp_tablespaces",
+        ),
+    ),
 )
 
 
@@ -224,63 +236,69 @@ def param_is_guc_list_quote(server_version, name):
 def param_guc_list_unquote(value):
     # Unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
     # Assume the parameter is GUC_LIST_QUOTE (check in param_is_guc_list_quote function)
-    return ', '.join([v.strip('" ') for v in value.split(',')])
+    return ", ".join([v.strip('" ') for v in value.split(",")])
 
 
 def param_get(cursor, module, name, is_guc_list_quote):
-    query = ("SELECT name, setting, unit, context, boot_val "
-             "FROM pg_settings WHERE name = %(name)s")
+    query = (
+        "SELECT name, setting, unit, context, boot_val "
+        "FROM pg_settings WHERE name = %(name)s"
+    )
     try:
-        cursor.execute(query, {'name': name})
+        cursor.execute(query, {"name": name})
         info = cursor.fetchone()
         cursor.execute("SHOW %s" % name)
         val = cursor.fetchone()
 
     except Exception as e:
-        module.fail_json(msg="Unable to get %s value due to : %s" % (name, to_native(e)))
+        module.fail_json(
+            msg="Unable to get %s value due to : %s" % (name, to_native(e))
+        )
 
     if not info:
-        module.fail_json(msg="No such parameter: %s. "
-                             "Please check its spelling or presence in your PostgreSQL version "
-                             "(https://www.postgresql.org/docs/current/runtime-config.html)" % name)
+        module.fail_json(
+            msg="No such parameter: %s. "
+            "Please check its spelling or presence in your PostgreSQL version "
+            "(https://www.postgresql.org/docs/current/runtime-config.html)" % name
+        )
 
     current_val = val[name]
-    raw_val = info['setting']
-    unit = info['unit']
-    context = info['context']
-    boot_val = info['boot_val']
+    raw_val = info["setting"]
+    unit = info["unit"]
+    context = info["context"]
+    boot_val = info["boot_val"]
 
-    if current_val == 'True':
-        current_val = 'on'
-    elif current_val == 'False':
-        current_val = 'off'
+    if current_val == "True":
+        current_val = "on"
+    elif current_val == "False":
+        current_val = "off"
 
-    if unit == 'kB':
+    if unit == "kB":
         if int(raw_val) > 0:
             raw_val = int(raw_val) * 1024
         if int(boot_val) > 0:
             boot_val = int(boot_val) * 1024
 
-        unit = 'b'
+        unit = "b"
 
-    elif unit == 'MB':
+    elif unit == "MB":
         if int(raw_val) > 0:
             raw_val = int(raw_val) * 1024 * 1024
         if int(boot_val) > 0:
             boot_val = int(boot_val) * 1024 * 1024
 
-        unit = 'b'
+        unit = "b"
 
     if is_guc_list_quote:
         current_val = param_guc_list_unquote(current_val)
         raw_val = param_guc_list_unquote(raw_val)
 
     return {
-        'current_val': current_val,
-        'raw_val': raw_val,
-        'unit': unit,
-        'boot_val': boot_val,
-        'context': context,
+        "current_val": current_val,
+        "raw_val": raw_val,
+        "unit": unit,
+        "boot_val": boot_val,
+        "context": context,
     }
 
 
@@ -323,25 +341,25 @@ def pretty_to_bytes(pretty_val):
         else:
             num_part.append(c)
 
-    num_part = int(''.join(num_part))
+    num_part = int("".join(num_part))
 
     val_in_bytes = None
 
     if len(pretty_val) >= 2:
-        if 'kB' in pretty_val[-2:]:
+        if "kB" in pretty_val[-2:]:
             val_in_bytes = num_part * 1024
 
-        elif 'MB' in pretty_val[-2:]:
+        elif "MB" in pretty_val[-2:]:
             val_in_bytes = num_part * 1024 * 1024
 
-        elif 'GB' in pretty_val[-2:]:
+        elif "GB" in pretty_val[-2:]:
             val_in_bytes = num_part * 1024 * 1024 * 1024
 
-        elif 'TB' in pretty_val[-2:]:
+        elif "TB" in pretty_val[-2:]:
             val_in_bytes = num_part * 1024 * 1024 * 1024 * 1024
 
     # For cases like "1B"
-    if not val_in_bytes and 'B' in pretty_val[-1]:
+    if not val_in_bytes and "B" in pretty_val[-1]:
         val_in_bytes = num_part
 
     if val_in_bytes is not None:
@@ -352,13 +370,15 @@ def pretty_to_bytes(pretty_val):
 
 def param_set(cursor, module, name, value, context, server_version):
     try:
-        if str(value).lower() == 'default':
+        if str(value).lower() == "default":
             query = "ALTER SYSTEM SET %s = DEFAULT" % name
         else:
-            if isinstance(value, str) and \
-                    ',' in value and \
-                    not name.endswith(('_command', '_prefix')) and \
-                    not (server_version < 140000 and name == 'unix_socket_directories'):
+            if (
+                isinstance(value, str)
+                and "," in value
+                and not name.endswith(("_command", "_prefix"))
+                and not (server_version < 140000 and name == "unix_socket_directories")
+            ):
                 # Issue https://github.com/ansible-collections/community.postgresql/issues/78
                 # Change value from 'one, two, three' -> "'one','two','three'"
                 # PR https://github.com/ansible-collections/community.postgresql/pull/400
@@ -366,17 +386,21 @@ def param_set(cursor, module, name, value, context, server_version):
                 # PR https://github.com/ansible-collections/community.postgresql/pull/521
                 # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and
                 # GUC_LIST_QUOTE options so it is a single value parameter
-                value = ','.join(["'" + elem.strip() + "'" for elem in value.split(',')])
+                value = ",".join(
+                    ["'" + elem.strip() + "'" for elem in value.split(",")]
+                )
                 query = "ALTER SYSTEM SET %s = %s" % (name, value)
             else:
                 query = "ALTER SYSTEM SET %s = '%s'" % (name, value)
         cursor.execute(query)
 
-        if context != 'postmaster':
+        if context != "postmaster":
             cursor.execute("SELECT pg_reload_conf()")
 
     except Exception as e:
-        module.fail_json(msg="Unable to set %s value due to : %s" % (name, to_native(e)))
+        module.fail_json(
+            msg="Unable to set %s value due to : %s" % (name, to_native(e))
+        )
 
     return True
 
@@ -389,23 +413,23 @@ def param_set(cursor, module, name, value, context, server_version):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        name=dict(type='str', required=True),
-        db=dict(type='str', aliases=['login_db']),
-        value=dict(type='str'),
-        reset=dict(type='bool', default=False),
-        session_role=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
+        name=dict(type="str", required=True),
+        db=dict(type="str", aliases=["login_db"]),
+        value=dict(type="str"),
+        reset=dict(type="bool", default=False),
+        session_role=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
     )
 
-    name = module.params['name']
-    value = module.params['value']
-    reset = module.params['reset']
-    session_role = module.params['session_role']
-    trust_input = module.params['trust_input']
+    name = module.params["name"]
+    value = module.params["value"]
+    reset = module.params["reset"]
+    session_role = module.params["session_role"]
+    trust_input = module.params["trust_input"]
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -413,18 +437,24 @@ def main():
 
     if value:
         # Convert a value like 1mb (Postgres does not support) to 1MB, etc:
-        if len(value) > 2 and value[:-2].isdigit() and value[-2:] in LOWERCASE_SIZE_UNITS:
+        if (
+            len(value) > 2
+            and value[:-2].isdigit()
+            and value[-2:] in LOWERCASE_SIZE_UNITS
+        ):
             value = value.upper()
 
         # Convert a value like 1b (Postgres does not support) to 1B:
-        elif len(value) > 1 and ('b' in value[-1] and value[:-1].isdigit()):
+        elif len(value) > 1 and ("b" in value[-1] and value[:-1].isdigit()):
             value = value.upper()
 
     if value is not None and reset:
         module.fail_json(msg="%s: value and reset params are mutually exclusive" % name)
 
     if value is None and not reset:
-        module.fail_json(msg="%s: at least one of value or reset param must be specified" % name)
+        module.fail_json(
+            msg="%s: at least one of value or reset param must be specified" % name
+        )
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -436,7 +466,9 @@ def main():
     # Check server version (needs 9.4 or later):
     ver = get_server_version(db_connection)
     if ver < PG_REQ_VER:
-        module.warn("PostgreSQL is %s version but %s or later is required" % (ver, PG_REQ_VER))
+        module.warn(
+            "PostgreSQL is %s version but %s or later is required" % (ver, PG_REQ_VER)
+        )
         kw = dict(
             changed=False,
             restart_required=False,
@@ -444,7 +476,7 @@ def main():
             prev_val_pretty="",
             value={"value": "", "unit": ""},
         )
-        kw['name'] = name
+        kw["name"] = name
         db_connection.close()
         module.exit_json(**kw)
 
@@ -454,30 +486,32 @@ def main():
     # Set default returned values:
     restart_required = False
     changed = False
-    kw['name'] = name
-    kw['restart_required'] = False
+    kw["name"] = name
+    kw["restart_required"] = False
 
     # Get info about param state:
     res = param_get(cursor, module, name, is_guc_list_quote)
-    current_val = res['current_val']
-    raw_val = res['raw_val']
-    unit = res['unit']
-    boot_val = res['boot_val']
-    context = res['context']
+    current_val = res["current_val"]
+    raw_val = res["raw_val"]
+    unit = res["unit"]
+    boot_val = res["boot_val"]
+    context = res["context"]
 
-    if value == 'True':
-        value = 'on'
-    elif value == 'False':
-        value = 'off'
+    if value == "True":
+        value = "on"
+    elif value == "False":
+        value = "off"
 
-    kw['prev_val_pretty'] = current_val
-    kw['value_pretty'] = deepcopy(kw['prev_val_pretty'])
-    kw['context'] = context
+    kw["prev_val_pretty"] = current_val
+    kw["value_pretty"] = deepcopy(kw["prev_val_pretty"])
+    kw["context"] = context
 
     # Do job
     if context == "internal":
-        module.fail_json(msg="%s: cannot be changed (internal context). See "
-                             "https://www.postgresql.org/docs/current/runtime-config-preset.html" % name)
+        module.fail_json(
+            msg="%s: cannot be changed (internal context). See "
+            "https://www.postgresql.org/docs/current/runtime-config-preset.html" % name
+        )
 
     if context == "postmaster":
         restart_required = True
@@ -485,31 +519,31 @@ def main():
     # If check_mode, just compare and exit:
     if module.check_mode:
         if pretty_to_bytes(value) == pretty_to_bytes(current_val):
-            kw['changed'] = False
+            kw["changed"] = False
 
         else:
-            kw['value_pretty'] = value
-            kw['changed'] = True
+            kw["value_pretty"] = value
+            kw["changed"] = True
 
         # Anyway returns current raw value in the check_mode:
-        kw['value'] = dict(
+        kw["value"] = dict(
             value=raw_val,
             unit=unit,
         )
-        kw['restart_required'] = restart_required
+        kw["restart_required"] = restart_required
         module.exit_json(**kw)
 
     # Set param (value can be an empty string):
     if value is not None and value != current_val:
         changed = param_set(cursor, module, name, value, context, ver)
 
-        kw['value_pretty'] = value
+        kw["value_pretty"] = value
 
     # Reset param:
     elif reset:
         if raw_val == boot_val:
             # nothing to change, exit:
-            kw['value'] = dict(
+            kw["value"] = dict(
                 value=raw_val,
                 unit=unit,
             )
@@ -521,14 +555,14 @@ def main():
     db_connection.close()
 
     # Reconnect and recheck current value:
-    if context in ('sighup', 'superuser-backend', 'backend', 'superuser', 'user'):
+    if context in ("sighup", "superuser-backend", "backend", "superuser", "user"):
         db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
         cursor = db_connection.cursor(**pg_cursor_args)
 
         res = param_get(cursor, module, name, is_guc_list_quote)
         # f_ means 'final'
-        f_value = res['current_val']
-        f_raw_val = res['raw_val']
+        f_value = res["current_val"]
+        f_raw_val = res["raw_val"]
 
         if raw_val == f_raw_val:
             changed = False
@@ -536,8 +570,8 @@ def main():
         else:
             changed = True
 
-        kw['value_pretty'] = f_value
-        kw['value'] = dict(
+        kw["value_pretty"] = f_value
+        kw["value"] = dict(
             value=f_raw_val,
             unit=unit,
         )
@@ -545,8 +579,8 @@ def main():
         cursor.close()
         db_connection.close()
 
-    kw['changed'] = changed
-    kw['restart_required'] = restart_required
+    kw["changed"] = changed
+    kw["restart_required"] = restart_required
 
     if restart_required and changed:
         module.warn("Restart of PostgreSQL is required for setting %s" % name)
@@ -554,5 +588,5 @@ def main():
     module.exit_json(**kw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

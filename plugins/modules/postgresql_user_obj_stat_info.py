@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_user_obj_stat_info
 short_description: Gather statistics about PostgreSQL user objects
@@ -69,9 +69,9 @@ author:
 - Thomas O'Donnell (@andytom)
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Collect information about all supported user objects of the acme database
   community.postgresql.postgresql_user_obj_stat_info:
     db: acme
@@ -85,9 +85,9 @@ EXAMPLES = r'''
   community.postgresql.postgresql_user_obj_stat_info:
     db: acme
     filter: tables, indexes
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 indexes:
   description: User index statistics.
   returned: success
@@ -103,22 +103,28 @@ functions:
   returned: success
   type: dict
   sample: {"public": {"inc": {"calls": 1, "funcid": 26722, "self_time": 0.23, "total_time": 0.23}}}
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 # ===========================================
 # PostgreSQL module specific support methods.
 #
 
 
-class PgUserObjStatInfo():
+class PgUserObjStatInfo:
     """Class to collect information about PostgreSQL user objects.
 
     Args:
@@ -138,14 +144,14 @@ class PgUserObjStatInfo():
         self.module = module
         self.cursor = cursor
         self.info = {
-            'functions': {},
-            'indexes': {},
-            'tables': {},
+            "functions": {},
+            "indexes": {},
+            "tables": {},
         }
         self.obj_func_mapping = {
-            'functions': self.get_func_stat,
-            'indexes': self.get_idx_stat,
-            'tables': self.get_tbl_stat,
+            "functions": self.get_func_stat,
+            "indexes": self.get_idx_stat,
+            "tables": self.get_tbl_stat,
         }
         self.schema = None
 
@@ -191,10 +197,9 @@ class PgUserObjStatInfo():
         if not result:
             return
 
-        self.__fill_out_info(result,
-                             info_key='functions',
-                             schema_key='schemaname',
-                             name_key='funcname')
+        self.__fill_out_info(
+            result, info_key="functions", schema_key="schemaname", name_key="funcname"
+        )
 
     def get_idx_stat(self):
         """Get index statistics and fill out self.info dictionary."""
@@ -209,10 +214,9 @@ class PgUserObjStatInfo():
         if not result:
             return
 
-        self.__fill_out_info(result,
-                             info_key='indexes',
-                             schema_key='schemaname',
-                             name_key='indexrelname')
+        self.__fill_out_info(
+            result, info_key="indexes", schema_key="schemaname", name_key="indexrelname"
+        )
 
     def get_tbl_stat(self):
         """Get table statistics and fill out self.info dictionary."""
@@ -227,10 +231,9 @@ class PgUserObjStatInfo():
         if not result:
             return
 
-        self.__fill_out_info(result,
-                             info_key='tables',
-                             schema_key='schemaname',
-                             name_key='relname')
+        self.__fill_out_info(
+            result, info_key="tables", schema_key="schemaname", name_key="relname"
+        )
 
     def __fill_out_info(self, result, info_key=None, schema_key=None, name_key=None):
         # Convert result to list of dicts to handle it easier:
@@ -250,32 +253,43 @@ class PgUserObjStatInfo():
                 if key not in (schema_key, name_key):
                     self.info[info_key][elem[schema_key]][elem[name_key]][key] = val
 
-            if info_key in ('tables', 'indexes'):
+            if info_key in ("tables", "indexes"):
                 schemaname = elem[schema_key]
                 if self.schema:
                     schemaname = self.schema
 
-                relname = '%s.%s' % (schemaname, elem[name_key])
+                relname = "%s.%s" % (schemaname, elem[name_key])
 
-                result = exec_sql(self, "SELECT pg_relation_size (%s)",
-                                  query_params=(relname,),
-                                  add_to_executed=False)
+                result = exec_sql(
+                    self,
+                    "SELECT pg_relation_size (%s)",
+                    query_params=(relname,),
+                    add_to_executed=False,
+                )
 
-                self.info[info_key][elem[schema_key]][elem[name_key]]['size'] = result[0]["pg_relation_size"]
+                self.info[info_key][elem[schema_key]][elem[name_key]]["size"] = result[
+                    0
+                ]["pg_relation_size"]
 
-                if info_key == 'tables':
-                    result = exec_sql(self, "SELECT pg_total_relation_size (%s)",
-                                      query_params=(relname,),
-                                      add_to_executed=False)
+                if info_key == "tables":
+                    result = exec_sql(
+                        self,
+                        "SELECT pg_total_relation_size (%s)",
+                        query_params=(relname,),
+                        add_to_executed=False,
+                    )
 
-                    self.info[info_key][elem[schema_key]][elem[name_key]]['total_size'] = result[0]["pg_total_relation_size"]
+                    self.info[info_key][elem[schema_key]][elem[name_key]][
+                        "total_size"
+                    ] = result[0]["pg_total_relation_size"]
 
     def set_schema(self, schema):
         """If schema exists, sets self.schema, otherwise fails."""
-        query = ("SELECT 1 as schema_exists FROM information_schema.schemata "
-                 "WHERE schema_name = %s")
-        result = exec_sql(self, query, query_params=(schema,),
-                          add_to_executed=False)
+        query = (
+            "SELECT 1 as schema_exists FROM information_schema.schemata "
+            "WHERE schema_name = %s"
+        )
+        result = exec_sql(self, query, query_params=(schema,), add_to_executed=False)
 
         if result and result[0]["schema_exists"]:
             self.schema = schema
@@ -287,13 +301,14 @@ class PgUserObjStatInfo():
 # Module execution.
 #
 
+
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        db=dict(type='str', aliases=['login_db']),
-        filter=dict(type='list', elements='str'),
-        session_role=dict(type='str'),
-        schema=dict(type='str'),
+        db=dict(type="str", aliases=["login_db"]),
+        filter=dict(type="list", elements="str"),
+        session_role=dict(type="str"),
+        schema=dict(type="str"),
         trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
@@ -305,7 +320,7 @@ def main():
     schema = module.params["schema"]
 
     if not module.params["trust_input"]:
-        check_input(module, module.params['session_role'])
+        check_input(module, module.params["session_role"])
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -329,5 +344,5 @@ def main():
     module.exit_json(**info_dict)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

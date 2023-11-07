@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_ping
 short_description: Check remote PostgreSQL server availability
@@ -45,9 +45,9 @@ author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # PostgreSQL ping dbsrv server from the shell:
 # ansible dbsrv -m postgresql_ping
 
@@ -72,9 +72,9 @@ EXAMPLES = r'''
 - name: This task should be executed only if the server is available
   # ...
   when: result.is_available == true
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 is_available:
   description: PostgreSQL server availability.
   returned: success
@@ -91,16 +91,22 @@ conn_err_msg:
   type: str
   sample: ''
   version_added: 1.7.0
-'''
+"""
 
 import re
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 # ===========================================
 # PostgreSQL module specific support methods.
@@ -144,7 +150,7 @@ class PgPing(object):
         )
 
         if patch is not None:
-            self.version['patch'] = patch
+            self.version["patch"] = patch
 
 
 # ===========================================
@@ -155,18 +161,18 @@ class PgPing(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        db=dict(type='str', aliases=['login_db']),
-        session_role=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
+        db=dict(type="str", aliases=["login_db"]),
+        session_role=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
     )
 
-    if not module.params['trust_input']:
+    if not module.params["trust_input"]:
         # Check input for potentially dangerous elements:
-        check_input(module, module.params['session_role'])
+        check_input(module, module.params["session_role"])
 
     # Set some default values:
     cursor = False
@@ -175,7 +181,7 @@ def main():
         changed=False,
         is_available=False,
         server_version=dict(),
-        conn_err_msg='',
+        conn_err_msg="",
     )
 
     # Ensure psycopg libraries are available before connecting to DB:
@@ -183,7 +189,7 @@ def main():
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
     db_connection, err = connect_to_db(module, conn_params, fail_on_conn=False)
     if err:
-        result['conn_err_msg'] = err
+        result["conn_err_msg"] = err
 
     if db_connection is not None:
         cursor = db_connection.cursor(**pg_cursor_args)
@@ -199,5 +205,5 @@ def main():
     module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

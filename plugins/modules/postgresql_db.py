@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_db
 short_description: Add or remove PostgreSQL databases from a remote host
@@ -159,9 +159,9 @@ author: "Ansible Core Team"
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Create a new database with name "acme"
   community.postgresql.postgresql_db:
     name: acme
@@ -253,16 +253,16 @@ EXAMPLES = r'''
     name: foo
     state: rename
     target: bar
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 executed_commands:
   description: List of commands which tried to run.
   returned: success
   type: list
   sample: ["CREATE DATABASE acme"]
   version_added: '0.2.0'
-'''
+"""
 
 
 import os
@@ -273,16 +273,24 @@ from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six.moves import shlex_quote
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    SQLParseError, check_input)
+    SQLParseError,
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, get_conn_params, get_server_version,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    get_server_version,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 executed_commands = []
 
 
 class NotSupportedError(Exception):
     pass
+
 
 # ===========================================
 # PostgreSQL module specific support methods.
@@ -305,8 +313,8 @@ def set_conn_limit(cursor, db, conn_limit):
 
 def get_encoding_id(cursor, encoding):
     query = "SELECT pg_char_to_encoding(%(encoding)s) AS encoding_id;"
-    cursor.execute(query, {'encoding': encoding})
-    return cursor.fetchone()['encoding_id']
+    cursor.execute(query, {"encoding": encoding})
+    return cursor.fetchone()["encoding_id"]
 
 
 def get_db_info(cursor, db):
@@ -320,29 +328,33 @@ def get_db_info(cursor, db):
     JOIN pg_tablespace ON pg_tablespace.oid = pg_database.dattablespace
     WHERE datname = %(db)s
     """
-    cursor.execute(query, {'db': db})
+    cursor.execute(query, {"db": db})
     return cursor.fetchone()
 
 
 def db_exists(cursor, db):
     query = "SELECT * FROM pg_database WHERE datname=%(db)s"
-    cursor.execute(query, {'db': db})
+    cursor.execute(query, {"db": db})
     return cursor.rowcount == 1
 
 
 def db_dropconns(cursor, db):
     if get_server_version(cursor.connection) >= 90200:
-        """ Drop DB connections in Postgres 9.2 and above """
-        query_terminate = ("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity "
-                           "WHERE pg_stat_activity.datname=%(db)s AND pid <> pg_backend_pid()")
+        """Drop DB connections in Postgres 9.2 and above"""
+        query_terminate = (
+            "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity "
+            "WHERE pg_stat_activity.datname=%(db)s AND pid <> pg_backend_pid()"
+        )
     else:
-        """ Drop DB connections in Postgres 9.1 and below """
-        query_terminate = ("SELECT pg_terminate_backend(pg_stat_activity.procpid) FROM pg_stat_activity "
-                           "WHERE pg_stat_activity.datname=%(db)s AND procpid <> pg_backend_pid()")
-    query_block = ("UPDATE pg_database SET datallowconn = false WHERE datname=%(db)s")
-    query = query_block + '; ' + query_terminate
+        """Drop DB connections in Postgres 9.1 and below"""
+        query_terminate = (
+            "SELECT pg_terminate_backend(pg_stat_activity.procpid) FROM pg_stat_activity "
+            "WHERE pg_stat_activity.datname=%(db)s AND procpid <> pg_backend_pid()"
+        )
+    query_block = "UPDATE pg_database SET datallowconn = false WHERE datname=%(db)s"
+    query = query_block + "; " + query_terminate
 
-    cursor.execute(query, {'db': db})
+    cursor.execute(query, {"db": db})
 
 
 def db_delete(cursor, db, force=False):
@@ -350,7 +362,7 @@ def db_delete(cursor, db, force=False):
         query = 'DROP DATABASE "%s"' % db
         if force:
             if get_server_version(cursor.connection) >= 130000:
-                query = ('DROP DATABASE "%s" WITH (FORCE)' % db)
+                query = 'DROP DATABASE "%s" WITH (FORCE)' % db
             else:
                 db_dropconns(cursor, db)
         executed_commands.append(query)
@@ -360,8 +372,16 @@ def db_delete(cursor, db, force=False):
         return False
 
 
-def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace):
-    params = dict(enc=encoding, collate=lc_collate, ctype=lc_ctype, conn_limit=conn_limit, tablespace=tablespace)
+def db_create(
+    cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace
+):
+    params = dict(
+        enc=encoding,
+        collate=lc_collate,
+        ctype=lc_ctype,
+        conn_limit=conn_limit,
+        tablespace=tablespace,
+    )
     if not db_exists(cursor, db):
         query_fragments = ['CREATE DATABASE "%s"' % db]
         if owner:
@@ -369,101 +389,108 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
         if template:
             query_fragments.append('TEMPLATE "%s"' % template)
         if encoding:
-            query_fragments.append('ENCODING %(enc)s')
+            query_fragments.append("ENCODING %(enc)s")
         if lc_collate:
-            query_fragments.append('LC_COLLATE %(collate)s')
+            query_fragments.append("LC_COLLATE %(collate)s")
         if lc_ctype:
-            query_fragments.append('LC_CTYPE %(ctype)s')
+            query_fragments.append("LC_CTYPE %(ctype)s")
         if tablespace:
             query_fragments.append('TABLESPACE "%s"' % tablespace)
         if conn_limit:
-            query_fragments.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
-        query = ' '.join(query_fragments)
+            query_fragments.append(
+                "CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit}
+            )
+        query = " ".join(query_fragments)
         executed_commands.append(cursor.mogrify(query, params))
         cursor.execute(query, params)
         return True
     else:
         db_info = get_db_info(cursor, db)
-        if (encoding and get_encoding_id(cursor, encoding) != db_info['encoding_id']):
+        if encoding and get_encoding_id(cursor, encoding) != db_info["encoding_id"]:
             raise NotSupportedError(
-                'Changing database encoding is not supported. '
-                'Current encoding: %s' % db_info['encoding']
+                "Changing database encoding is not supported. "
+                "Current encoding: %s" % db_info["encoding"]
             )
-        elif lc_collate and lc_collate != db_info['lc_collate']:
+        elif lc_collate and lc_collate != db_info["lc_collate"]:
             raise NotSupportedError(
-                'Changing LC_COLLATE is not supported. '
-                'Current LC_COLLATE: %s' % db_info['lc_collate']
+                "Changing LC_COLLATE is not supported. "
+                "Current LC_COLLATE: %s" % db_info["lc_collate"]
             )
-        elif lc_ctype and lc_ctype != db_info['lc_ctype']:
+        elif lc_ctype and lc_ctype != db_info["lc_ctype"]:
             raise NotSupportedError(
-                'Changing LC_CTYPE is not supported.'
-                'Current LC_CTYPE: %s' % db_info['lc_ctype']
+                "Changing LC_CTYPE is not supported."
+                "Current LC_CTYPE: %s" % db_info["lc_ctype"]
             )
         else:
             changed = False
 
-            if owner and owner != db_info['owner']:
+            if owner and owner != db_info["owner"]:
                 changed = set_owner(cursor, db, owner)
 
-            if conn_limit and conn_limit != str(db_info['conn_limit']):
+            if conn_limit and conn_limit != str(db_info["conn_limit"]):
                 changed = set_conn_limit(cursor, db, conn_limit)
 
-            if tablespace and tablespace != db_info['tablespace']:
+            if tablespace and tablespace != db_info["tablespace"]:
                 changed = set_tablespace(cursor, db, tablespace)
 
             return changed
 
 
-def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace):
+def db_matches(
+    cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace
+):
     if not db_exists(cursor, db):
         return False
     else:
         db_info = get_db_info(cursor, db)
-        if (encoding and get_encoding_id(cursor, encoding) != db_info['encoding_id']):
+        if encoding and get_encoding_id(cursor, encoding) != db_info["encoding_id"]:
             return False
-        elif lc_collate and lc_collate != db_info['lc_collate']:
+        elif lc_collate and lc_collate != db_info["lc_collate"]:
             return False
-        elif lc_ctype and lc_ctype != db_info['lc_ctype']:
+        elif lc_ctype and lc_ctype != db_info["lc_ctype"]:
             return False
-        elif owner and owner != db_info['owner']:
+        elif owner and owner != db_info["owner"]:
             return False
-        elif conn_limit and conn_limit != str(db_info['conn_limit']):
+        elif conn_limit and conn_limit != str(db_info["conn_limit"]):
             return False
-        elif tablespace and tablespace != db_info['tablespace']:
+        elif tablespace and tablespace != db_info["tablespace"]:
             return False
         else:
             return True
 
 
-def db_dump(module, target, target_opts="",
-            db=None,
-            dump_extra_args=None,
-            user=None,
-            password=None,
-            host=None,
-            port=None,
-            **kw):
-
+def db_dump(
+    module,
+    target,
+    target_opts="",
+    db=None,
+    dump_extra_args=None,
+    user=None,
+    password=None,
+    host=None,
+    port=None,
+    **kw
+):
     flags = login_flags(db, host, port, user, db_prefix=False)
-    cmd = module.get_bin_path('pg_dump', True)
+    cmd = module.get_bin_path("pg_dump", True)
     comp_prog_path = None
 
-    if os.path.splitext(target)[-1] == '.tar':
-        flags.append(' --format=t')
-    elif os.path.splitext(target)[-1] == '.pgc':
-        flags.append(' --format=c')
-    elif os.path.splitext(target)[-1] == '.dir':
-        flags.append(' --format=d')
+    if os.path.splitext(target)[-1] == ".tar":
+        flags.append(" --format=t")
+    elif os.path.splitext(target)[-1] == ".pgc":
+        flags.append(" --format=c")
+    elif os.path.splitext(target)[-1] == ".dir":
+        flags.append(" --format=d")
 
-    if os.path.splitext(target)[-1] == '.gz':
-        if module.get_bin_path('pigz'):
-            comp_prog_path = module.get_bin_path('pigz', True)
+    if os.path.splitext(target)[-1] == ".gz":
+        if module.get_bin_path("pigz"):
+            comp_prog_path = module.get_bin_path("pigz", True)
         else:
-            comp_prog_path = module.get_bin_path('gzip', True)
-    elif os.path.splitext(target)[-1] == '.bz2':
-        comp_prog_path = module.get_bin_path('bzip2', True)
-    elif os.path.splitext(target)[-1] == '.xz':
-        comp_prog_path = module.get_bin_path('xz', True)
+            comp_prog_path = module.get_bin_path("gzip", True)
+    elif os.path.splitext(target)[-1] == ".bz2":
+        comp_prog_path = module.get_bin_path("bzip2", True)
+    elif os.path.splitext(target)[-1] == ".xz":
+        comp_prog_path = module.get_bin_path("xz", True)
 
     cmd += "".join(flags)
 
@@ -477,53 +504,58 @@ def db_dump(module, target, target_opts="",
         # Use a fifo to be notified of an error in pg_dump
         # Using shell pipe has no way to return the code of the first command
         # in a portable way.
-        fifo = os.path.join(module.tmpdir, 'pg_fifo')
+        fifo = os.path.join(module.tmpdir, "pg_fifo")
         os.mkfifo(fifo)
-        cmd = '{1} <{3} > {2} & {0} >{3}'.format(cmd, comp_prog_path, shlex_quote(target), fifo)
+        cmd = "{1} <{3} > {2} & {0} >{3}".format(
+            cmd, comp_prog_path, shlex_quote(target), fifo
+        )
     else:
-        if ' --format=d' in cmd:
-            cmd = '{0} -f {1}'.format(cmd, shlex_quote(target))
+        if " --format=d" in cmd:
+            cmd = "{0} -f {1}".format(cmd, shlex_quote(target))
         else:
-            cmd = '{0} > {1}'.format(cmd, shlex_quote(target))
+            cmd = "{0} > {1}".format(cmd, shlex_quote(target))
 
     return do_with_password(module, cmd, password)
 
 
-def db_restore(module, target, target_opts="",
-               db=None,
-               user=None,
-               password=None,
-               host=None,
-               port=None,
-               **kw):
-
+def db_restore(
+    module,
+    target,
+    target_opts="",
+    db=None,
+    user=None,
+    password=None,
+    host=None,
+    port=None,
+    **kw
+):
     flags = login_flags(db, host, port, user)
     comp_prog_path = None
-    cmd = module.get_bin_path('psql', True)
+    cmd = module.get_bin_path("psql", True)
 
-    if os.path.splitext(target)[-1] == '.sql':
-        flags.append(' --file={0}'.format(target))
+    if os.path.splitext(target)[-1] == ".sql":
+        flags.append(" --file={0}".format(target))
 
-    elif os.path.splitext(target)[-1] == '.tar':
-        flags.append(' --format=Tar')
-        cmd = module.get_bin_path('pg_restore', True)
+    elif os.path.splitext(target)[-1] == ".tar":
+        flags.append(" --format=Tar")
+        cmd = module.get_bin_path("pg_restore", True)
 
-    elif os.path.splitext(target)[-1] == '.pgc':
-        flags.append(' --format=Custom')
-        cmd = module.get_bin_path('pg_restore', True)
+    elif os.path.splitext(target)[-1] == ".pgc":
+        flags.append(" --format=Custom")
+        cmd = module.get_bin_path("pg_restore", True)
 
-    elif os.path.splitext(target)[-1] == '.dir':
-        flags.append(' --format=Directory')
-        cmd = module.get_bin_path('pg_restore', True)
+    elif os.path.splitext(target)[-1] == ".dir":
+        flags.append(" --format=Directory")
+        cmd = module.get_bin_path("pg_restore", True)
 
-    elif os.path.splitext(target)[-1] == '.gz':
-        comp_prog_path = module.get_bin_path('zcat', True)
+    elif os.path.splitext(target)[-1] == ".gz":
+        comp_prog_path = module.get_bin_path("zcat", True)
 
-    elif os.path.splitext(target)[-1] == '.bz2':
-        comp_prog_path = module.get_bin_path('bzcat', True)
+    elif os.path.splitext(target)[-1] == ".bz2":
+        comp_prog_path = module.get_bin_path("bzcat", True)
 
-    elif os.path.splitext(target)[-1] == '.xz':
-        comp_prog_path = module.get_bin_path('xzcat', True)
+    elif os.path.splitext(target)[-1] == ".xz":
+        comp_prog_path = module.get_bin_path("xzcat", True)
 
     cmd += "".join(flags)
     if target_opts:
@@ -533,21 +565,30 @@ def db_restore(module, target, target_opts="",
         env = os.environ.copy()
         if password:
             env = {"PGPASSWORD": password}
-        p1 = subprocess.Popen([comp_prog_path, target], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p2 = subprocess.Popen(cmd, stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env)
+        p1 = subprocess.Popen(
+            [comp_prog_path, target], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        p2 = subprocess.Popen(
+            cmd,
+            stdin=p1.stdout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            env=env,
+        )
         (stdout2, stderr2) = p2.communicate()
         p1.stdout.close()
         p1.wait()
         if p1.returncode != 0:
             stderr1 = p1.stderr.read()
-            return p1.returncode, '', stderr1, 'cmd: ****'
+            return p1.returncode, "", stderr1, "cmd: ****"
         else:
-            return p2.returncode, '', stderr2, 'cmd: ****'
+            return p2.returncode, "", stderr2, "cmd: ****"
     else:
-        if '--format=Directory' in cmd:
-            cmd = '{0} {1}'.format(cmd, shlex_quote(target))
+        if "--format=Directory" in cmd:
+            cmd = "{0} {1}".format(cmd, shlex_quote(target))
         else:
-            cmd = '{0} < {1}'.format(cmd, shlex_quote(target))
+            cmd = "{0} < {1}".format(cmd, shlex_quote(target))
 
     return do_with_password(module, cmd, password)
 
@@ -564,15 +605,15 @@ def login_flags(db, host, port, user, db_prefix=True):
     flags = []
     if db:
         if db_prefix:
-            flags.append(' --dbname={0}'.format(shlex_quote(db)))
+            flags.append(" --dbname={0}".format(shlex_quote(db)))
         else:
-            flags.append(' {0}'.format(shlex_quote(db)))
+            flags.append(" {0}".format(shlex_quote(db)))
     if host:
-        flags.append(' --host={0}'.format(host))
+        flags.append(" --host={0}".format(host))
     if port:
-        flags.append(' --port={0}'.format(port))
+        flags.append(" --port={0}".format(port))
     if user:
-        flags.append(' --username={0}'.format(user))
+        flags.append(" --username={0}".format(user))
     return flags
 
 
@@ -581,7 +622,9 @@ def do_with_password(module, cmd, password):
     if password:
         env = {"PGPASSWORD": password}
     executed_commands.append(cmd)
-    rc, stderr, stdout = module.run_command(cmd, use_unsafe_shell=True, environ_update=env)
+    rc, stderr, stdout = module.run_command(
+        cmd, use_unsafe_shell=True, environ_update=env
+    )
     return rc, stderr, stdout, cmd
 
 
@@ -597,7 +640,7 @@ def rename_db(module, cursor, db, target, check_mode=False):
     target_db = db_exists(cursor, target)
 
     if source_db and target_db:
-        module.fail_json(msg='Both the source and the target databases exist.')
+        module.fail_json(msg="Both the source and the target databases exist.")
 
     if not source_db and target_db:
         # If the source db doesn't exist and
@@ -607,7 +650,7 @@ def rename_db(module, cursor, db, target, check_mode=False):
         return False
 
     if not source_db and not target_db:
-        module.fail_json(msg='The source and the target databases do not exist.')
+        module.fail_json(msg="The source and the target databases do not exist.")
 
     if source_db and not target_db:
         if check_mode:
@@ -618,6 +661,7 @@ def rename_db(module, cursor, db, target, check_mode=False):
         cursor.execute(query)
         return True
 
+
 # ===========================================
 # Module execution.
 #
@@ -626,29 +670,29 @@ def rename_db(module, cursor, db, target, check_mode=False):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        db=dict(type='str', required=True, aliases=['name']),
-        owner=dict(type='str', default=''),
-        template=dict(type='str', default=''),
-        encoding=dict(type='str', default=''),
-        lc_collate=dict(type='str', default=''),
-        lc_ctype=dict(type='str', default=''),
-        state=dict(type='str', default='present',
-                   choices=['absent', 'dump', 'present', 'rename', 'restore']),
-        target=dict(type='path', default=''),
-        target_opts=dict(type='str', default=''),
-        maintenance_db=dict(type='str', default="postgres"),
-        session_role=dict(type='str'),
-        conn_limit=dict(type='str', default=''),
-        tablespace=dict(type='path', default=''),
-        dump_extra_args=dict(type='str', default=None),
-        trust_input=dict(type='bool', default=True),
-        force=dict(type='bool', default=False),
+        db=dict(type="str", required=True, aliases=["name"]),
+        owner=dict(type="str", default=""),
+        template=dict(type="str", default=""),
+        encoding=dict(type="str", default=""),
+        lc_collate=dict(type="str", default=""),
+        lc_ctype=dict(type="str", default=""),
+        state=dict(
+            type="str",
+            default="present",
+            choices=["absent", "dump", "present", "rename", "restore"],
+        ),
+        target=dict(type="path", default=""),
+        target_opts=dict(type="str", default=""),
+        maintenance_db=dict(type="str", default="postgres"),
+        session_role=dict(type="str"),
+        conn_limit=dict(type="str", default=""),
+        tablespace=dict(type="path", default=""),
+        dump_extra_args=dict(type="str", default=None),
+        trust_input=dict(type="bool", default=True),
+        force=dict(type="bool", default=False),
     )
 
-    module = AnsibleModule(
-        argument_spec=argument_spec,
-        supports_check_mode=True
-    )
+    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
 
     db = module.params["db"]
     owner = module.params["owner"]
@@ -660,28 +704,36 @@ def main():
     target_opts = module.params["target_opts"]
     state = module.params["state"]
     changed = False
-    maintenance_db = module.params['maintenance_db']
+    maintenance_db = module.params["maintenance_db"]
     session_role = module.params["session_role"]
-    conn_limit = module.params['conn_limit']
-    tablespace = module.params['tablespace']
-    dump_extra_args = module.params['dump_extra_args']
-    trust_input = module.params['trust_input']
-    force = module.params['force']
+    conn_limit = module.params["conn_limit"]
+    tablespace = module.params["tablespace"]
+    dump_extra_args = module.params["dump_extra_args"]
+    trust_input = module.params["trust_input"]
+    force = module.params["force"]
 
-    if state == 'rename':
+    if state == "rename":
         if not target:
-            module.fail_json(msg='The "target" option must be defined when the "rename" option is used.')
+            module.fail_json(
+                msg='The "target" option must be defined when the "rename" option is used.'
+            )
 
         if db == target:
-            module.fail_json(msg='The "name/db" option and the "target" option cannot be the same.')
+            module.fail_json(
+                msg='The "name/db" option and the "target" option cannot be the same.'
+            )
 
         if maintenance_db == db:
-            module.fail_json(msg='The "maintenance_db" option and the "name/db" option cannot be the same.')
+            module.fail_json(
+                msg='The "maintenance_db" option and the "name/db" option cannot be the same.'
+            )
 
     # Check input
     if not trust_input:
         # Check input for potentially dangerous elements:
-        check_input(module, owner, conn_limit, encoding, db, template, tablespace, session_role)
+        check_input(
+            module, owner, conn_limit, encoding, db, template, tablespace, session_role
+        )
 
     raw_connection = state in ("dump", "restore")
 
@@ -707,7 +759,10 @@ def main():
             try:
                 cursor.execute('SET ROLE "%s"' % session_role)
             except Exception as e:
-                module.fail_json(msg="Could not switch role: %s" % to_native(e), exception=traceback.format_exc())
+                module.fail_json(
+                    msg="Could not switch role: %s" % to_native(e),
+                    exception=traceback.format_exc(),
+                )
 
     try:
         if module.check_mode:
@@ -715,12 +770,24 @@ def main():
                 changed = db_exists(cursor, db)
 
             elif state == "present":
-                changed = not db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace)
+                changed = not db_matches(
+                    cursor,
+                    db,
+                    owner,
+                    template,
+                    encoding,
+                    lc_collate,
+                    lc_ctype,
+                    conn_limit,
+                    tablespace,
+                )
 
             elif state == "rename":
                 changed = rename_db(module, cursor, db, target, check_mode=True)
 
-            module.exit_json(changed=changed, db=db, executed_commands=executed_commands)
+            module.exit_json(
+                changed=changed, db=db, executed_commands=executed_commands
+            )
 
         if state == "absent":
             try:
@@ -730,7 +797,17 @@ def main():
 
         elif state == "present":
             try:
-                changed = db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace)
+                changed = db_create(
+                    cursor,
+                    db,
+                    owner,
+                    template,
+                    encoding,
+                    lc_collate,
+                    lc_ctype,
+                    conn_limit,
+                    tablespace,
+                )
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
@@ -740,20 +817,30 @@ def main():
 
             method = state == "dump" and db_dump or db_restore
             try:
-                if state == 'dump':
-                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, dump_extra_args, **conn_params)
+                if state == "dump":
+                    rc, stdout, stderr, cmd = method(
+                        module, target, target_opts, db, dump_extra_args, **conn_params
+                    )
                 else:
-                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, **conn_params)
+                    rc, stdout, stderr, cmd = method(
+                        module, target, target_opts, db, **conn_params
+                    )
 
                 if rc != 0:
                     module.fail_json(msg=stderr, stdout=stdout, rc=rc, cmd=cmd)
                 else:
-                    module.exit_json(changed=True, msg=stdout, stderr=stderr, rc=rc, cmd=cmd,
-                                     executed_commands=executed_commands)
+                    module.exit_json(
+                        changed=True,
+                        msg=stdout,
+                        stderr=stderr,
+                        rc=rc,
+                        cmd=cmd,
+                        executed_commands=executed_commands,
+                    )
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
-        elif state == 'rename':
+        elif state == "rename":
             changed = rename_db(module, cursor, db, target)
 
     except NotSupportedError as e:
@@ -762,7 +849,10 @@ def main():
         # Avoid catching this on Python 2.4
         raise
     except Exception as e:
-        module.fail_json(msg="Database query failed: %s" % to_native(e), exception=traceback.format_exc())
+        module.fail_json(
+            msg="Database query failed: %s" % to_native(e),
+            exception=traceback.format_exc(),
+        )
 
     if not raw_connection:
         cursor.close()
@@ -771,5 +861,5 @@ def main():
     module.exit_json(changed=changed, db=db, executed_commands=executed_commands)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

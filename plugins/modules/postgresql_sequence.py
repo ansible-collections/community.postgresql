@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_sequence
 short_description: Create, drop, or alter a PostgreSQL sequence
@@ -168,9 +168,9 @@ author:
 extends_documentation_fragment:
 - community.postgresql.postgres
 
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Create an ascending bigint sequence called foobar in the default
         database
   community.postgresql.postgresql_sequence:
@@ -228,9 +228,9 @@ EXAMPLES = r'''
     name: foobar
     cascade: true
     state: absent
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 state:
   description: Sequence state at the end of execution.
   returned: success
@@ -299,15 +299,21 @@ newschema:
     returned: success
     type: str
     sample: 'foobar'
-'''
+"""
 
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 
 class Sequence(object):
@@ -340,44 +346,49 @@ class Sequence(object):
         self.module = module
         self.cursor = cursor
         self.executed_queries = []
-        self.name = self.module.params['sequence']
-        self.owner = ''
-        self.schema = self.module.params['schema']
-        self.data_type = ''
-        self.start_value = ''
-        self.minvalue = ''
-        self.maxvalue = ''
-        self.increment = ''
-        self.cycle = ''
-        self.new_name = ''
-        self.new_schema = ''
+        self.name = self.module.params["sequence"]
+        self.owner = ""
+        self.schema = self.module.params["schema"]
+        self.data_type = ""
+        self.start_value = ""
+        self.minvalue = ""
+        self.maxvalue = ""
+        self.increment = ""
+        self.cycle = ""
+        self.new_name = ""
+        self.new_schema = ""
         self.exists = False
         # Collect info
         self.get_info()
 
     def get_info(self):
         """Getter to refresh and get sequence info"""
-        query = ("SELECT "
-                 "s.sequence_schema AS schemaname, "
-                 "s.sequence_name AS sequencename, "
-                 "pg_get_userbyid(c.relowner) AS sequenceowner, "
-                 "s.data_type::regtype AS data_type, "
-                 "s.start_value AS start_value, "
-                 "s.minimum_value AS min_value, "
-                 "s.maximum_value AS max_value, "
-                 "s.increment AS increment_by, "
-                 "s.cycle_option AS cycle "
-                 "FROM information_schema.sequences s "
-                 "JOIN pg_class c ON c.relname = s.sequence_name "
-                 "LEFT JOIN pg_namespace n ON n.oid = c.relnamespace "
-                 "WHERE NOT pg_is_other_temp_schema(n.oid) "
-                 "AND c.relkind = 'S'::\"char\" "
-                 "AND sequence_name = %(name)s "
-                 "AND sequence_schema = %(schema)s")
+        query = (
+            "SELECT "
+            "s.sequence_schema AS schemaname, "
+            "s.sequence_name AS sequencename, "
+            "pg_get_userbyid(c.relowner) AS sequenceowner, "
+            "s.data_type::regtype AS data_type, "
+            "s.start_value AS start_value, "
+            "s.minimum_value AS min_value, "
+            "s.maximum_value AS max_value, "
+            "s.increment AS increment_by, "
+            "s.cycle_option AS cycle "
+            "FROM information_schema.sequences s "
+            "JOIN pg_class c ON c.relname = s.sequence_name "
+            "LEFT JOIN pg_namespace n ON n.oid = c.relnamespace "
+            "WHERE NOT pg_is_other_temp_schema(n.oid) "
+            "AND c.relkind = 'S'::\"char\" "
+            "AND sequence_name = %(name)s "
+            "AND sequence_schema = %(schema)s"
+        )
 
-        res = exec_sql(self, query,
-                       query_params={'name': self.name, 'schema': self.schema},
-                       add_to_executed=False)
+        res = exec_sql(
+            self,
+            query,
+            query_params={"name": self.name, "schema": self.schema},
+            add_to_executed=False,
+        )
 
         if not res:
             self.exists = False
@@ -385,77 +396,77 @@ class Sequence(object):
 
         if res:
             self.exists = True
-            self.schema = res[0]['schemaname']
-            self.name = res[0]['sequencename']
-            self.owner = res[0]['sequenceowner']
-            self.data_type = res[0]['data_type']
-            self.start_value = res[0]['start_value']
-            self.minvalue = res[0]['min_value']
-            self.maxvalue = res[0]['max_value']
-            self.increment = res[0]['increment_by']
-            self.cycle = res[0]['cycle']
+            self.schema = res[0]["schemaname"]
+            self.name = res[0]["sequencename"]
+            self.owner = res[0]["sequenceowner"]
+            self.data_type = res[0]["data_type"]
+            self.start_value = res[0]["start_value"]
+            self.minvalue = res[0]["min_value"]
+            self.maxvalue = res[0]["max_value"]
+            self.increment = res[0]["increment_by"]
+            self.cycle = res[0]["cycle"]
 
     def create(self):
         """Implements CREATE SEQUENCE command behavior."""
-        query = ['CREATE SEQUENCE']
+        query = ["CREATE SEQUENCE"]
         query.append(self.__add_schema())
 
-        if self.module.params.get('data_type'):
-            query.append('AS %s' % self.module.params['data_type'])
+        if self.module.params.get("data_type"):
+            query.append("AS %s" % self.module.params["data_type"])
 
-        if self.module.params.get('increment'):
-            query.append('INCREMENT BY %s' % self.module.params['increment'])
+        if self.module.params.get("increment"):
+            query.append("INCREMENT BY %s" % self.module.params["increment"])
 
-        if self.module.params.get('minvalue'):
-            query.append('MINVALUE %s' % self.module.params['minvalue'])
+        if self.module.params.get("minvalue"):
+            query.append("MINVALUE %s" % self.module.params["minvalue"])
 
-        if self.module.params.get('maxvalue'):
-            query.append('MAXVALUE %s' % self.module.params['maxvalue'])
+        if self.module.params.get("maxvalue"):
+            query.append("MAXVALUE %s" % self.module.params["maxvalue"])
 
-        if self.module.params.get('start'):
-            query.append('START WITH %s' % self.module.params['start'])
+        if self.module.params.get("start"):
+            query.append("START WITH %s" % self.module.params["start"])
 
-        if self.module.params.get('cache'):
-            query.append('CACHE %s' % self.module.params['cache'])
+        if self.module.params.get("cache"):
+            query.append("CACHE %s" % self.module.params["cache"])
 
-        if self.module.params.get('cycle'):
-            query.append('CYCLE')
+        if self.module.params.get("cycle"):
+            query.append("CYCLE")
 
-        return exec_sql(self, ' '.join(query), return_bool=True)
+        return exec_sql(self, " ".join(query), return_bool=True)
 
     def drop(self):
         """Implements DROP SEQUENCE command behavior."""
-        query = ['DROP SEQUENCE']
+        query = ["DROP SEQUENCE"]
         query.append(self.__add_schema())
 
-        if self.module.params.get('cascade'):
-            query.append('CASCADE')
+        if self.module.params.get("cascade"):
+            query.append("CASCADE")
 
-        return exec_sql(self, ' '.join(query), return_bool=True)
+        return exec_sql(self, " ".join(query), return_bool=True)
 
     def rename(self):
         """Implements ALTER SEQUENCE RENAME TO command behavior."""
-        query = ['ALTER SEQUENCE']
+        query = ["ALTER SEQUENCE"]
         query.append(self.__add_schema())
-        query.append('RENAME TO "%s"' % self.module.params['rename_to'])
+        query.append('RENAME TO "%s"' % self.module.params["rename_to"])
 
-        return exec_sql(self, ' '.join(query), return_bool=True)
+        return exec_sql(self, " ".join(query), return_bool=True)
 
     def set_owner(self):
         """Implements ALTER SEQUENCE OWNER TO command behavior."""
-        query = ['ALTER SEQUENCE']
+        query = ["ALTER SEQUENCE"]
         query.append(self.__add_schema())
-        query.append('OWNER TO "%s"' % self.module.params['owner'])
+        query.append('OWNER TO "%s"' % self.module.params["owner"])
 
-        return exec_sql(self, ' '.join(query), return_bool=True)
+        return exec_sql(self, " ".join(query), return_bool=True)
 
     def set_schema(self):
         """Implements ALTER SEQUENCE SET SCHEMA command behavior."""
-        query = ['ALTER SEQUENCE']
+        query = ["ALTER SEQUENCE"]
         query.append(self.__add_schema())
-        query.append('SET SCHEMA "%s"' % self.module.params['newschema'])
+        query.append('SET SCHEMA "%s"' % self.module.params["newschema"])
 
-        return exec_sql(self, ' '.join(query), return_bool=True)
+        return exec_sql(self, " ".join(query), return_bool=True)
 
     def __add_schema(self):
         return '"%s"."%s"' % (self.schema, self.name)
@@ -465,62 +476,63 @@ class Sequence(object):
 # Module execution.
 #
 
+
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        sequence=dict(type='str', required=True, aliases=['name']),
-        state=dict(type='str', default='present', choices=['absent', 'present']),
-        data_type=dict(type='str', choices=['bigint', 'integer', 'smallint']),
-        increment=dict(type='int'),
-        minvalue=dict(type='int', aliases=['min']),
-        maxvalue=dict(type='int', aliases=['max']),
-        start=dict(type='int'),
-        cache=dict(type='int'),
-        cycle=dict(type='bool', default=False),
-        schema=dict(type='str', default='public'),
-        cascade=dict(type='bool', default=False),
-        rename_to=dict(type='str'),
-        owner=dict(type='str'),
-        newschema=dict(type='str'),
-        db=dict(type='str', default='', aliases=['login_db', 'database']),
-        session_role=dict(type='str'),
+        sequence=dict(type="str", required=True, aliases=["name"]),
+        state=dict(type="str", default="present", choices=["absent", "present"]),
+        data_type=dict(type="str", choices=["bigint", "integer", "smallint"]),
+        increment=dict(type="int"),
+        minvalue=dict(type="int", aliases=["min"]),
+        maxvalue=dict(type="int", aliases=["max"]),
+        start=dict(type="int"),
+        cache=dict(type="int"),
+        cycle=dict(type="bool", default=False),
+        schema=dict(type="str", default="public"),
+        cascade=dict(type="bool", default=False),
+        rename_to=dict(type="str"),
+        owner=dict(type="str"),
+        newschema=dict(type="str"),
+        db=dict(type="str", default="", aliases=["login_db", "database"]),
+        session_role=dict(type="str"),
         trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
         mutually_exclusive=[
-            ['rename_to', 'data_type'],
-            ['rename_to', 'increment'],
-            ['rename_to', 'minvalue'],
-            ['rename_to', 'maxvalue'],
-            ['rename_to', 'start'],
-            ['rename_to', 'cache'],
-            ['rename_to', 'cycle'],
-            ['rename_to', 'cascade'],
-            ['rename_to', 'owner'],
-            ['rename_to', 'newschema'],
-            ['cascade', 'data_type'],
-            ['cascade', 'increment'],
-            ['cascade', 'minvalue'],
-            ['cascade', 'maxvalue'],
-            ['cascade', 'start'],
-            ['cascade', 'cache'],
-            ['cascade', 'cycle'],
-            ['cascade', 'owner'],
-            ['cascade', 'newschema'],
-        ]
+            ["rename_to", "data_type"],
+            ["rename_to", "increment"],
+            ["rename_to", "minvalue"],
+            ["rename_to", "maxvalue"],
+            ["rename_to", "start"],
+            ["rename_to", "cache"],
+            ["rename_to", "cycle"],
+            ["rename_to", "cascade"],
+            ["rename_to", "owner"],
+            ["rename_to", "newschema"],
+            ["cascade", "data_type"],
+            ["cascade", "increment"],
+            ["cascade", "minvalue"],
+            ["cascade", "maxvalue"],
+            ["cascade", "start"],
+            ["cascade", "cache"],
+            ["cascade", "cycle"],
+            ["cascade", "owner"],
+            ["cascade", "newschema"],
+        ],
     )
 
     if not module.params["trust_input"]:
         check_input(
             module,
-            module.params['sequence'],
-            module.params['schema'],
-            module.params['rename_to'],
-            module.params['owner'],
-            module.params['newschema'],
-            module.params['session_role'],
+            module.params["sequence"],
+            module.params["schema"],
+            module.params["rename_to"],
+            module.params["owner"],
+            module.params["newschema"],
+            module.params["session_role"],
         )
 
     # Note: we don't need to check mutually exclusive params here, because they are
@@ -543,47 +555,53 @@ def main():
     changed = False
 
     # Create new sequence
-    if not data.exists and module.params['state'] == 'present':
-        if module.params.get('rename_to'):
-            module.fail_json(msg="Sequence '%s' does not exist, nothing to rename" % module.params['sequence'])
-        if module.params.get('newschema'):
-            module.fail_json(msg="Sequence '%s' does not exist, change of schema not possible" % module.params['sequence'])
+    if not data.exists and module.params["state"] == "present":
+        if module.params.get("rename_to"):
+            module.fail_json(
+                msg="Sequence '%s' does not exist, nothing to rename"
+                % module.params["sequence"]
+            )
+        if module.params.get("newschema"):
+            module.fail_json(
+                msg="Sequence '%s' does not exist, change of schema not possible"
+                % module.params["sequence"]
+            )
 
         changed = data.create()
 
     # Drop non-existing sequence
-    elif not data.exists and module.params['state'] == 'absent':
+    elif not data.exists and module.params["state"] == "absent":
         # Nothing to do
         changed = False
 
     # Drop existing sequence
-    elif data.exists and module.params['state'] == 'absent':
+    elif data.exists and module.params["state"] == "absent":
         changed = data.drop()
 
     # Rename sequence
-    if data.exists and module.params.get('rename_to'):
-        if data.name != module.params['rename_to']:
+    if data.exists and module.params.get("rename_to"):
+        if data.name != module.params["rename_to"]:
             changed = data.rename()
             if changed:
-                data.new_name = module.params['rename_to']
+                data.new_name = module.params["rename_to"]
 
     # Refresh information
-    if module.params['state'] == 'present':
+    if module.params["state"] == "present":
         data.get_info()
 
     # Change owner, schema and settings
-    if module.params['state'] == 'present' and data.exists:
+    if module.params["state"] == "present" and data.exists:
         # change owner
-        if module.params.get('owner'):
-            if data.owner != module.params['owner']:
+        if module.params.get("owner"):
+            if data.owner != module.params["owner"]:
                 changed = data.set_owner()
 
         # Set schema
-        if module.params.get('newschema'):
-            if data.schema != module.params['newschema']:
+        if module.params.get("newschema"):
+            if data.schema != module.params["newschema"]:
                 changed = data.set_schema()
                 if changed:
-                    data.new_schema = module.params['newschema']
+                    data.new_schema = module.params["newschema"]
 
     # Rollback if it's possible and check_mode:
     if module.check_mode:
@@ -597,7 +615,7 @@ def main():
     # Make return values:
     kw = dict(
         changed=changed,
-        state='present',
+        state="present",
         sequence=data.name,
         queries=data.executed_queries,
         schema=data.schema,
@@ -610,17 +628,17 @@ def main():
         owner=data.owner,
     )
 
-    if module.params['state'] == 'present':
+    if module.params["state"] == "present":
         if data.new_name:
-            kw['newname'] = data.new_name
+            kw["newname"] = data.new_name
         if data.new_schema:
-            kw['newschema'] = data.new_schema
+            kw["newschema"] = data.new_schema
 
-    elif module.params['state'] == 'absent':
-        kw['state'] = 'absent'
+    elif module.params["state"] == "absent":
+        kw["state"] = "absent"
 
     module.exit_json(**kw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_idx
 short_description: Create or drop indexes from a PostgreSQL database
@@ -149,9 +149,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Create btree index if not exists test_idx concurrently covering columns id and name of table products
   community.postgresql.postgresql_idx:
     db: acme
@@ -218,9 +218,9 @@ EXAMPLES = r'''
     name: test_unique_idx
     unique: true
     concurrent: false
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 name:
   description: Index name.
   returned: success
@@ -256,21 +256,28 @@ valid:
   returned: success
   type: bool
   sample: true
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
-VALID_IDX_TYPES = ('BTREE', 'HASH', 'GIST', 'SPGIST', 'GIN', 'BRIN')
+VALID_IDX_TYPES = ("BTREE", "HASH", "GIST", "SPGIST", "GIN", "BRIN")
 
 
 # ===========================================
 # PostgreSQL module specific support methods.
 #
+
 
 class Index(object):
 
@@ -303,21 +310,21 @@ class Index(object):
         if schema:
             self.schema = schema
         else:
-            self.schema = 'public'
+            self.schema = "public"
         self.module = module
         self.cursor = cursor
         self.info = {
-            'name': self.name,
-            'state': 'absent',
-            'schema': '',
-            'tblname': '',
-            'tblspace': '',
-            'valid': True,
-            'storage_params': [],
+            "name": self.name,
+            "state": "absent",
+            "schema": "",
+            "tblname": "",
+            "tblspace": "",
+            "valid": True,
+            "storage_params": [],
         }
         self.exists = False
         self.__exists_in_db()
-        self.executed_query = ''
+        self.executed_query = ""
 
     def get_info(self):
         """Refresh index info.
@@ -332,24 +339,28 @@ class Index(object):
 
         Return True if the index exists, otherwise, return False.
         """
-        query = ("SELECT i.schemaname, i.tablename, i.tablespace, "
-                 "pi.indisvalid, c.reloptions "
-                 "FROM pg_catalog.pg_indexes AS i "
-                 "JOIN pg_catalog.pg_class AS c "
-                 "ON i.indexname = c.relname "
-                 "JOIN pg_catalog.pg_index AS pi "
-                 "ON c.oid = pi.indexrelid "
-                 "WHERE i.indexname = %(name)s")
+        query = (
+            "SELECT i.schemaname, i.tablename, i.tablespace, "
+            "pi.indisvalid, c.reloptions "
+            "FROM pg_catalog.pg_indexes AS i "
+            "JOIN pg_catalog.pg_class AS c "
+            "ON i.indexname = c.relname "
+            "JOIN pg_catalog.pg_index AS pi "
+            "ON c.oid = pi.indexrelid "
+            "WHERE i.indexname = %(name)s"
+        )
 
-        res = exec_sql(self, query, query_params={'name': self.name}, add_to_executed=False)
+        res = exec_sql(
+            self, query, query_params={"name": self.name}, add_to_executed=False
+        )
         if res:
             self.exists = True
             self.info = dict(
                 name=self.name,
-                state='present',
+                state="present",
                 schema=res[0]["schemaname"],
                 tblname=res[0]["tablename"],
-                tblspace=res[0]["tablespace"] if res[0]["tablespace"] else '',
+                tblspace=res[0]["tablespace"] if res[0]["tablespace"] else "",
                 valid=res[0]["indisvalid"],
                 storage_params=res[0]["reloptions"] if res[0]["reloptions"] else [],
             )
@@ -359,8 +370,17 @@ class Index(object):
             self.exists = False
             return False
 
-    def create(self, tblname, idxtype, columns, cond, tblspace,
-               storage_params, concurrent=True, unique=False):
+    def create(
+        self,
+        tblname,
+        idxtype,
+        columns,
+        cond,
+        tblspace,
+        storage_params,
+        concurrent=True,
+        unique=False,
+    ):
         """Create PostgreSQL index.
 
         Return True if success, otherwise, return False.
@@ -381,30 +401,30 @@ class Index(object):
         if idxtype is None:
             idxtype = "BTREE"
 
-        query = 'CREATE'
+        query = "CREATE"
 
         if unique:
-            query += ' UNIQUE'
+            query += " UNIQUE"
 
-        query += ' INDEX'
+        query += " INDEX"
 
         if concurrent:
-            query += ' CONCURRENTLY'
+            query += " CONCURRENTLY"
 
         query += ' "%s"' % self.name
 
         query += ' ON "%s"."%s" ' % (self.schema, tblname)
 
-        query += 'USING %s (%s)' % (idxtype, columns)
+        query += "USING %s (%s)" % (idxtype, columns)
 
         if storage_params:
-            query += ' WITH (%s)' % storage_params
+            query += " WITH (%s)" % storage_params
 
         if tblspace:
             query += ' TABLESPACE "%s"' % tblspace
 
         if cond:
-            query += ' WHERE %s' % cond
+            query += " WHERE %s" % cond
 
         self.executed_query = query
 
@@ -426,15 +446,15 @@ class Index(object):
         if not self.exists:
             return False
 
-        query = 'DROP INDEX'
+        query = "DROP INDEX"
 
         if concurrent:
-            query += ' CONCURRENTLY'
+            query += " CONCURRENTLY"
 
         query += ' "%s"."%s"' % (self.schema, self.name)
 
         if cascade:
-            query += ' CASCADE'
+            query += " CASCADE"
 
         self.executed_query = query
 
@@ -449,21 +469,21 @@ class Index(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        idxname=dict(type='str', required=True, aliases=['name']),
-        db=dict(type='str', aliases=['login_db']),
-        state=dict(type='str', default='present', choices=['absent', 'present']),
-        concurrent=dict(type='bool', default=True),
-        unique=dict(type='bool', default=False),
-        table=dict(type='str'),
-        idxtype=dict(type='str', aliases=['type']),
-        columns=dict(type='list', elements='str', aliases=['column']),
-        cond=dict(type='str'),
-        session_role=dict(type='str'),
-        tablespace=dict(type='str'),
-        storage_params=dict(type='list', elements='str'),
-        cascade=dict(type='bool', default=False),
-        schema=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
+        idxname=dict(type="str", required=True, aliases=["name"]),
+        db=dict(type="str", aliases=["login_db"]),
+        state=dict(type="str", default="present", choices=["absent", "present"]),
+        concurrent=dict(type="bool", default=True),
+        unique=dict(type="bool", default=False),
+        table=dict(type="str"),
+        idxtype=dict(type="str", aliases=["type"]),
+        columns=dict(type="list", elements="str", aliases=["column"]),
+        cond=dict(type="str"),
+        session_role=dict(type="str"),
+        tablespace=dict(type="str"),
+        storage_params=dict(type="list", elements="str"),
+        cascade=dict(type="bool", default=False),
+        schema=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -487,27 +507,40 @@ def main():
 
     if not trust_input:
         # Check input for potentially dangerous elements:
-        check_input(module, idxname, session_role, schema, table, columns,
-                    tablespace, storage_params, cond)
+        check_input(
+            module,
+            idxname,
+            session_role,
+            schema,
+            table,
+            columns,
+            tablespace,
+            storage_params,
+            cond,
+        )
 
     if concurrent and cascade:
-        module.fail_json(msg="Concurrent mode and cascade parameters are mutually exclusive")
+        module.fail_json(
+            msg="Concurrent mode and cascade parameters are mutually exclusive"
+        )
 
-    if unique and (idxtype and idxtype != 'btree'):
+    if unique and (idxtype and idxtype != "btree"):
         module.fail_json(msg="Only btree currently supports unique indexes")
 
-    if state == 'present':
+    if state == "present":
         if not table:
             module.fail_json(msg="Table must be specified")
         if not columns:
             module.fail_json(msg="At least one column must be specified")
     else:
         if table or columns or cond or idxtype or tablespace:
-            module.fail_json(msg="Index %s is going to be removed, so it does not "
-                                 "make sense to pass a table name, columns, conditions, "
-                                 "index type, or tablespace" % idxname)
+            module.fail_json(
+                msg="Index %s is going to be removed, so it does not "
+                "make sense to pass a table name, columns, conditions, "
+                "index type, or tablespace" % idxname
+            )
 
-    if cascade and state != 'absent':
+    if cascade and state != "absent":
         module.fail_json(msg="cascade parameter used only with state=absent")
 
     # Ensure psycopg libraries are available before connecting to DB:
@@ -522,63 +555,74 @@ def main():
     # Do job:
     index = Index(module, cursor, schema, idxname)
     kw = index.get_info()
-    kw['query'] = ''
+    kw["query"] = ""
 
     #
     # check_mode start
     if module.check_mode:
-        if state == 'present' and index.exists:
-            kw['changed'] = False
+        if state == "present" and index.exists:
+            kw["changed"] = False
             module.exit_json(**kw)
 
-        elif state == 'present' and not index.exists:
-            kw['changed'] = True
+        elif state == "present" and not index.exists:
+            kw["changed"] = True
             module.exit_json(**kw)
 
-        elif state == 'absent' and not index.exists:
-            kw['changed'] = False
+        elif state == "absent" and not index.exists:
+            kw["changed"] = False
             module.exit_json(**kw)
 
-        elif state == 'absent' and index.exists:
-            kw['changed'] = True
+        elif state == "absent" and index.exists:
+            kw["changed"] = True
             module.exit_json(**kw)
     # check_mode end
     #
 
     if state == "present":
         if idxtype and idxtype.upper() not in VALID_IDX_TYPES:
-            module.fail_json(msg="Index type '%s' of %s is not in valid types" % (idxtype, idxname))
+            module.fail_json(
+                msg="Index type '%s' of %s is not in valid types" % (idxtype, idxname)
+            )
 
-        columns = ','.join(columns)
+        columns = ",".join(columns)
 
         if storage_params:
-            storage_params = ','.join(storage_params)
+            storage_params = ",".join(storage_params)
 
-        changed = index.create(table, idxtype, columns, cond, tablespace, storage_params, concurrent, unique)
+        changed = index.create(
+            table,
+            idxtype,
+            columns,
+            cond,
+            tablespace,
+            storage_params,
+            concurrent,
+            unique,
+        )
 
         if changed:
             kw = index.get_info()
-            kw['state'] = 'present'
-            kw['query'] = index.executed_query
+            kw["state"] = "present"
+            kw["query"] = index.executed_query
 
     else:
         changed = index.drop(cascade, concurrent)
 
         if changed:
-            kw['state'] = 'absent'
-            kw['query'] = index.executed_query
+            kw["state"] = "absent"
+            kw["query"] = index.executed_query
 
-    if not kw['valid']:
+    if not kw["valid"]:
         db_connection.rollback()
         module.warn("Index %s is invalid! ROLLBACK" % idxname)
 
     if not concurrent:
         db_connection.commit()
 
-    kw['changed'] = changed
+    kw["changed"] = changed
     db_connection.close()
     module.exit_json(**kw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

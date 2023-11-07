@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_query
 short_description: Run PostgreSQL queries
@@ -91,9 +91,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Simple select query to acme db
   community.postgresql.postgresql_query:
     db: acme
@@ -202,9 +202,9 @@ EXAMPLES = r'''
     query: INSERT INTO test_table (col1) VALUES (%s)
     positional_args:
     - '{{ my_var }}'
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 query:
     description:
     - Executed query.
@@ -249,22 +249,32 @@ rowcount:
     returned: changed
     type: int
     sample: 5
-'''
+"""
 
 import re
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    HAS_PSYCOPG, PSYCOPG_VERSION, TYPES_NEED_TO_CONVERT, connect_to_db,
-    convert_elements_to_pg_arrays, convert_to_supported, ensure_required_libs,
-    get_conn_params, pg_cursor_args, postgres_common_argument_spec,
-    set_search_path)
-from ansible_collections.community.postgresql.plugins.module_utils.version import \
-    LooseVersion
+    HAS_PSYCOPG,
+    PSYCOPG_VERSION,
+    TYPES_NEED_TO_CONVERT,
+    connect_to_db,
+    convert_elements_to_pg_arrays,
+    convert_to_supported,
+    ensure_required_libs,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+    set_search_path,
+)
+from ansible_collections.community.postgresql.plugins.module_utils.version import (
+    LooseVersion,
+)
 
 if HAS_PSYCOPG and PSYCOPG_VERSION < LooseVersion("3.0"):
     from psycopg2 import ProgrammingError as PsycopgProgrammingError
@@ -279,7 +289,7 @@ elif HAS_PSYCOPG:
 
 def insane_query(string):
     for c in string:
-        if c not in (' ', '\n', '', '\t'):
+        if c not in (" ", "\n", "", "\t"):
             return False
 
     return True
@@ -288,20 +298,20 @@ def insane_query(string):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        query=dict(type='raw'),
-        db=dict(type='str', aliases=['login_db']),
-        positional_args=dict(type='list', elements='raw'),
-        named_args=dict(type='dict'),
-        session_role=dict(type='str'),
-        autocommit=dict(type='bool', default=False),
-        encoding=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
-        search_path=dict(type='list', elements='str'),
+        query=dict(type="raw"),
+        db=dict(type="str", aliases=["login_db"]),
+        positional_args=dict(type="list", elements="raw"),
+        named_args=dict(type="dict"),
+        session_role=dict(type="str"),
+        autocommit=dict(type="bool", default=False),
+        encoding=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
+        search_path=dict(type="list", elements="str"),
     )
 
     module = AnsibleModule(
         argument_spec=argument_spec,
-        mutually_exclusive=(('positional_args', 'named_args'),),
+        mutually_exclusive=(("positional_args", "named_args"),),
         supports_check_mode=True,
     )
 
@@ -340,7 +350,7 @@ def main():
     cursor = db_connection.cursor(**pg_cursor_args)
 
     if search_path:
-        set_search_path(cursor, '%s' % ','.join([x.strip(' ') for x in search_path]))
+        set_search_path(cursor, "%s" % ",".join([x.strip(" ") for x in search_path]))
 
     # Prepare args:
     if positional_args:
@@ -360,7 +370,7 @@ def main():
 
     query_all_results = []
     rowcount = 0
-    statusmessage = ''
+    statusmessage = ""
 
     # Execute query:
     for query in query_list:
@@ -377,7 +387,7 @@ def main():
                     # Ansible engine does not support decimals.
                     # An explicit conversion is required on the module's side
                     row = dict(row)
-                    for (key, val) in iteritems(row):
+                    for key, val in iteritems(row):
                         if isinstance(val, TYPES_NEED_TO_CONVERT):
                             row[key] = convert_to_supported(val)
 
@@ -386,7 +396,7 @@ def main():
             # Psycopg 3 doesn't fail with 'no results to fetch'
             # This exception will be triggered only in Psycopg 2
             except PsycopgProgrammingError as e:
-                if to_native(e) == 'no results to fetch':
+                if to_native(e) == "no results to fetch":
                     query_result = {}
 
             except Exception as e:
@@ -397,15 +407,15 @@ def main():
 
             query_all_results.append(query_result)
 
-            if 'SELECT' not in statusmessage and 'SHOW' not in statusmessage:
-                if re.search(re.compile(r'(UPDATE|INSERT|DELETE)'), statusmessage):
+            if "SELECT" not in statusmessage and "SHOW" not in statusmessage:
+                if re.search(re.compile(r"(UPDATE|INSERT|DELETE)"), statusmessage):
                     s = statusmessage.split()
                     if len(s) == 3:
-                        if s[2] != '0':
+                        if s[2] != "0":
                             changed = True
 
                     elif len(s) == 2:
-                        if s[1] != '0':
+                        if s[1] != "0":
                             changed = True
 
                     else:
@@ -420,7 +430,10 @@ def main():
 
             cursor.close()
             db_connection.close()
-            module.fail_json(msg="Cannot execute SQL '%s' %s: %s, query list: %s" % (query, args, to_native(e), query_list))
+            module.fail_json(
+                msg="Cannot execute SQL '%s' %s: %s, query list: %s"
+                % (query, args, to_native(e), query_list)
+            )
 
     if module.check_mode:
         db_connection.rollback()
@@ -444,5 +457,5 @@ def main():
     module.exit_json(**kw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

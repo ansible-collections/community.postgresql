@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_ext
 short_description: Add or remove PostgreSQL extensions from a database
@@ -119,9 +119,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Adds postgis extension to the database acme in the schema foo
   community.postgresql.postgresql_ext:
     name: postgis
@@ -160,9 +160,9 @@ EXAMPLES = r'''
     db: acme
     name: foo
     version: latest
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 queries:
   description: List of executed queries.
   returned: success
@@ -180,17 +180,22 @@ version:
   type: str
   sample: '2.0'
   version_added: '3.1.0'
-'''
+"""
 
 import traceback
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, get_conn_params, pg_cursor_args,
-    postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 executed_queries = []
 
@@ -210,7 +215,7 @@ def ext_delete(check_mode, cursor, ext, cascade):
       ext (str) -- extension name
       cascade (boolean) -- Pass the CASCADE flag to the DROP command
     """
-    query = "DROP EXTENSION \"%s\"" % ext
+    query = 'DROP EXTENSION "%s"' % ext
 
     if cascade:
         query += " CASCADE"
@@ -232,12 +237,12 @@ def ext_update_version(check_mode, cursor, ext, version):
       ext (str) -- extension name
       version (str) -- extension version
     """
-    query = "ALTER EXTENSION \"%s\" UPDATE" % ext
+    query = 'ALTER EXTENSION "%s" UPDATE' % ext
     params = {}
 
-    if version != 'latest':
+    if version != "latest":
         query += " TO %(ver)s"
-        params['ver'] = version
+        params["ver"] = version
 
     if not check_mode:
         cursor.execute(query, params)
@@ -259,14 +264,14 @@ def ext_create(check_mode, cursor, ext, schema, cascade, version):
       cascade (boolean) -- Pass the CASCADE flag to the CREATE command
       version (str) -- extension version
     """
-    query = "CREATE EXTENSION \"%s\"" % ext
+    query = 'CREATE EXTENSION "%s"' % ext
     params = {}
 
     if schema:
-        query += " WITH SCHEMA \"%s\"" % schema
-    if version != 'latest':
+        query += ' WITH SCHEMA "%s"' % schema
+    if version != "latest":
         query += " VERSION %(ver)s"
-        params['ver'] = version
+        params["ver"] = version
     if cascade:
         query += " CASCADE"
 
@@ -298,11 +303,10 @@ def ext_get_versions(cursor, ext):
     current_version = None
     default_version = None
     params = {}
-    params['ext'] = ext
+    params["ext"] = ext
 
     # 1. Get the current extension version:
-    query = ("SELECT extversion FROM pg_catalog.pg_extension "
-             "WHERE extname = %(ext)s")
+    query = "SELECT extversion FROM pg_catalog.pg_extension " "WHERE extname = %(ext)s"
 
     cursor.execute(query, params)
 
@@ -311,8 +315,10 @@ def ext_get_versions(cursor, ext):
         current_version = res["extversion"]
 
     # 2. Get the extension default version:
-    query = ("SELECT default_version FROM pg_catalog.pg_available_extensions "
-             "WHERE name = %(ext)s")
+    query = (
+        "SELECT default_version FROM pg_catalog.pg_available_extensions "
+        "WHERE name = %(ext)s"
+    )
 
     cursor.execute(query, params)
 
@@ -321,8 +327,10 @@ def ext_get_versions(cursor, ext):
         default_version = res["default_version"]
 
     # 3. Get extension available versions:
-    query = ("SELECT version FROM pg_catalog.pg_available_extension_versions "
-             "WHERE name = %(ext)s")
+    query = (
+        "SELECT version FROM pg_catalog.pg_available_extension_versions "
+        "WHERE name = %(ext)s"
+    )
 
     cursor.execute(query, params)
 
@@ -355,20 +363,22 @@ def ext_valid_update_path(cursor, ext, current_version, version):
 
     valid_path = False
     params = {}
-    query = ("SELECT path FROM pg_extension_update_paths(%(ext)s) "
-             "WHERE source = %(cv)s "
-             "AND target = %(ver)s")
+    query = (
+        "SELECT path FROM pg_extension_update_paths(%(ext)s) "
+        "WHERE source = %(cv)s "
+        "AND target = %(ver)s"
+    )
 
-    params['ext'] = ext
-    params['cv'] = current_version
-    params['ver'] = version
+    params["ext"] = ext
+    params["cv"] = current_version
+    params["ver"] = version
 
     cursor.execute(query, params)
     res = cursor.fetchone()
     if res is not None:
         valid_path = True
 
-    return (valid_path)
+    return valid_path
 
 
 # ===========================================
@@ -406,7 +416,7 @@ def main():
     if not trust_input:
         check_input(module, ext, schema, version, session_role)
 
-    if version and state == 'absent':
+    if version and state == "absent":
         module.warn("Parameter version is ignored when state=absent")
 
     # Ensure psycopg libraries are available before connecting to DB:
@@ -417,12 +427,14 @@ def main():
 
     try:
         # Get extension info and available versions:
-        curr_version, default_version, available_versions = ext_get_versions(cursor, ext)
+        curr_version, default_version, available_versions = ext_get_versions(
+            cursor, ext
+        )
 
         # Decode version 'latest' when passed (if version is not passed 'latest' is assumed)
         # Note: real_version used for checks but not in CREATE/DROP/ALTER EXTENSION commands,
         #       as the correct way to obtain 'latest' version is not specify the version
-        if not version or version == 'latest':
+        if not version or version == "latest":
             # If there are not available versions the extension is not available
             if not available_versions:
                 module.fail_json(msg="Extension %s is not available" % ext)
@@ -434,13 +446,14 @@ def main():
                 # Passed version is 'latest', versions are available, but no default_version is specified
                 # in extension control file. In this situation CREATE/ALTER EXTENSION commands fail if
                 # a specific version is not passed ('latest' cannot be determined).
-                module.fail_json(msg="Passed version 'latest' but no default_version available "
-                                     "in extension control file")
+                module.fail_json(
+                    msg="Passed version 'latest' but no default_version available "
+                    "in extension control file"
+                )
         else:
             real_version = version
 
         if state == "present":
-
             # If version passed:
             if version:
                 # If extension is installed, update to passed version if a valid path exists
@@ -450,31 +463,49 @@ def main():
                         changed = False
                     # Attempt to update to given/latest version
                     else:
-                        valid_update_path = ext_valid_update_path(cursor, ext, curr_version, real_version)
+                        valid_update_path = ext_valid_update_path(
+                            cursor, ext, curr_version, real_version
+                        )
                         if valid_update_path:
-                            changed = ext_update_version(module.check_mode, cursor, ext, version)
+                            changed = ext_update_version(
+                                module.check_mode, cursor, ext, version
+                            )
                         else:
-                            if version == 'latest':
+                            if version == "latest":
                                 # No valid update path from curr_version to latest extension version
                                 # (extension is buggy or no direct update supported)
-                                module.fail_json(msg="Latest version '%s' has no valid update path from "
-                                                     "the currently installed version '%s'" % (real_version, curr_version))
+                                module.fail_json(
+                                    msg="Latest version '%s' has no valid update path from "
+                                    "the currently installed version '%s'"
+                                    % (real_version, curr_version)
+                                )
                             else:
-                                module.fail_json(msg="Passed version '%s' has no valid update path from "
-                                                     "the currently installed version '%s' or "
-                                                     "the passed version is not available" % (version, curr_version))
+                                module.fail_json(
+                                    msg="Passed version '%s' has no valid update path from "
+                                    "the currently installed version '%s' or "
+                                    "the passed version is not available"
+                                    % (version, curr_version)
+                                )
                 # If extension is not installed, install passed version
                 else:
                     # If passed version not available fail
                     if real_version not in available_versions:
-                        if version == 'latest':
+                        if version == "latest":
                             # Latest version not available (extension is buggy)
-                            module.fail_json(msg="Latest version '%s' is not available" % real_version)
+                            module.fail_json(
+                                msg="Latest version '%s' is not available"
+                                % real_version
+                            )
                         else:
-                            module.fail_json(msg="Passed version '%s' is not available" % real_version)
+                            module.fail_json(
+                                msg="Passed version '%s' is not available"
+                                % real_version
+                            )
                     # Else install the passed version
                     else:
-                        changed = ext_create(module.check_mode, cursor, ext, schema, cascade, version)
+                        changed = ext_create(
+                            module.check_mode, cursor, ext, schema, cascade, version
+                        )
 
             # If version is not passed:
             else:
@@ -485,7 +516,9 @@ def main():
                     # If the ext doesn't exist and is available:
                     if available_versions:
                         # 'latest' version installed by default if version not passed
-                        changed = ext_create(module.check_mode, cursor, ext, schema, cascade, 'latest')
+                        changed = ext_create(
+                            module.check_mode, cursor, ext, schema, cascade, "latest"
+                        )
                     # If the ext doesn't exist and is not available:
                     else:
                         module.fail_json(msg="Extension %s is not available" % ext)
@@ -497,21 +530,26 @@ def main():
                 changed = False
 
         # Get extension info again:
-        new_version, new_default_version, new_available_versions = ext_get_versions(cursor, ext)
+        new_version, new_default_version, new_available_versions = ext_get_versions(
+            cursor, ext
+        )
 
         # Parse previous and current version for module output
-        out_prev_version = curr_version if curr_version else ''
+        out_prev_version = curr_version if curr_version else ""
         if module.check_mode and changed:
             if state == "present":
                 out_version = real_version
             elif state == "absent":
-                out_version = ''
+                out_version = ""
         else:
-            out_version = new_version if new_version else ''
+            out_version = new_version if new_version else ""
 
     except Exception as e:
         db_connection.close()
-        module.fail_json(msg="Management of PostgreSQL extension failed: %s" % to_native(e), exception=traceback.format_exc())
+        module.fail_json(
+            msg="Management of PostgreSQL extension failed: %s" % to_native(e),
+            exception=traceback.format_exc(),
+        )
 
     db_connection.close()
     module.exit_json(
@@ -520,9 +558,9 @@ def main():
         ext=ext,
         prev_version=out_prev_version,
         version=out_version,
-        queries=executed_queries
+        queries=executed_queries,
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

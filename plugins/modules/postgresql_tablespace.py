@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_tablespace
 short_description: Add or remove PostgreSQL tablespaces from remote hosts
@@ -109,9 +109,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Create a new tablespace called acme and set bob as an its owner
   community.postgresql.postgresql_tablespace:
     name: acme
@@ -140,9 +140,9 @@ EXAMPLES = r'''
   community.postgresql.postgresql_tablespace:
     name: bloat
     state: absent
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 queries:
     description: List of queries that was tried to be executed.
     returned: success
@@ -178,15 +178,22 @@ state:
     returned: success
     type: str
     sample: 'present'
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    pg_cursor_args, postgres_common_argument_spec, set_autocommit)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+    set_autocommit,
+)
 
 
 class PgTablespace(object):
@@ -215,11 +222,11 @@ class PgTablespace(object):
         self.cursor = cursor
         self.name = name
         self.exists = False
-        self.owner = ''
+        self.owner = ""
         self.settings = {}
-        self.location = ''
+        self.location = ""
         self.executed_queries = []
-        self.new_name = ''
+        self.new_name = ""
         self.opt_not_supported = False
         # Collect info:
         self.get_info()
@@ -227,33 +234,49 @@ class PgTablespace(object):
     def get_info(self):
         """Get tablespace information."""
         # Check that spcoptions exists:
-        opt = exec_sql(self, "SELECT 1 FROM information_schema.columns "
-                             "WHERE table_name = 'pg_tablespace' "
-                             "AND column_name = 'spcoptions'", add_to_executed=False)
+        opt = exec_sql(
+            self,
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'pg_tablespace' "
+            "AND column_name = 'spcoptions'",
+            add_to_executed=False,
+        )
 
         # For 9.1 version and earlier:
-        location = exec_sql(self, "SELECT 1 FROM information_schema.columns "
-                                  "WHERE table_name = 'pg_tablespace' "
-                                  "AND column_name = 'spclocation'", add_to_executed=False)
+        location = exec_sql(
+            self,
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'pg_tablespace' "
+            "AND column_name = 'spclocation'",
+            add_to_executed=False,
+        )
         if location:
-            location = 'spclocation'
+            location = "spclocation"
         else:
-            location = 'pg_tablespace_location(t.oid)'
+            location = "pg_tablespace_location(t.oid)"
 
         if not opt:
             self.opt_not_supported = True
-            query = ("SELECT r.rolname, (SELECT Null) spcoptions, %s loc_string "
-                     "FROM pg_catalog.pg_tablespace AS t "
-                     "JOIN pg_catalog.pg_roles AS r "
-                     "ON t.spcowner = r.oid " % location)
+            query = (
+                "SELECT r.rolname, (SELECT Null) spcoptions, %s loc_string "
+                "FROM pg_catalog.pg_tablespace AS t "
+                "JOIN pg_catalog.pg_roles AS r "
+                "ON t.spcowner = r.oid " % location
+            )
         else:
-            query = ("SELECT r.rolname, t.spcoptions, %s loc_string "
-                     "FROM pg_catalog.pg_tablespace AS t "
-                     "JOIN pg_catalog.pg_roles AS r "
-                     "ON t.spcowner = r.oid " % location)
+            query = (
+                "SELECT r.rolname, t.spcoptions, %s loc_string "
+                "FROM pg_catalog.pg_tablespace AS t "
+                "JOIN pg_catalog.pg_roles AS r "
+                "ON t.spcowner = r.oid " % location
+            )
 
-        res = exec_sql(self, query + "WHERE t.spcname = %(name)s",
-                       query_params={'name': self.name}, add_to_executed=False)
+        res = exec_sql(
+            self,
+            query + "WHERE t.spcname = %(name)s",
+            query_params={"name": self.name},
+            add_to_executed=False,
+        )
 
         if not res:
             self.exists = False
@@ -266,7 +289,7 @@ class PgTablespace(object):
             if res[0]["spcoptions"]:
                 # Options exist:
                 for i in res[0]["spcoptions"]:
-                    i = i.split('=')
+                    i = i.split("=")
                     self.settings[i[0]] = i[1]
 
             if res[0]["loc_string"]:
@@ -281,7 +304,7 @@ class PgTablespace(object):
         args:
             location (str) -- tablespace directory path in the FS
         """
-        query = ('CREATE TABLESPACE "%s" LOCATION \'%s\'' % (self.name, location))
+        query = "CREATE TABLESPACE \"%s\" LOCATION '%s'" % (self.name, location)
         return exec_sql(self, query, return_bool=True)
 
     def drop(self):
@@ -334,7 +357,7 @@ class PgTablespace(object):
 
         # Apply new settings:
         for i in new_settings:
-            if new_settings[i] == 'reset':
+            if new_settings[i] == "reset":
                 if i in self.settings:
                     changed = self.__reset_setting(i)
                     self.settings[i] = None
@@ -375,20 +398,20 @@ class PgTablespace(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        tablespace=dict(type='str', required=True, aliases=['name']),
-        state=dict(type='str', default="present", choices=["absent", "present"]),
-        location=dict(type='path', aliases=['path']),
-        owner=dict(type='str'),
-        set=dict(type='dict'),
-        rename_to=dict(type='str'),
-        db=dict(type='str', aliases=['login_db']),
-        session_role=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
+        tablespace=dict(type="str", required=True, aliases=["name"]),
+        state=dict(type="str", default="present", choices=["absent", "present"]),
+        location=dict(type="path", aliases=["path"]),
+        owner=dict(type="str"),
+        set=dict(type="dict"),
+        rename_to=dict(type="str"),
+        db=dict(type="str", aliases=["login_db"]),
+        session_role=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
     )
 
     module = AnsibleModule(
         argument_spec=argument_spec,
-        mutually_exclusive=(('positional_args', 'named_args'),),
+        mutually_exclusive=(("positional_args", "named_args"),),
         supports_check_mode=True,
     )
 
@@ -401,24 +424,29 @@ def main():
     session_role = module.params["session_role"]
     trust_input = module.params["trust_input"]
 
-    if state == 'absent' and (location or owner or rename_to or settings):
-        module.fail_json(msg="state=absent is mutually exclusive location, "
-                             "owner, rename_to, and set")
+    if state == "absent" and (location or owner or rename_to or settings):
+        module.fail_json(
+            msg="state=absent is mutually exclusive location, "
+            "owner, rename_to, and set"
+        )
 
     if not trust_input:
         # Check input for potentially dangerous elements:
         if not settings:
             settings_list = None
         else:
-            settings_list = ['%s = %s' % (k, v) for k, v in iteritems(settings)]
+            settings_list = ["%s = %s" % (k, v) for k, v in iteritems(settings)]
 
-        check_input(module, tablespace, location, owner,
-                    rename_to, session_role, settings_list)
+        check_input(
+            module, tablespace, location, owner, rename_to, session_role, settings_list
+        )
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
-    db_connection, dummy = connect_to_db(module, conn_params, autocommit=False if module.check_mode else True)
+    db_connection, dummy = connect_to_db(
+        module, conn_params, autocommit=False if module.check_mode else True
+    )
     cursor = db_connection.cursor(**pg_cursor_args)
 
     # Set defaults:
@@ -431,17 +459,23 @@ def main():
 
     # If tablespace exists with different location, exit:
     if tblspace.exists and location and location != tblspace.location:
-        module.fail_json(msg="Tablespace '%s' exists with "
-                             "different location '%s'" % (tblspace.name, tblspace.location))
+        module.fail_json(
+            msg="Tablespace '%s' exists with "
+            "different location '%s'" % (tblspace.name, tblspace.location)
+        )
 
     # Create new tablespace:
-    if not tblspace.exists and state == 'present':
+    if not tblspace.exists and state == "present":
         if rename_to:
-            module.fail_json(msg="Tablespace %s does not exist, nothing to rename" % tablespace)
+            module.fail_json(
+                msg="Tablespace %s does not exist, nothing to rename" % tablespace
+            )
 
         if not location:
-            module.fail_json(msg="'location' parameter must be passed with "
-                                 "state=present if the tablespace doesn't exist")
+            module.fail_json(
+                msg="'location' parameter must be passed with "
+                "state=present if the tablespace doesn't exist"
+            )
 
         # Because CREATE TABLESPACE can not be run inside the transaction block:
         autocommit = True
@@ -450,7 +484,7 @@ def main():
         changed = tblspace.create(location)
 
     # Drop existing tablespace:
-    elif tblspace.exists and state == 'absent':
+    elif tblspace.exists and state == "absent":
         # Because DROP TABLESPACE can not be run inside the transaction block:
         autocommit = True
         set_autocommit(db_connection, True)
@@ -462,12 +496,12 @@ def main():
         if tblspace.name != rename_to:
             changed = tblspace.rename(rename_to)
 
-    if state == 'present':
+    if state == "present":
         # Refresh information:
         tblspace.get_info()
 
     # Change owner and settings:
-    if state == 'present' and tblspace.exists:
+    if state == "present" and tblspace.exists:
         if owner:
             changed = tblspace.set_owner(owner)
 
@@ -489,7 +523,7 @@ def main():
     # Make return values:
     kw = dict(
         changed=changed,
-        state='present',
+        state="present",
         tablespace=tblspace.name,
         owner=tblspace.owner,
         queries=tblspace.executed_queries,
@@ -497,17 +531,17 @@ def main():
         location=tblspace.location,
     )
 
-    if state == 'present':
-        kw['state'] = 'present'
+    if state == "present":
+        kw["state"] = "present"
 
         if tblspace.new_name:
-            kw['newname'] = tblspace.new_name
+            kw["newname"] = tblspace.new_name
 
-    elif state == 'absent':
-        kw['state'] = 'absent'
+    elif state == "absent":
+        kw["state"] = "absent"
 
     module.exit_json(**kw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

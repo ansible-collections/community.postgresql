@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: postgresql_script
 
@@ -94,9 +94,9 @@ author:
 
 extends_documentation_fragment:
 - community.postgresql.postgres
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Assuming that the file contains
 # SELECT * FROM id_talbe WHERE id = %s,
 # '%s' will be substituted with 1
@@ -172,9 +172,9 @@ EXAMPLES = r'''
         path: /var/lib/pgsql/test.sql
         positional_args:
           - '{{ my_var }}'
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 query:
     description:
     - Executed query.
@@ -210,20 +210,30 @@ rowcount:
     returned: changed
     type: int
     sample: 5
-'''
+"""
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    HAS_PSYCOPG, PSYCOPG_VERSION, TYPES_NEED_TO_CONVERT, connect_to_db,
-    convert_elements_to_pg_arrays, convert_to_supported, ensure_required_libs,
-    get_conn_params, pg_cursor_args, postgres_common_argument_spec,
-    set_search_path)
-from ansible_collections.community.postgresql.plugins.module_utils.version import \
-    LooseVersion
+    HAS_PSYCOPG,
+    PSYCOPG_VERSION,
+    TYPES_NEED_TO_CONVERT,
+    connect_to_db,
+    convert_elements_to_pg_arrays,
+    convert_to_supported,
+    ensure_required_libs,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+    set_search_path,
+)
+from ansible_collections.community.postgresql.plugins.module_utils.version import (
+    LooseVersion,
+)
 
 if HAS_PSYCOPG and PSYCOPG_VERSION < LooseVersion("3.0"):
     from psycopg2 import ProgrammingError as PsycopgProgrammingError
@@ -238,19 +248,19 @@ elif HAS_PSYCOPG:
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        path=dict(type='path'),
-        db=dict(type='str', aliases=['login_db']),
-        positional_args=dict(type='list', elements='raw'),
-        named_args=dict(type='dict'),
-        session_role=dict(type='str'),
-        encoding=dict(type='str'),
-        trust_input=dict(type='bool', default=True),
-        search_path=dict(type='list', elements='str'),
+        path=dict(type="path"),
+        db=dict(type="str", aliases=["login_db"]),
+        positional_args=dict(type="list", elements="raw"),
+        named_args=dict(type="dict"),
+        session_role=dict(type="str"),
+        encoding=dict(type="str"),
+        trust_input=dict(type="bool", default=True),
+        search_path=dict(type="list", elements="str"),
     )
 
     module = AnsibleModule(
         argument_spec=argument_spec,
-        mutually_exclusive=(('positional_args', 'named_args'),),
+        mutually_exclusive=(("positional_args", "named_args"),),
         supports_check_mode=False,
     )
 
@@ -267,7 +277,7 @@ def main():
         check_input(module, session_role)
 
     try:
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             script_content = to_native(f.read())
 
     except Exception as e:
@@ -282,7 +292,7 @@ def main():
     cursor = db_connection.cursor(**pg_cursor_args)
 
     if search_path:
-        set_search_path(cursor, '%s' % ','.join([x.strip(' ') for x in search_path]))
+        set_search_path(cursor, "%s" % ",".join([x.strip(" ") for x in search_path]))
 
     # Prepare args:
     if positional_args:
@@ -304,7 +314,9 @@ def main():
     except Exception as e:
         cursor.close()
         db_connection.close()
-        module.fail_json(msg="Cannot execute SQL '%s' %s: %s" % (script_content, args, to_native(e)))
+        module.fail_json(
+            msg="Cannot execute SQL '%s' %s: %s" % (script_content, args, to_native(e))
+        )
 
     statusmessage = cursor.statusmessage
 
@@ -323,7 +335,7 @@ def main():
             # Ansible engine does not support decimals.
             # An explicit conversion is required on the module's side
             row = dict(row)
-            for (key, val) in iteritems(row):
+            for key, val in iteritems(row):
                 if isinstance(val, TYPES_NEED_TO_CONVERT):
                     row[key] = convert_to_supported(val)
 
@@ -355,5 +367,5 @@ def main():
     module.exit_json(**kw)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
