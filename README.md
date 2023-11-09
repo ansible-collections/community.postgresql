@@ -76,11 +76,11 @@ For more information about communication, refer to the [Ansible Communication gu
 
 ## Governance
 
-We, [the PostgreSQL working group](https://github.com/ansible-collections/community.postgresql/wiki/PostgreSQL-Working-Group), use [the community pinboard](https://github.com/ansible-collections/community.postgresql/issues/30) for general announcements and discussions.
+We, [the PostgreSQL working group](https://forum.ansible.com/g/PostgreSQLTeam), use [the forum](https://forum.ansible.com/tag/postgresql) posts tagged with `postgresql` for general announcements and discussions.
 
 The process of decision making in this collection is based on discussing and finding consensus among participants.
 
-Every voice is important and every idea is valuable. If you have something on your mind, create an issue or dedicated discussion and let's discuss it!
+Every voice is important and every idea is valuable. If you have something on your mind, create an issue or dedicated forum [discussion](https://forum.ansible.com/new-topic?title=topic%20title&body=topic%20body&category=project&tags=postgresql) and let's discuss it!
 
 ## External requirements
 
