@@ -54,6 +54,8 @@ They also should be subscribed to Ansible's [The Bullhorn newsletter](https://do
 
 ## Communication
 
+> `GitHub Discussions` feature is disabled in this repository. Use the `postgresql` tag on the forum in the [Project Discussions](https://forum.ansible.com/new-topic?title=topic%20title&body=topic%20body&category=project&tags=postgresql) or [Get Help](https://forum.ansible.com/new-topic?title=topic%20title&body=topic%20body&category=help&tags=postgresql) category instead.
+
 We announce important development changes and releases through Ansible's [The Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn). If you are a collection developer, be sure you are subscribed.
 
 Join [our team](https://forum.ansible.com/g/PostgreSQLTeam?asc=true&order=) on:
