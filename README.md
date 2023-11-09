@@ -181,10 +181,6 @@ See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_gui
 
 See the [changelog](https://github.com/ansible-collections/community.postgresql/blob/main/CHANGELOG.rst).
 
-## Roadmap
-
-See the [release plan](https://github.com/ansible-collections/community.postgresql/issues/13).
-
 ## More information
 
 - [Ansible Collection overview](https://github.com/ansible-collections/overview)
