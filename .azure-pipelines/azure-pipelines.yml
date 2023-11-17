@@ -193,8 +193,8 @@ stages:
         parameters:
           testFormat: devel/{0}/1
           targets:
-            - name: RHEL 9.2
-              test: rhel/9.2
+            - name: RHEL 9.3
+              test: rhel/9.3
 
   - stage: Remote_2_16
     displayName: Remote 2.16
