@@ -19,7 +19,7 @@ options:
   query:
     description:
     - SQL query string or list of queries to run. Variables can be escaped with psycopg syntax
-      U(https://www.psycopg.org/psycopg3/docs/basic/params.html).
+      U(https://www.psycopg.org/docs/usage.html).
     type: raw
   positional_args:
     description:
