@@ -99,8 +99,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
     check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
-    pg_cursor_args, postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    exec_sql,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 # ===========================================
 # PostgreSQL module specific support methods.
