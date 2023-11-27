@@ -259,10 +259,18 @@ from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
     check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    HAS_PSYCOPG, PSYCOPG_VERSION, TYPES_NEED_TO_CONVERT, connect_to_db,
-    convert_elements_to_pg_arrays, convert_to_supported, ensure_required_libs,
-    get_conn_params, pg_cursor_args, postgres_common_argument_spec,
-    set_search_path)
+    HAS_PSYCOPG,
+    PSYCOPG_VERSION,
+    TYPES_NEED_TO_CONVERT,
+    connect_to_db,
+    convert_elements_to_pg_arrays,
+    convert_to_supported,
+    ensure_required_libs,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+    set_search_path,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.version import \
     LooseVersion
 

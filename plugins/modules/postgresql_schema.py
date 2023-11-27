@@ -122,10 +122,17 @@ import traceback
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    SQLParseError, check_input, pg_quote_identifier)
+    SQLParseError,
+    check_input,
+    pg_quote_identifier,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db, ensure_required_libs, get_conn_params, pg_cursor_args,
-    postgres_common_argument_spec)
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 
 executed_queries = []
 

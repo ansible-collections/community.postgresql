@@ -296,11 +296,20 @@ from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils import \
     saslprep
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    SQLParseError, check_input, pg_quote_identifier)
+    SQLParseError,
+    check_input,
+    pg_quote_identifier,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    HAS_PSYCOPG, PSYCOPG_VERSION, connect_to_db, ensure_required_libs,
-    get_conn_params, get_server_version, pg_cursor_args,
-    postgres_common_argument_spec)
+    HAS_PSYCOPG,
+    PSYCOPG_VERSION,
+    connect_to_db,
+    ensure_required_libs,
+    get_conn_params,
+    get_server_version,
+    pg_cursor_args,
+    postgres_common_argument_spec,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.version import \
     LooseVersion
 
