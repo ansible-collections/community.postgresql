@@ -164,8 +164,6 @@ stages:
           targets:
             - name: CentOS 7
               test: centos7
-            - name: Fedora 36
-              test: fedora36
             - name: Ubuntu 20.04
               test: ubuntu2004
 
