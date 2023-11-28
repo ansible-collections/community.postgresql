@@ -325,13 +325,15 @@
 - name: Check that the user owns the newly created DB
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select pg_catalog.pg_get_userbyid(datdba) from pg_catalog.pg_database where datname = '{{ db_name }}';" | psql -d postgres
+  postgresql_query:
+    login_db: postgres
+    query: "select pg_catalog.pg_get_userbyid(datdba) from pg_catalog.pg_database where datname = '{{ db_name }}'"
   register: result
 
 - assert:
     that:
-      - "result.stdout_lines[-1] == '(1 row)'"
-      - "'{{ pg_user }}' == '{{ result.stdout_lines[-2] | trim }}'"
+      - result.rowcount == 1
+      - result.query_result[0]['pg_get_userbyid'] == '{{ pg_user }}'
 
 - name: Cleanup db
   become_user: "{{ pg_user }}"
