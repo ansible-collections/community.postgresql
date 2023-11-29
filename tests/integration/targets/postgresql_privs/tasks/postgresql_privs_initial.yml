@@ -41,7 +41,9 @@
 - name: Check that the user has the requested permissions (table1)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1'"
   register: result_table1
 
 - name: Check that the user has the requested permissions (table2)
