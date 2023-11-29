@@ -47,29 +47,32 @@
 - name: Check that the user has the requested permissions (table2)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_us    er1 }}' and table_name='test_table2'"
   register: result_table2
 
 - name: Check that the user has the requested permissions (database)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select datacl from pg_database where datname='{{ db_name }}';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select datacl from pg_database where datname='{{ db_name }}'"
   register: result_database
 
 - assert:
     that:
-      - "result_table1.stdout_lines[-1] == '(7 rows)'"
-      - "'INSERT' in result_table1.stdout"
-      - "'SELECT' in result_table1.stdout"
-      - "'UPDATE' in result_table1.stdout"
-      - "'DELETE' in result_table1.stdout"
-      - "'TRUNCATE' in result_table1.stdout"
-      - "'REFERENCES' in result_table1.stdout"
-      - "'TRIGGER' in result_table1.stdout"
-      - "result_table2.stdout_lines[-1] == '(1 row)'"
-      - "'INSERT' == '{{ result_table2.stdout_lines[-2] | trim }}'"
-      - "result_database.stdout_lines[-1] == '(1 row)'"
-      - "'{{ db_user1 }}=CTc/{{ pg_user }}' in result_database.stdout_lines[-2]"
+      - result_table1.rowcount == 7
+      - 'INSERT' in result_table1.query_result[0]['privilege_type']
+      - 'SELECT' in result_table1.query_result[0]['privilege_type']
+      - 'UPDATE' in result_table1.query_result[0]['privilege_type']
+      - 'TRUNCATE' in result_table1.query_result[0]['privilege_type']
+      - 'REFERENCES' in result_table1.query_result[0]['privilege_type']
+      - 'TRIGGER' in result_table1.query_result[0]['privilege_type']
+      - result_table2.rowcount == 1
+      - result_table2.query_result[0]['privilege_type'] == ['INSERT']
+      - result_database.rowcount == 1
+      - '{{ db_user1 }}=CTc/{{ pg_user }}' in result_database.query_result[0]['datacl']
 
 - name: Add another permission for the user
   become_user: "{{ pg_user }}"
@@ -91,14 +94,16 @@
 - name: Check that the user has the requested permissions (table2)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2'"
   register: result_table2
 
 - assert:
     that:
-      - "result_table2.stdout_lines[-1] == '(2 rows)'"
-      - "'INSERT' in result_table2.stdout"
-      - "'SELECT' in result_table2.stdout"
+      - result_table2.rowcount == 2
+      - 'INSERT' in result_table2.query_result[0]['privilege_type']
+      - 'SELECT' in result_table2.query_result[0]['privilege_type']
 
 #
 # Test priv setting via postgresql_privs module
@@ -127,13 +132,15 @@
 - name: Check that the user has the requested permissions (table2)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2'"
   register: result_table2
 
 - assert:
     that:
-      - "result_table2.stdout_lines[-1] == '(1 row)'"
-      - "'SELECT' == '{{ result_table2.stdout_lines[-2] | trim }}'"
+      - result_table2.rowcount == 1
+      - result_table2.query_result[0]['privilege_type'] == ['SELECT']
 
 - name: Revoke many privileges on multiple tables
   become_user: "{{ pg_user }}"
@@ -156,19 +163,23 @@
 - name: Check that permissions were revoked (table1)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1'"
   register: result_table1
 
 - name: Check that permissions were revoked (table2)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2'"
   register: result_table2
 
 - assert:
     that:
-      - "result_table1.stdout_lines[-1] == '(0 rows)'"
-      - "result_table2.stdout_lines[-1] == '(0 rows)'"
+      - result_table1.rowcount == 0
+      - result_table2.rowcount == 0
 
 - name: Revoke database privileges
   become_user: "{{ pg_user }}"
@@ -186,13 +197,15 @@
 - name: Check that the user has the requested permissions (database)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select datacl from pg_database where datname='{{ db_name }}';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select datacl from pg_database where datname='{{ db_name }}'"
   register: result_database
 
 - assert:
     that:
-      - "result_database.stdout_lines[-1] == '(1 row)'"
-      - "'{{ db_user1 }}' not in result_database.stdout"
+      - result_database.rowcount == 1
+      - '{{ db_user1 }}' not in result_database.query_result[0]['datacl']
 
 - name: Grant database privileges
   become_user: "{{ pg_user }}"
@@ -216,13 +229,15 @@
 - name: Check that the user has the requested permissions (database)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select datacl from pg_database where datname='{{ db_name }}';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select datacl from pg_database where datname='{{ db_name }}'"
   register: result_database
 
 - assert:
     that:
-      - "result_database.stdout_lines[-1] == '(1 row)'"
-      - "'{{ db_user1 }}=Cc' in result_database.stdout"
+      result_database.rowcount == 1
+      '{{ db_user1 }}=Cc' in result_database.query_result[0]['datacl']
 
 - name: Grant a single privilege on a table
   become_user: "{{ pg_user }}"
@@ -239,13 +254,15 @@
 - name: Check that permissions were added (table1)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1'"
   register: result_table1
 
 - assert:
     that:
-      - "result_table1.stdout_lines[-1] == '(1 row)'"
-      - "'{{ result_table1.stdout_lines[-2] | trim }}' == 'INSERT'"
+      - result_table1.rowcount == 1
+      - result_table1.query_result[0]['privilege_type'] == ['INSERT']
 
 - name: Grant many privileges on multiple tables
   become_user: "{{ pg_user }}"
@@ -262,33 +279,37 @@
 - name: Check that permissions were added (table1)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table1'"
   register: result_table1
 
 - name: Check that permissions were added (table2)
   become_user: "{{ pg_user }}"
   become: true
-  shell: echo "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2';" | psql {{ db_name }}
+  postgresql_query:
+    login_db: '{{ db_name }}'
+    query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user1 }}' and table_name='test_table2'"
   register: result_table2
 
 - assert:
     that:
-      - "result_table1.stdout_lines[-1] == '(7 rows)'"
-      - "'INSERT' in result_table1.stdout"
-      - "'SELECT' in result_table1.stdout"
-      - "'UPDATE' in result_table1.stdout"
-      - "'DELETE' in result_table1.stdout"
-      - "'TRUNCATE' in result_table1.stdout"
-      - "'REFERENCES' in result_table1.stdout"
-      - "'TRIGGER' in result_table1.stdout"
-      - "result_table2.stdout_lines[-1] == '(7 rows)'"
-      - "'INSERT' in result_table2.stdout"
-      - "'SELECT' in result_table2.stdout"
-      - "'UPDATE' in result_table2.stdout"
-      - "'DELETE' in result_table2.stdout"
-      - "'TRUNCATE' in result_table2.stdout"
-      - "'REFERENCES' in result_table2.stdout"
-      - "'TRIGGER' in result_table2.stdout"
+      - result_table1.rowcount == 7
+      - 'INSERT' in result_table1.query_result[0]['privilege_type']
+      - 'SELECT' in result_table1.query_result[0]['privilege_type']
+      - 'UPDATE' in result_table1.query_result[0]['privilege_type']
+      - 'DELETE' in result_table1.query_result[0]['privilege_type']
+      - 'TRUNCATE' in result_table1.query_result[0]['privilege_type']
+      - 'REFERENCES' in result_table1.query_result[0]['privilege_type']
+      - 'TRIGGER' in result_table1.query_result[0]['privilege_type']
+      - result_table2.rowcount == 7
+      - 'INSERT' in result_table2.query_result[0]['privilege_type']
+      - 'SELECT' in result_table2.query_result[0]['privilege_type']
+      - 'UPDATE' in result_table2.query_result[0]['privilege_type']
+      - 'DELETE' in result_table2.query_result[0]['privilege_type']
+      - 'TRUNCATE' in result_table2.query_result[0]['privilege_type']
+      - 'REFERENCES' in result_table2.query_result[0]['privilege_type']
+      - 'TRIGGER' in result_table2.query_result[0]['privilege_type']
 
 # Check passing roles with dots
 # https://github.com/ansible/ansible/issues/63204
