@@ -123,16 +123,24 @@
       - result.tablespaces
       - result.roles
 
+  - name: Set full server version as X.Y.Z
+    set_fact:
+      version_full: '{{ result.version.major }}.{{ result.version.minor }}.{{ result.version.patch }}'
+    when: result.version.major == 9
+
+  - name: Set full server version as X.Y
+    set_fact:
+      version_full: '{{ result.version.major }}.{{ result.version.minor }}'
+    when: result.version.major >= 10
+
   - assert:
       that:
       - result.version.patch != {}
-      - result.version.full == '{{ result.version.major }}.{{ result.version.minor }}.{{ result.version.patch }}'
     when: result.version.major == 9
 
   - assert:
       that:
-      - result.version.full == '{{ result.version.major }}.{{ result.version.minor }}'
-    when: result.version.major >= 10
+      - result.version.full == version_full
 
   - name: postgresql_info - check filter param passed by list
     <<: *task_parameters
