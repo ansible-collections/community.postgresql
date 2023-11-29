@@ -27,24 +27,24 @@
     - result.server_version.minor != ""
     - result is not changed
 
-  - name: Set full server version as X.Y.Z
-    set_fact:
-      version_full: '{{ result.version.major }}.{{ result.version.minor }}.{{ result.version.patch }}'
-    when: result.version.major == 9
+- name: Set full server version as X.Y.Z
+  set_fact:
+    version_full: '{{ result.version.major }}.{{ result.version.minor }}.{{ result.version.patch }}'
+  when: result.version.major == 9
 
-  - name: Set full server version as X.Y
-    set_fact:
-      version_full: '{{ result.version.major }}.{{ result.version.minor }}'
-    when: result.version.major >= 10
+- name: Set full server version as X.Y
+  set_fact:
+    version_full: '{{ result.version.major }}.{{ result.version.minor }}'
+  when: result.version.major >= 10
 
-  - assert:
-      that:
-      - result.version.patch != {}
-    when: result.version.major == 9
+- assert:
+    that:
+    - result.version.patch != {}
+  when: result.version.major == 9
 
-  - assert:
-      that:
-      - result.version.full == version_full
+- assert:
+    that:
+    - result.version.full == version_full
 
 
 - name: Test ping of non-existing database returns nothing
