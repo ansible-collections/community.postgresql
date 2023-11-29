@@ -29,22 +29,22 @@
 
 - name: Set full server version as X.Y.Z
   set_fact:
-    version_full: '{{ result.version.major }}.{{ result.version.minor }}.{{ result.version.patch }}'
-  when: result.version.major == 9
+    version_full: '{{ result.server_version.major }}.{{ result.server_version.minor }}.{{ result.server_version.patch }}'
+  when: result.server_version.major == 9
 
 - name: Set full server version as X.Y
   set_fact:
-    version_full: '{{ result.version.major }}.{{ result.version.minor }}'
-  when: result.version.major >= 10
+    version_full: '{{ result.server_version.major }}.{{ result.server_version.minor }}'
+  when: result.server_version.major >= 10
 
 - assert:
     that:
-    - result.version.patch != {}
-  when: result.version.major == 9
+    - result.server_version.patch != {}
+  when: result.server_version.major == 9
 
 - assert:
     that:
-    - result.version.full == version_full
+    - result.server_version.full == version_full
 
 
 - name: Test ping of non-existing database returns nothing
