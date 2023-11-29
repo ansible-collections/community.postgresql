@@ -27,18 +27,24 @@
     - result.server_version.minor != ""
     - result is not changed
 
-- name: Assert return values when server major version is 9
+- name: Set full server version as X.Y.Z
+  set_fact:
+    version_full: '{{ result.server_version.major }}.{{ result.server_version.minor }}.{{ result.server_version.patch }}'
   when: result.server_version.major == 9
-  ansible.builtin.assert:
+
+- name: Set full server version as X.Y
+  set_fact:
+    version_full: '{{ result.server_version.major }}.{{ result.server_version.minor }}'
+  when: result.server_version.major >= 10
+
+- assert:
     that:
     - result.server_version.patch != {}
-    - result.server_version.full == "{{ result.server_version.major }}.{{ result.server_version.minor }}.{{ result.server_version.patch }}"
+  when: result.server_version.major == 9
 
-- name: Assert result values when server major version is 10 or higher
-  when: result.server_version.major >= 10
-  ansible.builtin.assert:
+- assert:
     that:
-    - result.server_version.full == "{{ result.server_version.major }}.{{ result.server_version.minor }}"
+    - result.server_version.full == version_full
 
 
 - name: Test ping of non-existing database returns nothing
