@@ -65,16 +65,16 @@
 - assert:
     that:
       - result_table1.rowcount == 7
-      - 'INSERT' in result_table1.query_result[0]['privilege_type']
-      - 'SELECT' in result_table1.query_result[0]['privilege_type']
-      - 'UPDATE' in result_table1.query_result[0]['privilege_type']
-      - 'TRUNCATE' in result_table1.query_result[0]['privilege_type']
-      - 'REFERENCES' in result_table1.query_result[0]['privilege_type']
-      - 'TRIGGER' in result_table1.query_result[0]['privilege_type']
+      - "'INSERT' in result_table1.query_result[0]['privilege_type']"
+      - "'SELECT' in result_table1.query_result[0]['privilege_type']"
+      - "'UPDATE' in result_table1.query_result[0]['privilege_type']"
+      - "'TRUNCATE' in result_table1.query_result[0]['privilege_type']"
+      - "'REFERENCES' in result_table1.query_result[0]['privilege_type']"
+      - "'TRIGGER' in result_table1.query_result[0]['privilege_type']"
       - result_table2.rowcount == 1
       - result_table2.query_result[0]['privilege_type'] == ['INSERT']
       - result_database.rowcount == 1
-      - '{{ db_user1 }}=CTc/{{ pg_user }}' in result_database.query_result[0]['datacl']
+      - "'{{ db_user1 }}=CTc/{{ pg_user }}' in result_database.query_result[0]['datacl']"
 
 - name: Add another permission for the user
   become_user: "{{ pg_user }}"
@@ -104,8 +104,8 @@
 - assert:
     that:
       - result_table2.rowcount == 2
-      - 'INSERT' in result_table2.query_result[0]['privilege_type']
-      - 'SELECT' in result_table2.query_result[0]['privilege_type']
+      - "'INSERT' in result_table2.query_result[0]['privilege_type']"
+      - "'SELECT' in result_table2.query_result[0]['privilege_type']"
 
 #
 # Test priv setting via postgresql_privs module
@@ -297,21 +297,21 @@
 - assert:
     that:
       - result_table1.rowcount == 7
-      - 'INSERT' in result_table1.query_result[0]['privilege_type']
-      - 'SELECT' in result_table1.query_result[0]['privilege_type']
-      - 'UPDATE' in result_table1.query_result[0]['privilege_type']
-      - 'DELETE' in result_table1.query_result[0]['privilege_type']
-      - 'TRUNCATE' in result_table1.query_result[0]['privilege_type']
-      - 'REFERENCES' in result_table1.query_result[0]['privilege_type']
-      - 'TRIGGER' in result_table1.query_result[0]['privilege_type']
+      - "'INSERT' in result_table1.query_result[0]['privilege_type']"
+      - "'SELECT' in result_table1.query_result[0]['privilege_type']"
+      - "'UPDATE' in result_table1.query_result[0]['privilege_type']"
+      - "'DELETE' in result_table1.query_result[0]['privilege_type']"
+      - "'TRUNCATE' in result_table1.query_result[0]['privilege_type']"
+      - "'REFERENCES' in result_table1.query_result[0]['privilege_type']"
+      - "'TRIGGER' in result_table1.query_result[0]['privilege_type']"
       - result_table2.rowcount == 7
-      - 'INSERT' in result_table2.query_result[0]['privilege_type']
-      - 'SELECT' in result_table2.query_result[0]['privilege_type']
-      - 'UPDATE' in result_table2.query_result[0]['privilege_type']
-      - 'DELETE' in result_table2.query_result[0]['privilege_type']
-      - 'TRUNCATE' in result_table2.query_result[0]['privilege_type']
-      - 'REFERENCES' in result_table2.query_result[0]['privilege_type']
-      - 'TRIGGER' in result_table2.query_result[0]['privilege_type']
+      - "'INSERT' in result_table2.query_result[0]['privilege_type']"
+      - "'SELECT' in result_table2.query_result[0]['privilege_type']"
+      - "'UPDATE' in result_table2.query_result[0]['privilege_type']"
+      - "'DELETE' in result_table2.query_result[0]['privilege_type']"
+      - "'TRUNCATE' in result_table2.query_result[0]['privilege_type']"
+      - "'REFERENCES' in result_table2.query_result[0]['privilege_type']"
+      - "'TRIGGER' in result_table2.query_result[0]['privilege_type']"
 
 # Check passing roles with dots
 # https://github.com/ansible/ansible/issues/63204
