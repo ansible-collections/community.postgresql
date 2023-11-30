@@ -597,7 +597,7 @@
   register: result
 
 - assert:
-    that: "'{{ db_user2 }}=X/{{ db_user3 }}' in '{{ result.stdout_lines[0] }}'"
+    that: result.stdout_lines[0] is search('{{ db_user2 }}=X/{{ db_user3 }}')
 
 # Test
 - name: Grant execute to all functions again
