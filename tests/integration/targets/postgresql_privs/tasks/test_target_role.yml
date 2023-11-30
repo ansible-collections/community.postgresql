@@ -55,7 +55,7 @@
   register: result
 
 - assert:
-    that: "'{{ db_user2 }}=r/{{ db_user1 }}' in '{{ result.stdout_lines[0] }}'"
+    that: result.stdout_lines[0] is search('{{ db_user2 }}=r/{{ db_user1 }}')
 
 # Test
 - name: Revoke default privileges for new table objects
