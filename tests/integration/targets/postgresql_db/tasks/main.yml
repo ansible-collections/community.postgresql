@@ -45,3 +45,6 @@
 
 # Simple test to create and then drop with force
 - import_tasks: manage_database.yml
+
+# Test the comment feature
+- import_tasks: postgresql_db_comment.yml
