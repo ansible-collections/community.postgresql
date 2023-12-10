@@ -133,7 +133,8 @@ options:
     version_added: '0.2.0'
   comment:
     description:
-    - A comment to apply to the database.
+    - Sets a comment on the database.
+    - To reset the comment, pass an empty string.
     type: str
     version_added: '3.3.0'
 seealso:
@@ -434,7 +435,7 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
             if tablespace and tablespace != db_info['tablespace']:
                 changed = set_tablespace(cursor, db, tablespace)
 
-            if comment and comment != db_info['comment']:
+            if comment is not None and comment != db_info['comment']:
                 changed = set_comment(cursor, db, comment)
 
             return changed
@@ -457,7 +458,7 @@ def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn
             return False
         elif tablespace and tablespace != db_info['tablespace']:
             return False
-        elif comment and comment != db_info['comment']:
+        elif comment is not None and comment != db_info['comment']:
             return False
         else:
             return True

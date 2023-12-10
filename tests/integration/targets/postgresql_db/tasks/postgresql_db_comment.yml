@@ -87,7 +87,85 @@
     that:
       - result.query_result[0]['comment'] == "Another comment"
 
-- name: Destroy DB
+
+- name: Create DB with the same comment in real mode
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+    comment: Another comment
+
+- name: Assert the result
+  assert:
+    that:
+       - result is not changed
+       - result.executed_commands == []
+
+- name: Check the comment
+  <<: *task_parameters
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    query: "SELECT pg_catalog.shobj_description(d.oid, 'pg_database') AS comment FROM pg_catalog.pg_database d WHERE datname = 'comment_db'"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Another comment"
+
+
+- name: Not specifiying the comment will not erase it
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+
+- name: Assert the result
+  assert:
+    that:
+       - result is not changed
+       - result.executed_commands == []
+
+- name: Check the comment
+  <<: *task_parameters
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    query: "SELECT pg_catalog.shobj_description(d.oid, 'pg_database') AS comment FROM pg_catalog.pg_database d WHERE datname = 'comment_db'"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Another comment"
+
+
+- name: Reset the comment
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+    comment: ''
+
+- name: Assert the result
+  assert:
+    that:
+       - result is changed
+       - result.executed_commands == ["COMMENT ON DATABASE \"comment_db\" IS ''"]
+
+- name: Check the comment
+  <<: *task_parameters
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    query: "SELECT pg_catalog.shobj_description(d.oid, 'pg_database') AS comment FROM pg_catalog.pg_database d WHERE datname = 'comment_db'"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == null
+
+
+- name: Clean up
   <<: *task_parameters
   postgresql_db:
     state: absent
