@@ -162,7 +162,7 @@
 - name: Check the comments match
   assert:
     that:
-      - result.query_result[0]['comment'] == null
+      - result.query_result[0]['comment'] == None
 
 
 - name: Clean up
