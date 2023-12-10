@@ -114,7 +114,7 @@
       - result.query_result[0]['comment'] == "Another comment"
 
 
-- name: Not specifiying the comment will not erase it
+- name: Not specifying the comment will not erase it
   <<: *task_parameters
   postgresql_db:
     state: present
