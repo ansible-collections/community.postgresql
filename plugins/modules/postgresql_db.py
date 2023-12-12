@@ -398,7 +398,7 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
         executed_commands.append(cursor.mogrify(query, params))
         cursor.execute(query, params)
         if comment:
-            set_comment(cursor, comment, 'database', db)
+            set_comment(cursor, comment, 'database', db, executed_commands)
         return True
     else:
         db_info = get_db_info(cursor, db)
@@ -430,7 +430,7 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
                 changed = set_tablespace(cursor, db, tablespace)
 
             if comment is not None and comment != db_info['comment']:
-                changed = set_comment(cursor, comment, 'database', db)
+                changed = set_comment(cursor, comment, 'database', db, executed_commands)
 
             return changed
 
