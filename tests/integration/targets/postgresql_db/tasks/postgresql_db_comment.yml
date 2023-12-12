@@ -1,0 +1,173 @@
+# Test code for the postgresql_db comment module feature
+# Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- name: Set parameters we use with most of tasks
+  ansible.builtin.set_fact:
+    task_parameters: &task_parameters
+      become_user: "{{ pg_user }}"
+      become: true
+      register: result
+
+- name: Create DB with comment
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+    comment: Test DB comment 1
+
+- name: Assert the executed commands
+  assert:
+    that:
+       - result is changed
+       - result.db == "comment_db"
+       - result.executed_commands == ['CREATE DATABASE "comment_db"', "COMMENT ON DATABASE \"comment_db\" IS 'Test DB comment 1'"]
+
+- name: Get the DB comment
+  <<: *task_parameters
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    query: "SELECT pg_catalog.shobj_description(d.oid, 'pg_database') AS comment FROM pg_catalog.pg_database d WHERE datname = 'comment_db'"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Test DB comment 1"
+
+
+- name: Create DB with another comment in check mode
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+    comment: Another comment
+  check_mode: true
+
+- name: Assert the result
+  assert:
+    that:
+       - result is changed
+
+- name: Check the comment
+  <<: *task_parameters
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    query: "SELECT pg_catalog.shobj_description(d.oid, 'pg_database') AS comment FROM pg_catalog.pg_database d WHERE datname = 'comment_db'"
+
+- name: Check the comment hasn't changed
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Test DB comment 1"
+
+
+- name: Create DB with another comment in real mode
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+    comment: Another comment
+
+- name: Assert the result
+  assert:
+    that:
+       - result is changed
+       - result.executed_commands == ["COMMENT ON DATABASE \"comment_db\" IS 'Another comment'"]
+
+- name: Check the comment
+  <<: *task_parameters
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    query: "SELECT pg_catalog.shobj_description(d.oid, 'pg_database') AS comment FROM pg_catalog.pg_database d WHERE datname = 'comment_db'"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Another comment"
+
+
+- name: Create DB with the same comment in real mode
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+    comment: Another comment
+
+- name: Assert the result
+  assert:
+    that:
+       - result is not changed
+       - result.executed_commands == []
+
+- name: Check the comment
+  <<: *task_parameters
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    query: "SELECT pg_catalog.shobj_description(d.oid, 'pg_database') AS comment FROM pg_catalog.pg_database d WHERE datname = 'comment_db'"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Another comment"
+
+
+- name: Not specifying the comment will not erase it
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+
+- name: Assert the result
+  assert:
+    that:
+       - result is not changed
+       - result.executed_commands == []
+
+- name: Check the comment
+  <<: *task_parameters
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    query: "SELECT pg_catalog.shobj_description(d.oid, 'pg_database') AS comment FROM pg_catalog.pg_database d WHERE datname = 'comment_db'"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Another comment"
+
+
+- name: Reset the comment
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+    comment: ''
+
+- name: Assert the result
+  assert:
+    that:
+       - result is changed
+       - result.executed_commands == ["COMMENT ON DATABASE \"comment_db\" IS ''"]
+
+- name: Check the comment
+  <<: *task_parameters
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    query: "SELECT pg_catalog.shobj_description(d.oid, 'pg_database') AS comment FROM pg_catalog.pg_database d WHERE datname = 'comment_db'"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == None
+
+
+- name: Clean up
+  <<: *task_parameters
+  postgresql_db:
+    state: absent
+    name: comment_db
+    login_user: "{{ pg_user }}"
