@@ -131,6 +131,12 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+  comment:
+    description:
+    - Sets a comment on the database.
+    - To reset the comment, pass an empty string.
+    type: str
+    version_added: '3.3.0'
 seealso:
 - name: CREATE DATABASE reference
   description: Complete reference of the CREATE DATABASE command documentation.
@@ -165,6 +171,7 @@ EXAMPLES = r'''
 - name: Create a new database with name "acme"
   community.postgresql.postgresql_db:
     name: acme
+    comment: My test DB
 
 # Note: If a template different from "template0" is specified,
 # encoding and locale settings must match those of the template.
@@ -310,6 +317,13 @@ def set_conn_limit(cursor, db, conn_limit):
     return True
 
 
+def set_comment(cursor, db, comment):
+    query = "COMMENT ON DATABASE \"%s\" IS '%s'" % (db, comment)
+    executed_commands.append(query)
+    cursor.execute(query)
+    return True
+
+
 def get_encoding_id(cursor, encoding):
     query = "SELECT pg_char_to_encoding(%(encoding)s) AS encoding_id;"
     cursor.execute(query, {'encoding': encoding})
@@ -321,7 +335,8 @@ def get_db_info(cursor, db):
     SELECT rolname AS owner,
     pg_encoding_to_char(encoding) AS encoding, encoding AS encoding_id,
     datcollate AS lc_collate, datctype AS lc_ctype, pg_database.datconnlimit AS conn_limit,
-    spcname AS tablespace
+    spcname AS tablespace,
+    pg_catalog.shobj_description(pg_database.oid, 'pg_database') AS comment
     FROM pg_database
     JOIN pg_roles ON pg_roles.oid = pg_database.datdba
     JOIN pg_tablespace ON pg_tablespace.oid = pg_database.dattablespace
@@ -367,7 +382,7 @@ def db_delete(cursor, db, force=False):
         return False
 
 
-def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace):
+def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace, comment):
     params = dict(enc=encoding, collate=lc_collate, ctype=lc_ctype, conn_limit=conn_limit, tablespace=tablespace)
     if not db_exists(cursor, db):
         query_fragments = ['CREATE DATABASE "%s"' % db]
@@ -388,6 +403,8 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
         query = ' '.join(query_fragments)
         executed_commands.append(cursor.mogrify(query, params))
         cursor.execute(query, params)
+        if comment:
+            set_comment(cursor, db, comment)
         return True
     else:
         db_info = get_db_info(cursor, db)
@@ -418,10 +435,13 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
             if tablespace and tablespace != db_info['tablespace']:
                 changed = set_tablespace(cursor, db, tablespace)
 
+            if comment is not None and comment != db_info['comment']:
+                changed = set_comment(cursor, db, comment)
+
             return changed
 
 
-def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace):
+def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace, comment):
     if not db_exists(cursor, db):
         return False
     else:
@@ -437,6 +457,8 @@ def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn
         elif conn_limit and conn_limit != str(db_info['conn_limit']):
             return False
         elif tablespace and tablespace != db_info['tablespace']:
+            return False
+        elif comment is not None and comment != db_info['comment']:
             return False
         else:
             return True
@@ -650,6 +672,7 @@ def main():
         dump_extra_args=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
         force=dict(type='bool', default=False),
+        comment=dict(type='str', default=None),
     )
 
     module = AnsibleModule(
@@ -674,6 +697,7 @@ def main():
     dump_extra_args = module.params['dump_extra_args']
     trust_input = module.params['trust_input']
     force = module.params['force']
+    comment = module.params['comment']
 
     if state == 'rename':
         if not target:
@@ -722,7 +746,7 @@ def main():
                 changed = db_exists(cursor, db)
 
             elif state == "present":
-                changed = not db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace)
+                changed = not db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace, comment)
 
             elif state == "rename":
                 changed = rename_db(module, cursor, db, target, check_mode=True)
@@ -737,7 +761,7 @@ def main():
 
         elif state == "present":
             try:
-                changed = db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace)
+                changed = db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace, comment)
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
