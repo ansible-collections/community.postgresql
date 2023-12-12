@@ -561,8 +561,12 @@ def set_comment(cursor, comment, obj_type, obj_name, executed_queries=None):
     query = ''
     if obj_type == 'user':
         query = 'COMMENT ON ROLE "%s" IS ' % obj_name
+    elif obj_type == 'database':
+        query = "COMMENT ON DATABASE \"%s\" IS " % obj_name
 
     cursor.execute(query + '%(comment)s', {'comment': comment})
 
     if executed_queries is not None:
         executed_queries.append(cursor.mogrify(query + '%(comment)s', {'comment': comment}))
+
+    return True
