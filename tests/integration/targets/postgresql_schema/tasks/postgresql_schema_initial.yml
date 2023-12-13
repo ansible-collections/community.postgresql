@@ -314,6 +314,188 @@
       - result.rowcount == 0
 
 
+# Test the comment argument
+- name: Create schema with comment
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    database: "{{ db_name }}"
+    name: comment_schema
+    comment: Test schema 1
+  register: result
+
+- name: Check return values
+  assert:
+    that:
+      - result is changed
+      - result.queries == ['CREATE SCHEMA "comment_schema"', "COMMENT ON DATABASE \"comment_db\" IS 'Test schema 1'"]
+
+- name: Check the comment
+  become: true
+  become_user: "{{ pg_user }}"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+  register: result
+
+- assert:
+    that:
+      - result.rowcount == 1
+      - result.query_result[0]['comment'] == 'Test schema 1'
+
+
+- name: Set the same comment in check mode
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    database: "{{ db_name }}"
+    name: comment_schema
+    comment: Test schema 1
+  register: result
+  check_mode: true
+
+- name: Check return values
+  assert:
+    that:
+      - result is not changed
+
+
+- name: Set another comment in check mode
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    database: "{{ db_name }}"
+    name: comment_schema
+    comment: Test schema 2
+  register: result
+  check_mode: true
+
+- name: Check return values
+  assert:
+    that:
+      - result is changed
+
+- name: Check the comment didn't change
+  become: true
+  become_user: "{{ pg_user }}"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+  register: result
+
+- assert:
+    that:
+      - result.rowcount == 1
+      - result.query_result[0]['comment'] == 'Test schema 1'
+
+
+- name: Set another comment in real mode
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    database: "{{ db_name }}"
+    name: comment_schema
+    comment: Test schema 2
+  register: result
+
+- name: Check return values
+  assert:
+    that:
+      - result is changed
+      - result.queries == ["COMMENT ON DATABASE \"comment_db\" IS 'Test schema 2'"]
+
+- name: Check the comment changed
+  become: true
+  become_user: "{{ pg_user }}"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+  register: result
+
+- assert:
+    that:
+      - result.rowcount == 1
+      - result.query_result[0]['comment'] == 'Test schema 2'
+
+
+- name: Don's specify the comment explicitly
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    database: "{{ db_name }}"
+    name: comment_schema
+  register: result
+
+- name: Check return values
+  assert:
+    that:
+      - result is not changed
+      - result.queries == [""]
+
+- name: Check the comment didn't change
+  become: true
+  become_user: "{{ pg_user }}"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+  register: result
+
+- assert:
+    that:
+      - result.rowcount == 1
+      - result.query_result[0]['comment'] == 'Test schema 2'
+
+
+- name: Reset the comment
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    database: "{{ db_name }}"
+    name: comment_schema
+    comment: ''
+  register: result
+
+- name: Check return values
+  assert:
+    that:
+      - result is changed
+      - result.queries == ["COMMENT ON DATABASE \"comment_db\" IS ''"]
+
+- name: Check the comment is None
+  become: true
+  become_user: "{{ pg_user }}"
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+  register: result
+
+- assert:
+    that:
+      - result.rowcount == 1
+      - result.query_result[0]['comment'] == None
+
+
+- name: Drop schema
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    database: "{{ db_name }}"
+    name: comment_schema
+    state: absent
+
+
 # Cleanup
 - name: Remove user
   postgresql_user:
