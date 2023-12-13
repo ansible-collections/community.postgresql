@@ -207,7 +207,7 @@ def schema_create(cursor, schema, owner, comment):
             changed = set_owner(cursor, schema, owner)
 
         if comment is not None and comment != schema_info['comment']:
-            changed = set_comment(cursor, comment, 'schema', schema, executed_queries)
+            changed = set_comment(cursor, comment, 'schema', schema, executed_queries) or changed
 
         return changed
 
