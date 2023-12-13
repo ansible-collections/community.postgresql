@@ -337,7 +337,7 @@
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+    query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
 
 - assert:
@@ -385,7 +385,7 @@
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+    query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
 
 - assert:
@@ -416,7 +416,7 @@
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+    query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
 
 - assert:
@@ -446,7 +446,7 @@
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+    query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
 
 - assert:
@@ -477,7 +477,7 @@
   postgresql_query:
     db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
-    query: "SELECT obj_description('comment_schema'::regnamespace) AS comment"
+    query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
 
 - assert:
