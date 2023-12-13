@@ -910,8 +910,8 @@ def get_valid_flags_by_version(srv_version):
 
 def add_comment(cursor, user, comment):
     """Add comment on user."""
-    if comment != get_comment(cursor, 'user', user):
-        set_comment(cursor, comment, 'user', user, executed_queries)
+    if comment != get_comment(cursor, 'role', user):
+        set_comment(cursor, comment, 'role', user, executed_queries)
         return True
     else:
         return False
