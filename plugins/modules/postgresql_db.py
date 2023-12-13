@@ -290,6 +290,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_server_version,
     pg_cursor_args,
     postgres_common_argument_spec,
+    set_comment,
 )
 
 executed_commands = []
@@ -312,13 +313,6 @@ def set_owner(cursor, db, owner):
 
 def set_conn_limit(cursor, db, conn_limit):
     query = 'ALTER DATABASE "%s" CONNECTION LIMIT %s' % (db, conn_limit)
-    executed_commands.append(query)
-    cursor.execute(query)
-    return True
-
-
-def set_comment(cursor, db, comment):
-    query = "COMMENT ON DATABASE \"%s\" IS '%s'" % (db, comment)
     executed_commands.append(query)
     cursor.execute(query)
     return True
@@ -404,7 +398,7 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
         executed_commands.append(cursor.mogrify(query, params))
         cursor.execute(query, params)
         if comment:
-            set_comment(cursor, db, comment)
+            set_comment(cursor, comment, 'database', db, executed_commands)
         return True
     else:
         db_info = get_db_info(cursor, db)
@@ -436,7 +430,7 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
                 changed = set_tablespace(cursor, db, tablespace)
 
             if comment is not None and comment != db_info['comment']:
-                changed = set_comment(cursor, db, comment)
+                changed = set_comment(cursor, comment, 'database', db, executed_commands)
 
             return changed
 

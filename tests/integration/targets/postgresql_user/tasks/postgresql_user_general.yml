@@ -64,6 +64,32 @@
       that:
       - result.rowcount == 1
 
+# Check comment argument:
+  - name: Add a comment on the user in check mode
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      comment: '{{ test_comment1 }}'
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: check the comment didn't change
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >
+        SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') AS comment
+        FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user }}'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].comment == None
+
   - name: Add a comment on the user
     <<: *task_parameters
     postgresql_user:
@@ -101,7 +127,32 @@
       that:
       - result is not changed
 
-  - name: Try to add another comment on the user
+  - name: Try to add another comment on the user in check mode
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      comment: '{{ test_comment2 }}'
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: check the comment didn't change
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >
+        SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') AS comment
+        FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user }}'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].comment == '{{ test_comment1 }}'
+
+  - name: Try to add another comment on the user in real mode
     <<: *task_parameters
     postgresql_user:
       <<: *pg_parameters
@@ -125,6 +176,32 @@
       that:
       - result.rowcount == 1
       - result.query_result[0].comment == '{{ test_comment2 }}'
+
+  - name: Reset the comment
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      comment: ''
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["COMMENT ON ROLE \"{{ test_user }}\" IS ''"]
+
+  - name: check the comment
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >
+        SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') AS comment
+        FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user }}'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].comment == None
+# End comment argument testing
 
   - name: Try to create role again in check_mode
     <<: *task_parameters

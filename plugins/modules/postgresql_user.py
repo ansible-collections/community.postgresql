@@ -143,6 +143,7 @@ options:
   comment:
     description:
     - Adds a comment on the user (equivalent to the C(COMMENT ON ROLE) statement).
+    - To reset the comment, pass an empty string.
     type: str
     version_added: '0.2.0'
   trust_input:
@@ -305,10 +306,12 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     PSYCOPG_VERSION,
     connect_to_db,
     ensure_required_libs,
+    get_comment,
     get_conn_params,
     get_server_version,
     pg_cursor_args,
     postgres_common_argument_spec,
+    set_comment,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.version import \
     LooseVersion
@@ -905,21 +908,10 @@ def get_valid_flags_by_version(srv_version):
     ]
 
 
-def get_comment(cursor, user):
-    """Get user's comment."""
-    query = ("SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') obj_desc "
-             "FROM pg_catalog.pg_roles r "
-             "WHERE r.rolname = %(user)s")
-    cursor.execute(query, {'user': user})
-    return cursor.fetchone()["obj_desc"]
-
-
 def add_comment(cursor, user, comment):
     """Add comment on user."""
-    if comment != get_comment(cursor, user):
-        query = 'COMMENT ON ROLE "%s" IS ' % user
-        cursor.execute(query + '%(comment)s', {'comment': comment})
-        executed_queries.append(cursor.mogrify(query + '%(comment)s', {'comment': comment}))
+    if comment != get_comment(cursor, 'user', user):
+        set_comment(cursor, comment, 'user', user, executed_queries)
         return True
     else:
         return False

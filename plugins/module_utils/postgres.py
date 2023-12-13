@@ -526,3 +526,47 @@ def set_autocommit(conn, autocommit):
             conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         else:
             conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
+
+
+def get_comment(cursor, obj_type, obj_name):
+    """Get DB object's comment.
+
+    Args:
+        cursor (Psycopg cursor) -- Database cursor object.
+        obj_name (str) -- DB object name to get comment from.
+        obj_type (str) -- Object type.
+
+    Return object's comment (str) if present or None.
+    """
+    query = ''
+    if obj_type == 'user':
+        query = ("SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') AS comment "
+                 "FROM pg_catalog.pg_roles r "
+                 "WHERE r.rolname = %(obj_name)s")
+
+    cursor.execute(query, {'obj_name': obj_name})
+    return cursor.fetchone()['comment']
+
+
+def set_comment(cursor, comment, obj_type, obj_name, executed_queries=None):
+    """Get DB object's comment.
+
+    Args:
+        cursor (Psycopg cursor) -- Database cursor object.
+        comment(str) -- Comment to set on object.
+        obj_name (str) -- DB object name to set comment on.
+        obj_type (str) -- Object type.
+        executed_statements (list) -- List of executed state-modifying statements.
+    """
+    query = ''
+    if obj_type == 'user':
+        query = 'COMMENT ON ROLE "%s" IS ' % obj_name
+    elif obj_type == 'database':
+        query = "COMMENT ON DATABASE \"%s\" IS " % obj_name
+
+    cursor.execute(query + '%(comment)s', {'comment': comment})
+
+    if executed_queries is not None:
+        executed_queries.append(cursor.mogrify(query + '%(comment)s', {'comment': comment}))
+
+    return True
