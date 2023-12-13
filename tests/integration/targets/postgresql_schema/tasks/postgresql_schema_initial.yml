@@ -329,7 +329,7 @@
   assert:
     that:
       - result is changed
-      - result.queries == ['CREATE SCHEMA "comment_schema"', "COMMENT ON DATABASE \"comment_db\" IS 'Test schema 1'"]
+      - result.queries == ['CREATE SCHEMA "comment_schema"', "COMMENT ON SCHEMA \"comment_schema\" IS 'Test schema 1'"]
 
 - name: Check the comment
   become: true
@@ -408,7 +408,7 @@
   assert:
     that:
       - result is changed
-      - result.queries == ["COMMENT ON DATABASE \"comment_db\" IS 'Test schema 2'"]
+      - result.queries == ["COMMENT ON SCHEMA \"comment_schema\" IS 'Test schema 2'"]
 
 - name: Check the comment changed
   become: true
@@ -438,7 +438,7 @@
   assert:
     that:
       - result is not changed
-      - result.queries == [""]
+      - result.queries == []
 
 - name: Check the comment didn't change
   become: true
@@ -469,7 +469,7 @@
   assert:
     that:
       - result is changed
-      - result.queries == ["COMMENT ON DATABASE \"comment_db\" IS ''"]
+      - result.queries == ["COMMENT ON SCHEMA \"comment_schema\" IS ''"]
 
 - name: Check the comment is None
   become: true

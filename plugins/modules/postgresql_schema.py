@@ -162,7 +162,7 @@ def set_owner(cursor, schema, owner):
 
 
 def get_schema_info(cursor, schema):
-    query = ("SELECT obj_description(%(schema)::regnamespace, 'pg_namespace') "
+    query = ("SELECT obj_description(%(schema)s::regnamespace, 'pg_namespace') "
              "AS comment, schema_owner AS owner "
              "FROM information_schema.schemata "
              "WHERE schema_name = %(schema)s")
@@ -272,7 +272,7 @@ def main():
             if state == "absent":
                 changed = not schema_exists(cursor, schema)
             elif state == "present":
-                changed = not schema_matches(cursor, schema, owner)
+                changed = not schema_matches(cursor, schema, owner, comment)
             module.exit_json(changed=changed, schema=schema)
 
         if state == "absent":
