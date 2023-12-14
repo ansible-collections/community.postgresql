@@ -536,10 +536,10 @@ def get_comment(cursor, obj_type, obj_name):
         obj_name (str) -- DB object name to get comment from.
         obj_type (str) -- Object type.
 
-    Return object's comment (str) if present or None.
+    Returns object's comment (str) if present or None.
     """
     query = ''
-    if obj_type == 'user':
+    if obj_type == 'role':
         query = ("SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') AS comment "
                  "FROM pg_catalog.pg_roles r "
                  "WHERE r.rolname = %(obj_name)s")
@@ -558,11 +558,7 @@ def set_comment(cursor, comment, obj_type, obj_name, executed_queries=None):
         obj_type (str) -- Object type.
         executed_statements (list) -- List of executed state-modifying statements.
     """
-    query = ''
-    if obj_type == 'user':
-        query = 'COMMENT ON ROLE "%s" IS ' % obj_name
-    elif obj_type == 'database':
-        query = "COMMENT ON DATABASE \"%s\" IS " % obj_name
+    query = 'COMMENT ON %s "%s" IS ' % (obj_type.upper(), obj_name)
 
     cursor.execute(query + '%(comment)s', {'comment': comment})
 

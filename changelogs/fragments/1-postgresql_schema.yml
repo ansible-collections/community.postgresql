@@ -1,0 +1,2 @@
+minor_changes:
+- postgresql_schema - add the ``comment`` argument (https://github.com/ansible-collections/community.postgresql/issues/354).

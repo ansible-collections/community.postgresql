@@ -60,6 +60,12 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+  comment:
+    description:
+    - Sets a comment on the schema.
+    - To reset the comment, pass an empty string.
+    type: str
+    version_added: '3.3.0'
 seealso:
 - name: PostgreSQL schemas
   description: General information about PostgreSQL schemas.
@@ -91,6 +97,7 @@ EXAMPLES = r'''
   community.postgresql.postgresql_schema:
     db: test
     name: acme
+    comment: 'My test schema'
 
 - name: Create a new schema acme with a user bob who will own it
   community.postgresql.postgresql_schema:
@@ -132,6 +139,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_conn_params,
     pg_cursor_args,
     postgres_common_argument_spec,
+    set_comment,
 )
 
 executed_queries = []
@@ -154,7 +162,9 @@ def set_owner(cursor, schema, owner):
 
 
 def get_schema_info(cursor, schema):
-    query = ("SELECT schema_owner AS owner "
+    query = ("SELECT obj_description((SELECT oid "
+             "FROM pg_namespace WHERE nspname = %(schema)s), 'pg_namespace') "
+             "AS comment, schema_owner AS owner "
              "FROM information_schema.schemata "
              "WHERE schema_name = %(schema)s")
     cursor.execute(query, {'schema': schema})
@@ -180,7 +190,7 @@ def schema_delete(cursor, schema, cascade):
         return False
 
 
-def schema_create(cursor, schema, owner):
+def schema_create(cursor, schema, owner, comment):
     if not schema_exists(cursor, schema):
         query_fragments = ['CREATE SCHEMA %s' % pg_quote_identifier(schema, 'schema')]
         if owner:
@@ -188,24 +198,32 @@ def schema_create(cursor, schema, owner):
         query = ' '.join(query_fragments)
         cursor.execute(query)
         executed_queries.append(query)
+        if comment is not None:
+            set_comment(cursor, comment, 'schema', schema, executed_queries)
         return True
     else:
         schema_info = get_schema_info(cursor, schema)
+        changed = False
         if owner and owner != schema_info['owner']:
-            return set_owner(cursor, schema, owner)
-        else:
-            return False
+            changed = set_owner(cursor, schema, owner)
+
+        if comment is not None and comment != schema_info['comment']:
+            changed = set_comment(cursor, comment, 'schema', schema, executed_queries) or changed
+
+        return changed
 
 
-def schema_matches(cursor, schema, owner):
+def schema_matches(cursor, schema, owner, comment):
     if not schema_exists(cursor, schema):
         return False
     else:
         schema_info = get_schema_info(cursor, schema)
         if owner and owner != schema_info['owner']:
             return False
-        else:
-            return True
+        if comment is not None and comment != schema_info['comment']:
+            return False
+
+        return True
 
 # ===========================================
 # Module execution.
@@ -222,6 +240,7 @@ def main():
         state=dict(type="str", default="present", choices=["absent", "present"]),
         session_role=dict(type="str"),
         trust_input=dict(type="bool", default=True),
+        comment=dict(type="str", default=None),
     )
 
     module = AnsibleModule(
@@ -235,6 +254,7 @@ def main():
     cascade_drop = module.params["cascade_drop"]
     session_role = module.params["session_role"]
     trust_input = module.params["trust_input"]
+    comment = module.params["comment"]
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -253,7 +273,7 @@ def main():
             if state == "absent":
                 changed = not schema_exists(cursor, schema)
             elif state == "present":
-                changed = not schema_matches(cursor, schema, owner)
+                changed = not schema_matches(cursor, schema, owner, comment)
             module.exit_json(changed=changed, schema=schema)
 
         if state == "absent":
@@ -264,7 +284,7 @@ def main():
 
         elif state == "present":
             try:
-                changed = schema_create(cursor, schema, owner)
+                changed = schema_create(cursor, schema, owner, comment)
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
     except NotSupportedError as e:
