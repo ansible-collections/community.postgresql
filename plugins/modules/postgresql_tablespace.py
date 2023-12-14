@@ -78,6 +78,12 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+  comment:
+    description:
+    - Sets a comment on the tablespace.
+    - To reset the comment, pass an empty string.
+    type: str
+    version_added: '3.3.0'
 
 attributes:
   check_mode:
@@ -117,6 +123,7 @@ EXAMPLES = r'''
     name: acme
     owner: bob
     location: /data/foo
+    comment: "Bob's tablespace"
 
 - name: Create a new tablespace called bar with tablespace options
   community.postgresql.postgresql_tablespace:
@@ -158,6 +165,11 @@ owner:
     returned: success
     type: str
     sample: 'Bob'
+comment:
+    description: Tablespace comment.
+    returned: success
+    type: str
+    sample: 'Test tablespace'
 options:
     description: Tablespace options.
     returned: success
@@ -192,6 +204,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     pg_cursor_args,
     postgres_common_argument_spec,
     set_autocommit,
+    set_comment,
 )
 
 
@@ -227,6 +240,7 @@ class PgTablespace(object):
         self.executed_queries = []
         self.new_name = ''
         self.opt_not_supported = False
+        self.comment = None
         # Collect info:
         self.get_info()
 
@@ -248,12 +262,14 @@ class PgTablespace(object):
 
         if not opt:
             self.opt_not_supported = True
-            query = ("SELECT r.rolname, (SELECT Null) spcoptions, %s loc_string "
+            query = ("SELECT shobj_description(t.oid, 'pg_tablespace') AS comment, "
+                     "r.rolname, (SELECT Null) spcoptions, %s loc_string "
                      "FROM pg_catalog.pg_tablespace AS t "
                      "JOIN pg_catalog.pg_roles AS r "
                      "ON t.spcowner = r.oid " % location)
         else:
-            query = ("SELECT r.rolname, t.spcoptions, %s loc_string "
+            query = ("SELECT shobj_description(t.oid, 'pg_tablespace') AS comment, "
+                     "r.rolname, t.spcoptions, %s loc_string "
                      "FROM pg_catalog.pg_tablespace AS t "
                      "JOIN pg_catalog.pg_roles AS r "
                      "ON t.spcowner = r.oid " % location)
@@ -278,6 +294,9 @@ class PgTablespace(object):
             if res[0]["loc_string"]:
                 # Location exists:
                 self.location = res[0]["loc_string"]
+
+            if res[0]["comment"]:
+                self.comment = res[0]["comment"]
 
     def create(self, location):
         """Create tablespace.
@@ -310,6 +329,20 @@ class PgTablespace(object):
 
         query = 'ALTER TABLESPACE "%s" OWNER TO "%s"' % (self.name, new_owner)
         return exec_sql(self, query, return_bool=True)
+
+    def set_comment(self, comment):
+        """Set tablespace comment.
+
+        Return True if success, otherwise, return False.
+
+        args:
+            comment (str) -- comment to set for the tablespace"
+        """
+        if comment == self.comment:
+            return False
+
+        return set_comment(self.cursor, comment, 'tablespace', self.name,
+                           self.executed_queries)
 
     def rename(self, newname):
         """Rename tablespace.
@@ -390,6 +423,7 @@ def main():
         db=dict(type='str', aliases=['login_db']),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
+        comment=dict(type='str', default=None),
     )
 
     module = AnsibleModule(
@@ -406,6 +440,7 @@ def main():
     settings = module.params["set"]
     session_role = module.params["session_role"]
     trust_input = module.params["trust_input"]
+    comment = module.params["comment"]
 
     if state == 'absent' and (location or owner or rename_to or settings):
         module.fail_json(msg="state=absent is mutually exclusive location, "
@@ -472,14 +507,18 @@ def main():
         # Refresh information:
         tblspace.get_info()
 
-    # Change owner and settings:
+    # Change owner, comment and settings:
     if state == 'present' and tblspace.exists:
         if owner:
-            changed = tblspace.set_owner(owner)
+            changed = tblspace.set_owner(owner) or changed
 
         if settings:
-            changed = tblspace.set_settings(settings)
+            changed = tblspace.set_settings(settings) or changed
 
+        if comment is not None:
+            changed = tblspace.set_comment(comment) or changed
+
+        # Update tablespace information in the class
         tblspace.get_info()
 
     # Rollback if it's possible and check_mode:
@@ -501,6 +540,7 @@ def main():
         queries=tblspace.executed_queries,
         options=tblspace.settings,
         location=tblspace.location,
+        comment=tblspace.comment,
     )
 
     if state == 'present':

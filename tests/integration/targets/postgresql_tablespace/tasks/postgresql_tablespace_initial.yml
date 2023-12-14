@@ -243,3 +243,181 @@
     - result is not changed
     - result.state == 'absent'
     - result.queries == []
+
+
+# Testing comment argument
+- name: Create tablespace with comment
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_tablespace:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    name: acme
+    location: /ssd
+    comment: Test comment 1
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ["CREATE TABLESPACE \"acme\" LOCATION '/ssd'", "COMMENT ON TABLESPACE \"acme\" IS 'Test comment 1'"]
+
+- name: Check comment
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0]['comment'] == "Test comment 1"
+
+
+- name: Try to create tablespace with same comment
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_tablespace:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    name: acme
+    location: /ssd
+    comment: Test comment 1
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+
+- name: Now try not to pass the comment explicitly
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_tablespace:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    name: acme
+    location: /ssd
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: Check comment didn't change
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0]['comment'] == "Test comment 1"
+
+
+- name: Set another comment in check mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_tablespace:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    name: acme
+    location: /ssd
+    comment: Test comment 2
+  register: result
+  check_mode: true
+
+- assert:
+    that:
+    - result is changed
+
+- name: Check the comment didn't change
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0]['comment'] == "Test comment 1"
+
+
+- name: Set another comment in real mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_tablespace:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    name: acme
+    location: /ssd
+    comment: Test comment 2
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ["COMMENT ON TABLESPACE \"acme\" IS 'Test comment 2'"]
+
+- name: Check the comment changed
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0]['comment'] == "Test comment 2"
+
+
+- name: Reset the comment
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_tablespace:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    name: acme
+    location: /ssd
+    comment: ''
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ["COMMENT ON TABLESPACE \"acme\" IS ''"]
+
+- name: Check the comment changed
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0]['comment'] == None
+
+
+# Clean up
+- name: Drop tablespace
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_tablespace:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    name: acme
+    state: absent
