@@ -55,13 +55,14 @@
     login_db: postgres
     login_port: 5432
     name: postgis
+    comment: Test comment 1
   ignore_errors: true
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ['CREATE EXTENSION "postgis"']
+    - result.queries == ['CREATE EXTENSION "postgis"', "COMMENT ON EXTENSION \"postgis\" IS 'Test comment 1'"]
 
 - name: postgresql_ext - check that extension exists after the previous step
   become_user: '{{ pg_user }}'
@@ -75,6 +76,106 @@
 - assert:
     that:
     - result.rowcount == 1
+
+- name: Check the comment
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: postgres
+    query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Test comment 1"
+
+
+- name: Now after the comment was set, invoke again not pass the comment explicitly
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_ext:
+    login_db: postgres
+    login_port: 5432
+    name: postgis
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+- name: Check the comment didn't change
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: postgres
+    query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Test comment 1"
+
+
+- name: Reset the comment in check mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_ext:
+    login_db: postgres
+    login_port: 5432
+    name: postgis
+    comment: ''
+  ignore_errors: true
+  register: result
+  check_mode: true
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == []
+
+- name: Check the comment didn't change
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: postgres
+    query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == "Test comment 1"
+
+
+- name: Reset the comment in real mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_ext:
+    login_db: postgres
+    login_port: 5432
+    name: postgis
+    comment: ''
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == []
+
+- name: Check the comment changed
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    db: postgres
+    query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
+
+- name: Check the comments match
+  assert:
+    that:
+      - result.query_result[0]['comment'] == None
+
 
 - name: postgresql_ext - drop extension postgis
   become_user: '{{ pg_user }}'
