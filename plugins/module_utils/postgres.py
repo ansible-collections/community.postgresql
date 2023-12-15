@@ -541,8 +541,12 @@ def get_comment(cursor, obj_type, obj_name):
     query = ''
     if obj_type == 'role':
         query = ("SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') AS comment "
-                 "FROM pg_catalog.pg_roles r "
+                 "FROM pg_catalog.pg_roles AS r "
                  "WHERE r.rolname = %(obj_name)s")
+    elif obj_type == 'extension':
+        query = ("SELECT pg_catalog.obj_description(e.oid, 'pg_extension') AS comment "
+                 "FROM pg_catalog.pg_extension AS e "
+                 "WHERE e.extname = %(obj_name)s")
 
     cursor.execute(query, {'obj_name': obj_name})
     return cursor.fetchone()['comment']

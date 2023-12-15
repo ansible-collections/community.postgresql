@@ -88,6 +88,13 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+  comment:
+    description:
+    - Sets a comment on the extension.
+    - To reset the comment, pass an empty string.
+    type: str
+    version_added: '3.3.0'
+
 seealso:
 - name: PostgreSQL extensions
   description: General information about PostgreSQL extensions.
@@ -127,6 +134,7 @@ EXAMPLES = r'''
     name: postgis
     db: acme
     schema: foo
+    comment: Test extension
 
 - name: Removes postgis extension to the database acme
   community.postgresql.postgresql_ext:
@@ -191,9 +199,11 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
+    get_comment,
     get_conn_params,
     pg_cursor_args,
     postgres_common_argument_spec,
+    set_comment,
 )
 
 executed_queries = []
@@ -391,6 +401,7 @@ def main():
         session_role=dict(type="str"),
         version=dict(type="str"),
         trust_input=dict(type="bool", default=True),
+        comment=dict(type="str", default=None),
     )
 
     module = AnsibleModule(
@@ -405,10 +416,12 @@ def main():
     version = module.params["version"]
     session_role = module.params["session_role"]
     trust_input = module.params["trust_input"]
+    comment = module.params["comment"]
+
     changed = False
 
     if not trust_input:
-        check_input(module, ext, schema, version, session_role)
+        check_input(module, ext, schema, version, session_role, comment)
 
     if version and state == 'absent':
         module.warn("Parameter version is ignored when state=absent")
@@ -494,6 +507,12 @@ def main():
                     else:
                         module.fail_json(msg="Extension %s is not available" % ext)
 
+            if comment is not None and comment != get_comment(cursor, 'extension', ext):
+                if module.check_mode:
+                    changed = True
+                else:
+                    changed = set_comment(cursor, comment, 'extension', ext, executed_queries)
+
         elif state == "absent":
             if curr_version:
                 changed = ext_delete(module.check_mode, cursor, ext, cascade)
@@ -524,7 +543,7 @@ def main():
         ext=ext,
         prev_version=out_prev_version,
         version=out_version,
-        queries=executed_queries
+        queries=executed_queries,
     )
 
 
