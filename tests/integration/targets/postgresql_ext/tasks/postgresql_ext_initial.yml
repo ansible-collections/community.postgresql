@@ -83,6 +83,7 @@
   postgresql_query:
     db: postgres
     query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
+  register: result
 
 - name: Check the comments match
   assert:
@@ -111,6 +112,7 @@
   postgresql_query:
     db: postgres
     query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
+  register: result
 
 - name: Check the comments match
   assert:
@@ -141,6 +143,7 @@
   postgresql_query:
     db: postgres
     query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
+  register: result
 
 - name: Check the comments match
   assert:
@@ -162,7 +165,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == []
+    - result.queries == ["COMMENT ON EXTENSION \"postgis\" IS ''"]
 
 - name: Check the comment changed
   become_user: '{{ pg_user }}'
@@ -170,6 +173,7 @@
   postgresql_query:
     db: postgres
     query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
+  register: result
 
 - name: Check the comments match
   assert:
