@@ -90,20 +90,21 @@
     postgresql_publication: 
       <<: *pg_parameters
       name: '{{ test_pub }}'
+      comment: 'Made by Ansible'
       trust_input: false
 
   - assert:
       that:
       - result is changed
       - result.exists == true
-      - result.queries == ["CREATE PUBLICATION \"{{ test_pub }}\" FOR ALL TABLES"]
+      - result.queries == ["CREATE PUBLICATION \"{{ test_pub }}\" FOR ALL TABLES", "COMMENT ON PUBLICATION \"{{ test_pub }}\" IS 'Made by Ansible'"]
       - result.owner == '{{ pg_user }}'
       - result.alltables == true
       - result.tables == []
       - result.parameters.publish != {}
 
   # Check
-  - name: postgresql_publication - check that nothing has been changed
+  - name: postgresql_publication - check the publication was created 
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -114,6 +115,83 @@
   - assert:
       that:
       - result.rowcount == 1
+
+  - name: Check the comment 
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT obj_description(p.oid, 'pg_publication') AS comment FROM pg_publication AS p WHERE p.pubname = '{{ test_pub }}'"
+
+  - assert:
+      that:
+      - result.query_result[0]['comment'] == 'Made by Ansible'
+
+  - name: Not specify the comment explicitly
+    <<: *task_parameters
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: '{{ test_pub }}'
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  - name: Change the comment in check mode
+    <<: *task_parameters
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: '{{ test_pub }}'
+      comment: 'Made by me'
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: Check the comment didn't change
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT obj_description(p.oid, 'pg_publication') AS comment FROM pg_publication AS p WHERE p.pubname = '{{ test_pub }}'"
+
+  - assert:
+      that:
+      - result.query_result[0]['comment'] == 'Made by Ansible'
+
+  - name: Reset the comment in real mode
+    <<: *task_parameters
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: '{{ test_pub }}'
+      comment: ''
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["COMMENT ON PUBLICATION \"{{ test_pub }}\" IS ''"]
+
+  - name: Check the comment was reset
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT obj_description(p.oid, 'pg_publication') AS comment FROM pg_publication AS p WHERE p.pubname = '{{ test_pub }}'"
+
+  - assert:
+      that:
+      - result.query_result[0]['comment'] == None
+
+  - name: Reset the comment again in check mode
+    <<: *task_parameters
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: '{{ test_pub }}'
+      comment: ''
+    check_mode: true
+
+  - assert:
+      that:
+      - result is not changed
 
   # Test
   - name: postgresql_publication - drop publication, check_mode

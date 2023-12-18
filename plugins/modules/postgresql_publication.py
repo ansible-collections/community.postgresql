@@ -75,6 +75,12 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+  comment:
+    description:
+    - Sets a comment on the publication.
+    - To reset the comment, pass an empty string.
+    type: str
+    version_added: '3.3.0'
 
 notes:
 - PostgreSQL version must be 10 or greater.
@@ -105,6 +111,7 @@ EXAMPLES = r'''
   community.postgresql.postgresql_publication:
     db: test
     name: acme
+    comment: Made by Ansible
 
 - name: Create publication "acme" publishing only prices and vehicles tables
   community.postgresql.postgresql_publication:
@@ -191,6 +198,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_server_version,
     pg_cursor_args,
     postgres_common_argument_spec,
+    set_comment,
 )
 
 SUPPORTED_PG_VERSION = 10000
@@ -272,6 +280,7 @@ class PgPublication():
             return False
 
         self.attrs['owner'] = pub_info.get('pubowner')
+        self.attrs['comment'] = pub_info.get('comment') if pub_info.get('comment') is not None else ''
 
         # Publication DML operations:
         self.attrs['parameters']['publish'] = {}
@@ -294,13 +303,14 @@ class PgPublication():
         # Publication exists:
         return True
 
-    def create(self, tables, params, owner, check_mode=True):
+    def create(self, tables, params, owner, comment, check_mode=True):
         """Create the publication.
 
         Args:
             tables (list): List with names of the tables that need to be added to the publication.
             params (dict): Dict contains optional publication parameters and their values.
             owner (str): Name of the publication owner.
+            comment (str): Comment on the publication.
 
         Kwargs:
             check_mode (bool): If True, don't actually change anything,
@@ -334,15 +344,20 @@ class PgPublication():
             # executed_queries and return:
             self.__pub_set_owner(owner, check_mode=check_mode)
 
+        if comment is not None:
+            if not check_mode:
+                set_comment(self.cursor, comment, 'publication', self.name, self.executed_queries)
+
         return changed
 
-    def update(self, tables, params, owner, check_mode=True):
+    def update(self, tables, params, owner, comment, check_mode=True):
         """Update the publication.
 
         Args:
             tables (list): List with names of the tables that need to be presented in the publication.
             params (dict): Dict contains optional publication parameters and their values.
             owner (str): Name of the publication owner.
+            comment (str): Comment on the publication.
 
         Kwargs:
             check_mode (bool): If True, don't actually change anything,
@@ -408,6 +423,13 @@ class PgPublication():
             if owner != self.attrs['owner']:
                 changed = self.__pub_set_owner(owner, check_mode=check_mode)
 
+        if comment is not None and comment != self.attrs['comment']:
+            if not check_mode:
+                changed = set_comment(self.cursor, comment, 'publication',
+                                      self.name, self.executed_queries)
+            else:
+                changed = True
+
         return changed
 
     def drop(self, cascade=False, check_mode=True):
@@ -442,13 +464,15 @@ class PgPublication():
                                       "AND column_name = 'pubtruncate'"), add_to_executed=False)
 
         if pgtrunc_sup:
-            query = ("SELECT r.rolname AS pubowner, p.puballtables, p.pubinsert, "
+            query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
+                     "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
                      "p.pubupdate , p.pubdelete, p.pubtruncate FROM pg_publication AS p "
                      "JOIN pg_catalog.pg_roles AS r "
                      "ON p.pubowner = r.oid "
                      "WHERE p.pubname = %(pname)s")
         else:
-            query = ("SELECT r.rolname AS pubowner, p.puballtables, p.pubinsert, "
+            query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, ",
+                     "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
                      "p.pubupdate , p.pubdelete FROM pg_publication AS p "
                      "JOIN pg_catalog.pg_roles AS r "
                      "ON p.pubowner = r.oid "
@@ -597,6 +621,7 @@ def main():
         cascade=dict(type='bool', default=False),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
+        comment=dict(type='str', default=None),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -612,6 +637,7 @@ def main():
     cascade = module.params['cascade']
     session_role = module.params['session_role']
     trust_input = module.params['trust_input']
+    comment = module.params['comment']
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -620,7 +646,8 @@ def main():
         else:
             params_list = ['%s = %s' % (k, v) for k, v in iteritems(params)]
 
-        check_input(module, name, tables, owner, session_role, params_list)
+        check_input(module, name, tables, owner,
+                    session_role, params_list, comment)
 
     if state == 'absent':
         if tables:
@@ -658,10 +685,12 @@ def main():
     # If module.check_mode=True, nothing will be changed:
     if state == 'present':
         if not publication.exists:
-            changed = publication.create(tables, params, owner, check_mode=module.check_mode)
+            changed = publication.create(tables, params, owner, comment,
+                                         check_mode=module.check_mode)
 
         else:
-            changed = publication.update(tables, params, owner, check_mode=module.check_mode)
+            changed = publication.update(tables, params, owner, comment,
+                                         check_mode=module.check_mode)
 
     elif state == 'absent':
         changed = publication.drop(cascade=cascade, check_mode=module.check_mode)
