@@ -471,7 +471,7 @@ class PgPublication():
                      "ON p.pubowner = r.oid "
                      "WHERE p.pubname = %(pname)s")
         else:
-            query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, ",
+            query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
                      "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
                      "p.pubupdate , p.pubdelete FROM pg_publication AS p "
                      "JOIN pg_catalog.pg_roles AS r "
