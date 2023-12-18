@@ -706,7 +706,8 @@ def main():
     # Check input
     if not trust_input:
         # Check input for potentially dangerous elements:
-        check_input(module, owner, conn_limit, encoding, db, template, tablespace, session_role)
+        check_input(module, owner, conn_limit, encoding, db,
+                    template, tablespace, session_role, comment)
 
     raw_connection = state in ("dump", "restore")
 

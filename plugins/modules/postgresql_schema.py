@@ -258,7 +258,7 @@ def main():
 
     if not trust_input:
         # Check input for potentially dangerous elements:
-        check_input(module, schema, owner, session_role)
+        check_input(module, schema, owner, session_role, comment)
 
     changed = False
 
