@@ -14,6 +14,7 @@
   postgresql_db:
     state: present
     name: comment_db
+    trust_input: false
     login_user: "{{ pg_user }}"
     comment: Test DB comment 1
 

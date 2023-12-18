@@ -968,7 +968,7 @@ def main():
     if not trust_input:
         # Check input for potentially dangerous elements:
         check_input(module, user, password, privs, expires,
-                    role_attr_flags, comment, session_role)
+                    role_attr_flags, comment, session_role, comment)
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)

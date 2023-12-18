@@ -454,7 +454,7 @@ def main():
             settings_list = ['%s = %s' % (k, v) for k, v in iteritems(settings)]
 
         check_input(module, tablespace, location, owner,
-                    rename_to, session_role, settings_list)
+                    rename_to, session_role, settings_list, comment)
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
