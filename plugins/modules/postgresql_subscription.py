@@ -93,6 +93,12 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+  comment:
+    description:
+    - Sets a comment on the subscription.
+    - To reset the comment, pass an empty string.
+    type: str
+    version_added: '3.3.0'
 
 notes:
 - PostgreSQL version must be 10 or greater.
@@ -138,6 +144,7 @@ EXAMPLES = r'''
       user: repl
       password: replpass
       dbname: mydb
+    comment: Made by Ansible
 
 - name: Assuming that acme subscription exists, try to change conn parameters
   community.postgresql.postgresql_subscription:
@@ -216,6 +223,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_server_version,
     pg_cursor_args,
     postgres_common_argument_spec,
+    set_comment,
 )
 
 SUPPORTED_PG_VERSION = 10000
@@ -310,6 +318,7 @@ class PgSubscription():
             'conninfo': {},
             'slotname': None,
             'publications': [],
+            'comment': None,
         }
         self.empty_attrs = deepcopy(self.attrs)
         self.exists = self.check_subscr()
@@ -342,6 +351,11 @@ class PgSubscription():
         self.attrs['synccommit'] = subscr_info.get('subenabled')
         self.attrs['slotname'] = subscr_info.get('subslotname')
         self.attrs['publications'] = subscr_info.get('subpublications')
+        if subscr_info.get('comment') is not None:
+            self.attrs['comment'] = subscr_info.get('comment')
+        else:
+            # To support the comment resetting functionality
+            self.attrs['comment'] = ''
         if subscr_info.get('subconninfo'):
             for param in subscr_info['subconninfo'].split(' '):
                 tmp = param.split('=')
@@ -468,6 +482,23 @@ class PgSubscription():
         query = 'ALTER SUBSCRIPTION %s OWNER TO "%s"' % (self.name, role)
         return self.__exec_sql(query, check_mode=check_mode)
 
+    def set_comment(self, comment, check_mode=True):
+        """Set a subscription comment.
+
+        Args:
+            comment (str): Comment to set on the subscription.
+
+        Kwargs:
+            check_mode (bool): If True, don not change anything.
+
+        Returns:
+            True if success, False otherwise.
+        """
+        if not check_mode:
+            set_comment(self.cursor, comment, 'subscription', self.name, self.executed_queries)
+
+        return True
+
     def refresh(self, check_mode=True):
         """Refresh publication.
 
@@ -556,7 +587,8 @@ class PgSubscription():
         Returns:
             Dict with subscription information if successful, False otherwise.
         """
-        query = ("SELECT d.datname, r.rolname, s.subenabled, "
+        query = ("SELECT obj_description(s.oid, 'pg_subscription') AS comment, "
+                 "d.datname, r.rolname, s.subenabled, "
                  "s.subconninfo, s.subslotname, s.subsynccommit, "
                  "s.subpublications FROM pg_catalog.pg_subscription s "
                  "JOIN pg_catalog.pg_database d "
@@ -612,6 +644,7 @@ def main():
         subsparams=dict(type='dict'),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
+        comment=dict(type='str', default=None),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -629,6 +662,7 @@ def main():
     connparams = module.params['connparams']
     session_role = module.params['session_role']
     trust_input = module.params['trust_input']
+    comment = module.params['comment']
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -643,7 +677,7 @@ def main():
             connparams_str = convert_conn_params(connparams)
 
         check_input(module, name, publications, owner, session_role,
-                    connparams_str, subsparams_str)
+                    connparams_str, subsparams_str, comment)
 
     if state == 'present' and cascade:
         module.warn('parameter "cascade" is ignored when state is not absent')
@@ -657,6 +691,8 @@ def main():
             module.warn("parameter 'connparams' is ignored when state is not 'present'")
         if subsparams:
             module.warn("parameter 'subsparams' is ignored when state is not 'present'")
+        if comment is not None:
+            module.warn("parameter 'comment' is ignored when state is not 'present'")
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -707,6 +743,9 @@ def main():
 
         if owner and subscription.attrs['owner'] != owner:
             changed = subscription.set_owner(owner, check_mode=module.check_mode) or changed
+
+        if comment is not None and comment != subscription.attrs['comment']:
+            changed = subscription.set_comment(comment, check_mode=module.check_mode) or changed
 
     elif state == 'absent':
         changed = subscription.drop(cascade, check_mode=module.check_mode)
