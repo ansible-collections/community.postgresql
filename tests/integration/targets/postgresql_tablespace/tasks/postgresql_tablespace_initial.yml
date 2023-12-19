@@ -412,6 +412,23 @@
     - result.query_result[0]['comment'] == None
 
 
+- name: Reset the comment again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_tablespace:
+    db: postgres
+    login_user: '{{ pg_user }}'
+    name: acme
+    location: /ssd
+    comment: ''
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+
 # Clean up
 - name: Drop tablespace
   become_user: '{{ pg_user }}'

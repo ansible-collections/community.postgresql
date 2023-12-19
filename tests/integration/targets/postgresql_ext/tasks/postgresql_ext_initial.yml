@@ -181,6 +181,23 @@
       - result.query_result[0]['comment'] == None
 
 
+- name: Reset the comment again
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_ext:
+    login_db: postgres
+    login_port: 5432
+    name: postgis
+    comment: ''
+  ignore_errors: true
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+
 - name: postgresql_ext - drop extension postgis
   become_user: '{{ pg_user }}'
   become: true

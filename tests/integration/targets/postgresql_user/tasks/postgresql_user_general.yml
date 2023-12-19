@@ -201,6 +201,18 @@
       that:
       - result.rowcount == 1
       - result.query_result[0].comment == None
+
+  - name: Reset the comment again
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      comment: ''
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
 # End comment argument testing
 
   - name: Try to create role again in check_mode

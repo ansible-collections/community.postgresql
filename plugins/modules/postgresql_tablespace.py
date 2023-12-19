@@ -295,8 +295,7 @@ class PgTablespace(object):
                 # Location exists:
                 self.location = res[0]["loc_string"]
 
-            if res[0]["comment"]:
-                self.comment = res[0]["comment"]
+            self.comment = res[0]["comment"] if res[0]["comment"] is not None else ''
 
     def create(self, location):
         """Create tablespace.

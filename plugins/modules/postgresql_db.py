@@ -420,6 +420,10 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
         else:
             changed = False
 
+            if db_info['comment'] is None:
+                # For the resetting comment feature (comment: '') to work correctly
+                db_info['comment'] = ''
+
             if owner and owner != db_info['owner']:
                 changed = set_owner(cursor, db, owner)
 
@@ -440,6 +444,11 @@ def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn
         return False
     else:
         db_info = get_db_info(cursor, db)
+
+        if db_info['comment'] is None:
+            # For the resetting comment feature (comment: '') to work correctly
+            db_info['comment'] = ''
+
         if (encoding and get_encoding_id(cursor, encoding) != db_info['encoding_id']):
             return False
         elif lc_collate and lc_collate != db_info['lc_collate']:
