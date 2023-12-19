@@ -511,12 +511,8 @@ def main():
                 current_comment = get_comment(cursor, 'extension', ext)
                 # For the resetting comment feature (comment: '') to work correctly
                 current_comment = current_comment if current_comment is not None else ''
-
                 if comment != current_comment:
-                    if module.check_mode:
-                        changed = True
-                    else:
-                        changed = set_comment(cursor, comment, 'extension', ext, executed_queries)
+                    changed = set_comment(cursor, comment, 'extension', ext, module.check_mode, executed_queries)
 
         elif state == "absent":
             if curr_version:

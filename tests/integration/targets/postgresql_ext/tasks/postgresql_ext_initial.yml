@@ -135,7 +135,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == []
+    - result.queries == ["COMMENT ON EXTENSION \"postgis\" IS ''"]
 
 - name: Check the comment didn't change
   become_user: '{{ pg_user }}'

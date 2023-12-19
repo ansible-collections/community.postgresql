@@ -494,8 +494,7 @@ class PgSubscription():
         Returns:
             True if success, False otherwise.
         """
-        if not check_mode:
-            set_comment(self.cursor, comment, 'subscription', self.name, self.executed_queries)
+        set_comment(self.cursor, comment, 'subscription', self.name, check_mode, self.executed_queries)
 
         return True
 

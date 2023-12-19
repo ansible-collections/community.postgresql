@@ -148,6 +148,7 @@
   - assert:
       that:
       - result is changed
+      - result.queries == ["COMMENT ON PUBLICATION \"{{ test_pub }}\" IS 'Made by me'"]
 
   - name: Check the comment didn't change
     <<: *task_parameters
@@ -192,6 +193,7 @@
   - assert:
       that:
       - result is not changed
+      - result.queries == []
 
   # Test
   - name: postgresql_publication - drop publication, check_mode

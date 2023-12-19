@@ -552,7 +552,7 @@ def get_comment(cursor, obj_type, obj_name):
     return cursor.fetchone()['comment']
 
 
-def set_comment(cursor, comment, obj_type, obj_name, executed_queries=None):
+def set_comment(cursor, comment, obj_type, obj_name, check_mode=True, executed_queries=None):
     """Get DB object's comment.
 
     Args:
@@ -564,7 +564,8 @@ def set_comment(cursor, comment, obj_type, obj_name, executed_queries=None):
     """
     query = 'COMMENT ON %s "%s" IS ' % (obj_type.upper(), obj_name)
 
-    cursor.execute(query + '%(comment)s', {'comment': comment})
+    if not check_mode:
+        cursor.execute(query + '%(comment)s', {'comment': comment})
 
     if executed_queries is not None:
         executed_queries.append(cursor.mogrify(query + '%(comment)s', {'comment': comment}))

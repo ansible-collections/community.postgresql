@@ -199,7 +199,7 @@ def schema_create(cursor, schema, owner, comment):
         cursor.execute(query)
         executed_queries.append(query)
         if comment is not None:
-            set_comment(cursor, comment, 'schema', schema, executed_queries)
+            set_comment(cursor, comment, 'schema', schema, False, executed_queries)
         return True
     else:
         schema_info = get_schema_info(cursor, schema)
@@ -210,7 +210,7 @@ def schema_create(cursor, schema, owner, comment):
         if comment is not None:
             current_comment = schema_info['comment'] if schema_info['comment'] is not None else ''
             if comment != current_comment:
-                changed = set_comment(cursor, comment, 'schema', schema, executed_queries) or changed
+                changed = set_comment(cursor, comment, 'schema', schema, False, executed_queries) or changed
 
         return changed
 

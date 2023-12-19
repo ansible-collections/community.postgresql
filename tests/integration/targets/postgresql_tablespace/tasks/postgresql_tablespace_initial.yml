@@ -337,6 +337,7 @@
 - assert:
     that:
     - result is changed
+    - result.queries == ["COMMENT ON TABLESPACE \"acme\" IS 'Test comment 2'"]
 
 - name: Check the comment didn't change
   become_user: '{{ pg_user }}'

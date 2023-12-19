@@ -345,8 +345,8 @@ class PgPublication():
             self.__pub_set_owner(owner, check_mode=check_mode)
 
         if comment is not None:
-            if not check_mode:
-                set_comment(self.cursor, comment, 'publication', self.name, self.executed_queries)
+            set_comment(self.cursor, comment, 'publication',
+                        self.name, check_mode, self.executed_queries)
 
         return changed
 
@@ -424,11 +424,8 @@ class PgPublication():
                 changed = self.__pub_set_owner(owner, check_mode=check_mode)
 
         if comment is not None and comment != self.attrs['comment']:
-            if not check_mode:
-                changed = set_comment(self.cursor, comment, 'publication',
-                                      self.name, self.executed_queries)
-            else:
-                changed = True
+            changed = set_comment(self.cursor, comment, 'publication',
+                                  self.name, check_mode, self.executed_queries)
 
         return changed
 
