@@ -908,13 +908,13 @@ def get_valid_flags_by_version(srv_version):
     ]
 
 
-def add_comment(cursor, user, comment):
+def add_comment(cursor, user, comment, check_mode):
     """Add comment on user."""
     current_comment = get_comment(cursor, 'role', user)
     # For the resetting comment feature (comment: '') to work correctly
     current_comment = current_comment if current_comment is not None else ''
     if comment != current_comment:
-        set_comment(cursor, comment, 'role', user, executed_queries)
+        set_comment(cursor, comment, 'role', user, check_mode, executed_queries)
         return True
     else:
         return False
@@ -1015,7 +1015,7 @@ def main():
 
         if comment is not None:
             try:
-                changed = add_comment(cursor, user, comment) or changed
+                changed = add_comment(cursor, user, comment, module.check_mode) or changed
             except Exception as e:
                 module.fail_json(msg='Unable to add comment on role: %s' % to_native(e),
                                  exception=traceback.format_exc())

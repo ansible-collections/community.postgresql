@@ -329,7 +329,7 @@ class PgTablespace(object):
         query = 'ALTER TABLESPACE "%s" OWNER TO "%s"' % (self.name, new_owner)
         return exec_sql(self, query, return_bool=True)
 
-    def set_comment(self, comment):
+    def set_comment(self, comment, check_mode):
         """Set tablespace comment.
 
         Return True if success, otherwise, return False.
@@ -341,7 +341,7 @@ class PgTablespace(object):
             return False
 
         return set_comment(self.cursor, comment, 'tablespace', self.name,
-                           self.executed_queries)
+                           check_mode, self.executed_queries)
 
     def rename(self, newname):
         """Rename tablespace.
@@ -515,7 +515,7 @@ def main():
             changed = tblspace.set_settings(settings) or changed
 
         if comment is not None:
-            changed = tblspace.set_comment(comment) or changed
+            changed = tblspace.set_comment(comment, module.check_mode) or changed
 
         # Update tablespace information in the class
         tblspace.get_info()

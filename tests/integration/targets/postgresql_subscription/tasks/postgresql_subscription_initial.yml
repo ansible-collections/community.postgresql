@@ -119,6 +119,7 @@
   - assert:
       that:
       - result is changed
+      - result.queries == ["COMMENT ON SUBSCRIPTION \"test\" IS ''"]
 
   - name: Check the comment is the same
     <<: *task_parameters
@@ -166,6 +167,7 @@
   - assert:
       that:
       - result is not changed
+      - result.queries == []
 
   - name: Reset the comment again in check mode
     <<: *task_parameters
@@ -179,6 +181,7 @@
   - assert:
       that:
       - result is not changed
+      - result.queries == []
 
   ###################
   # Test mode: absent

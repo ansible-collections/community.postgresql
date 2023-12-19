@@ -76,6 +76,7 @@
   - assert:
       that:
       - result is changed
+      - result.queries == ["COMMENT ON ROLE \"{{ test_user }}\" IS '{{ test_comment1 }}'"]
 
   - name: check the comment didn't change
     <<: *task_parameters
@@ -138,6 +139,7 @@
   - assert:
       that:
       - result is changed
+      - result.queries == ["COMMENT ON ROLE \"{{ test_user }}\" IS '{{ test_comment2 }}'"]
 
   - name: check the comment didn't change
     <<: *task_parameters
