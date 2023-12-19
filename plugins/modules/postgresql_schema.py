@@ -207,8 +207,10 @@ def schema_create(cursor, schema, owner, comment):
         if owner and owner != schema_info['owner']:
             changed = set_owner(cursor, schema, owner)
 
-        if comment is not None and comment != schema_info['comment']:
-            changed = set_comment(cursor, comment, 'schema', schema, executed_queries) or changed
+        if comment is not None:
+            current_comment = schema_info['comment'] if schema_info['comment'] is not None else ''
+            if comment != current_comment:
+                changed = set_comment(cursor, comment, 'schema', schema, executed_queries) or changed
 
         return changed
 
@@ -220,8 +222,11 @@ def schema_matches(cursor, schema, owner, comment):
         schema_info = get_schema_info(cursor, schema)
         if owner and owner != schema_info['owner']:
             return False
-        if comment is not None and comment != schema_info['comment']:
-            return False
+        if comment is not None:
+            # For the resetting comment feature (comment: '') to work correctly
+            current_comment = schema_info['comment'] if schema_info['comment'] is not None else ''
+            if comment != current_comment:
+                return False
 
         return True
 

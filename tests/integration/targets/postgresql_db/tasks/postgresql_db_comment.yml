@@ -166,6 +166,21 @@
       - result.query_result[0]['comment'] == None
 
 
+- name: Reset the comment again
+  <<: *task_parameters
+  postgresql_db:
+    state: present
+    name: comment_db
+    login_user: "{{ pg_user }}"
+    comment: ''
+
+- name: Assert the result
+  assert:
+    that:
+       - result is not changed
+       - result.executed_commands == []
+
+
 - name: Clean up
   <<: *task_parameters
   postgresql_db:

@@ -507,11 +507,16 @@ def main():
                     else:
                         module.fail_json(msg="Extension %s is not available" % ext)
 
-            if comment is not None and comment != get_comment(cursor, 'extension', ext):
-                if module.check_mode:
-                    changed = True
-                else:
-                    changed = set_comment(cursor, comment, 'extension', ext, executed_queries)
+            if comment is not None:
+                current_comment = get_comment(cursor, 'extension', ext)
+                # For the resetting comment feature (comment: '') to work correctly
+                current_comment = current_comment if current_comment is not None else ''
+
+                if comment != current_comment:
+                    if module.check_mode:
+                        changed = True
+                    else:
+                        changed = set_comment(cursor, comment, 'extension', ext, executed_queries)
 
         elif state == "absent":
             if curr_version:

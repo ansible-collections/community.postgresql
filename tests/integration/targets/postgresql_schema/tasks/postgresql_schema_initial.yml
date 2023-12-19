@@ -486,6 +486,23 @@
       - result.query_result[0]['comment'] == None
 
 
+- name: Reset the comment again
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_schema:
+    login_user: "{{ pg_user }}"
+    database: "{{ db_name }}"
+    name: comment_schema
+    comment: ''
+  register: result
+
+- name: Check return values
+  assert:
+    that:
+      - result is not changed
+      - result.queries == []
+
+
 - name: Drop schema
   become_user: "{{ pg_user }}"
   become: true
