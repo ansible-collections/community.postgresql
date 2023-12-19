@@ -35,6 +35,7 @@
       name: '{{ test_subscription }}'
       state: present
       publications: '{{ test_pub }}'
+      comment: Made by Ansible
       connparams:
         host: 127.0.0.1
         port: '{{ primary_port }}'
@@ -47,7 +48,7 @@
       that:
       - result is changed
       - result.name == '{{ test_subscription }}'
-      - result.queries == ["CREATE SUBSCRIPTION test CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }}' PUBLICATION {{ test_pub }}"]
+      - result.queries == ["CREATE SUBSCRIPTION test CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }}' PUBLICATION {{ test_pub }}", "COMMENT ON SUBSCRIPTION \"test\" IS 'Made by Ansible'"]
       - result.exists == true
       - result.initial_state == {}
       - result.final_state.owner == '{{ pg_user }}'
@@ -71,6 +72,113 @@
   - assert:
       that:
       - result.rowcount == 1
+
+  - name: Check the comment
+    <<: *task_parameters
+    postgresql_query: 
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: "SELECT obj_description(s.oid, 'pg_subscription') AS comment FROM pg_subscription AS s WHERE s.subname = 'test'"
+
+  - assert:
+      that:
+      - result.query_result[0]['comment'] == 'Made by Ansible'
+
+  - name: Not specify the comment explicitly
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ test_subscription }}'
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  - name: Check the comment is the same
+    <<: *task_parameters
+    postgresql_query: 
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: "SELECT obj_description(s.oid, 'pg_subscription') AS comment FROM pg_subscription AS s WHERE s.subname = 'test'"
+
+  - assert:
+      that:
+      - result.query_result[0]['comment'] == 'Made by Ansible'
+
+  - name: Reset the comment in check mode
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ test_subscription }}'
+      comment: ''
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: Check the comment is the same
+    <<: *task_parameters
+    postgresql_query: 
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: "SELECT obj_description(s.oid, 'pg_subscription') AS comment FROM pg_subscription AS s WHERE s.subname = 'test'"
+
+  - assert:
+      that:
+      - result.query_result[0]['comment'] == 'Made by Ansible'
+
+  - name: Reset the comment in real mode
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ test_subscription }}'
+      comment: ''
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["COMMENT ON SUBSCRIPTION \"test\" IS ''"]
+
+  - name: Check the comment was reset
+    <<: *task_parameters
+    postgresql_query: 
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: "SELECT obj_description(s.oid, 'pg_subscription') AS comment FROM pg_subscription AS s WHERE s.subname = 'test'"
+
+  - assert:
+      that:
+      - result.query_result[0]['comment'] == None
+
+  - name: Reset the comment again
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ test_subscription }}'
+      comment: ''
+
+  - assert:
+      that:
+      - result is not changed
+
+  - name: Reset the comment again in check mode
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ test_subscription }}'
+      comment: ''
+    check_mode: true
+
+  - assert:
+      that:
+      - result is not changed
 
   ###################
   # Test mode: absent
