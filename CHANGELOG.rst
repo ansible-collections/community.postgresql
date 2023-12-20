@@ -5,6 +5,22 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v2.4.4
+======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been added after the release of ``community.postgresql`` 2.4.3.
+
+Bugfixes
+--------
+
+- postgresql_query - now reports not changed for queries starting with "SHOW" (https://github.com/ansible-collections/community.postgresql/pull/592).
+- postgresql_user - module failed when running against an SQL_ASCII encoded database as the user's current password was returned as bytes as opposed to a str. Fix now checks for this case and decodes the bytes as an ascii encoded string. (https://github.com/ansible-collections/community.postgresql/issues/584).
+
 v2.4.3
 ======
 
