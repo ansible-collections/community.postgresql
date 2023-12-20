@@ -627,3 +627,36 @@ releases:
     - 570_postgresql_info.yml
     - nuke_contributors.yml
     release_date: '2023-08-22'
+  3.3.0:
+    changes:
+      bugfixes:
+      - postgresql_query - now reports not changed for queries starting with "SHOW"
+        (https://github.com/ansible-collections/community.postgresql/pull/592).
+      - postgresql_user - module failed when running against an SQL_ASCII encoded
+        database as the user's current password was returned as bytes as opposed to
+        a str. Fix now checks for this case and decodes the bytes as an ascii encoded
+        string. (https://github.com/ansible-collections/community.postgresql/issues/584).
+      minor_changes:
+      - postgresql_db - add the ``comment`` argument (https://github.com/ansible-collections/community.postgresql/issues/614).
+      - postgresql_ext - add the ``comment`` argument (https://github.com/ansible-collections/community.postgresql/issues/354).
+      - postgresql_publication - add the ``comment`` argument (https://github.com/ansible-collections/community.postgresql/issues/354).
+      - postgresql_schema - add the ``comment`` argument (https://github.com/ansible-collections/community.postgresql/issues/354).
+      - postgresql_subscription - add the ``comment`` argument (https://github.com/ansible-collections/community.postgresql/issues/354).
+      - postgresql_tablespace - add the ``comment`` argument (https://github.com/ansible-collections/community.postgresql/issues/354).
+      release_summary: 'This is the minor release of the ``community.postgresql``
+        collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 0-postgresql_db.yml
+    - 1-postgresql_schema.yml
+    - 3-postgresql_tablespace.yml
+    - 3.3.0.yml
+    - 4-postgresql_ext.yml
+    - 5-postgresql_publication.yml
+    - 585-decode-data-from-sql_ascii-databases.yml
+    - 592-return-not-changed-for-show.yml
+    - 6-postgresql_subscription.yml
+    release_date: '2023-12-20'

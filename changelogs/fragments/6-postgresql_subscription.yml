@@ -1,2 +1,0 @@
-minor_changes:
-- postgresql_subscription - add the ``comment`` argument (https://github.com/ansible-collections/community.postgresql/issues/354).
