@@ -5,6 +5,21 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v1.7.12
+=======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been added after the release of ``community.postgresql`` 1.7.11.
+
+Bugfixes
+--------
+
+- postgresql_user - module failed when running against an SQL_ASCII encoded database as the user's current password was returned as bytes as opposed to a str. Fix now checks for this case and decodes the bytes as an ascii encoded string. (https://github.com/ansible-collections/community.postgresql/issues/584).
+
 v1.7.11
 =======
 
