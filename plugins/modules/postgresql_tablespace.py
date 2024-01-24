@@ -402,7 +402,6 @@ def main():
 
     module = AnsibleModule(
         argument_spec=argument_spec,
-        mutually_exclusive=(('positional_args', 'named_args'),),
         supports_check_mode=True,
     )
 
