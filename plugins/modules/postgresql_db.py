@@ -48,6 +48,19 @@ options:
       - Must match LC_CTYPE of template database unless C(template0) is used as template.
     type: str
     default: ''
+  icu_locale:
+    description:
+      - Specifies the ICU locale (ICU_LOCALE) for the database default collation order and character classification, overriding the setting locale.
+      - The locale provider must be ICU. The default is the setting of locale if specified; otherwise the same setting as the template database.
+    type: str
+    default: ''
+  locale_provider:
+    description:
+      - Specifies the provider to use for the default collation in this database (LOCALE_PROVIDER).
+      - Possible values are icu (if the server was built with ICU support) or libc.
+      - By default, the provider is the same as that of the template.
+    type: str
+    default: ''
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -181,6 +194,8 @@ EXAMPLES = r'''
     encoding: UTF-8
     lc_collate: de_DE.UTF-8
     lc_ctype: de_DE.UTF-8
+    locale_provider: icu
+    icu_locale: de-DE-x-icu
     template: template0
 
 # Note: Default limit for the number of concurrent connections to
@@ -325,17 +340,32 @@ def get_encoding_id(cursor, encoding):
 
 
 def get_db_info(cursor, db):
-    query = """
-    SELECT rolname AS owner,
-    pg_encoding_to_char(encoding) AS encoding, encoding AS encoding_id,
-    datcollate AS lc_collate, datctype AS lc_ctype, pg_database.datconnlimit AS conn_limit,
-    spcname AS tablespace,
-    pg_catalog.shobj_description(pg_database.oid, 'pg_database') AS comment
-    FROM pg_database
-    JOIN pg_roles ON pg_roles.oid = pg_database.datdba
-    JOIN pg_tablespace ON pg_tablespace.oid = pg_database.dattablespace
-    WHERE datname = %(db)s
-    """
+    if get_server_version(cursor.connection) >= 150000:
+        query = """
+        SELECT rolname AS owner,
+        pg_encoding_to_char(encoding) AS encoding, encoding AS encoding_id,
+        datcollate AS lc_collate, datctype AS lc_ctype, daticulocale AS icu_locale,
+        CASE datlocprovider WHEN 'c' THEN 'libc' WHEN 'i' THEN 'icu' AS locale_provider,
+        pg_database.datconnlimit AS conn_limit, spcname AS tablespace,
+        pg_catalog.shobj_description(pg_database.oid, 'pg_database') AS comment
+        FROM pg_database
+        JOIN pg_roles ON pg_roles.oid = pg_database.datdba
+        JOIN pg_tablespace ON pg_tablespace.oid = pg_database.dattablespace
+        WHERE datname = %(db)s
+        """
+    else:
+        query = """
+        SELECT rolname AS owner,
+        pg_encoding_to_char(encoding) AS encoding, encoding AS encoding_id,
+        datcollate AS lc_collate, datctype AS lc_ctype,
+        null::char AS icu_locale, null::text AS locale_provider,
+        pg_database.datconnlimit AS conn_limit, spcname AS tablespace,
+        pg_catalog.shobj_description(pg_database.oid, 'pg_database') AS comment
+        FROM pg_database
+        JOIN pg_roles ON pg_roles.oid = pg_database.datdba
+        JOIN pg_tablespace ON pg_tablespace.oid = pg_database.dattablespace
+        WHERE datname = %(db)s
+        """
     cursor.execute(query, {'db': db})
     return cursor.fetchone()
 
@@ -376,8 +406,8 @@ def db_delete(cursor, db, force=False):
         return False
 
 
-def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace, comment, check_mode):
-    params = dict(enc=encoding, collate=lc_collate, ctype=lc_ctype, conn_limit=conn_limit, tablespace=tablespace)
+def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_locale, locale_provider, conn_limit, tablespace, comment, check_mode):
+    params = dict(enc=encoding, collate=lc_collate, ctype=lc_ctype, iculocale=icu_locale, localeprovider=locale_provider, conn_limit=conn_limit, tablespace=tablespace)
     if not db_exists(cursor, db):
         query_fragments = ['CREATE DATABASE "%s"' % db]
         if owner:
@@ -390,6 +420,10 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
             query_fragments.append('LC_COLLATE %(collate)s')
         if lc_ctype:
             query_fragments.append('LC_CTYPE %(ctype)s')
+        if icu_locale:
+            query_fragments.append('ICU_LOCALE %(iculocale)s')
+        if locale_provider:
+            query_fragments.append('LOCALE_PROVIDER %(localeprovider)s')
         if tablespace:
             query_fragments.append('TABLESPACE "%s"' % tablespace)
         if conn_limit:
@@ -417,6 +451,16 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
                 'Changing LC_CTYPE is not supported.'
                 'Current LC_CTYPE: %s' % db_info['lc_ctype']
             )
+        elif icu_locale and icu_locale != db_info['icu_locale']:
+            raise NotSupportedError(
+                'Changing ICU_LOCALE is not supported.'
+                'Current ICU_LOCALE: %s' % db_info['icu_locale']
+            )
+        elif locale_provider and locale_provider != db_info['locale_provider']:
+            raise NotSupportedError(
+                'Changing LOCALE_PROVIDER is not supported.'
+                'Current LOCALE_PROVIDER: %s' % db_info['locale_provider']
+            )
         else:
             changed = False
 
@@ -439,7 +483,7 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_
             return changed
 
 
-def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace, comment):
+def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_locale, locale_provider, conn_limit, tablespace, comment):
     if not db_exists(cursor, db):
         return False
     else:
@@ -454,6 +498,10 @@ def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn
         elif lc_collate and lc_collate != db_info['lc_collate']:
             return False
         elif lc_ctype and lc_ctype != db_info['lc_ctype']:
+            return False
+        elif icu_locale and icu_locale != db_info['icu_locale']:
+            return False
+        elif locale_provider and locale_provider != db_info['locale_provider']:
             return False
         elif owner and owner != db_info['owner']:
             return False
@@ -664,6 +712,8 @@ def main():
         encoding=dict(type='str', default=''),
         lc_collate=dict(type='str', default=''),
         lc_ctype=dict(type='str', default=''),
+        icu_locale=dict(type='str', default=''),
+        locale_provider=dict(type='str', default=''),
         state=dict(type='str', default='present',
                    choices=['absent', 'dump', 'present', 'rename', 'restore']),
         target=dict(type='path', default=''),
@@ -689,6 +739,8 @@ def main():
     encoding = module.params["encoding"]
     lc_collate = module.params["lc_collate"]
     lc_ctype = module.params["lc_ctype"]
+    icu_locale = module.params["icu_locale"]
+    locale_provider = module.params["locale_provider"]
     target = module.params["target"]
     target_opts = module.params["target_opts"]
     state = module.params["state"]
@@ -750,7 +802,8 @@ def main():
                 changed = db_exists(cursor, db)
 
             elif state == "present":
-                changed = not db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, conn_limit, tablespace, comment)
+                changed = not db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype,
+                                         icu_locale, locale_provider, conn_limit, tablespace, comment)
 
             elif state == "rename":
                 changed = rename_db(module, cursor, db, target, check_mode=True)
@@ -766,7 +819,8 @@ def main():
         elif state == "present":
             try:
                 changed = db_create(cursor, db, owner, template, encoding, lc_collate,
-                                    lc_ctype, conn_limit, tablespace, comment, module.check_mode)
+                                    lc_ctype, icu_locale, locale_provider, conn_limit,
+                                    tablespace, comment, module.check_mode)
             except SQLParseError as e:
                 module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
