@@ -345,7 +345,7 @@ def get_db_info(cursor, db):
         SELECT rolname AS owner,
         pg_encoding_to_char(encoding) AS encoding, encoding AS encoding_id,
         datcollate AS lc_collate, datctype AS lc_ctype, daticulocale AS icu_locale,
-        CASE datlocprovider WHEN 'c' THEN 'libc' WHEN 'i' THEN 'icu' AS locale_provider,
+        CASE datlocprovider WHEN 'c' THEN 'libc' WHEN 'i' THEN 'icu' END AS locale_provider,
         pg_database.datconnlimit AS conn_limit, spcname AS tablespace,
         pg_catalog.shobj_description(pg_database.oid, 'pg_database') AS comment
         FROM pg_database
