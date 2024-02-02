@@ -424,7 +424,7 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_l
             query_fragments.append('LC_CTYPE %(ctype)s')
         if icu_locale and icu_supported:
             query_fragments.append('ICU_LOCALE %(iculocale)s')
-        if locale_provider and icu_supported :
+        if locale_provider and icu_supported:
             query_fragments.append('LOCALE_PROVIDER %(localeprovider)s')
         if tablespace:
             query_fragments.append('TABLESPACE "%s"' % tablespace)
