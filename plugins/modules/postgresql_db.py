@@ -407,7 +407,8 @@ def db_delete(cursor, db, force=False):
 
 
 def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_locale, locale_provider, conn_limit, tablespace, comment, check_mode):
-    params = dict(enc=encoding, collate=lc_collate, ctype=lc_ctype, iculocale=icu_locale, localeprovider=locale_provider, conn_limit=conn_limit, tablespace=tablespace)
+    params = dict(enc=encoding, collate=lc_collate, ctype=lc_ctype, iculocale=icu_locale, localeprovider=locale_provider, conn_limit=conn_limit,
+                  tablespace=tablespace)
     if not db_exists(cursor, db):
         query_fragments = ['CREATE DATABASE "%s"' % db]
         if owner:
