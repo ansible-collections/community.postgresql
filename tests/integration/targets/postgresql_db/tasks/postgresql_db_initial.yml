@@ -105,26 +105,49 @@
 #
 # Test conn_limit, encoding, collate, ctype, template options
 #
-- name: Create a DB with conn_limit, encoding, collate, ctype, icu_locale, locale_provider and template options
-  become_user: "{{ pg_user }}"
-  become: true
-  postgresql_db:
-    name: '{{ db_name }}'
-    state: 'present'
-    conn_limit: '100'
-    encoding: 'LATIN1'
-    lc_collate: 'pt_BR{{ locale_latin_suffix }}'
-    lc_ctype: 'es_ES{{ locale_latin_suffix }}'
-    icu_locale: 'es_ES-x-icu'
-    locale_provider: 'icu'
-    template: 'template0'
-    login_user: "{{ pg_user }}"
-  register: result
+block:
+  - name: Create a DB with conn_limit, encoding, collate, ctype, icu_locale, locale_provider and template options
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_db:
+      name: '{{ db_name }}'
+      state: 'present'
+      conn_limit: '100'
+      encoding: 'LATIN1'
+      lc_collate: 'pt_BR{{ locale_latin_suffix }}'
+      lc_ctype: 'es_ES{{ locale_latin_suffix }}'
+      icu_locale: 'es_ES-x-icu'
+      locale_provider: 'icu'
+      template: 'template0'
+      login_user: "{{ pg_user }}"
+    register: result
 
-- assert:
-    that:
-      - result is changed
-      - result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING 'LATIN1' LC_COLLATE 'pt_BR{{ locale_latin_suffix }}' LC_CTYPE 'es_ES{{ locale_latin_suffix }}' ICU_LOCALE 'es_ES-x-icu' LOCALE_PROVIDER 'icu' CONNECTION LIMIT 100"] or result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING E'LATIN1' LC_COLLATE E'pt_BR{{ locale_latin_suffix }}' LC_CTYPE E'es_ES{{ locale_latin_suffix }}' ICU_LOCALE E'es_ES-x-icu' LOCALE_PROVIDER 'icu' CONNECTION LIMIT 100"]
+  - assert:
+      that:
+        - result is changed
+        - result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING 'LATIN1' LC_COLLATE 'pt_BR{{ locale_latin_suffix }}' LC_CTYPE 'es_ES{{ locale_latin_suffix }}' ICU_LOCALE 'es_ES-x-icu' LOCALE_PROVIDER 'icu' CONNECTION LIMIT 100"] or result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING E'LATIN1' LC_COLLATE E'pt_BR{{ locale_latin_suffix }}' LC_CTYPE E'es_ES{{ locale_latin_suffix }}' ICU_LOCALE E'es_ES-x-icu' LOCALE_PROVIDER 'icu' CONNECTION LIMIT 100"]
+when: postgres_version_resp.stdout is version('15.0', '>=')
+
+block:
+  - name: Create a DB with conn_limit, encoding, collate, ctype and template options
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_db:
+      name: '{{ db_name }}'
+      state: 'present'
+      conn_limit: '100'
+      encoding: 'LATIN1'
+      lc_collate: 'pt_BR{{ locale_latin_suffix }}'
+      lc_ctype: 'es_ES{{ locale_latin_suffix }}'
+      template: 'template0'
+      login_user: "{{ pg_user }}"
+    register: result
+
+  - assert:
+      that:
+        - result is changed
+        - result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING 'LATIN1' LC_COLLATE 'pt_BR{{ locale_latin_suffix }}' LC_CTYPE 'es_ES{{ locale_latin_suffix }}' CONNECTION LIMIT 100"] or result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING E'LATIN1' LC_COLLATE E'pt_BR{{ locale_latin_suffix }}' LC_CTYPE E'es_ES{{ locale_latin_suffix }}' CONNECTION LIMIT 100"]
+when: postgres_version_resp.stdout is version('15.0', '<')
 
 - name: Check that the DB has all of our options
   become_user: "{{ pg_user }}"
