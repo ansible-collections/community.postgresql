@@ -62,6 +62,7 @@ options:
       - By default, the provider is the same as that of the template.
     type: str
     default: ''
+    version_added: '3.4.0'
   session_role:
     description:
     - Switch to session_role after connecting.
