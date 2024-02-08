@@ -961,8 +961,6 @@ class QueryBuilder(object):
                                                                                  self._for_whom))
             self.add_grant_option()
 
-        self.add_grant_option()
-
     def build_present(self):
         if self._obj_type == 'default_privs':
             self.add_default_revoke()

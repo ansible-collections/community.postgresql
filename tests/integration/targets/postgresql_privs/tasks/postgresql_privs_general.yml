@@ -954,6 +954,22 @@
 - assert:
     that: "'{{ db_user2 }}=X*/{{ pg_user }}' in result.query_result[0].proacl"
 
+# Test https://github.com/ansible-collections/community.postgresql/issues/668
+- name: Issue 688
+  become: true
+  become_user: "{{ pg_user }}"
+  register: result
+  postgresql_privs:
+    privs: ALL
+    type: default_privs
+    schema: pg_catalog
+    obj: ALL_DEFAULT
+    db: "{{ db_name }}"
+    roles: "{{ db_user2 }}"
+    login_user: "{{ pg_user }}"
+    grant_option: true
+    state: present
+
 # Test
 - name: Revoke grant option on pg_create_restore_point function
   postgresql_privs:
