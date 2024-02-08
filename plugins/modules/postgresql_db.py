@@ -54,6 +54,7 @@ options:
       - The locale provider must be ICU. The default is the setting of locale if specified; otherwise the same setting as the template database.
     type: str
     default: ''
+    version_added: '3.4.0'
   locale_provider:
     description:
       - Specifies the provider to use for the default collation in this database (LOCALE_PROVIDER).
