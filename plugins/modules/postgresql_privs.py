@@ -958,7 +958,7 @@ class QueryBuilder(object):
             else:
                 self.query.append(
                     'ALTER DEFAULT PRIVILEGES{0} GRANT USAGE ON TYPES TO {1}'.format(self._schema, self._for_whom))
-        self.add_grant_option()
+            self.add_grant_option()
 
     def build_present(self):
         if self._obj_type == 'default_privs':
