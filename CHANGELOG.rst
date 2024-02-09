@@ -5,6 +5,27 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v3.4.0
+======
+
+Release Summary
+---------------
+
+This is a minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- postgresql_db - add the ``icu_locale`` argument (https://github.com/ansible-collections/community.postgresql/issues/666).
+- postgresql_db - add the ``locale_provider`` argument (https://github.com/ansible-collections/community.postgresql/issues/666).
+
+Bugfixes
+--------
+
+- postgresql_privs - fix a failure when altering privileges with ``grant_option: true`` (https://github.com/ansible-collections/community.postgresql/issues/668).
+
 v3.3.0
 ======
 
