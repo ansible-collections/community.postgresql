@@ -178,6 +178,18 @@ databases:
           returned: success
           type: str
           sample: en_US.UTF-8
+        icu_locale:
+          description:
+          - Database ICU_LOCALE U(https://www.postgresql.org/docs/current/locale.html#ICU-LOCALES).
+          returned: success
+          type: str
+          sample: en_US.UTF-8
+        locale_provider:
+          description:
+          - Database LOCALE_PROVIDER U(https://www.postgresql.org/docs/current/locale.html#LOCALE-PROVIDERS).
+          returned: success
+          type: str
+          sample: en_US.UTF-8
         encoding:
           description:
           - Database encoding U(https://www.postgresql.org/docs/current/multibyte.html).
