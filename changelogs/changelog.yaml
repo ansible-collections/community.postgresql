@@ -660,3 +660,21 @@ releases:
     - 592-return-not-changed-for-show.yml
     - 6-postgresql_subscription.yml
     release_date: '2023-12-20'
+  3.4.0:
+    changes:
+      bugfixes:
+      - 'postgresql_privs - fix a failure when altering privileges with ``grant_option:
+        true`` (https://github.com/ansible-collections/community.postgresql/issues/668).'
+      minor_changes:
+      - postgresql_db - add the ``icu_locale`` argument (https://github.com/ansible-collections/community.postgresql/issues/666).
+      - postgresql_db - add the ``locale_provider`` argument (https://github.com/ansible-collections/community.postgresql/issues/666).
+      release_summary: 'This is a minor release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 0-privs.yml
+    - 3.4.0.yml
+    - 667-db_icu_provider.yml
+    release_date: '2024-02-09'
