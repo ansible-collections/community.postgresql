@@ -1,2 +1,0 @@
-bugfixes:
-- "postgresql_privs - fix a failure when altering privileges with ``grant_option: true`` (https://github.com/ansible-collections/community.postgresql/issues/668)."

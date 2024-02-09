@@ -5,6 +5,21 @@ Community PostgreSQL Collection Release Notes
 .. contents:: Topics
 
 
+v2.4.5
+======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been added after the release of ``community.postgresql`` 2.4.4.
+
+Bugfixes
+--------
+
+- postgresql_privs - fix a failure when altering privileges with ``grant_option: true`` (https://github.com/ansible-collections/community.postgresql/issues/668).
+
 v2.4.4
 ======
 
