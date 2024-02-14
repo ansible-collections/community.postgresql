@@ -8,7 +8,7 @@ If you have any questions along the reading, please contact the community via on
 
 Refer to the [review checklist](https://docs.ansible.com/ansible/devel/community/collection_contributors/collection_reviewing.html) when triaging issues or reviewing pull requests (hereinafter PRs).
 
-Most important things to pay attantion to:
+Most important things to pay attention to:
 
 - Do not let major/breaking changes to sneak in a minor/bugfix release! All such changes should be discussed in a dedicated issue, added to a corresponding milestone (which can be found in Issues or created there), and merged right before the major release. Take a look at similar issues to see what needs to be done, reflect steps you did/need to do in the issue.
 - Every PR (except doc, refactoring, test-related, or a PR containing a new module/plugin) contains a [changelog fragment](https://docs.ansible.com/ansible/latest/community/development_process.html#creating-a-changelog-fragment). Let's give users a chance to know about the changes.
