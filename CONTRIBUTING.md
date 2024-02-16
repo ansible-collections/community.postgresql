@@ -20,7 +20,7 @@ Most important things to pay attention to:
 
 If you want to submit a bugfix or new feature, refer to the [Quick-start development guide](https://docs.ansible.com/ansible/devel/community/create_pr_quick_start.html) first.
 
-## This project specifics
+## Project-specific info
 
 We assume you have read the [Quick-start development guide](https://docs.ansible.com/ansible/devel/community/create_pr_quick_start.html).
 
