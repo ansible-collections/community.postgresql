@@ -55,7 +55,7 @@ It is not necessary but if you want you can also add unit tests to a suitable fi
 
 ## Checking your code locally
 
-It will make your and other people's life a bit easier if you run the tests locally and fix all failures before pushing.
+It will make your and other people's life a bit easier if you run the tests locally and fix all failures before pushing. If you're unable to run the tests locally, please create your PR as a **draft** to avoid reviewers being added automatically.
 
 If you are new here, read the [Quick-start development guide](https://docs.ansible.com/ansible/devel/community/create_pr_quick_start.html) first.
 
