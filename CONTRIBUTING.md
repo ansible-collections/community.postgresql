@@ -24,7 +24,7 @@ If you want to submit a bugfix or new feature, refer to the [Quick-start develop
 
 We assume you have read the [Quick-start development guide](https://docs.ansible.com/ansible/devel/community/create_pr_quick_start.html).
 
-For any submitted PR in order to get merged, this project requires sanity, units, and integration tests to pass.
+In order for any submitted PR to get merged, this project requires sanity, unit, and integration tests to pass.
 Codecov job is there but not required.
 We use the Azure Pipelines platform to run the tests.
 You can see the result in the bottom of every PR in the box listing the jobs and their results:
