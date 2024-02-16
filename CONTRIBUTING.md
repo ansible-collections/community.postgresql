@@ -2,7 +2,7 @@
 
 In this guide, you will find information relevant for code contributions, though any other kinds of contribution mentioned in the [Ansible Contributing guidelines](https://docs.ansible.com/ansible/devel/community/index.html) are equally appreciated and valuable.
 
-If you have any questions along the reading, please contact the community via one or more of the [available channels](https://github.com/ansible-collections/community.postgresql#communication). Any feedback on the guide is very welcome.
+If you have any questions after reading, please contact the community via one or more of the [available channels](https://github.com/ansible-collections/community.postgresql#communication). Any feedback on this guide is very welcome.
 
 ## Reviewing open issue and pull requests
 
