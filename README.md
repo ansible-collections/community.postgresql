@@ -76,7 +76,7 @@ They also should be subscribed to Ansible's [The Bullhorn newsletter](https://do
     * [#ansible-community:ansible.com](https://matrix.to/#/#community:ansible.com): community and collection development questions.
     * other Matrix rooms or corresponding bridged Libera.Chat channels. See the [Ansible Communication Guide](https://docs.ansible.com/ansible/devel/community/communication.html) for details.
 
-For more information about communication including how to join the channels, see the [Ansible communication guide](https://docs.ansible.com/ansible/devel/community/communication.html).
+For more information about communication, including how to join these channels, see the [Ansible communication guide](https://docs.ansible.com/ansible/devel/community/communication.html).
 
 ## Governance
 
