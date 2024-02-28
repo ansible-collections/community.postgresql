@@ -65,7 +65,7 @@ They also should be subscribed to Ansible's [The Bullhorn newsletter](https://do
     * [Social Spaces](https://forum.ansible.com/c/chat/4): gather and interact with fellow enthusiasts.
     * [News & Announcements](https://forum.ansible.com/c/news/5/none): track project-wide announcements including social events.
 
-* The Ansible's [Bullhorn newsletter](https://forum.ansible.com/t/about-the-newsletter-category/166): we use it to announce releases and important changes.
+* The Ansible [Bullhorn newsletter](https://forum.ansible.com/t/about-the-newsletter-category/166): used to announce releases and important changes.
 
 ### Real-time channels
 
