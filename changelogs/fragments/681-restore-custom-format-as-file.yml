@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_db - ``restore`` custom format as file insted of stdin to allow the use of --job flag in ``target_opts`` (https://github.com/ansible-collections/community.postgresql/issues/594).
