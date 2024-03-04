@@ -628,7 +628,7 @@ def db_restore(module, target, target_opts="",
         else:
             return p2.returncode, '', stderr2, 'cmd: ****'
     else:
-        if '--format=Directory' in cmd:
+        if any(substring in cmd for substring in ['--format=Directory', '--format=Custom']):
             cmd = '{0} {1}'.format(cmd, shlex_quote(target))
         else:
             cmd = '{0} < {1}'.format(cmd, shlex_quote(target))
