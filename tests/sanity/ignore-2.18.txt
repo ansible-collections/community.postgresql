@@ -1,0 +1,5 @@
+plugins/modules/postgresql_db.py use-argspec-type-path
+plugins/modules/postgresql_db.py validate-modules:use-run-command-not-popen
+plugins/module_utils/version.py pylint:unused-import
+tests/utils/shippable/timing.py shebang
+tests/unit/plugins/module_utils/test_postgres.py pylint:unidiomatic-typecheck
