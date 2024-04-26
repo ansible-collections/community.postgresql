@@ -469,6 +469,11 @@ def main():
                     else:
                         valid_update_path = ext_valid_update_path(cursor, ext, curr_version, real_version)
                         if valid_update_path:
+                            # Reconnect (required by some extensions like timescaledb)
+                            if not module.check_mode:
+                                db_connection.close()
+                                db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
+                                cursor = db_connection.cursor(**pg_cursor_args)
                             changed = ext_update_version(module.check_mode, cursor, ext, version)
                         else:
                             if version == 'latest':
