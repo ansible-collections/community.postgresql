@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_privs - Enables the ability to revoke functions from user (https://github.com/ansible-collections/community.postgresql/issues/687).

@@ -971,7 +971,7 @@ class QueryBuilder(object):
     def build_absent(self):
         if self._obj_type == 'default_privs':
             self.query = []
-            for obj in ['TABLES', 'SEQUENCES', 'TYPES']:
+            for obj in ['TABLES', 'FUNCTIONS', 'SEQUENCES', 'TYPES']:
                 if self._as_who:
                     self.query.append(
                         'ALTER DEFAULT PRIVILEGES FOR ROLE {0}{1} REVOKE ALL ON {2} FROM {3};'.format(self._as_who,
