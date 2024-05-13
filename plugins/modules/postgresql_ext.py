@@ -421,6 +421,10 @@ def main():
                             if module.check_mode:
                                 changed = True
                             else:
+                                # Reconnect (required by some extensions like timescaledb)
+                                db_connection.close()
+                                db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
+                                cursor = db_connection.cursor(cursor_factory=DictCursor)
                                 changed = ext_update_version(cursor, ext, version)
                         else:
                             module.fail_json(msg="Passed version '%s' has no valid update path from "
