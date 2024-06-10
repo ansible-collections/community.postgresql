@@ -98,7 +98,7 @@ We maintain each major release version (1.x.y, 2.x.y, ...) for two years after t
 
 Here is the table for the support timeline:
 - 1.x.y: released 2020-11-17, EOL
-- 2.x.y: released 2022-02-10, supported until 2025-06-09
+- 2.x.y: released 2022-02-10, EOL
 - 3.x.y: released 2023-06-09, current
 - 4.x.y: to be released; not earlier than after Ansible 10 release (~May 2024)
 
