@@ -202,6 +202,7 @@
     encoding: 'LATIN1'
     lc_collate: 'pt_BR{{ locale_latin_suffix }}'
     lc_ctype: 'es_ES{{ locale_latin_suffix }}'
+    icu_locale: 'es-ES-x-icu'
     template: 'template0'
     login_user: "{{ pg_user }}"
   register: result
@@ -223,7 +224,7 @@
         encoding: 'LATIN1'
         lc_collate: 'pt_BR{{ locale_latin_suffix }}'
         lc_ctype: 'es_ES{{ locale_latin_suffix }}'
-        icu_locale: 'es_ES-x-icu'
+        icu_locale: 'es-ES-x-icu'
         locale_provider: 'icu'
         template: 'template0'
         login_user: "{{ pg_user }}"
