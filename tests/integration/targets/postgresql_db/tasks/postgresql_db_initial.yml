@@ -114,7 +114,7 @@
     conn_limit: '100'
     encoding: 'LATIN1'
     lc_collate: 'pt_BR{{ locale_latin_suffix }}'
-    lc_ctype: 'es-ES{{ locale_latin_suffix }}'
+    lc_ctype: 'es_ES{{ locale_latin_suffix }}'
     template: 'template0'
     login_user: "{{ pg_user }}"
   register: result
@@ -122,7 +122,7 @@
 - assert:
     that:
       - result is changed
-      - result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING 'LATIN1' LC_COLLATE 'pt_BR{{ locale_latin_suffix }}' LC_CTYPE 'es-ES{{ locale_latin_suffix }}' CONNECTION LIMIT 100"] or result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING E'LATIN1' LC_COLLATE E'pt_BR{{ locale_latin_suffix }}' LC_CTYPE E'es-ES{{ locale_latin_suffix }}' CONNECTION LIMIT 100"]
+      - result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING 'LATIN1' LC_COLLATE 'pt_BR{{ locale_latin_suffix }}' LC_CTYPE 'es_ES{{ locale_latin_suffix }}' CONNECTION LIMIT 100"] or result.executed_commands == ["CREATE DATABASE \"{{ db_name }}\" TEMPLATE \"template0\" ENCODING E'LATIN1' LC_COLLATE E'pt_BR{{ locale_latin_suffix }}' LC_CTYPE E'es_ES{{ locale_latin_suffix }}' CONNECTION LIMIT 100"]
 
 
 #
@@ -139,8 +139,8 @@
         conn_limit: '100'
         encoding: 'LATIN1'
         lc_collate: 'pt_BR{{ locale_latin_suffix }}'
-        lc_ctype: 'es-ES{{ locale_latin_suffix }}'
-        icu_locale: 'es-ES-x-icu'
+        lc_ctype: 'es_ES{{ locale_latin_suffix }}'
+        icu_locale: 'es_ES-x-icu'
         locale_provider: 'icu'
         template: 'template0'
         login_user: "{{ pg_user }}"
@@ -149,7 +149,7 @@
     - assert:
         that:
           - result is changed
-          - result.executed_commands == ["CREATE DATABASE \"{{ db_name_icu }}\" TEMPLATE \"template0\" ENCODING 'LATIN1' LC_COLLATE 'pt_BR{{ locale_latin_suffix }}' LC_CTYPE 'es-ES{{ locale_latin_suffix }}' ICU_LOCALE 'es-ES-x-icu' LOCALE_PROVIDER 'icu' CONNECTION LIMIT 100"] or result.executed_commands == ["CREATE DATABASE \"{{ db_name_icu }}\" TEMPLATE \"template0\" ENCODING E'LATIN1' LC_COLLATE E'pt_BR{{ locale_latin_suffix }}' LC_CTYPE E'es-ES{{ locale_latin_suffix }}' ICU_LOCALE E'es-ES-x-icu' LOCALE_PROVIDER 'icu' CONNECTION LIMIT 100"]
+          - result.executed_commands == ["CREATE DATABASE \"{{ db_name_icu }}\" TEMPLATE \"template0\" ENCODING 'LATIN1' LC_COLLATE 'pt_BR{{ locale_latin_suffix }}' LC_CTYPE 'es_ES{{ locale_latin_suffix }}' ICU_LOCALE 'es_ES-x-icu' LOCALE_PROVIDER 'icu' CONNECTION LIMIT 100"] or result.executed_commands == ["CREATE DATABASE \"{{ db_name_icu }}\" TEMPLATE \"template0\" ENCODING E'LATIN1' LC_COLLATE E'pt_BR{{ locale_latin_suffix }}' LC_CTYPE E'es_ES{{ locale_latin_suffix }}' ICU_LOCALE E'es_ES-x-icu' LOCALE_PROVIDER 'icu' CONNECTION LIMIT 100"]
 
   when: postgres_version_resp.stdout is version('15.0', '>=')
 
@@ -164,7 +164,7 @@
       - "result.stdout_lines[-1] == '(1 row)'"
       - "'LATIN1' in result.stdout_lines[-2]"
       - "'pt_BR' in result.stdout_lines[-2]"
-      - "'es-ES' in result.stdout_lines[-2]"
+      - "'es_ES' in result.stdout_lines[-2]"
       - "'UTF8' not in result.stdout_lines[-2]"
       - "'en_US' not in result.stdout_lines[-2]"
       - "'100' in result.stdout_lines[-2]"
@@ -182,8 +182,8 @@
           - "result.stdout_lines[-1] == '(1 row)'"
           - "'LATIN1' in result.stdout_lines[-2]"
           - "'pt_BR' in result.stdout_lines[-2]"
-          - "'es-ES' in result.stdout_lines[-2]"
-          - "'es-ES-x-icu' in result.stdout_lines[-2]"
+          - "'es_ES' in result.stdout_lines[-2]"
+          - "'es_ES-x-icu' in result.stdout_lines[-2]"
           - "'lib_icu' in result.stdout_lines[-2]"
           - "'UTF8' not in result.stdout_lines[-2]"
           - "'en_US' not in result.stdout_lines[-2]"
@@ -201,7 +201,7 @@
     conn_limit: '100'
     encoding: 'LATIN1'
     lc_collate: 'pt_BR{{ locale_latin_suffix }}'
-    lc_ctype: 'es-ES{{ locale_latin_suffix }}'
+    lc_ctype: 'es_ES{{ locale_latin_suffix }}'
     template: 'template0'
     login_user: "{{ pg_user }}"
   register: result
@@ -222,8 +222,8 @@
         conn_limit: '100'
         encoding: 'LATIN1'
         lc_collate: 'pt_BR{{ locale_latin_suffix }}'
-        lc_ctype: 'es-ES{{ locale_latin_suffix }}'
-        icu_locale: 'es-ES-x-icu'
+        lc_ctype: 'es_ES{{ locale_latin_suffix }}'
+        icu_locale: 'es_ES-x-icu'
         locale_provider: 'icu'
         template: 'template0'
         login_user: "{{ pg_user }}"
@@ -243,7 +243,7 @@
     state: 'present'
     encoding: 'UTF8'
     lc_collate: 'pt_BR{{ locale_utf8_suffix }}'
-    lc_ctype: 'es-ES{{ locale_utf8_suffix }}'
+    lc_ctype: 'es_ES{{ locale_utf8_suffix }}'
     template: 'template0'
     login_user: "{{ pg_user }}"
   register: result
@@ -263,7 +263,7 @@
         state: 'present'
         encoding: 'LATIN1'
         lc_collate: 'pt_BR{{ locale_utf8_suffix }}'
-        lc_ctype: 'es-ES{{ locale_utf8_suffix }}'
+        lc_ctype: 'es_ES{{ locale_utf8_suffix }}'
         icu_locale: 'en_US-x-icu'
         locale_provider: 'icu'
         template: 'template0'
@@ -283,8 +283,8 @@
         state: 'present'
         encoding: 'LATIN1'
         lc_collate: 'pt_BR{{ locale_utf8_suffix }}'
-        lc_ctype: 'es-ES{{ locale_utf8_suffix }}'
-        icu_locale: 'es-ES-x-icu'
+        lc_ctype: 'es_ES{{ locale_utf8_suffix }}'
+        icu_locale: 'es_ES-x-icu'
         locale_provider: 'libc'
         template: 'template0'
         login_user: "{{ pg_user }}"
@@ -306,7 +306,7 @@
     conn_limit: '200'
     encoding: 'LATIN1'
     lc_collate: 'pt_BR{{ locale_latin_suffix }}'
-    lc_ctype: 'es-ES{{ locale_latin_suffix }}'
+    lc_ctype: 'es_ES{{ locale_latin_suffix }}'
     template: 'template0'
     login_user: "{{ pg_user }}"
   register: result
