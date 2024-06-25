@@ -183,7 +183,7 @@
           - "'LATIN1' in result.stdout_lines[-2]"
           - "'pt_BR' in result.stdout_lines[-2]"
           - "'es_ES' in result.stdout_lines[-2]"
-          - "'es_ES-x-icu' in result.stdout_lines[-2]"
+          - "'es_ES-x-icu' in result.stdout_lines[-2] or 'es-ES-x-icu' in result.stdout_lines[-2]"
           - "'lib_icu' in result.stdout_lines[-2]"
           - "'UTF8' not in result.stdout_lines[-2]"
           - "'en_US' not in result.stdout_lines[-2]"
