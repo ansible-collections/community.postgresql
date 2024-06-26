@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 from decimal import Decimal
 from os import environ
 
@@ -32,6 +32,8 @@ try:
     import psycopg
     from psycopg import ClientCursor
     from psycopg.rows import dict_row
+
+    from psycopg.types.datetime import TimestamptzLoader
 
     # We need Psycopg 3 to be at least 3.1.0 because we need Client-side-binding cursors
     # When a Linux distribution provides both Psycopg2 and Psycopg 3.0 we will use Psycopg2
@@ -53,6 +55,16 @@ except ImportError:
 
 TYPES_NEED_TO_CONVERT = (Decimal, timedelta)
 
+class InfTimestamptzLoader(TimestamptzLoader):
+    def load(self, data):
+        if data == b"infinity":
+            return datetime.max
+        elif data == b"-infinity":
+            return datetime.min
+        else:
+            return super().load(data)
+
+psycopg.adapters.register_loader("timestamptz", InfTimestamptzLoader)
 
 def postgres_common_argument_spec():
     """
