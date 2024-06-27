@@ -2,3 +2,4 @@
 minor_changes:
   - postgres - add support for postgres ``infinity`` timestamps by replacing them with
     ``datetime.min`` / ``datetime.max`` values
+    (https://github.com/ansible-collections/community.postgresql/pull/714)
