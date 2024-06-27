@@ -223,7 +223,7 @@
         encoding: 'LATIN1'
         lc_collate: 'pt_BR{{ locale_latin_suffix }}'
         lc_ctype: 'es_ES{{ locale_latin_suffix }}'
-        icu_locale: 'es-ES-x-icu'
+        icu_locale: "{{ 'es-ES-x-icu' if (ansible_facts.distribution == 'Fedora' and ansible_facts.distribution_major_version is version('40', 'ge')) else omit }}"
         locale_provider: 'icu'
         template: 'template0'
         login_user: "{{ pg_user }}"
