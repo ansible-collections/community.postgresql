@@ -3,4 +3,4 @@ bugfixes:
   - postgres - psycopg2 automatically sets the datestyle on the connection to
     iso whenever it encounters a datestyle configuration it doesn't recognize,
     but psycopg3 does not. Fix now enforces iso datestyle when using psycopg3
-    (https://github.com/ansible-collections/community.postgresql/issues/711)
+    (https://github.com/ansible-collections/community.postgresql/issues/711).
