@@ -132,10 +132,10 @@ stages:
         parameters:
           testFormat: devel/linux/{0}/1
           targets:
-            - name: Fedora 39
-              test: fedora39
-            - name: Ubuntu 20.04
-              test: ubuntu2004
+            - name: Fedora 40
+              test: fedora40
+                #            - name: Ubuntu 20.04
+                #              test: ubuntu2404
             - name: Ubuntu 22.04
               test: ubuntu2204
 
@@ -210,8 +210,8 @@ stages:
         parameters:
           testFormat: devel/{0}/1
           targets:
-            - name: RHEL 9.3
-              test: rhel/9.3
+            - name: RHEL 9.4
+              test: rhel/9.4
 
   - stage: Remote_2_17
     displayName: Remote 2.17
