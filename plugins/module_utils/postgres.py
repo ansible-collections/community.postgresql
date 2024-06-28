@@ -56,18 +56,17 @@ except ImportError:
 TYPES_NEED_TO_CONVERT = (Decimal, timedelta)
 
 
-class InfTimestamptzLoader(TimestamptzLoader):
+if PSYCOPG_VERSION >= LooseVersion("3"):
+    class InfTimestamptzLoader(TimestamptzLoader):
+        def load(self, data):
+            if data == b"infinity":
+                return datetime.max
+            elif data == b"-infinity":
+                return datetime.min
+            else:
+                return super().load(data)
 
-    def load(self, data):
-        if data == b"infinity":
-            return datetime.max
-        elif data == b"-infinity":
-            return datetime.min
-        else:
-            return super().load(data)
-
-
-psycopg.adapters.register_loader("timestamptz", InfTimestamptzLoader)
+    psycopg.adapters.register_loader("timestamptz", InfTimestamptzLoader)
 
 
 def postgres_common_argument_spec():
