@@ -164,7 +164,7 @@
       - "result.stdout_lines[-1] == '(1 row)'"
       - "'LATIN1' in result.stdout_lines[-2]"
       - "'pt_BR' in result.stdout_lines[-2]"
-      - "'es_ES' in result.stdout_lines[-2]"
+      - "'es_ES' in result.stdout_lines[-2] or 'es-ES' in result.stdout_lines[-2]"
       - "'UTF8' not in result.stdout_lines[-2]"
       - "'en_US' not in result.stdout_lines[-2]"
       - "'100' in result.stdout_lines[-2]"
@@ -183,7 +183,7 @@
           - "'LATIN1' in result.stdout_lines[-2]"
           - "'pt_BR' in result.stdout_lines[-2]"
           - "'es_ES' in result.stdout_lines[-2]"
-          - "'es_ES-x-icu' in result.stdout_lines[-2]"
+          - "'es_ES-x-icu' in result.stdout_lines[-2] or 'es-ES-x-icu' in  result.stdout_lines[-2]"
           - "'lib_icu' in result.stdout_lines[-2]"
           - "'UTF8' not in result.stdout_lines[-2]"
           - "'en_US' not in result.stdout_lines[-2]"
@@ -223,7 +223,7 @@
         encoding: 'LATIN1'
         lc_collate: 'pt_BR{{ locale_latin_suffix }}'
         lc_ctype: 'es_ES{{ locale_latin_suffix }}'
-        icu_locale: 'es_ES-x-icu'
+        icu_locale: "{{ 'es-ES-x-icu' if (ansible_facts.distribution == 'Fedora' and ansible_facts.distribution_major_version is version('40', 'ge')) else omit }}"
         locale_provider: 'icu'
         template: 'template0'
         login_user: "{{ pg_user }}"
