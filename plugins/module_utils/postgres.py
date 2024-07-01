@@ -151,6 +151,16 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
             finally:
                 cursor.close()
 
+        # Ensure proper datestyle, only supported in psycopg 3
+        if PSYCOPG_VERSION >= LooseVersion("3.0"):
+            cursor = db_connection.cursor(row_factory=psycopg.rows.dict_row)
+            try:
+                cursor.execute('SET datestyle TO iso')
+            except Exception as e:
+                module.fail_json(msg="Could not set date style: %s" % to_native(e))
+            finally:
+                cursor.close()
+
     except TypeError as e:
         if 'sslrootcert' in e.args[0]:
             module.fail_json(msg='Postgresql server must be at least '
