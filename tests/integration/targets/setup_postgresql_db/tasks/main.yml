@@ -36,12 +36,6 @@
     state: started
   when: ansible_service_mgr == 'systemd' and ansible_distribution == 'Fedora'
 
-- name: Kill all postgres processes
-  shell: 'pkill -u {{ pg_user }}'
-  become: true
-  when: ansible_facts.distribution == 'CentOS' and ansible_facts.distribution_major_version == '8'
-  ignore_errors: true
-
 - name: stop postgresql service
   service: name={{ postgresql_service }} state=stopped
   ignore_errors: true
@@ -201,13 +195,6 @@
   pause:
     seconds: 5
 
-- name: Kill all postgres processes
-  shell: 'pkill -u {{ pg_user }}'
-  become: true
-  when: ansible_facts.distribution == 'CentOS' and ansible_facts.distribution_major_version == '8'
-  ignore_errors: true
-  register: terminate
-
 - name: Stop postgresql service
   service: name={{ postgresql_service }} state=stopped
 
@@ -218,7 +205,6 @@
     line: 'wal_level = logical'
   when:
     - replica_db_required is defined and replica_db_required
-    - ansible_distribution_major_version != "7"  # CentOS 7 with Postgres 9.2 doesn't support 'logical'
 
 - name: Pause between stop and start
   pause:
@@ -292,7 +278,6 @@
 - import_tasks: replica.yml
   when:
     - replica_db_required is defined and replica_db_required
-    - ansible_distribution_major_version != "7"  # CentOS 7 with Postgres 9.2 doesn't support 'logical'
 
 # Create an SQL_ASCII encoded database
 - import_tasks: sql_ascii.yml

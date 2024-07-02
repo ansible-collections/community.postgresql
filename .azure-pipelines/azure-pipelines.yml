@@ -162,8 +162,6 @@ stages:
         parameters:
           testFormat: 2.16/linux/{0}/1
           targets:
-            - name: CentOS 7
-              test: centos7
             - name: Fedora 38
               test: fedora38
             - name: Ubuntu 20.04
@@ -179,8 +177,6 @@ stages:
         parameters:
           testFormat: 2.15/linux/{0}/1
           targets:
-            - name: CentOS 7
-              test: centos7
             - name: Fedora 37
               test: fedora37
             - name: Ubuntu 20.04
@@ -196,8 +192,6 @@ stages:
         parameters:
           testFormat: 2.14/linux/{0}/1
           targets:
-            - name: CentOS 7
-              test: centos7
             - name: Ubuntu 20.04
               test: ubuntu2004
 
