@@ -21,13 +21,9 @@ matrix:
 
     - env: T=2.9/units/1
 
-    - env: T=devel/rhel/7.8/1
     - env: T=devel/rhel/8.2/1
     - env: T=devel/freebsd/11.1/1
     - env: T=devel/freebsd/12.1/1
-    - env: T=devel/linux/centos6/1
-    - env: T=devel/linux/centos7/1
-    #- env: T=devel/linux/centos8/1
     - env: T=devel/linux/fedora33/1
     #- env: T=devel/linux/fedora34/1
     #- env: T=devel/linux/opensuse15py2/1
