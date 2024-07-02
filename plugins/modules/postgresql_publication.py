@@ -36,8 +36,17 @@ options:
       nothing will be changed.
     - If you need to add all tables to the publication with the same name,
       drop existent and create new without passing I(tables).
+    - Mutually exclusive with I(tables_in_schema).
     type: list
     elements: str
+  tables_in_schema:
+    description:
+    - Specifies a list of schemas to add to the publication to replicate changes
+      for all tables in those schemas.
+    - Mutually exclusive with I(tables).
+    type: list
+    elements: str
+    version_added: '3.5.0'
   state:
     description:
     - The publication state.
@@ -119,6 +128,12 @@ EXAMPLES = r'''
     tables:
     - prices
     - vehicles
+
+- name: Create a new publication "acme" for tables in schema "myschema"
+  community.postgresql.postgresql_publication:
+    db: test
+    name: acme
+    tables_in_schema: myschema
 
 - name: >
     Create publication "acme", set user alice as an owner, targeting all tables
@@ -303,11 +318,12 @@ class PgPublication():
         # Publication exists:
         return True
 
-    def create(self, tables, params, owner, comment, check_mode=True):
+    def create(self, tables, tables_in_schema, params, owner, comment, check_mode=True):
         """Create the publication.
 
         Args:
             tables (list): List with names of the tables that need to be added to the publication.
+            tables_in_schema (list): List of schema names of the tables that need to be added to the publication.
             params (dict): Dict contains optional publication parameters and their values.
             owner (str): Name of the publication owner.
             comment (str): Comment on the publication.
@@ -325,6 +341,8 @@ class PgPublication():
 
         if tables:
             query_fragments.append("FOR TABLE %s" % ', '.join(tables))
+        elif tables_in_schema:
+            query_fragments.append("FOR TABLES IN SCHEMA %s" % ', '.join(tables_in_schema))
         else:
             query_fragments.append("FOR ALL TABLES")
 
@@ -350,11 +368,12 @@ class PgPublication():
 
         return changed
 
-    def update(self, tables, params, owner, comment, check_mode=True):
+    def update(self, tables, tables_in_schema, params, owner, comment, check_mode=True):
         """Update the publication.
 
         Args:
             tables (list): List with names of the tables that need to be presented in the publication.
+            tables_in_schema (list): List of schema names of the tables that need to be presented in the publication.
             params (dict): Dict contains optional publication parameters and their values.
             owner (str): Name of the publication owner.
             comment (str): Comment on the publication.
@@ -385,6 +404,10 @@ class PgPublication():
 
         elif tables and self.attrs['alltables']:
             changed = self.__pub_set_tables(tables, check_mode=check_mode)
+
+        elif tables_in_schema:
+            pass
+            # changed = self.__pub_set_schema(tables_in_schema, check_mode=check_mode)
 
         # Update pub parameters:
         if params:
@@ -619,10 +642,12 @@ def main():
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         comment=dict(type='str', default=None),
+        tables_in_schema=dict(type='list', elements='str'),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
+        mutually_exclusive=[('tables', 'tables_in_schema')],
     )
 
     # Parameters handling:
@@ -635,6 +660,7 @@ def main():
     session_role = module.params['session_role']
     trust_input = module.params['trust_input']
     comment = module.params['comment']
+    tables_in_schema = module.params['tables_in_schema']
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -682,11 +708,11 @@ def main():
     # If module.check_mode=True, nothing will be changed:
     if state == 'present':
         if not publication.exists:
-            changed = publication.create(tables, params, owner, comment,
+            changed = publication.create(tables, tables_in_schema, params, owner, comment,
                                          check_mode=module.check_mode)
 
         else:
-            changed = publication.update(tables, params, owner, comment,
+            changed = publication.update(tables, tables_in_schema, params, owner, comment,
                                          check_mode=module.check_mode)
 
     elif state == 'absent':
