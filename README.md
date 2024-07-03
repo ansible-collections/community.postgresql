@@ -105,7 +105,6 @@ Here is the table for the support timeline:
 ## Tested with ansible-core
 
 Tested with the following `ansible-core` releases:
-- 2.14
 - 2.15
 - 2.16
 - 2.17
@@ -116,7 +115,6 @@ Our AZP CI includes testing with the following docker images / PostgreSQL versio
 
 | Docker image | Psycopg version | PostgreSQL version |
 |--------------|-----------------|--------------------|
-| CentOS 7     |           2.5.1 |                9.2 |
 | RHEL 8       |           2.7.5 |               10   |
 | Fedora 37    |           2.9.6 |               14   |
 | Fedora 38    |           2.9.6 |               15   |
