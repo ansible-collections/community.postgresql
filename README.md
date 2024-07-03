@@ -105,7 +105,6 @@ Here is the table for the support timeline:
 ## Tested with ansible-core
 
 Tested with the following `ansible-core` releases:
-- 2.14
 - 2.15
 - 2.16
 - 2.17
