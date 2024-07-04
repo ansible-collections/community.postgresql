@@ -495,6 +495,42 @@
       that:
       - result.rowcount == 1
 
+  # https://github.com/ansible-collections/community.postgresql/pull/718
+  - name: DEBUG namespace before
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication_namespace
+
+  - name: Show content before
+    debug:
+      var: result
+
+  - name: Create publication for schema
+    <<: *task_parameters
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: test_schema_pub
+      tables_in_schema: '{{ test_schema }}'
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["CREATE PUBLICATION \"test_schema_pub\" FOR TABLES IN SCHEMA {{ test_schema }}"]
+
+  - name: DEBUG namespace after
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication_namespace
+
+  - name: Show content after
+    debug:
+      var: result
+
+  - name: TODO remove it
+    meta: end_play
+
   always:
   ###########
   # Clean up:
