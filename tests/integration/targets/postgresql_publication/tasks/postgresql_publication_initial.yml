@@ -517,6 +517,7 @@
       that:
       - result is changed
       - result.queries == ["CREATE PUBLICATION \"test_schema_pub\" FOR TABLES IN SCHEMA {{ test_schema }}"]
+      - result.schemas == ["acme_schema"]
 
   - name: DEBUG namespace after
     <<: *task_parameters

@@ -269,6 +269,7 @@ class PgPublication():
             'tables': [],
             'parameters': {},
             'owner': '',
+            'schemas': [],
         }
         self.exists = self.check_pub()
 
@@ -312,6 +313,7 @@ class PgPublication():
                 table_info[i] = pg_quote_identifier(schema_and_table["schema_dot_table"], 'table')
 
             self.attrs['tables'] = table_info
+            self.attrs['schemas'] = self.__get_schema_pub_info()
         else:
             self.attrs['alltables'] = True
 
@@ -513,6 +515,25 @@ class PgPublication():
         query = ("SELECT schemaname || '.' || tablename as schema_dot_table "
                  "FROM pg_publication_tables WHERE pubname = %(pname)s")
         return exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
+
+    def __get_schema_pub_info(self):
+        """Get and return schemas added to the publication.
+
+        Returns:
+            List of schemas.
+        """
+
+        query = ("SELECT n.nspname FROM pg_namespace AS n "
+                 "JOIN pg_publication_namespace AS pn ON n.oid = pn.pnnspid "
+                 "JOIN pg_publication AS p ON p.oid = pn.pnpubid "
+                 "WHERE p.pubname = %(pname)s")
+        list_of_dicts = exec_sql(self, query, query_params={'pname': self.name},
+                                 add_to_executed=False)
+
+        list_of_schemas = []
+        for d in list_of_dicts:
+            list_of_schemas.extend(d.values())
+        return list_of_schemas
 
     def __pub_add_table(self, table, check_mode=False):
         """Add a table to the publication.
