@@ -667,7 +667,7 @@ def main():
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         comment=dict(type='str', default=None),
-        tables_in_schema=dict(type='list', elements='str'),
+        tables_in_schema=dict(type='list', elements='str', default=None),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -721,7 +721,7 @@ def main():
     if pg_srv_ver < SUPPORTED_PG_VERSION:
         module.fail_json(msg="PostgreSQL server version should be 10.0 or greater")
 
-    if tables_in_schema and pg_srv_ver < 15:
+    if tables_in_schema is not None and pg_srv_ver < 15:
         module.fail_json(msg="Publication of tables in schema is supported by PostgreSQL 15 or greater")
 
     # Nothing was changed by default:
