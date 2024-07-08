@@ -43,6 +43,7 @@ options:
     description:
     - Specifies a list of schemas to add to the publication to replicate changes
       for all tables in those schemas.
+    - Supported since PostgreSQL 15.
     - Mutually exclusive with I(tables).
     type: list
     elements: str
@@ -713,8 +714,12 @@ def main():
     cursor = db_connection.cursor(**pg_cursor_args)
 
     # Check version:
-    if get_server_version(cursor.connection) < SUPPORTED_PG_VERSION:
+    pg_srv_ver = get_server_version(cursor.connection)
+    if pg_srv_ver < SUPPORTED_PG_VERSION:
         module.fail_json(msg="PostgreSQL server version should be 10.0 or greater")
+
+    if tables_in_schema and pg_srv_ver < 15:
+        module.fail_json(msg="Publication of tables in schema is supported by PostgreSQL 15 or greater")
 
     # Nothing was changed by default:
     changed = False

@@ -497,20 +497,24 @@
 
   # https://github.com/ansible-collections/community.postgresql/pull/718
   - name: DEBUG namespace before
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
       query: SELECT * FROM pg_publication_namespace
 
   - name: Show content before
+    when: postgres_version_resp.stdout is version('15', '>=')
     debug:
       var: result
 
   - name: Create publication for schema
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_publication: 
       <<: *pg_parameters
       name: test_schema_pub
+      # TODO pass at least two
       tables_in_schema: '{{ test_schema }}'
 
   - assert:
@@ -518,19 +522,19 @@
       - result is changed
       - result.queries == ["CREATE PUBLICATION \"test_schema_pub\" FOR TABLES IN SCHEMA {{ test_schema }}"]
       - result.schemas == ["acme_schema"]
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   - name: DEBUG namespace after
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
       query: SELECT * FROM pg_publication_namespace
 
   - name: Show content after
+    when: postgres_version_resp.stdout is version('15', '>=')
     debug:
       var: result
-
-  - name: TODO remove it
-    meta: end_play
 
   always:
   ###########
