@@ -317,7 +317,7 @@ class PgPublication():
             self.attrs['tables'] = table_info
 
             # FOR TABLES IN SCHEMA statement is supported since PostgreSQL 15
-            if self.pg_srv_ver >= 15000:
+            if self.pg_srv_ver >= 150000:
                 self.attrs['schemas'] = self.__get_schema_pub_info()
         else:
             self.attrs['alltables'] = True
@@ -721,7 +721,7 @@ def main():
     if pg_srv_ver < SUPPORTED_PG_VERSION:
         module.fail_json(msg="PostgreSQL server version should be 10.0 or greater")
 
-    if tables_in_schema and pg_srv_ver < 15000:
+    if tables_in_schema and pg_srv_ver < 150000:
         module.fail_json(msg="Publication of tables in schema is supported by PostgreSQL 15 or greater")
 
     # Nothing was changed by default:
