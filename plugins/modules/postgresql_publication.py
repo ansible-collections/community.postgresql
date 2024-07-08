@@ -260,10 +260,11 @@ class PgPublication():
         exists (bool): Flag indicates the publication exists or not.
     """
 
-    def __init__(self, module, cursor, name):
+    def __init__(self, module, cursor, name, pg_srv_ver):
         self.module = module
         self.cursor = cursor
         self.name = name
+        self.pg_srv_ver = pg_srv_ver
         self.executed_queries = []
         self.attrs = {
             'alltables': False,
@@ -314,7 +315,10 @@ class PgPublication():
                 table_info[i] = pg_quote_identifier(schema_and_table["schema_dot_table"], 'table')
 
             self.attrs['tables'] = table_info
-            self.attrs['schemas'] = self.__get_schema_pub_info()
+
+            # FOR TABLES IN SCHEMA statement is supported since PostgreSQL 15
+            if self.pg_srv_ver >= 15:
+                self.attrs['schemas'] = self.__get_schema_pub_info()
         else:
             self.attrs['alltables'] = True
 
@@ -523,7 +527,6 @@ class PgPublication():
         Returns:
             List of schemas.
         """
-
         query = ("SELECT n.nspname FROM pg_namespace AS n "
                  "JOIN pg_publication_namespace AS pn ON n.oid = pn.pnnspid "
                  "JOIN pg_publication AS p ON p.oid = pn.pnpubid "
@@ -726,7 +729,7 @@ def main():
 
     ###################################
     # Create object and do rock'n'roll:
-    publication = PgPublication(module, cursor, name)
+    publication = PgPublication(module, cursor, name, pg_srv_ver)
 
     if tables:
         tables = transform_tables_representation(tables)
