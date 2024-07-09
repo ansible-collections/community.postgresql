@@ -496,17 +496,33 @@
       - result.rowcount == 1
 
   # https://github.com/ansible-collections/community.postgresql/pull/718
-  - name: DEBUG namespace before
+  - name: Create publication for schema in check mode
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_query:
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: test_schema_pub
+      tables_in_schema: '{{ test_schema }}'
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["CREATE PUBLICATION \"test_schema_pub\" FOR TABLES IN SCHEMA \"{{ test_schema }}\""]
+      - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Check it's not been created
+    <<: *task_parameters
+    when: postgres_version_resp.stdout is version('15', '>=')
+    postgresql_query: 
       <<: *pg_parameters
       query: SELECT * FROM pg_publication_namespace
 
-  - name: Show content before
+  - assert:
+      that:
+      - result.rowcount == 0
     when: postgres_version_resp.stdout is version('15', '>=')
-    debug:
-      var: result
 
   - name: Create publication for schema
     when: postgres_version_resp.stdout is version('15', '>=')
@@ -514,27 +530,108 @@
     postgresql_publication: 
       <<: *pg_parameters
       name: test_schema_pub
-      # TODO pass at least two
       tables_in_schema: '{{ test_schema }}'
 
   - assert:
       that:
       - result is changed
-      - result.queries == ["CREATE PUBLICATION \"test_schema_pub\" FOR TABLES IN SCHEMA {{ test_schema }}"]
+      - result.queries == ["CREATE PUBLICATION \"test_schema_pub\" FOR TABLES IN SCHEMA \"{{ test_schema }}\""]
       - result.schemas == ["acme_schema"]
     when: postgres_version_resp.stdout is version('15', '>=')
 
-  - name: DEBUG namespace after
+  - name: Check it's been created
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_query:
+    postgresql_query: 
       <<: *pg_parameters
       query: SELECT * FROM pg_publication_namespace
 
-  - name: Show content after
+  - assert:
+      that:
+      - result.rowcount == 1
     when: postgres_version_resp.stdout is version('15', '>=')
-    debug:
-      var: result
+
+  - name: Create another schema
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_schema: 
+      <<: *pg_parameters
+      name: second_test_schema
+
+  - name: Add another schema
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: test_schema_pub
+      tables_in_schema:
+      - '{{ test_schema }}'
+      - second_test_schema
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["ALTER PUBLICATION \"test_schema_pub\" ADD TABLES IN SCHEMA \"second_test_schema\""]
+      - result.schemas == ["acme_schema", "second_test_schema"]
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Drop schemas
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: test_schema_pub
+      tables_in_schema:
+      - '{{ test_schema }}'
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["ALTER PUBLICATION \"test_schema_pub\" DROP TABLES IN SCHEMA \"second_test_schema\""]
+      - result.schemas == ["acme_schema"]
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Drop all schemas
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: test_schema_pub
+      tables_in_schema: []
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["ALTER PUBLICATION \"test_schema_pub\" DROP TABLES IN SCHEMA \"{{ test_schema }}\""]
+      - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+ 
+  - name: Check there are no publications
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_query: 
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication_namespace
+
+  - assert:
+      that:
+      - result.rowcount == 0
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Try to drop all schemas again
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_publication: 
+      <<: *pg_parameters
+      name: test_schema_pub
+      tables_in_schema: []
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+      - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   always:
   ###########

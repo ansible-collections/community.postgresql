@@ -43,6 +43,7 @@ options:
     description:
     - Specifies a list of schemas to add to the publication to replicate changes
       for all tables in those schemas.
+    - If you want to remove all schemas, explicitly pass an empty list C([]).
     - Supported since PostgreSQL 15.
     - Mutually exclusive with I(tables).
     type: list
@@ -135,6 +136,12 @@ EXAMPLES = r'''
     db: test
     name: acme
     tables_in_schema: myschema
+
+- name: Remove all schemas from schema "myschema"
+  community.postgresql.postgresql_publication:
+    db: test
+    name: acme
+    tables_in_schema: []
 
 - name: >
     Create publication "acme", set user alice as an owner, targeting all tables
@@ -349,6 +356,7 @@ class PgPublication():
         if tables:
             query_fragments.append("FOR TABLE %s" % ', '.join(tables))
         elif tables_in_schema:
+            tables_in_schema = [pg_quote_identifier(schema, 'schema') for schema in tables_in_schema]
             query_fragments.append("FOR TABLES IN SCHEMA %s" % ', '.join(tables_in_schema))
         else:
             query_fragments.append("FOR ALL TABLES")
@@ -411,7 +419,7 @@ class PgPublication():
         elif tables and self.attrs['alltables']:
             changed = self.__pub_set_tables(tables, check_mode=check_mode)
 
-        elif tables_in_schema:
+        elif tables_in_schema is not None:
 
             # 1. If needs to add schema to the publication:
             for schema in tables_in_schema:
@@ -711,7 +719,7 @@ def main():
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         comment=dict(type='str', default=None),
-        tables_in_schema=dict(type='list', elements='str'),
+        tables_in_schema=dict(type='list', elements='str', default=None),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -765,7 +773,7 @@ def main():
     if pg_srv_ver < SUPPORTED_PG_VERSION:
         module.fail_json(msg="PostgreSQL server version should be 10.0 or greater")
 
-    if tables_in_schema and pg_srv_ver < 150000:
+    if tables_in_schema is not None and pg_srv_ver < 150000:
         module.fail_json(msg="Publication of tables in schema is supported by PostgreSQL 15 or greater")
 
     # Nothing was changed by default:
