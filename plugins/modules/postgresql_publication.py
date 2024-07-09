@@ -137,7 +137,7 @@ EXAMPLES = r'''
     name: acme
     tables_in_schema: myschema
 
-- name: Remove all schemas from schema "myschema"
+- name: Remove all schemas from "acme" publication
   community.postgresql.postgresql_publication:
     db: test
     name: acme
