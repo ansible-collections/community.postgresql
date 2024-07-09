@@ -400,11 +400,10 @@ class PgPublication():
             # 1. If needs to add table to the publication:
             for tbl in tables:
                 if tbl not in self.attrs['tables']:
-                    # If needs to add table to the publication:
                     changed = self.__pub_add_table(tbl, check_mode=check_mode)
 
             # 2. if there is a table in targeted tables
-            # that's not presented in the passed tables:
+            # that's not present in the passed tables:
             for tbl in self.attrs['tables']:
                 if tbl not in tables:
                     changed = self.__pub_drop_table(tbl, check_mode=check_mode)
@@ -413,8 +412,17 @@ class PgPublication():
             changed = self.__pub_set_tables(tables, check_mode=check_mode)
 
         elif tables_in_schema:
-            pass
-            # changed = self.__pub_set_schema(tables_in_schema, check_mode=check_mode)
+
+            # 1. If needs to add schema to the publication:
+            for schema in tables_in_schema:
+                if schema not in self.attrs['schemas']:
+                    changed = self.__pub_add_schema(schema, check_mode=check_mode)
+
+            # 2. if there is a schema that's already in the publication
+            # but not present in the passed schemas we remove it from the publication:
+            for schema in self.attrs['schemas']:
+                if schema not in tables_in_schema:
+                    changed = self.__pub_drop_schema(schema, check_mode=check_mode)
 
         # Update pub parameters:
         if params:
@@ -589,6 +597,42 @@ class PgPublication():
         quoted_tables = [pg_quote_identifier(t, 'table') for t in tables]
         query = ("ALTER PUBLICATION %s SET TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
                                                         ', '.join(quoted_tables)))
+        return self.__exec_sql(query, check_mode=check_mode)
+
+    def __pub_add_schema(self, schema, check_mode=False):
+        """Add a schema to the publication.
+
+        Args:
+            schema (str): Schema name.
+
+        Kwargs:
+            check_mode (bool): If True, don't actually change anything,
+                just make SQL, add it to ``self.executed_queries`` and return True.
+
+        Returns:
+            True if trully added, False otherwise.
+        """
+        query = ("ALTER PUBLICATION %s ADD "
+                 "TABLES IN SCHEMA %s" % (pg_quote_identifier(self.name, 'publication'),
+                                          pg_quote_identifier(schema, 'schema')))
+        return self.__exec_sql(query, check_mode=check_mode)
+
+    def __pub_drop_schema(self, schema, check_mode=False):
+        """Drop a schema from the publication.
+
+        Args:
+            schema (str): Schema name.
+
+        Kwargs:
+            check_mode (bool): If True, don't actually change anything,
+                just make SQL, add it to ``self.executed_queries`` and return True.
+
+        Returns:
+            True if trully dropped, False otherwise.
+        """
+        query = ("ALTER PUBLICATION %s DROP "
+                 "TABLES IN SCHEMA %s" % (pg_quote_identifier(self.name, 'publication'),
+                                          pg_quote_identifier(schema, 'schema')))
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_set_param(self, param, value, check_mode=False):
