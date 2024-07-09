@@ -618,7 +618,7 @@ class PgPublication():
                 just make SQL, add it to ``self.executed_queries`` and return True.
 
         Returns:
-            True if trully added, False otherwise.
+            True if truly added, False otherwise.
         """
         query = ("ALTER PUBLICATION %s ADD "
                  "TABLES IN SCHEMA %s" % (pg_quote_identifier(self.name, 'publication'),
@@ -636,7 +636,7 @@ class PgPublication():
                 just make SQL, add it to ``self.executed_queries`` and return True.
 
         Returns:
-            True if trully dropped, False otherwise.
+            True if truly dropped, False otherwise.
         """
         query = ("ALTER PUBLICATION %s DROP "
                  "TABLES IN SCHEMA %s" % (pg_quote_identifier(self.name, 'publication'),
