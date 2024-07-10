@@ -36,8 +36,19 @@ options:
       nothing will be changed.
     - If you need to add all tables to the publication with the same name,
       drop existent and create new without passing I(tables).
+    - Mutually exclusive with I(tables_in_schema).
     type: list
     elements: str
+  tables_in_schema:
+    description:
+    - Specifies a list of schemas to add to the publication to replicate changes
+      for all tables in those schemas.
+    - If you want to remove all schemas, explicitly pass an empty list C([]).
+    - Supported since PostgreSQL 15.
+    - Mutually exclusive with I(tables).
+    type: list
+    elements: str
+    version_added: '3.5.0'
   state:
     description:
     - The publication state.
@@ -119,6 +130,18 @@ EXAMPLES = r'''
     tables:
     - prices
     - vehicles
+
+- name: Create a new publication "acme" for tables in schema "myschema"
+  community.postgresql.postgresql_publication:
+    db: test
+    name: acme
+    tables_in_schema: myschema
+
+- name: Remove all schemas from "acme" publication
+  community.postgresql.postgresql_publication:
+    db: test
+    name: acme
+    tables_in_schema: []
 
 - name: >
     Create publication "acme", set user alice as an owner, targeting all tables
@@ -244,16 +267,18 @@ class PgPublication():
         exists (bool): Flag indicates the publication exists or not.
     """
 
-    def __init__(self, module, cursor, name):
+    def __init__(self, module, cursor, name, pg_srv_ver):
         self.module = module
         self.cursor = cursor
         self.name = name
+        self.pg_srv_ver = pg_srv_ver
         self.executed_queries = []
         self.attrs = {
             'alltables': False,
             'tables': [],
             'parameters': {},
             'owner': '',
+            'schemas': [],
         }
         self.exists = self.check_pub()
 
@@ -297,17 +322,22 @@ class PgPublication():
                 table_info[i] = pg_quote_identifier(schema_and_table["schema_dot_table"], 'table')
 
             self.attrs['tables'] = table_info
+
+            # FOR TABLES IN SCHEMA statement is supported since PostgreSQL 15
+            if self.pg_srv_ver >= 150000:
+                self.attrs['schemas'] = self.__get_schema_pub_info()
         else:
             self.attrs['alltables'] = True
 
         # Publication exists:
         return True
 
-    def create(self, tables, params, owner, comment, check_mode=True):
+    def create(self, tables, tables_in_schema, params, owner, comment, check_mode=True):
         """Create the publication.
 
         Args:
             tables (list): List with names of the tables that need to be added to the publication.
+            tables_in_schema (list): List of schema names of the tables that need to be added to the publication.
             params (dict): Dict contains optional publication parameters and their values.
             owner (str): Name of the publication owner.
             comment (str): Comment on the publication.
@@ -325,6 +355,9 @@ class PgPublication():
 
         if tables:
             query_fragments.append("FOR TABLE %s" % ', '.join(tables))
+        elif tables_in_schema:
+            tables_in_schema = [pg_quote_identifier(schema, 'schema') for schema in tables_in_schema]
+            query_fragments.append("FOR TABLES IN SCHEMA %s" % ', '.join(tables_in_schema))
         else:
             query_fragments.append("FOR ALL TABLES")
 
@@ -350,11 +383,12 @@ class PgPublication():
 
         return changed
 
-    def update(self, tables, params, owner, comment, check_mode=True):
+    def update(self, tables, tables_in_schema, params, owner, comment, check_mode=True):
         """Update the publication.
 
         Args:
             tables (list): List with names of the tables that need to be presented in the publication.
+            tables_in_schema (list): List of schema names of the tables that need to be presented in the publication.
             params (dict): Dict contains optional publication parameters and their values.
             owner (str): Name of the publication owner.
             comment (str): Comment on the publication.
@@ -374,17 +408,29 @@ class PgPublication():
             # 1. If needs to add table to the publication:
             for tbl in tables:
                 if tbl not in self.attrs['tables']:
-                    # If needs to add table to the publication:
                     changed = self.__pub_add_table(tbl, check_mode=check_mode)
 
             # 2. if there is a table in targeted tables
-            # that's not presented in the passed tables:
+            # that's not present in the passed tables:
             for tbl in self.attrs['tables']:
                 if tbl not in tables:
                     changed = self.__pub_drop_table(tbl, check_mode=check_mode)
 
         elif tables and self.attrs['alltables']:
             changed = self.__pub_set_tables(tables, check_mode=check_mode)
+
+        elif tables_in_schema is not None:
+
+            # 1. If needs to add schema to the publication:
+            for schema in tables_in_schema:
+                if schema not in self.attrs['schemas']:
+                    changed = self.__pub_add_schema(schema, check_mode=check_mode)
+
+            # 2. if there is a schema that's already in the publication
+            # but not present in the passed schemas we remove it from the publication:
+            for schema in self.attrs['schemas']:
+                if schema not in tables_in_schema:
+                    changed = self.__pub_drop_schema(schema, check_mode=check_mode)
 
         # Update pub parameters:
         if params:
@@ -491,6 +537,24 @@ class PgPublication():
                  "FROM pg_publication_tables WHERE pubname = %(pname)s")
         return exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
 
+    def __get_schema_pub_info(self):
+        """Get and return schemas added to the publication.
+
+        Returns:
+            List of schemas.
+        """
+        query = ("SELECT n.nspname FROM pg_namespace AS n "
+                 "JOIN pg_publication_namespace AS pn ON n.oid = pn.pnnspid "
+                 "JOIN pg_publication AS p ON p.oid = pn.pnpubid "
+                 "WHERE p.pubname = %(pname)s")
+        list_of_dicts = exec_sql(self, query, query_params={'pname': self.name},
+                                 add_to_executed=False)
+
+        list_of_schemas = []
+        for d in list_of_dicts:
+            list_of_schemas.extend(d.values())
+        return list_of_schemas
+
     def __pub_add_table(self, table, check_mode=False):
         """Add a table to the publication.
 
@@ -541,6 +605,42 @@ class PgPublication():
         quoted_tables = [pg_quote_identifier(t, 'table') for t in tables]
         query = ("ALTER PUBLICATION %s SET TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
                                                         ', '.join(quoted_tables)))
+        return self.__exec_sql(query, check_mode=check_mode)
+
+    def __pub_add_schema(self, schema, check_mode=False):
+        """Add a schema to the publication.
+
+        Args:
+            schema (str): Schema name.
+
+        Kwargs:
+            check_mode (bool): If True, don't actually change anything,
+                just make SQL, add it to ``self.executed_queries`` and return True.
+
+        Returns:
+            True if truly added, False otherwise.
+        """
+        query = ("ALTER PUBLICATION %s ADD "
+                 "TABLES IN SCHEMA %s" % (pg_quote_identifier(self.name, 'publication'),
+                                          pg_quote_identifier(schema, 'schema')))
+        return self.__exec_sql(query, check_mode=check_mode)
+
+    def __pub_drop_schema(self, schema, check_mode=False):
+        """Drop a schema from the publication.
+
+        Args:
+            schema (str): Schema name.
+
+        Kwargs:
+            check_mode (bool): If True, don't actually change anything,
+                just make SQL, add it to ``self.executed_queries`` and return True.
+
+        Returns:
+            True if truly dropped, False otherwise.
+        """
+        query = ("ALTER PUBLICATION %s DROP "
+                 "TABLES IN SCHEMA %s" % (pg_quote_identifier(self.name, 'publication'),
+                                          pg_quote_identifier(schema, 'schema')))
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_set_param(self, param, value, check_mode=False):
@@ -619,10 +719,12 @@ def main():
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         comment=dict(type='str', default=None),
+        tables_in_schema=dict(type='list', elements='str', default=None),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
+        mutually_exclusive=[('tables', 'tables_in_schema')],
     )
 
     # Parameters handling:
@@ -635,6 +737,7 @@ def main():
     session_role = module.params['session_role']
     trust_input = module.params['trust_input']
     comment = module.params['comment']
+    tables_in_schema = module.params['tables_in_schema']
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -666,15 +769,19 @@ def main():
     cursor = db_connection.cursor(**pg_cursor_args)
 
     # Check version:
-    if get_server_version(cursor.connection) < SUPPORTED_PG_VERSION:
+    pg_srv_ver = get_server_version(cursor.connection)
+    if pg_srv_ver < SUPPORTED_PG_VERSION:
         module.fail_json(msg="PostgreSQL server version should be 10.0 or greater")
+
+    if tables_in_schema is not None and pg_srv_ver < 150000:
+        module.fail_json(msg="Publication of tables in schema is supported by PostgreSQL 15 or greater")
 
     # Nothing was changed by default:
     changed = False
 
     ###################################
     # Create object and do rock'n'roll:
-    publication = PgPublication(module, cursor, name)
+    publication = PgPublication(module, cursor, name, pg_srv_ver)
 
     if tables:
         tables = transform_tables_representation(tables)
@@ -682,11 +789,11 @@ def main():
     # If module.check_mode=True, nothing will be changed:
     if state == 'present':
         if not publication.exists:
-            changed = publication.create(tables, params, owner, comment,
+            changed = publication.create(tables, tables_in_schema, params, owner, comment,
                                          check_mode=module.check_mode)
 
         else:
-            changed = publication.update(tables, params, owner, comment,
+            changed = publication.update(tables, tables_in_schema, params, owner, comment,
                                          check_mode=module.check_mode)
 
     elif state == 'absent':
