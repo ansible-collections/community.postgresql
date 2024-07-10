@@ -10,6 +10,7 @@
     test_role: alice
     dangerous_name: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
     test_schema: acme_schema
+    test_schema2: test_schema
     test_db: acme_db
     task_parameters: &task_parameters
       become_user: '{{ pg_user }}'
@@ -536,7 +537,7 @@
       that:
       - result is changed
       - result.queries == ["CREATE PUBLICATION \"test_schema_pub\" FOR TABLES IN SCHEMA \"{{ test_schema }}\""]
-      - result.schemas == ["acme_schema"]
+      - result.schemas == [test_schema]
     when: postgres_version_resp.stdout is version('15', '>=')
 
   - name: Check it's been created
@@ -556,7 +557,7 @@
     <<: *task_parameters
     postgresql_schema: 
       <<: *pg_parameters
-      name: second_test_schema
+      name: '{{ test_schema2 }}'
 
   - name: Add another schema
     when: postgres_version_resp.stdout is version('15', '>=')
@@ -566,13 +567,13 @@
       name: test_schema_pub
       tables_in_schema:
       - '{{ test_schema }}'
-      - second_test_schema
+      - '{{ test_schema2 }}'
 
   - assert:
       that:
       - result is changed
-      - result.queries == ["ALTER PUBLICATION \"test_schema_pub\" ADD TABLES IN SCHEMA \"second_test_schema\""]
-      - result.schemas == ["acme_schema", "second_test_schema"]
+      - result.queries == ["ALTER PUBLICATION \"test_schema_pub\" ADD TABLES IN SCHEMA \"{{ test_schema2 }}\""]
+      - result.schemas == [test_schema, test_schema2]
     when: postgres_version_resp.stdout is version('15', '>=')
 
   - name: Drop schemas
@@ -587,8 +588,8 @@
   - assert:
       that:
       - result is changed
-      - result.queries == ["ALTER PUBLICATION \"test_schema_pub\" DROP TABLES IN SCHEMA \"second_test_schema\""]
-      - result.schemas == ["acme_schema"]
+      - result.queries == ["ALTER PUBLICATION \"test_schema_pub\" DROP TABLES IN SCHEMA \"{{ test_schema2 }}\""]
+      - result.schemas == [test_schema]
     when: postgres_version_resp.stdout is version('15', '>=')
 
   - name: Drop all schemas
