@@ -24,6 +24,20 @@ We follow the [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/
 
 If you encounter abusive behavior violating the [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html), please refer to the [policy violations](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html#policy-violations) section of the Code of Conduct for information on how to raise a complaint.
 
+## Communication
+
+* Join the Ansible forum:
+    * [PostgreSQL Team](https://forum.ansible.com/g/PostgreSQLTeam): by joining the team you will automatically get subscribed to the posts tagged with [postgresql](https://forum.ansible.com/tag/postgresql).
+    * [Get Help](https://forum.ansible.com/c/help/6/none): get help or help others.
+    * [Posts tagged with 'postgresql'](https://forum.ansible.com/tag/postgresql): leverage tags to narrow the scope.
+    * [Social Spaces](https://forum.ansible.com/c/chat/4): gather and interact with fellow enthusiasts.
+    * [News & Announcements](https://forum.ansible.com/c/news/5/none): track project-wide announcements including social events.
+
+* The Ansible [Bullhorn newsletter](https://forum.ansible.com/t/about-the-newsletter-category/166): used to announce releases and important changes.
+* [Matrix](https://docs.ansible.com/ansible/devel/community/communication.html#real-time-chat): chat real-time about contributing/maintenance-related topics in the [#postgresql:ansible.com](https://matrix.to/#/#postgresql:ansible.com) room.
+
+For more information about communication see the [Ansible communication guide](https://docs.ansible.com/ansible/devel/community/communication.html).
+
 ## Contributing to this collection
 
 The content of this collection is made by [people](https://github.com/ansible-collections/community.postgresql/graphs/contributors) just like you; a community of individuals collaborating on making the world better through developing automation software.
@@ -51,32 +65,6 @@ It is necessary for maintainers of this collection to be subscribed to:
 * The [news-for-maintainers repository](https://github.com/ansible-collections/news-for-maintainers).
 
 They also should be subscribed to Ansible's [The Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn).
-
-## Communication
-
-> `GitHub Discussions` feature is disabled in this repository. Use the `postgresql` tag on the forum in the [Project Discussions](https://forum.ansible.com/new-topic?title=topic%20title&body=topic%20body&category=project&tags=postgresql) or [Get Help](https://forum.ansible.com/new-topic?title=topic%20title&body=topic%20body&category=help&tags=postgresql) category instead.
-
-### Asynchronous channels
-
-* Join the Ansible forum:
-    * [PostgreSQL Team](https://forum.ansible.com/g/PostgreSQLTeam): by joining the team you will automatically get subscribed to the posts tagged with [postgresql](https://forum.ansible.com/tag/postgresql).
-    * [Get Help](https://forum.ansible.com/c/help/6/none): get help or help others.
-    * [Posts tagged with 'postgresql'](https://forum.ansible.com/tag/postgresql): leverage tags to narrow the scope.
-    * [Social Spaces](https://forum.ansible.com/c/chat/4): gather and interact with fellow enthusiasts.
-    * [News & Announcements](https://forum.ansible.com/c/news/5/none): track project-wide announcements including social events.
-
-* The Ansible [Bullhorn newsletter](https://forum.ansible.com/t/about-the-newsletter-category/166): used to announce releases and important changes.
-
-### Real-time channels
-
-* Matrix rooms:
-    * [#postgresql:ansible.com](https://matrix.to/#/#postgresql:ansible.com): questions on how to contribute and use this collection.
-    * [#users:ansible.com](https://matrix.to/#/#users:ansible.com): general use questions and support.
-    * [#social:ansible.com](https://matrix.to/#/#social:ansible.com): say hello or share a funny joke and let's laugh together;)
-    * [#ansible-community:ansible.com](https://matrix.to/#/#community:ansible.com): community and collection development questions.
-    * other Matrix rooms or corresponding bridged Libera.Chat channels. See the [Ansible Communication Guide](https://docs.ansible.com/ansible/devel/community/communication.html) for details.
-
-For more information about communication, including how to join these channels, see the [Ansible communication guide](https://docs.ansible.com/ansible/devel/community/communication.html).
 
 ## Governance
 
