@@ -154,6 +154,17 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+  configuration:
+    description:
+      - Role-specific configuration parameters that would otherwise be set by C(ALTER ROLE user SET variable TO value;).
+      - Takes a list of strings like C(key=value) that is split on the first equal-sign.
+      - Sets or updates any parameter in the list that is not present or has the wrong value in the database.
+      - Removes any parameter from the database that is not listed here. Set an empty list to remove all parameters.
+      - If omitted or C(None), the current state of the database will not be changed and any value present will be left.
+    type: list
+    elements: str
+    default: None
+    version_added: '4.0.0'
 notes:
 - The module creates a user (role) with login privilege by default.
   Use C(NOLOGIN) I(role_attr_flags) to change this behaviour.
@@ -274,6 +285,21 @@ EXAMPLES = r'''
   community.postgresql.postgresql_user:
     name: monitoring
     priv: 'pg_catalog.pg_stat_database:SELECT'
+
+# Create a user and set a default-configuration that is active when they start a session
+- name: Create a user with config-parameter
+  community.postgresql.postgresql_user:
+    name: appclient
+    password: "secret123"
+    configuration:
+      - maintenance_work_mem=100000
+
+# Make sure all configuration is purged for a user
+- name: Clear all configuration for user
+  community.postgresql.postgresql_user:
+    name: appclient
+    password: "secret123"
+    configuration: []
 '''
 
 RETURN = r'''
@@ -920,6 +946,50 @@ def add_comment(cursor, user, comment, check_mode):
         return False
 
 
+def user_configuration(cursor, module, user, configuration):
+    """Updates the user's configuration parameters if necessary."""
+    current_config_query = "SELECT rolconfig FROM pg_roles WHERE rolname = %(user)s;"
+    cursor.execute(current_config_query, {"user": user})
+    current_config = cursor.fetchone()
+    current_config_dict = {}
+
+    if current_config is None:
+        module.fail_json(msg="Can't find user %(user)s in 'pg_roles'" % {"user": user})
+
+    if current_config[0] is not None:
+        for item in current_config[0]:
+            tokens = item.split("=", 1)
+            current_config_dict[tokens[0]] = tokens[1]
+
+    c = configuration.copy()
+    reset = []
+
+    # check each item in the current configuration
+    for key, value in current_config_dict.items():
+        # we already have the correct setting
+        if key in c and value == c[key]:
+            # so we can remove it from the list
+            del c[key]
+        # if the key is not in the list of settings we want
+        elif key not in c:
+            # we will reset it on the database
+            reset.append(key)
+        # if the setting is not in the db or has the wrong value, it will get updated
+
+    try:
+        for item in reset:
+            cursor.execute("ALTER ROLE %(user)s RESET %(key)s;", {"user": user, "key": item})
+            executed_queries.append(cursor.query)
+        for key, value in c:
+            cursor.execute("ALTER ROLE %(user)s SET %(key)s TO %(value)s;" % {"user": user, "key": key, "value": value})
+            executed_queries.append(cursor.query)
+    except psycopg.ProgrammingError as e:
+        module.fail_json("Unable to update configuration for '%(user)s' due to: %(exception)s" %
+                         {"user": user, "exception": e})
+    # return 'True' if we modified any configuration
+    return len(reset) > 0 and len(c) > 0
+
+
 # ===========================================
 # Module execution.
 #
@@ -941,6 +1011,7 @@ def main():
         session_role=dict(type='str'),
         comment=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
+        configuration=dict(type='list', default=None)
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -966,6 +1037,7 @@ def main():
     role_attr_flags = module.params["role_attr_flags"]
     comment = module.params["comment"]
     session_role = module.params['session_role']
+    configuration = module.params['configuration']
 
     trust_input = module.params['trust_input']
     if not trust_input:
@@ -1019,6 +1091,11 @@ def main():
             except Exception as e:
                 module.fail_json(msg='Unable to add comment on role: %s' % to_native(e),
                                  exception=traceback.format_exc())
+
+        if configuration is not None:
+            # parses a list of "key=value" strings to a dict
+            config = {t[0]: t[1] for t in map(lambda s: s.split("=", 1), configuration)}
+            changed = user_configuration(cursor, module, user, config) or changed
 
     else:
         if user_exists(cursor, user):
