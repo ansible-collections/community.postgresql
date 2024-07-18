@@ -162,12 +162,12 @@ options:
       - Removes any parameter from the user that is not listed here.
       - If the first item is 'purge', all configuration parameters will be removed from the user.
       - If omitted or empty, the current parameters of the user will not be changed.
-      - Using this will leave the I(user) as well as this parameter open to SQL-injections,
+      - Using this will leave the O(user) as well as this parameter open to SQL-injections,
         parameters are checked if I(trust_input) is C(false).
     type: list
     elements: str
     default: []
-    version_added: '4.0.0'
+    version_added: '3.5.0'
 notes:
 - The module creates a user (role) with login privilege by default.
   Use C(NOLOGIN) I(role_attr_flags) to change this behaviour.
@@ -950,49 +950,58 @@ def add_comment(cursor, user, comment, check_mode):
         return False
 
 
+def compare_user_configurations(current, desired):
+    reset = []
+    update = desired.copy()
+
+    # check each item in the current configuration
+    for key, value in current.items():
+        # we already have the correct setting
+        if key in desired and value == desired[key]:
+            # so we can remove it from the list
+            del update[key]
+        # if the key is not in the list of settings we want
+        elif key not in desired:
+            # we will reset it on the database
+            reset.append(key)
+        # if the setting is not in the db or has the wrong value, it will get updated
+
+    return {"reset": reset, "update": update}
+
+
+def parse_user_configuration(configs):
+    if configs is not None:
+        # parses a list of "key=value" strings to a dict
+        return {t[0]: t[1] for t in map(lambda s: s.split("=", 1), configs)}
+    else:
+        return {}
+
+
 def user_configuration(cursor, module, user, configuration):
     """Updates the user's configuration parameters if necessary."""
     current_config_query = "SELECT rolconfig FROM pg_roles WHERE rolname = %(user)s;"
     cursor.execute(current_config_query, {"user": user})
     current_config = cursor.fetchone()
-    current_config_dict = {}
     changed = False
 
     if current_config is None:
         module.fail_json(msg="Can't find user %(user)s in 'pg_roles'" % {"user": user})
 
-    if current_config['rolconfig'] is not None:
-        for item in current_config['rolconfig']:
-            tokens = item.split("=", 1)
-            current_config_dict[tokens[0]] = tokens[1]
-
-    c = configuration.copy()
-    reset = []
-
-    # check each item in the current configuration
-    for key, value in current_config_dict.items():
-        # we already have the correct setting
-        if key in c and value == c[key]:
-            # so we can remove it from the list
-            del c[key]
-        # if the key is not in the list of settings we want
-        elif key not in c:
-            # we will reset it on the database
-            reset.append(key)
-        # if the setting is not in the db or has the wrong value, it will get updated
+    current_config_dict = parse_user_configuration(current_config['rolconfig'])
+    config_updates = compare_user_configurations(current_config_dict, configuration)
 
     try:
-        # It seems psycopg's prepared statements don't work with 'ALTER ROLE' as this point.
+        # It seems psycopg's prepared statements don't work with 'ALTER ROLE' at this point.
         # This is vulnerable to SQL-injections (added to docs) but I don't see a better way to do this.
-        for item in reset:
+        for item in config_updates["reset"]:
             query = 'ALTER ROLE "%(user)s" RESET "%(key)s";' % {"user": user, "key": item}
-            cursor.execute(query)
             executed_queries.append(query)
+            cursor.execute(query)
             changed = True
-        for key, value in c.items():
+        for key, value in config_updates["update"].items():
             query = 'ALTER ROLE "%(user)s" SET "%(key)s" TO \'%(value)s\';' % {"user": user, "key": key, "value": value}
-            cursor.execute(query)
             executed_queries.append(query)
+            cursor.execute(query)
             changed = True
     except psycopg.ProgrammingError as e:
         module.fail_json("Unable to update configuration for '%(user)s' due to: %(exception)s" %
@@ -1021,7 +1030,7 @@ def main():
         session_role=dict(type='str'),
         comment=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
-        configuration=dict(type='list', elements='str', default=[])
+        configuration=dict(type='list', elements='str', default=[]),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -1108,8 +1117,7 @@ def main():
                 changed = user_configuration(cursor, module, user, {}) or changed
             else:
                 try:
-                    # parses a list of "key=value" strings to a dict
-                    config = {t[0]: t[1] for t in map(lambda s: s.split("=", 1), configuration)}
+                    config = parse_user_configuration(configuration)
                     changed = user_configuration(cursor, module, user, config) or changed
                 except IndexError:
                     module.fail_json(

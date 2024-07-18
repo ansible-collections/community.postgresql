@@ -710,6 +710,42 @@
         - result.rowcount == 1
         - result.query_result[0]['rolconfig'] == ["work_mem=16MB"]
 
+  - name: Create user with the same configuration parameters to see that it returns not changed
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        - "work_mem=16MB"
+
+  - assert:
+      that:
+        - not result.changed
+
+  - name: Create user with configuration parameters in check mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        - "work_mem=32MB"
+
+  - assert:
+      that:
+        - result.changed
+
+  - name: Test that settings haven't been changed
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['rolconfig'] == ["work_mem=16MB"]
+
+
   - name: Test that an empty list of configuration doesn't change anything
     <<: *task_parameters
     postgresql_user:

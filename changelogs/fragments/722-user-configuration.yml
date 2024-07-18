@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - postgres - adds a feature to 'postgresql_user' that allows to manage user-specific default configuration
