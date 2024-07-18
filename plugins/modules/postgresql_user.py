@@ -951,6 +951,7 @@ def add_comment(cursor, user, comment, check_mode):
 
 
 def compare_user_configurations(current, desired):
+    """Compares two configurations and returns a list of values to reset as well as a dict of parameters to update."""
     reset = []
     update = desired.copy()
 
@@ -969,10 +970,16 @@ def compare_user_configurations(current, desired):
     return {"reset": reset, "update": update}
 
 
-def parse_user_configuration(configs):
+def parse_user_configuration(module, configs):
+    """Parses configuration from a list of 'key=value' strings like returned from the database to a dict."""
     if configs is not None:
-        # parses a list of "key=value" strings to a dict
-        return {t[0]: t[1] for t in map(lambda s: s.split("=", 1), configs)}
+        try:
+            # parses a list of "key=value" strings to a dict
+            return {t[0]: t[1] for t in map(lambda s: s.split("=", 1), configs)}
+        except IndexError:
+            module.fail_json(
+                msg="The 'configuration' option needs to contain a list of strings where each string "
+                "has the format 'key=value'.")
     else:
         return {}
 
@@ -987,7 +994,7 @@ def user_configuration(cursor, module, user, configuration):
     if current_config is None:
         module.fail_json(msg="Can't find user %(user)s in 'pg_roles'" % {"user": user})
 
-    current_config_dict = parse_user_configuration(current_config['rolconfig'])
+    current_config_dict = parse_user_configuration(module, current_config['rolconfig'])
     config_updates = compare_user_configurations(current_config_dict, configuration)
 
     try:
@@ -1116,13 +1123,8 @@ def main():
             if configuration[0].lower() == "purge":
                 changed = user_configuration(cursor, module, user, {}) or changed
             else:
-                try:
-                    config = parse_user_configuration(configuration)
-                    changed = user_configuration(cursor, module, user, config) or changed
-                except IndexError:
-                    module.fail_json(
-                        msg="The 'configuration' option needs to contain a list of strings where each string "
-                            "has the format 'key=value'.")
+                config = parse_user_configuration(module, configuration)
+                changed = user_configuration(cursor, module, user, config) or changed
 
     else:
         if user_exists(cursor, user):
