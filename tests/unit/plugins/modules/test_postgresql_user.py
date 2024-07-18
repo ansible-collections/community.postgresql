@@ -22,8 +22,7 @@ def test_parse_user_config_incorrect_input(mocker):
     faulty_input = ["key=value", "incorrect"]
     parse_user_configuration(module, faulty_input)
     module.fail_json.assert_called_once_with(
-        msg="The 'configuration' option needs to contain a list of strings where each string "
-            "has the format 'key=value'.")
+        msg="Expecting a list of strings where each string has the format 'key=value'.")
 
 
 def test_compare_user_configurations():

@@ -157,16 +157,23 @@ options:
   configuration:
     description:
       - Role-specific configuration parameters that would otherwise be set by C(ALTER ROLE user SET variable TO value;).
-      - Takes a list of strings like C(key=value) that is split on the first equal-sign.
+      - Takes a dict where the key is the name of the configuration parameter. If the key includes special characters
+        like C(.) and C(-), it needs to be quoted to ensure the YAML is valid.
       - Sets or updates any parameter in the list that is not present or has the wrong value in the database.
       - Removes any parameter from the user that is not listed here.
-      - If the first item is 'purge', all configuration parameters will be removed from the user.
-      - If omitted or empty, the current parameters of the user will not be changed.
+      - If omitted or empty, the current configuration of that user will only be purged if
+        O(purge_on_empty_configuration=true).
       - Using this will leave the O(user) as well as this parameter open to SQL-injections,
         parameters are checked if I(trust_input) is C(false).
-    type: list
-    elements: str
-    default: []
+    type: dict
+    default: {}
+    version_added: '3.5.0'
+  purge_on_empty_configuration:
+    description:
+      - If set to C(true), the user's default configuration parameters will be purged in case O(configuration) is empty
+        or omitted, otherwise existing parameters will not be modified if O(configuration) is empty.
+    type: bool
+    default: false
     version_added: '3.5.0'
 notes:
 - The module creates a user (role) with login privilege by default.
@@ -978,8 +985,7 @@ def parse_user_configuration(module, configs):
             return {t[0]: t[1] for t in map(lambda s: s.split("=", 1), configs)}
         except IndexError:
             module.fail_json(
-                msg="The 'configuration' option needs to contain a list of strings where each string "
-                "has the format 'key=value'.")
+                msg="Expecting a list of strings where each string has the format 'key=value'.")
     else:
         return {}
 
@@ -1037,7 +1043,8 @@ def main():
         session_role=dict(type='str'),
         comment=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
-        configuration=dict(type='list', elements='str', default=[]),
+        configuration=dict(type='dict', default={}),
+        purge_on_empty_configuration=dict(type='bool', default=False),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -1064,6 +1071,7 @@ def main():
     comment = module.params["comment"]
     session_role = module.params['session_role']
     configuration = module.params['configuration']
+    purge_on_empty_configuration = module.params['purge_on_empty_configuration']
 
     trust_input = module.params['trust_input']
     if not trust_input:
@@ -1118,13 +1126,11 @@ def main():
                 module.fail_json(msg='Unable to add comment on role: %s' % to_native(e),
                                  exception=traceback.format_exc())
 
-        if len(configuration) > 0:
-            # if the first argument is "purge", we remove all configuration parameters
-            if configuration[0].lower() == "purge":
-                changed = user_configuration(cursor, module, user, {}) or changed
-            else:
-                config = parse_user_configuration(module, configuration)
-                changed = user_configuration(cursor, module, user, config) or changed
+        # handle user-specific configuration-defaults
+        if len(configuration) == 0 and purge_on_empty_configuration:
+            changed = user_configuration(cursor, module, user, {}) or changed
+        elif len(configuration) > 0:
+            changed = user_configuration(cursor, module, user, configuration) or changed
 
     else:
         if user_exists(cursor, user):

@@ -694,7 +694,7 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       configuration:
-        - "work_mem=16MB"
+        work_mem: "16MB"
 
   - assert:
       that:
@@ -716,7 +716,20 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       configuration:
-        - "work_mem=16MB"
+        work_mem: "16MB"
+
+  - assert:
+      that:
+        - not result.changed
+
+  - name: Create user with the same configuration parameters and purge_on_empty_configuration to see that it returns not changed
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        work_mem: "16MB"
+      purge_on_empty_configuration: true
 
   - assert:
       that:
@@ -729,7 +742,7 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       configuration:
-        - "work_mem=32MB"
+        work_mem: "32MB"
 
   - assert:
       that:
@@ -751,7 +764,7 @@
     postgresql_user:
       <<: *pg_parameters
       name: '{{ test_user }}'
-      configuration: []
+      configuration: {}
 
   - assert:
       that:
@@ -772,14 +785,14 @@
     postgresql_user:
       <<: *pg_parameters
       name: '{{ test_user }}'
-      configuration:
-        - "purge"
+      configuration: {}
+      purge_on_empty_configuration: true
 
   - assert:
       that:
         - result.changed
 
-  - name: Test that settings are present
+  - name: Test that settings are removed
     <<: *task_parameters
     postgresql_query:
       query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
@@ -788,20 +801,6 @@
       that:
         - result.rowcount == 1
         - result.query_result[0]['rolconfig'] == None
-
-  - name: Test settings validation
-    <<: *task_parameters
-    postgresql_user:
-      <<: *pg_parameters
-      name: '{{ test_user }}'
-      configuration:
-        - "someinvalidsetting"
-    ignore_errors: true
-
-  - assert:
-      that:
-        - result is failed
-        - result.msg == "The 'configuration' option needs to contain a list of strings where each string has the format 'key=value'."
 
   ########################
   # Test trust_input param
