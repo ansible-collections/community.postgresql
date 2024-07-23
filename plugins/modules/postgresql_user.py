@@ -161,17 +161,17 @@ options:
         like C(.) and C(-), it needs to be quoted to ensure the YAML is valid.
       - Sets or updates any parameter in the list that is not present or has the wrong value in the database.
       - Removes any parameter from the user that is not listed here.
-      - If omitted or empty, the current configuration of that user will only be purged if
-        O(purge_on_empty_configuration=true).
+      - Parameters that are present in the database but are not included in this list will only be reset, if
+        O(reset_unspecified_configuration=true).
       - Using this will leave the O(user) as well as this parameter open to SQL-injections,
         parameters are checked if I(trust_input) is C(false).
     type: dict
     default: {}
     version_added: '3.5.0'
-  purge_on_empty_configuration:
+  reset_unspecified_configuration:
     description:
-      - If set to C(true), the user's default configuration parameters will be purged in case O(configuration) is empty
-        or omitted, otherwise existing parameters will not be modified if O(configuration) is empty.
+      - If set to C(true), the user's default configuration parameters will be reset in case they are not included in
+        O(configuration), otherwise existing parameters will not be modified if not included in O(configuration).
     type: bool
     default: false
     version_added: '3.5.0'
@@ -957,7 +957,7 @@ def add_comment(cursor, user, comment, check_mode):
         return False
 
 
-def compare_user_configurations(current, desired):
+def compare_user_configurations(current, desired, reset_unspec_config):
     """Compares two configurations and returns a list of values to reset as well as a dict of parameters to update."""
     reset = []
     update = desired.copy()
@@ -968,8 +968,8 @@ def compare_user_configurations(current, desired):
         if key in desired and value == desired[key]:
             # so we can remove it from the list
             del update[key]
-        # if the key is not in the list of settings we want
-        elif key not in desired:
+        # if the key is not in the list of settings we want, and we reset unspecified parameters
+        elif key not in desired and reset_unspec_config:
             # we will reset it on the database
             reset.append(key)
         # if the setting is not in the db or has the wrong value, it will get updated
@@ -990,7 +990,7 @@ def parse_user_configuration(module, configs):
         return {}
 
 
-def user_configuration(cursor, module, user, configuration):
+def user_configuration(cursor, module, user, configuration, reset_unspec_config):
     """Updates the user's configuration parameters if necessary."""
     current_config_query = "SELECT rolconfig FROM pg_roles WHERE rolname = %(user)s;"
     cursor.execute(current_config_query, {"user": user})
@@ -1001,7 +1001,7 @@ def user_configuration(cursor, module, user, configuration):
         module.fail_json(msg="Can't find user %(user)s in 'pg_roles'" % {"user": user})
 
     current_config_dict = parse_user_configuration(module, current_config['rolconfig'])
-    config_updates = compare_user_configurations(current_config_dict, configuration)
+    config_updates = compare_user_configurations(current_config_dict, configuration, reset_unspec_config)
 
     try:
         # It seems psycopg's prepared statements don't work with 'ALTER ROLE' at this point.
@@ -1044,7 +1044,7 @@ def main():
         comment=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
         configuration=dict(type='dict', default={}),
-        purge_on_empty_configuration=dict(type='bool', default=False),
+        reset_unspecified_configuration=dict(type='bool', default=False),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -1071,7 +1071,7 @@ def main():
     comment = module.params["comment"]
     session_role = module.params['session_role']
     configuration = module.params['configuration']
-    purge_on_empty_configuration = module.params['purge_on_empty_configuration']
+    reset_unspec_config = module.params['reset_unspecified_configuration']
 
     trust_input = module.params['trust_input']
     if not trust_input:
@@ -1127,10 +1127,7 @@ def main():
                                  exception=traceback.format_exc())
 
         # handle user-specific configuration-defaults
-        if len(configuration) == 0 and purge_on_empty_configuration:
-            changed = user_configuration(cursor, module, user, {}) or changed
-        elif len(configuration) > 0:
-            changed = user_configuration(cursor, module, user, configuration) or changed
+        changed = user_configuration(cursor, module, user, configuration, reset_unspec_config) or changed
 
     else:
         if user_exists(cursor, user):

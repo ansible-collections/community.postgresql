@@ -32,9 +32,16 @@ def test_compare_user_configurations():
     expected = {"reset": ["ghost_setting"],
                 "update": {"another_setting": "different_value"}
                 }
-    output = compare_user_configurations(current, desired)
+    output = compare_user_configurations(current, desired, True)
     assert output == expected
-    output = compare_user_configurations(current, {})
+    output = compare_user_configurations(current, {}, True)
     assert output == {"reset": ["some_setting", "another_setting", "ghost_setting"], "update": {}}
-    output = compare_user_configurations({}, desired)
+    output = compare_user_configurations({}, desired, True)
     assert output == {"reset": [], "update": desired}
+    output = compare_user_configurations(current, desired, False)
+    no_reset_expected = {"reset": [],
+                         "update": {"another_setting": "different_value"}
+                         }
+    assert output == no_reset_expected
+    output = compare_user_configurations(current, {}, False)
+    assert output == {"reset": [], "update": {}}

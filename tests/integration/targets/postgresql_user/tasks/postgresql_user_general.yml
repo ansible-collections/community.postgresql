@@ -722,14 +722,14 @@
       that:
         - not result.changed
 
-  - name: Create user with the same configuration parameters and purge_on_empty_configuration to see that it returns not changed
+  - name: Create user with the same configuration parameters and reset_unspecified_configuration to see that it returns not changed
     <<: *task_parameters
     postgresql_user:
       <<: *pg_parameters
       name: '{{ test_user }}'
       configuration:
         work_mem: "16MB"
-      purge_on_empty_configuration: true
+      reset_unspecified_configuration: true
 
   - assert:
       that:
@@ -758,7 +758,6 @@
         - result.rowcount == 1
         - result.query_result[0]['rolconfig'] == ["work_mem=16MB"]
 
-
   - name: Test that an empty list of configuration doesn't change anything
     <<: *task_parameters
     postgresql_user:
@@ -786,7 +785,7 @@
       <<: *pg_parameters
       name: '{{ test_user }}'
       configuration: {}
-      purge_on_empty_configuration: true
+      reset_unspecified_configuration: true
 
   - assert:
       that:
