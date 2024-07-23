@@ -304,13 +304,14 @@ EXAMPLES = r'''
     configuration:
       - work_mem=16MB
 
-# Make sure all configuration is purged for a user
+# Make sure user has only specified default configuration parameters
 - name: Clear all configuration for user
   community.postgresql.postgresql_user:
     name: appclient
     password: "secret123"
     configuration:
-      - purge
+      - work_mem=16MB
+    purge_unspecified_configuration: true
 '''
 
 RETURN = r'''
