@@ -163,7 +163,7 @@ def is_input_dangerous(string):
 
 
 def _check_input(module, *args):
-    """Recursively checks arguments for dangerous imputs."""
+    """Recursively checks arguments for dangerous inputs."""
     needs_to_check = args
 
     dangerous_elements = []
