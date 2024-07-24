@@ -162,8 +162,8 @@ def is_input_dangerous(string):
     return False
 
 
-def check_input(module, *args):
-    """Wrapper for is_input_dangerous function."""
+def _check_input(module, *args):
+    """Recursively checks arguments for dangerous imputs."""
     needs_to_check = args
 
     dangerous_elements = []
@@ -174,10 +174,17 @@ def check_input(module, *args):
                 if is_input_dangerous(elem):
                     dangerous_elements.append(elem)
 
-            elif isinstance(elem, list):
+            elif isinstance(elem, list) or isinstance(elem, tuple):
                 for e in elem:
-                    if is_input_dangerous(e):
-                        dangerous_elements.append(e)
+                    # check recursively in case of nested lists
+                    dangerous_elements += _check_input(module, e)
+
+            elif isinstance(elem, dict):
+                for k, v in elem.items():
+                    if is_input_dangerous(k):
+                        dangerous_elements.append(k)
+                    # recursively check values, as they might be dicts, as well
+                    dangerous_elements += _check_input(module, v)
 
             elif elem is None or isinstance(elem, bool):
                 pass
@@ -189,6 +196,12 @@ def check_input(module, *args):
         except ValueError as e:
             module.fail_json(msg=to_native(e))
 
+    return dangerous_elements
+
+
+def check_input(module, *args):
+    """Wrapper for is_input_dangerous function."""
+
+    dangerous_elements = _check_input(module, *args)
     if dangerous_elements:
-        module.fail_json(msg="Passed input '%s' is "
-                             "potentially dangerous" % ', '.join(dangerous_elements))
+        module.fail_json(msg="Passed input '%s' is potentially dangerous" % ', '.join(dangerous_elements))
