@@ -3,6 +3,9 @@
 # Copyright: Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
 from plugins.module_utils.database import check_input
 
 
@@ -22,5 +25,3 @@ def test_check_input_nested_inputs(mocker):
     check_input(module, *dangerous_elements)
     module.fail_json.assert_called_once_with(
         msg="Passed input ';DROP DATABASE;--, ;ALTER ROLE' is potentially dangerous")
-
-
