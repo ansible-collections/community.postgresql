@@ -302,16 +302,16 @@ EXAMPLES = r'''
     name: appclient
     password: "secret123"
     configuration:
-      - work_mem=16MB
+      work_mem: "16MB"
 
 # Make sure user has only specified default configuration parameters
-- name: Clear all configuration for user
+- name: Clear all configuration that is not explicitly defined for user
   community.postgresql.postgresql_user:
     name: appclient
     password: "secret123"
     configuration:
-      - work_mem=16MB
-    purge_unspecified_configuration: true
+      work_mem: "16MB"
+    reset_unspecified_configuration: true
 '''
 
 RETURN = r'''
