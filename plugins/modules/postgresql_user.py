@@ -1105,6 +1105,12 @@ def main():
 
     srv_version = get_server_version(db_connection)
 
+    # sanitize configuration
+    for key, value in configuration.items():
+        if '"' in key or '\'' in key:
+            module.fail_json("The key of a configuration may not contain single or double quotes")
+        configuration[key] = value.replace("'", "''")
+
     try:
         role_attr_flags = parse_role_attrs(role_attr_flags, srv_version)
     except InvalidFlagsError as e:

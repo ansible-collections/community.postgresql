@@ -801,6 +801,34 @@
         - result.rowcount == 1
         - result.query_result[0]['rolconfig'] == None
 
+  - name: Test errors on not allowed characters
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        some"key: value
+    ignore_errors: true
+
+  - assert:
+      that:
+        - result is failed
+        - result.msg == "The key of a configuration may not contain single or double quotes"
+
+  - name: Test errors on not allowed characters
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        some'key: value
+    ignore_errors: true
+
+  - assert:
+      that:
+        - result is failed
+        - result.msg == "The key of a configuration may not contain single or double quotes"
+
   ########################
   # Test trust_input param
 
