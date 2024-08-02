@@ -822,10 +822,12 @@
     postgresql_user:
       <<: *pg_parameters
       name: '{{ dangerous_name }}'
+    ignore_errors: true
 
   - assert:
       that:
-      - result is changed
+      - result is failed
+      - result.msg == 'User escaped identifiers must escape extra quotes'
 
   ########################################################################
   # https://github.com/ansible-collections/community.postgresql/issues/122

@@ -6,7 +6,10 @@
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
-from plugins.modules.postgresql_user import parse_user_configuration, compare_user_configurations
+
+import pytest
+
+from plugins.modules.postgresql_user import parse_user_configuration, compare_user_configurations, _pg_quote_user
 
 
 def test_parse_user_configuration(mocker):
@@ -48,3 +51,26 @@ def test_compare_user_configurations():
     assert output == no_reset_expected
     output = compare_user_configurations(current, {}, False)
     assert output == {"reset": [], "update": {}}
+
+
+def test__pg_quote_user(mocker):
+    """Tests if quoting users works correctly"""
+    module = mocker.MagicMock()
+    output = _pg_quote_user('someuser', module)
+    assert output == '"someuser"'
+    output = _pg_quote_user('"someuser"', module)
+    assert output == '"someuser"'
+    output = _pg_quote_user('some.user.with.dots', module)
+    assert output == '"some.user.with.dots"'
+    output = _pg_quote_user('some.user.with\"\"quotes', module)
+    assert output == '"some.user.with\"\"quotes"'
+    _pg_quote_user('someuser"', module)
+    module.fail_json.assert_called_once_with("The value of the user-field can't contain a double-quote in the end "
+                                             "if it doesn't start with one and vice-versa.")
+    module = mocker.MagicMock()
+    _pg_quote_user('"someuser', module)
+    module.fail_json.assert_called_once_with("The value of the user-field can't contain a double-quote in the end "
+                                             "if it doesn't start with one and vice-versa.")
+    module = mocker.MagicMock()
+    with pytest.raises(Exception, match='User escaped identifiers must escape extra quotes'):
+        _pg_quote_user('some.user.with\"illegal.quotes', module)
