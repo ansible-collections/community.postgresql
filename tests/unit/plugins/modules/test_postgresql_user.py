@@ -7,9 +7,15 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import sys
+
 import pytest
 
-from plugins.modules.postgresql_user import parse_user_configuration, compare_user_configurations, _pg_quote_user
+if sys.version_info[0] == 3:
+    from plugins.modules.postgresql_user import parse_user_configuration, compare_user_configurations, _pg_quote_user
+elif sys.version_info[0] == 2:
+    from ansible_collections.community.postgresql.plugins.modules.postgresql_user import parse_user_configuration, \
+        compare_user_configurations, _pg_quote_user
 
 
 def test_parse_user_configuration(mocker):

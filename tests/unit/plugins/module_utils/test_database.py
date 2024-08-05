@@ -6,14 +6,20 @@
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
-from plugins.module_utils.database import check_input
+
+import sys
+
+if sys.version_info[0] == 3:
+    from plugins.module_utils.database import check_input
+elif sys.version_info[0] == 2:
+    from ansible_collections.community.postgresql.plugins.module_utils.database import check_input
 
 
 def test_check_input(mocker):
     module = mocker.MagicMock()
     check_input(module, "teststring", 3, True, ["teststring", ["teststring"]], {"test": "string"})
     module.fail_json.assert_not_called()
-    dangerous_elements = (";DROP DATABASE;--", )
+    dangerous_elements = (";DROP DATABASE;--",)
     check_input(module, *dangerous_elements)
     module.fail_json.assert_called_once_with(msg="Passed input '%s' is potentially dangerous"
                                                  % ', '.join(dangerous_elements))
