@@ -685,6 +685,150 @@
       that:
       - result is not changed
 
+  ###############################
+  # test configuration parameters
+
+  - name: Create user with configuration parameters
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        work_mem: "16MB"
+
+  - assert:
+      that:
+        - result.changed
+
+  - name: Test that settings are present
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['rolconfig'] == ["work_mem=16MB"]
+
+  - name: Create user with the same configuration parameters to see that it returns not changed
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        work_mem: "16MB"
+
+  - assert:
+      that:
+        - not result.changed
+
+  - name: Create user with the same configuration parameters and reset_unspecified_configuration to see that it returns not changed
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        work_mem: "16MB"
+      reset_unspecified_configuration: true
+
+  - assert:
+      that:
+        - not result.changed
+
+  - name: Create user with configuration parameters in check mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        work_mem: "32MB"
+
+  - assert:
+      that:
+        - result.changed
+
+  - name: Test that settings haven't been changed
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['rolconfig'] == ["work_mem=16MB"]
+
+  - name: Test that an empty list of configuration doesn't change anything
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration: {}
+
+  - assert:
+      that:
+        - not result.changed
+
+  - name: Test that settings are present
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['rolconfig'] == ["work_mem=16MB"]
+
+  - name: Purge configuration parameters from user
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration: {}
+      reset_unspecified_configuration: true
+
+  - assert:
+      that:
+        - result.changed
+
+  - name: Test that settings are removed
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['rolconfig'] == None
+
+  - name: Test errors on not allowed characters
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        some"key: value
+    ignore_errors: true
+
+  - assert:
+      that:
+        - result is failed
+        - result.msg == "The key of a configuration may not contain single or double quotes"
+
+  - name: Test errors on not allowed characters
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration:
+        some'key: value
+    ignore_errors: true
+
+  - assert:
+      that:
+        - result is failed
+        - result.msg == "The key of a configuration may not contain single or double quotes"
+
   ########################
   # Test trust_input param
 
@@ -706,10 +850,12 @@
     postgresql_user:
       <<: *pg_parameters
       name: '{{ dangerous_name }}'
+    ignore_errors: true
 
   - assert:
       that:
-      - result is changed
+      - result is failed
+      - result.msg == 'User escaped identifiers must escape extra quotes'
 
   ########################################################################
   # https://github.com/ansible-collections/community.postgresql/issues/122

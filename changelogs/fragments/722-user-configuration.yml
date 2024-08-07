@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - postgresql_user - adds the ``configuration`` argument that allows to manage user-specific default configuration
+    (https://github.com/ansible-collections/community.postgresql/issues/598).

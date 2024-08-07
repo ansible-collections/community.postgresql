@@ -154,6 +154,29 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+  configuration:
+    description:
+      - Role-specific configuration parameters that would otherwise be set by C(ALTER ROLE user SET variable TO value;).
+      - Takes a dict where the key is the name of the configuration parameter. If the key includes special characters
+        like C(.) and C(-), it needs to be quoted to ensure the YAML is valid.
+      - Sets or updates any parameter in the list that is not present or has the wrong value in the database.
+      - Removes any parameter from the user that is not listed here.
+      - Parameters that are present in the database but are not included in this list will only be reset, if
+        O(reset_unspecified_configuration=true).
+      - Inputs to O(user) as well as keys and values in this parameter are quoted by the module. If you require the
+        user to contain a C("), you need to double it, otherwise the module will fail. C(") and C(') are not allowed in
+        configuration keys and any C(') in the value of a configuration will be escaped by this module.
+        Additionally, parameters and values are checked if O(trust_input) is C(false).
+    type: dict
+    default: {}
+    version_added: '3.5.0'
+  reset_unspecified_configuration:
+    description:
+      - If set to C(true), the user's default configuration parameters will be reset in case they are not included in
+        O(configuration), otherwise existing parameters will not be modified if not included in O(configuration).
+    type: bool
+    default: false
+    version_added: '3.5.0'
 notes:
 - The module creates a user (role) with login privilege by default.
   Use C(NOLOGIN) I(role_attr_flags) to change this behaviour.
@@ -274,6 +297,23 @@ EXAMPLES = r'''
   community.postgresql.postgresql_user:
     name: monitoring
     priv: 'pg_catalog.pg_stat_database:SELECT'
+
+# Create a user and set a default-configuration that is active when they start a session
+- name: Create a user with config-parameter
+  community.postgresql.postgresql_user:
+    name: appclient
+    password: "secret123"
+    configuration:
+      work_mem: "16MB"
+
+# Make sure user has only specified default configuration parameters
+- name: Clear all configuration that is not explicitly defined for user
+  community.postgresql.postgresql_user:
+    name: appclient
+    password: "secret123"
+    configuration:
+      work_mem: "16MB"
+    reset_unspecified_configuration: true
 '''
 
 RETURN = r'''
@@ -378,13 +418,13 @@ def user_exists(cursor, user):
     return cursor.rowcount > 0
 
 
-def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_limit):
+def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_limit, module):
     """Create a new database user (role)."""
     # Note: role_attr_flags escaped by parse_role_attrs and encrypted is a
     # literal
     query_password_data = dict(password=password, expires=expires)
-    query = ['CREATE USER "%(user)s"' %
-             {"user": user}]
+    query = ['CREATE USER %(user)s' %
+             {"user": _pg_quote_user(user, module)}]
     if password is not None and password != '':
         query.append("WITH %(crypt)s" % {"crypt": encrypted})
         query.append("PASSWORD %(password)s")
@@ -543,7 +583,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
         if not pwchanging and not role_attr_flags_changing and not expires_changing and not conn_limit_changing:
             return False
 
-        alter = ['ALTER USER "%(user)s"' % {"user": user}]
+        alter = ['ALTER USER %(user)s' % {"user": _pg_quote_user(user, module)}]
         if pwchanging:
             if password != '':
                 alter.append("WITH %(crypt)s" % {"crypt": encrypted})
@@ -602,8 +642,8 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
         if not role_attr_flags_changing:
             return False
 
-        alter = ['ALTER USER "%(user)s"' %
-                 {"user": user}]
+        alter = ['ALTER USER %(user)s' %
+                 {"user": _pg_quote_user(user, module)}]
         if role_attr_flags:
             alter.append('WITH %s' % role_attr_flags)
 
@@ -632,11 +672,11 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
     return changed
 
 
-def user_delete(cursor, user):
+def user_delete(cursor, user, module):
     """Try to remove a user. Returns True if successful otherwise False"""
     cursor.execute("SAVEPOINT ansible_pgsql_user_delete")
     try:
-        query = 'DROP USER "%s"' % user
+        query = 'DROP USER %s' % _pg_quote_user(user, module)
         executed_queries.append(query)
         cursor.execute(query)
     except Exception:
@@ -920,6 +960,86 @@ def add_comment(cursor, user, comment, check_mode):
         return False
 
 
+def compare_user_configurations(current, desired, reset_unspec_config):
+    """Compares two configurations and returns a list of values to reset as well as a dict of parameters to update."""
+    reset = []
+    update = desired.copy()
+
+    # check each item in the current configuration
+    for key, value in current.items():
+        # we already have the correct setting
+        if key in desired and value == desired[key]:
+            # so we can remove it from the list
+            del update[key]
+        # if the key is not in the list of settings we want, and we reset unspecified parameters
+        elif key not in desired and reset_unspec_config:
+            # we will reset it on the database
+            reset.append(key)
+        # if the setting is not in the db or has the wrong value, it will get updated
+
+    return {"reset": reset, "update": update}
+
+
+def parse_user_configuration(module, configs):
+    """Parses configuration from a list of 'key=value' strings like returned from the database to a dict."""
+    if configs is not None:
+        try:
+            # parses a list of "key=value" strings to a dict
+            return {t[0]: t[1] for t in map(lambda s: s.split("=", 1), configs)}
+        except IndexError:
+            module.fail_json(
+                msg="Expecting a list of strings where each string has the format 'key=value'.")
+    else:
+        return {}
+
+
+def user_configuration(cursor, module, user, configuration, reset_unspec_config):
+    """Updates the user's configuration parameters if necessary."""
+    current_config_query = "SELECT rolconfig FROM pg_roles WHERE rolname = %(user)s;"
+    cursor.execute(current_config_query, {"user": user})
+    current_config = cursor.fetchone()
+    changed = False
+
+    if current_config is None:
+        module.fail_json(msg="Can't find user %(user)s in 'pg_roles'" % {"user": user})
+
+    current_config_dict = parse_user_configuration(module, current_config['rolconfig'])
+    config_updates = compare_user_configurations(current_config_dict, configuration, reset_unspec_config)
+
+    try:
+        # It seems psycopg's prepared statements don't work with 'ALTER ROLE' at this point.
+        # This is vulnerable to SQL-injections (added to docs) but I don't see a better way to do this.
+        for item in config_updates["reset"]:
+            query = 'ALTER ROLE %(user)s RESET "%(key)s";' % {"user": _pg_quote_user(user, module), "key": item}
+            executed_queries.append(query)
+            cursor.execute(query)
+            changed = True
+        for key, value in config_updates["update"].items():
+            query = ('ALTER ROLE %(user)s SET "%(key)s" TO \'%(value)s\';' %
+                     {"user": _pg_quote_user(user, module), "key": key, "value": value})
+            executed_queries.append(query)
+            cursor.execute(query)
+            changed = True
+    except psycopg.ProgrammingError as e:
+        module.fail_json("Unable to update configuration for '%(user)s' due to: %(exception)s" %
+                         {"user": user, "exception": e})
+    return changed
+
+
+def _pg_quote_user(user, module):
+    """correctly escape users, pg_quote_identifiers will fail if the user contains a dot but is not pre-quoted"""
+    if user[0] != '"' and user[-1] != '"':
+        # we pre-quote users to make sure pg_quote_identifiers doesn't fail on dots
+        return pg_quote_identifier('"%s"' % user, 'role')
+    elif (user[0] == '"' and user[-1] != '"') or (user[0] != '"' and user[-1] == '"'):
+        module.fail_json("The value of the user-field can't contain a double-quote in the end "
+                         "if it doesn't start with one and vice-versa.")
+    else:
+        # user is already quoted, we run it through pg_quote_identifiers to make sure it doesn't contain any lonely
+        # double-quotes to prevent SQL-injections
+        return pg_quote_identifier(user, 'role')
+
+
 # ===========================================
 # Module execution.
 #
@@ -941,6 +1061,8 @@ def main():
         session_role=dict(type='str'),
         comment=dict(type='str', default=None),
         trust_input=dict(type='bool', default=True),
+        configuration=dict(type='dict', default={}),
+        reset_unspecified_configuration=dict(type='bool', default=False),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -966,12 +1088,14 @@ def main():
     role_attr_flags = module.params["role_attr_flags"]
     comment = module.params["comment"]
     session_role = module.params['session_role']
+    configuration = module.params['configuration']
+    reset_unspec_config = module.params['reset_unspecified_configuration']
 
     trust_input = module.params['trust_input']
     if not trust_input:
         # Check input for potentially dangerous elements:
         check_input(module, user, password, privs, expires,
-                    role_attr_flags, comment, session_role, comment)
+                    role_attr_flags, comment, session_role, comment, configuration)
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -980,6 +1104,12 @@ def main():
     cursor = db_connection.cursor(**pg_cursor_args)
 
     srv_version = get_server_version(db_connection)
+
+    # sanitize configuration
+    for key, value in configuration.items():
+        if '"' in key or '\'' in key:
+            module.fail_json("The key of a configuration may not contain single or double quotes")
+        configuration[key] = value.replace("'", "''")
 
     try:
         role_attr_flags = parse_role_attrs(role_attr_flags, srv_version)
@@ -1000,7 +1130,7 @@ def main():
         else:
             try:
                 changed = user_add(cursor, user, password,
-                                   role_attr_flags, encrypted, expires, conn_limit)
+                                   role_attr_flags, encrypted, expires, conn_limit, module)
             except psycopg.ProgrammingError as e:
                 module.fail_json(msg="Unable to add user with given requirement "
                                      "due to : %s" % to_native(e),
@@ -1020,6 +1150,9 @@ def main():
                 module.fail_json(msg='Unable to add comment on role: %s' % to_native(e),
                                  exception=traceback.format_exc())
 
+        # handle user-specific configuration-defaults
+        changed = user_configuration(cursor, module, user, configuration, reset_unspec_config) or changed
+
     else:
         if user_exists(cursor, user):
             if module.check_mode:
@@ -1029,7 +1162,7 @@ def main():
                 # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
                 try:
                     changed = revoke_privileges(cursor, user, privs)
-                    user_removed = user_delete(cursor, user)
+                    user_removed = user_delete(cursor, user, module)
                 except SQLParseError as e:
                     module.fail_json(msg=to_native(e), exception=traceback.format_exc())
                 changed = changed or user_removed
