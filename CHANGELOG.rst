@@ -4,6 +4,27 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v3.5.0
+======
+
+Release Summary
+---------------
+
+This is a minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- postgres - add support for postgres ``infinity`` timestamps by replacing them with ``datetime.min`` / ``datetime.max`` values (https://github.com/ansible-collections/community.postgresql/pull/714).
+- postgresql_publication - add the ``tables_in_schema`` argument to implement ``FOR TABLES IN SCHEMA`` feature (https://github.com/ansible-collections/community.postgresql/issues/709).
+- postgresql_user - adds the ``configuration`` argument that allows to manage user-specific default configuration (https://github.com/ansible-collections/community.postgresql/issues/598).
+
+Bugfixes
+--------
+
+- postgres - psycopg2 automatically sets the datestyle on the connection to iso whenever it encounters a datestyle configuration it doesn't recognize, but psycopg3 does not. Fix now enforces iso datestyle when using psycopg3 (https://github.com/ansible-collections/community.postgresql/issues/711).
 
 v3.4.1
 ======
@@ -582,7 +603,6 @@ Release Summary
 This is the first proper release of the ``community.postgresql`` collection which is needed to include the collection in Ansible.
 This changelog does not contain any changes because there are no changes made since release 0.1.0.
 
-
 v0.1.0
 ======
 
@@ -592,7 +612,6 @@ Release Summary
 The ``community.postgresql`` continues the work on the Ansible PostgreSQL
 modules from their state in ``community.general`` 1.2.0.
 The changes listed here are thus relative to the modules ``community.general.postgresql_*``.
-
 
 Minor Changes
 -------------
