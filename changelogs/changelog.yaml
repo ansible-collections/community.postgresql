@@ -701,3 +701,29 @@ releases:
     - 690-revoke-functions-from-user.yaml
     - 693-idx-consider-schema.yaml
     release_date: '2024-05-17'
+  3.5.0:
+    changes:
+      bugfixes:
+      - postgres - psycopg2 automatically sets the datestyle on the connection to
+        iso whenever it encounters a datestyle configuration it doesn't recognize,
+        but psycopg3 does not. Fix now enforces iso datestyle when using psycopg3
+        (https://github.com/ansible-collections/community.postgresql/issues/711).
+      minor_changes:
+      - postgres - add support for postgres ``infinity`` timestamps by replacing them
+        with ``datetime.min`` / ``datetime.max`` values (https://github.com/ansible-collections/community.postgresql/pull/714).
+      - postgresql_publication - add the ``tables_in_schema`` argument to implement
+        ``FOR TABLES IN SCHEMA`` feature (https://github.com/ansible-collections/community.postgresql/issues/709).
+      - postgresql_user - adds the ``configuration`` argument that allows to manage
+        user-specific default configuration (https://github.com/ansible-collections/community.postgresql/issues/598).
+      release_summary: 'This is a minor release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 0-postgresql_publication.yml
+    - 3.5.0.yml
+    - 714-infinity.yaml
+    - 715-datestyle.yaml
+    - 722-user-configuration.yml
+    release_date: '2024-08-21'
