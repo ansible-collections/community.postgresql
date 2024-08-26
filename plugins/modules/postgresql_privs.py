@@ -549,11 +549,11 @@ class Connection(object):
             query = """SELECT relname
                        FROM pg_catalog.pg_class c
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-                       WHERE nspname = %s AND relkind in ('r', 'v', 'm', 'p')"""
+                       WHERE nspname = %s AND relkind in ('r', 'v', 'm', 'p', 'f')"""
             self.execute(query, (schema,))
         else:
             query = ("SELECT relname FROM pg_catalog.pg_class "
-                     "WHERE relkind in ('r', 'v', 'm', 'p')")
+                     "WHERE relkind in ('r', 'v', 'm', 'p', 'f')")
             self.execute(query)
         return [t["relname"] for t in self.cursor.fetchall()]
 
@@ -621,12 +621,12 @@ class Connection(object):
             query = """SELECT relacl::text
                        FROM pg_catalog.pg_class c
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-                       WHERE nspname = %s AND relkind in ('r','p','v','m') AND relname = ANY (%s)
+                       WHERE nspname = %s AND relkind in ('r','p','v','m','f') AND relname = ANY (%s)
                        ORDER BY relname"""
             self.execute(query, (schema, tables))
         else:
             query = ("SELECT relacl::text FROM pg_catalog.pg_class "
-                     "WHERE relkind in ('r','p','v','m') AND relname = ANY (%s) "
+                     "WHERE relkind in ('r','p','v','m','f') AND relname = ANY (%s) "
                      "ORDER BY relname")
             self.execute(query)
         return [t["relacl"] for t in self.cursor.fetchall()]
