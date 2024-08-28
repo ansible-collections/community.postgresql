@@ -591,7 +591,7 @@ class PgSubscription():
                              "WHERE table_schema = 'pg_catalog' "
                              "AND table_name = 'pg_subscription'"
                              "AND column_name IN ('subenabled','subconninfo','subslotname','subsynccommit','subpublications')")
-        columns_result = exec_sql(self,columns_sub_table,query_params={'name': self.name, 'db': self.db}, add_to_executed=False)
+        columns_result = exec_sql(self, columns_sub_table, query_params={'name': self.name, 'db': self.db}, add_to_executed=False)
         columns = ", ".join(["s.%s" % column['column_name'] for column in columns_result])
         query = ("SELECT obj_description(s.oid, 'pg_subscription') AS comment, "
                  "d.datname, r.rolname,"
@@ -739,20 +739,20 @@ def main():
                                           check_mode=module.check_mode)
 
         else:
-            if hasattr(subscription,'connparams'):
+            if hasattr(subscription, 'connparams'):
                 if connparams:
                     connparams = cast_connparams(connparams)
 
                 changed = subscription.update(connparams,
-                                            publications,
-                                            subsparams,
-                                            check_mode=module.check_mode)
+                                              publications,
+                                              subsparams,
+                                              check_mode=module.check_mode)
             else:
                 module.warn("'connparams' is ignored when existing subscription connparms are unknowable")
                 changed = subscription.update(False,
-                                            publications,
-                                            subsparams,
-                                            check_mode=module.check_mode)
+                                              publications,
+                                              subsparams,
+                                              check_mode=module.check_mode)
 
         if owner and subscription.attrs['owner'] != owner:
             changed = subscription.set_owner(owner, check_mode=module.check_mode) or changed
