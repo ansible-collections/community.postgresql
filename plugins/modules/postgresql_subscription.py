@@ -739,7 +739,7 @@ def main():
                                           check_mode=module.check_mode)
 
         else:
-            if hasattr(subscription, 'connparams'):
+            if subscription.attrs['conninfo'] != {}:
                 if connparams:
                     connparams = cast_connparams(connparams)
 
