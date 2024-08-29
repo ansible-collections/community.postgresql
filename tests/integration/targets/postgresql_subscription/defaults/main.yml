@@ -1,4 +1,5 @@
 pg_user: postgres
+pg_limited_user: postgres_limited
 db_default: postgres
 
 test_table1: acme1
