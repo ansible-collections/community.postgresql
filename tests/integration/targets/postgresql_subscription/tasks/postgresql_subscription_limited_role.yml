@@ -179,4 +179,3 @@
       name: '{{ test_subscription }}'
       state: absent
   
-  when: postgres_version_resp.stdout is version('16.0', '>=')
