@@ -595,14 +595,13 @@ class PgSubscription():
         columns_result = exec_sql(self, columns_sub_table, query_params={'name': self.name, 'db': self.db}, add_to_executed=False)
         columns = ", ".join(["s.%s" % column['column_name'] for column in columns_result])
         query = ("SELECT obj_description(s.oid, 'pg_subscription') AS comment, "
-                 "d.datname, r.rolname,"
-                 "%(columns)s "
+                 "d.datname, r.rolname," + columns + " "
                  "FROM pg_catalog.pg_subscription s "
                  "JOIN pg_catalog.pg_database d "
                  "ON s.subdbid = d.oid "
                  "JOIN pg_catalog.pg_roles AS r "
                  "ON s.subowner = r.oid "
-                 "WHERE s.subname = '%(name)s' AND d.datname = '%(db)s'" % {'columns': columns, 'name': self.name, 'db': self.db})
+                 "WHERE s.subname = %(name)s AND d.datname = %(db)s")
 
         result = exec_sql(self, query, query_params={'name': self.name, 'db': self.db}, add_to_executed=False)
         if result:
