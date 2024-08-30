@@ -62,6 +62,7 @@ options:
     - The connection dict param-value to connect to the publisher.
     - For more information see U(https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
     - Ignored when I(state) is not C(present).
+    - Ignored when an existing subscription's connection parameters are not available from the server (such as in CloudSQL).
     type: dict
   cascade:
     description:
@@ -748,7 +749,7 @@ def main():
                                               subsparams,
                                               check_mode=module.check_mode)
             else:
-                module.warn("'connparams' is ignored when existing subscription connparms are unknowable")
+                module.warn("'connparams' is ignored because pg_subscription.subconninfo is not accessible in your instance.")
                 changed = subscription.update(False,
                                               publications,
                                               subsparams,
