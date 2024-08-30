@@ -47,6 +47,7 @@ options:
     - The C(type) choice is available since Ansible version 2.10.
     - The C(procedure) is supported since collection version 1.3.0 and PostgreSQL 11.
     - The C(parameter) is supported since collection version 3.1.0 and PostgreSQL 15.
+    - The C(table) is inclusive of foreign tables since collection version 3.6.0.
     type: str
     default: table
     choices: [ database, default_privs, foreign_data_wrapper, foreign_server, function,
@@ -549,11 +550,11 @@ class Connection(object):
             query = """SELECT relname
                        FROM pg_catalog.pg_class c
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-                       WHERE nspname = %s AND relkind in ('r', 'v', 'm', 'p')"""
+                       WHERE nspname = %s AND relkind in ('r', 'v', 'm', 'p', 'f')"""
             self.execute(query, (schema,))
         else:
             query = ("SELECT relname FROM pg_catalog.pg_class "
-                     "WHERE relkind in ('r', 'v', 'm', 'p')")
+                     "WHERE relkind in ('r', 'v', 'm', 'p', 'f')")
             self.execute(query)
         return [t["relname"] for t in self.cursor.fetchall()]
 
@@ -621,12 +622,12 @@ class Connection(object):
             query = """SELECT relacl::text
                        FROM pg_catalog.pg_class c
                        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-                       WHERE nspname = %s AND relkind in ('r','p','v','m') AND relname = ANY (%s)
+                       WHERE nspname = %s AND relkind in ('r','p','v','m','f') AND relname = ANY (%s)
                        ORDER BY relname"""
             self.execute(query, (schema, tables))
         else:
             query = ("SELECT relacl::text FROM pg_catalog.pg_class "
-                     "WHERE relkind in ('r','p','v','m') AND relname = ANY (%s) "
+                     "WHERE relkind in ('r','p','v','m','f') AND relname = ANY (%s) "
                      "ORDER BY relname")
             self.execute(query)
         return [t["relacl"] for t in self.cursor.fetchall()]
