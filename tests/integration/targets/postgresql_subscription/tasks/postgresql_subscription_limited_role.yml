@@ -85,10 +85,10 @@
       - result.final_state.synccommit == true
       - result.final_state.slotname == '{{ test_subscription }}'
       - result.final_state.conninfo == {}
-  
+
   - name: Check the comment
     <<: *task_parameters
-    postgresql_query: 
+    postgresql_query:
       <<: *pg_parameters
       login_port: '{{ replica_port }}'
       query: "SELECT obj_description(s.oid, 'pg_subscription') AS comment FROM pg_subscription AS s WHERE s.subname = 'test'"
@@ -156,10 +156,10 @@
       - result.final_state.synccommit == true
       - result.final_state.slotname == '{{ test_subscription }}'
       - result.final_state.conninfo == {}
-  
+
   - name: Check the comment
     <<: *task_parameters
-    postgresql_query: 
+    postgresql_query:
       <<: *pg_parameters
       login_port: '{{ replica_port }}'
       query: "SELECT obj_description(s.oid, 'pg_subscription') AS comment FROM pg_subscription AS s WHERE s.subname = 'test'"
