@@ -1,4 +1,4 @@
-pg_ver: 15
+pg_ver: 16
 
 postgresql_packages:
   - "apt-utils"

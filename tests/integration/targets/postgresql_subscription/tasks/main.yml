@@ -8,3 +8,6 @@
 - import_tasks: setup_publication.yml
 
 - import_tasks: postgresql_subscription_initial.yml
+
+- import_tasks: postgresql_subscription_limited_role.yml
+  when: postgres_version_resp.stdout is version('16.0', '>=')

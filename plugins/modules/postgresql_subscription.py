@@ -62,6 +62,7 @@ options:
     - The connection dict param-value to connect to the publisher.
     - For more information see U(https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
     - Ignored when I(state) is not C(present).
+    - Ignored when an existing subscription's connection parameters are not available from the server (such as in CloudSQL).
     type: dict
   cascade:
     description:
@@ -586,10 +587,16 @@ class PgSubscription():
         Returns:
             Dict with subscription information if successful, False otherwise.
         """
+        columns_sub_table = ("SELECT column_name "
+                             "FROM information_schema.columns "
+                             "WHERE table_schema = 'pg_catalog' "
+                             "AND table_name = 'pg_subscription'"
+                             "AND column_name IN ('subenabled','subconninfo','subslotname','subsynccommit','subpublications')")
+        columns_result = exec_sql(self, columns_sub_table, query_params={'name': self.name, 'db': self.db}, add_to_executed=False)
+        columns = ", ".join(["s.%s" % column['column_name'] for column in columns_result])
         query = ("SELECT obj_description(s.oid, 'pg_subscription') AS comment, "
-                 "d.datname, r.rolname, s.subenabled, "
-                 "s.subconninfo, s.subslotname, s.subsynccommit, "
-                 "s.subpublications FROM pg_catalog.pg_subscription s "
+                 "d.datname, r.rolname," + columns + " "
+                 "FROM pg_catalog.pg_subscription s "
                  "JOIN pg_catalog.pg_database d "
                  "ON s.subdbid = d.oid "
                  "JOIN pg_catalog.pg_roles AS r "
@@ -732,13 +739,20 @@ def main():
                                           check_mode=module.check_mode)
 
         else:
-            if connparams:
-                connparams = cast_connparams(connparams)
+            if subscription.attrs['conninfo'] != {}:
+                if connparams:
+                    connparams = cast_connparams(connparams)
 
-            changed = subscription.update(connparams,
-                                          publications,
-                                          subsparams,
-                                          check_mode=module.check_mode)
+                changed = subscription.update(connparams,
+                                              publications,
+                                              subsparams,
+                                              check_mode=module.check_mode)
+            else:
+                module.warn("'connparams' is ignored because pg_subscription.subconninfo is not accessible in your instance.")
+                changed = subscription.update(False,
+                                              publications,
+                                              subsparams,
+                                              check_mode=module.check_mode)
 
         if owner and subscription.attrs['owner'] != owner:
             changed = subscription.set_owner(owner, check_mode=module.check_mode) or changed

@@ -1,0 +1,180 @@
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: '{{ test_db }}'
+    pg_limited_parameters: &pg_limited_parameters
+      login_user: '{{ pg_limited_user }}'
+      login_db: '{{ test_db }}'
+
+  block:
+
+  - name: Create limited postgres role
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ pg_limited_user }}'
+      role_attr_flags: LOGIN
+  - name: Grant database usage to limited role
+    <<: *task_parameters
+    postgresql_privs:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      state: present
+      type: database
+      privs: CONNECT,CREATE
+      role: "{{ pg_limited_user }}"
+  - name: Revoke existing select for pg_subscription
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: "REVOKE SELECT ON pg_catalog.pg_subscription FROM {{ pg_limited_user }}"
+  - name: Set limited postgres select permissions to simulate CloudSQL
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: "GRANT SELECT (subenabled,subslotname,subsynccommit,subpublications,subdbid,subowner,subname) ON pg_catalog.pg_subscription TO {{ pg_limited_user }}"
+
+  # this built-in role only exists in PG 16 or above
+  - name: Set pg_create_subscription membership for limited postgres role
+    <<: *task_parameters
+    postgresql_membership:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      group: "pg_create_subscription"
+      target_role: "{{ pg_limited_user }}"
+      state: present
+
+
+  ####################
+  # Test mode: present
+  ####################
+  - name: Create subscription
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_limited_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ test_subscription }}'
+      state: present
+      publications: '{{ test_pub }}'
+      comment: Made by Ansible
+      connparams:
+        host: 127.0.0.1
+        port: '{{ primary_port }}'
+        user: '{{ replication_role }}'
+        password: '{{ replication_pass }}'
+        dbname: '{{ test_db }}'
+      trust_input: false
+
+  - assert:
+      that:
+      - result is changed
+      - result.name == '{{ test_subscription }}'
+      - result.queries == ["CREATE SUBSCRIPTION test CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }}' PUBLICATION {{ test_pub }}", "COMMENT ON SUBSCRIPTION \"test\" IS 'Made by Ansible'"]
+      - result.exists == true
+      - result.initial_state == {}
+      - result.final_state.owner == '{{ pg_limited_user }}'
+      - result.final_state.enabled == true
+      - result.final_state.publications == ["{{ test_pub }}"]
+      - result.final_state.synccommit == true
+      - result.final_state.slotname == '{{ test_subscription }}'
+      - result.final_state.conninfo == {}
+
+  - name: Check the comment
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: "SELECT obj_description(s.oid, 'pg_subscription') AS comment FROM pg_subscription AS s WHERE s.subname = 'test'"
+
+  - assert:
+      that:
+      - result.query_result[0]['comment'] == 'Made by Ansible'
+
+
+  # attempt to update the subscription conn params. this should throw a warning and not actually change the subscription
+  - name: Update subscription with connparams
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_limited_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ test_subscription }}'
+      state: present
+      publications: '{{ test_pub }}'
+      comment: Made by Ansible
+      connparams:
+        host: 127.0.0.1
+        port: '{{ primary_port }}'
+        user: '{{ replication_role }}'
+        password: '{{ replication_pass }}'
+        dbname: '{{ test_db }}'
+      trust_input: false
+
+  - assert:
+      that:
+      - result is not changed
+      - result.name == '{{ test_subscription }}'
+      - result.exists == true
+      - result.final_state.owner == '{{ pg_limited_user }}'
+      - result.final_state.enabled == true
+      - result.final_state.publications == ["{{ test_pub }}"]
+      - result.final_state.synccommit == true
+      - result.final_state.slotname == '{{ test_subscription }}'
+      - result.final_state.conninfo == {}
+
+  - name: Update subscription comment
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_limited_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ test_subscription }}'
+      state: present
+      publications: '{{ test_pub }}'
+      comment: Updated by Ansible
+      connparams:
+        host: 127.0.0.1
+        port: '{{ primary_port }}'
+        user: '{{ replication_role }}'
+        password: '{{ replication_pass }}'
+        dbname: '{{ test_db }}'
+      trust_input: false
+
+  - assert:
+      that:
+      - result is changed
+      - result.name == '{{ test_subscription }}'
+      - result.exists == true
+      - result.final_state.owner == '{{ pg_limited_user }}'
+      - result.final_state.enabled == true
+      - result.final_state.publications == ["{{ test_pub }}"]
+      - result.final_state.synccommit == true
+      - result.final_state.slotname == '{{ test_subscription }}'
+      - result.final_state.conninfo == {}
+
+  - name: Check the comment
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: "SELECT obj_description(s.oid, 'pg_subscription') AS comment FROM pg_subscription AS s WHERE s.subname = 'test'"
+
+  - assert:
+      that:
+      - result.query_result[0]['comment'] == 'Updated by Ansible'
+
+  ##########
+  # Clean up
+  ##########
+  - name: Drop subscription
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ test_subscription }}'
+      state: absent
