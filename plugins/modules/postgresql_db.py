@@ -342,7 +342,21 @@ def get_encoding_id(cursor, encoding):
 
 
 def get_db_info(cursor, db):
-    if get_server_version(cursor.connection) >= 150000:
+    server_version = get_server_version(cursor.connection)
+    if server_version >= 170000:
+        query = """
+        SELECT rolname AS owner,
+        pg_encoding_to_char(encoding) AS encoding, encoding AS encoding_id,
+        datcollate AS lc_collate, datctype AS lc_ctype, datlocale AS icu_locale,
+        CASE datlocprovider WHEN 'c' THEN 'libc' WHEN 'i' THEN 'icu' END AS locale_provider,
+        pg_database.datconnlimit AS conn_limit, spcname AS tablespace,
+        pg_catalog.shobj_description(pg_database.oid, 'pg_database') AS comment
+        FROM pg_database
+        JOIN pg_roles ON pg_roles.oid = pg_database.datdba
+        JOIN pg_tablespace ON pg_tablespace.oid = pg_database.dattablespace
+        WHERE datname = %(db)s
+        """
+    elif server_version >= 150000:
         query = """
         SELECT rolname AS owner,
         pg_encoding_to_char(encoding) AS encoding, encoding AS encoding_id,
