@@ -356,7 +356,7 @@ def get_db_info(cursor, db):
         JOIN pg_tablespace ON pg_tablespace.oid = pg_database.dattablespace
         WHERE datname = %(db)s
         """
-    elif server_version >= 150000:
+    elif server_version >= 150000 and server_version < 170000:
         query = """
         SELECT rolname AS owner,
         pg_encoding_to_char(encoding) AS encoding, encoding AS encoding_id,
