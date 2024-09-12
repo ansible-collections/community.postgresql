@@ -988,6 +988,7 @@ class PgClusterInfo(object):
         return nsp_dict
 
     def get_pg_version(self):
+        # this only works for PG10+
         """Get major and minor PostgreSQL server version."""
         query = "SELECT current_setting('server_version_num')"
         raw = self.__exec_sql(query)[0]["current_setting"]
