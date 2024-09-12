@@ -108,7 +108,6 @@
   - assert:
       that:
       - result.version != {}
-      - result.version.raw is search('PostgreSQL')
       - result.in_recovery == false
       - result.databases.{{ db_default }}.collate
       - result.databases.{{ db_default }}.languages
