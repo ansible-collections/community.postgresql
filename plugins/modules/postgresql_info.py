@@ -995,7 +995,7 @@ class PgClusterInfo(object):
         major = int(raw[0:2])
         minor = int(raw[-2::1])
         patch = None
-        full=[major, minor]|join('.')
+        full = '.'.join([major, minor])
 
         self.pg_info["version"] = dict(
             major=major,
