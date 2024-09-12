@@ -989,16 +989,13 @@ class PgClusterInfo(object):
 
     def get_pg_version(self):
         """Get major and minor PostgreSQL server version."""
-        query = "SELECT version()"
-        raw = self.__exec_sql(query)[0]["version"]
-        full = raw.split()[1]
-        m = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", full)
+        query = "SELECT current_setting('server_version_num')"
+        raw = self.__exec_sql(query)[0]["current_setting"]
 
-        major = int(m.group(1))
-        minor = int(m.group(2))
+        major = int(raw[0:2])
+        minor = int(raw[-2::1])
         patch = None
-        if m.group(3) is not None:
-            patch = int(m.group(3))
+        full=[major, minor]|join('.')
 
         self.pg_info["version"] = dict(
             major=major,
