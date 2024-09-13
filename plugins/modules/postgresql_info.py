@@ -988,25 +988,34 @@ class PgClusterInfo(object):
         return nsp_dict
 
     def get_pg_version(self):
-        # this only works for PG10+
         """Get major and minor PostgreSQL server version."""
         query = "SELECT current_setting('server_version_num')"
-        raw = self.__exec_sql(query)[0]["current_setting"]
+        srv_ver = self.__exec_sql(query)[0]["current_setting"]
+        query = "SELECT version()"
+        raw = self.__exec_sql(query)[0]["version"]
 
-        major = int(raw[0:2])
-        minor = int(raw[-2::1])
-        patch = None
-        full = '.'.join([raw[0:2], raw[-2::1]])
+        major = int(srv_ver[0:2])
+        minor = int(srv_ver[2:4])
+        patch = int(srv_ver[4:6])
+
+        if minor == 0:
+            # PG 10+
+            full = '.'.join([srv_ver[0:2], srv_ver[4:6]])
+        else:
+            # PG < 10
+            full = '.'.join([srv_ver[0:2], srv_ver[2:4], srv_ver[4:6]])
 
         self.pg_info["version"] = dict(
             major=major,
             minor=minor,
+            patch=patch,
             full=full,
             raw=raw,
         )
 
-        if patch is not None:
-            self.pg_info["version"]["patch"] = patch
+        if minor == 0:
+            self.pg_info["version"]["minor"] = patch
+            self.pg_info["version"]["patch"] = None
 
     def get_recovery_state(self):
         """Get if the service is in recovery mode."""
