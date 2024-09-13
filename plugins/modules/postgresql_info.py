@@ -1000,10 +1000,10 @@ class PgClusterInfo(object):
 
         if minor == 0:
             # PG 10+
-            full = '.'.join([srv_ver[0:2], srv_ver[4:6]])
+            full = '.'.join([str(major), str(patch)])
         else:
             # PG < 10
-            full = '.'.join([srv_ver[0:2], srv_ver[2:4], srv_ver[4:6]])
+            full = '.'.join([str(major), str(minor), str(patch)])
 
         self.pg_info["version"] = dict(
             major=major,
