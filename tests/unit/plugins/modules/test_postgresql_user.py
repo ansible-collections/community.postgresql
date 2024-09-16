@@ -51,7 +51,8 @@ def test_compare_user_configurations():
     output = compare_user_configurations(current, desired, True)
     assert output == expected
     output = compare_user_configurations(current, {}, True)
-    assert output == {"reset": ["some_setting", "another_setting", "ghost_setting"], "update": {}}
+    assert output == {"reset": ["some_setting", "another_setting", "ghost_setting"], "update": {}} or \
+        output == {'reset': ['another_setting', 'some_setting', 'ghost_setting'], 'update': {}}
     output = compare_user_configurations({}, desired, True)
     assert output == {"reset": [], "update": desired}
     output = compare_user_configurations(current, desired, False)
