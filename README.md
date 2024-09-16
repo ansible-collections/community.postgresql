@@ -90,6 +90,12 @@ Here is the table for the support timeline:
 - 3.x.y: released 2023-06-09, current
 - 4.x.y: to be released; not earlier than after Ansible 10 release (~May 2024)
 
+## PostgreSQL server version support
+
+The collection supports PostgreSQL server versions officially supported by the PostgreSQL Global Development Group.
+EOL versions are NOT taken into account during development.
+Even if they are present in our test matrix now, they can be removed at any moment.
+
 ## Tested with ansible-core
 
 Tested with the following `ansible-core` releases:
