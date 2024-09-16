@@ -1,4 +1,0 @@
----
-bugfixes:
-  - postgresql_db - fix issues due to columns in pg_database changing in Postgres 17.
-    (https://github.com/ansible-collections/community.postgresql/issues/729).

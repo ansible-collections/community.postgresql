@@ -1,5 +1,0 @@
----
-minor_changes:
-  - postgresql_subscription - adds support for managing subscriptions in the situation
-    where the ``subconninfo`` column is unavailable (such as in CloudSQL)
-    (https://github.com/ansible-collections/community.postgresql/issues/726).

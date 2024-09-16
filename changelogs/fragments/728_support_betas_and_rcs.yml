@@ -1,3 +1,0 @@
----
-bugfixes:
-  - postgresql_info - Use a server check that works on beta and rc versions as well as on actual releases.

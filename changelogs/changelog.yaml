@@ -727,3 +727,27 @@ releases:
     - 715-datestyle.yaml
     - 722-user-configuration.yml
     release_date: '2024-08-21'
+  3.6.0:
+    changes:
+      bugfixes:
+      - postgresql_db - fix issues due to columns in pg_database changing in Postgres
+        17. (https://github.com/ansible-collections/community.postgresql/issues/729).
+      - postgresql_info - Use a server check that works on beta and rc versions as
+        well as on actual releases.
+      minor_changes:
+      - postgresql_privs - adds support for granting and revoking privileges on foreign
+        tables (https://github.com/ansible-collections/community.postgresql/issues/724).
+      - postgresql_subscription - adds support for managing subscriptions in the situation
+        where the ``subconninfo`` column is unavailable (such as in CloudSQL) (https://github.com/ansible-collections/community.postgresql/issues/726).
+      release_summary: 'This is a minor release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 3.6.0.yml
+    - 725-privs-for-foreign-tables.yml
+    - 727-subscriptions-with-limited-columns.yml
+    - 728_support_betas_and_rcs.yml
+    - 731-db-fix-for-pg17.yml
+    release_date: '2024-09-16'

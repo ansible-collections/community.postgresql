@@ -1,4 +1,0 @@
----
-minor_changes:
-  - postgresql_privs - adds support for granting and revoking privileges on foreign tables 
-    (https://github.com/ansible-collections/community.postgresql/issues/724).
