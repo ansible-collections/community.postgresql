@@ -751,3 +751,17 @@ releases:
     - 728_support_betas_and_rcs.yml
     - 731-db-fix-for-pg17.yml
     release_date: '2024-09-16'
+  3.6.1:
+    changes:
+      bugfixes:
+      - postgresql_user - remove a comment from unit tests that breaks pre-compile
+        (https://github.com/ansible-collections/community.postgresql/issues/737).
+      release_summary: 'This is a patch release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been added after the previous release.'
+    fragments:
+    - 0-comment.yml
+    - 3.6.1.yml
+    release_date: '2024-09-17'
