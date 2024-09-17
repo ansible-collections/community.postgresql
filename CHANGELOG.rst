@@ -4,6 +4,21 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v3.6.1
+======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been added after the previous release.
+
+Bugfixes
+--------
+
+- postgresql_user - remove a comment from unit tests that breaks pre-compile (https://github.com/ansible-collections/community.postgresql/issues/737).
+
 v3.6.0
 ======
 
