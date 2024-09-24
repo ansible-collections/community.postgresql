@@ -3,11 +3,12 @@
 # Copyright: (c) 2019, Sebastiaan Mannem (@sebasmannem) <sebastiaan.mannem@enterprisedb.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import absolute_import, division, print_function
 
 '''
 This module is used to manage postgres pg_hba files with Ansible.
 '''
+
+from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
@@ -38,6 +39,7 @@ options:
     type: bool
   backup_file:
     description:
+      - This option has been B(deprecated) and will be removed in community.postgresql 5.0.0
       - Write backup to a specific backupfile rather than a temp file.
     type: str
   create:
@@ -54,6 +56,7 @@ options:
   comment:
     description:
       - A comment that will be placed in the same line behind the rule. See also the I(keep_comments_at_rules) parameter.
+      - A comment is only added or updated if the rule itself changes.
     type: str
     version_added: '1.5.0'
   databases:
@@ -61,11 +64,13 @@ options:
       - Databases this line applies to.
     default: all
     type: str
-  dest:
+  path:
     description:
       - Path to C(pg_hba) file to modify.
     type: path
     required: true
+    aliases:
+      - dest
   method:
     description:
       - Authentication method to be used.
@@ -79,25 +84,20 @@ options:
   options:
     description:
       - Additional options for the authentication I(method).
-    type: str
+      - Make sure to quote the value correctly, if it includes spaces. It will be added "as is".
+    type: dict
   overwrite:
     description:
       - Remove all existing rules before adding rules. (Like I(state=absent) for all pre-existing rules.)
     type: bool
     default: false
-  keep_comments_at_rules:
-    description:
-      - If C(true), comments that stand together with a rule in one line are kept behind that line.
-      - If C(false), such comments are moved to the beginning of the file, like all other comments.
-    type: bool
-    default: false
-    version_added: '1.5.0'
   rules:
     description:
       - A list of objects, specifying rules for the pg_hba.conf. Use this to manage multiple rules at once.
       - "Each object can have the following keys (the 'rule-specific arguments'), which are treated the same as if they were arguments of this module:"
       - C(address), C(comment), C(contype), C(databases), C(method), C(netmask), C(options), C(state), C(users)
       - See also C(rules_behavior).
+      - Comments are only added or updated, if the rule itself changes.
     type: list
     elements: dict
   rules_behavior:
@@ -121,6 +121,24 @@ options:
       - Users this line applies to.
     type: str
     default: all
+  sort_rules:
+    description:
+      - Sorts the rules in the file only if a change is required. It will sort the rules so more specific rules are at
+        the top. For example, a rule matching a single host will be before a rule that matches an ip-range.
+      - The order of rules is important, as they are evaluated top-down and the first one that matches is used.
+        This means changing the order of rules in the file can change how your instance behaves.
+      - Will sort comments to the top, includes to the bottom and remove empty lines.
+      - I would advise to turn this off when managing a file that receives manual changes, as well or if the order
+        you specify your rules in is important.
+    type: bool
+    default: true
+    version_added: '4.0.0'
+  prepend_rules:
+    description:
+      - Instead of appending the rule to then end of the file, add it in the beginning (before all other rules).
+      - Will have no effect if C(sort_rules=true).
+    type: bool
+    default: false
 
 notes:
    - The default authentication assumes that on the host, you are either logging in as or
@@ -153,6 +171,7 @@ attributes:
 author:
 - Sebastiaan Mannem (@sebasmannem)
 - Felix Hamme (@betanummeric)
+- Thomas Ziegler (@toydarian)
 '''
 
 EXAMPLES = '''
@@ -234,8 +253,8 @@ backup_file:
     returned: changed
     type: str
     sample: /tmp/pg_hba_jxobj_p
-pg_hba:
-    description: List of the pg_hba rules as they are configured in the specified hba file.
+pg_hba_dicts:
+    description: List of the pg_hba rules as they are configured in the specified hba file. Doesn't include comments that aren't associated with a rule.
     returned: success
     type: list
     sample:
@@ -248,8 +267,14 @@ pg_hba:
             "usr": "all"
          }
       ]
+pg_hba:
+    description: The string that is or would be written to the file.
+    returned: success
+    type: str
+    sample: "local\tall\tall\tident\nhost\tall\tall\tsamehost\tmd5"
 '''
 
+import copy
 import os
 import re
 import traceback
@@ -271,368 +296,383 @@ PG_HBA_METHODS = ["trust", "reject", "md5", "password", "gss", "sspi", "krb5", "
                   "ldap", "radius", "cert", "pam", "scram-sha-256"]
 PG_HBA_TYPES = ["local", "host", "hostssl", "hostnossl", "hostgssenc", "hostnogssenc"]
 PG_HBA_HDR = ['type', 'db', 'usr', 'src', 'mask', 'method', 'options']
+PG_HBA_REQUIRED_FIELDS = ['contype', 'databases', 'users', 'method']
+
+RULE_KEYS = ['contype', 'databases', 'users', 'address', 'netmask', 'method', 'options',]
+PG_HBA_HDR_MAP = dict(zip(RULE_KEYS, PG_HBA_HDR))
+PG_HBA_HDR_NOMAP = dict(zip(RULE_KEYS, RULE_KEYS))
 
 WHITESPACES_RE = re.compile(r'\s+')
+TOKEN_SPLIT_RE = re.compile(r'(?<=[\s"])')
+ONLY_SPACES_RE = re.compile(r"^\s+$")
+# STRIP_COMMENT_RE = re.compile(r'^[^#]*(?=#)')
+OPTION_RE = re.compile(r"([^=]+)=(.+)")
+IPV4_ADDR_RE = re.compile(r'^"?((\d{1,3}\.){3}\d{1,3})(/(\d{1,2}))?"?$')
+# this regex allows for some invalid IPv6 addresses like ':::', but I honestly don't care
+IPV6_ADDR_RE = re.compile(r'^"?([a-f0-9]*:[a-f0-9:]*:[a-f0-9]*)(/(\d{1,3}))?"?$')
+
+
+# todo add insert after
 
 
 class PgHbaError(Exception):
-    '''
+    """
     This exception is raised when parsing the pg_hba file ends in an error.
-    '''
+    """
 
 
 class PgHbaRuleError(PgHbaError):
-    '''
+    """
     This exception is raised when parsing the pg_hba file ends in an error.
-    '''
+    """
 
 
 class PgHbaRuleChanged(PgHbaRuleError):
-    '''
+    """
     This exception is raised when a new parsed rule is a changed version of an existing rule.
-    '''
+    """
 
 
 class PgHbaValueError(PgHbaError):
-    '''
+    """
     This exception is raised when a new parsed rule is a changed version of an existing rule.
-    '''
+    """
 
 
 class PgHbaRuleValueError(PgHbaRuleError):
-    '''
+    """
     This exception is raised when a new parsed rule is a changed version of an existing rule.
-    '''
-
-
-class PgHba(object):
-    """
-    PgHba object to read/write entries to/from.
-    pg_hba_file - the pg_hba file almost always /etc/pg_hba
     """
 
-    def __init__(self, pg_hba_file=None, backup=False, create=False, keep_comments_at_rules=False):
-        self.pg_hba_file = pg_hba_file
-        self.rules = None
-        self.comment = None
-        self.backup = backup
-        self.last_backup = None
-        self.create = create
-        self.keep_comments_at_rules = keep_comments_at_rules
-        self.unchanged()
-        # self.databases will be update by add_rule and gives some idea of the number of databases
-        # (at least that are handled by this pg_hba)
-        self.databases = set(['postgres', 'template0', 'template1'])
 
-        # self.databases will be update by add_rule and gives some idea of the number of users
-        # (at least that are handled by this pg_hba) since this might also be groups with multiple
-        # users, this might be totally off, but at least it is some info...
-        self.users = set(['postgres'])
+class TokenizerException(Exception):
+    """
+    This exception is raised when a string can't be tokenized
+    """
 
-        self.preexisting_rules = None
-        self.read()
 
-    def clear_rules(self):
-        self.rules = {}
-
-    def unchanged(self):
-        '''
-        This method resets self.diff to a empty default
-        '''
-        self.diff = {'before': {'file': self.pg_hba_file, 'pg_hba': []},
-                     'after': {'file': self.pg_hba_file, 'pg_hba': []}}
-
-    def read(self):
-        '''
-        Read in the pg_hba from the system
-        '''
-        self.rules = {}
-        self.comment = []
-        # read the pg_hbafile
-        try:
-            with open(self.pg_hba_file, 'r') as file:
-                for line in file:
-                    # split into line and comment
-                    line = line.strip()
-                    comment = None
-                    if '#' in line:
-                        line, comment = line.split('#', 1)
-                        if comment == '':
-                            comment = None
-                        line = line.rstrip()
-                    # if there is just a comment, save it
-                    if line == '':
-                        if comment is not None:
-                            self.comment.append('#' + comment)
-                    else:
-                        if comment is not None and not self.keep_comments_at_rules:
-                            # save the comment independent of the line
-                            self.comment.append('#' + comment)
-                            comment = None
-                        try:
-                            self.add_rule(PgHbaRule(line=line, comment=comment))
-                        except PgHbaRuleError:
-                            pass
-            self.unchanged()
-            self.preexisting_rules = dict(self.rules)
-        except IOError:
-            pass
-
-    def write(self, backup_file=''):
-        '''
-        This method writes the PgHba rules (back) to a file.
-        '''
-        if not self.changed():
-            return False
-
-        contents = self.render()
-        if self.pg_hba_file:
-            if not (os.path.isfile(self.pg_hba_file) or self.create):
-                raise PgHbaError("pg_hba file '{0}' doesn't exist. "
-                                 "Use create option to autocreate.".format(self.pg_hba_file))
-            if self.backup and os.path.isfile(self.pg_hba_file):
-                if backup_file:
-                    self.last_backup = backup_file
-                else:
-                    _backup_file_h, self.last_backup = tempfile.mkstemp(prefix='pg_hba')
-                shutil.copy(self.pg_hba_file, self.last_backup)
-            fileh = open(self.pg_hba_file, 'w')
+def parse_hba_file(input_string):
+    """
+    This function parses a complete pg_hba.conf file into a list of tuples where each tuple represents a rule in the
+    file.
+    :param input_string: The whole string in the pg_hba.conf file (not just a single line)
+    :return: A list of Rule objects that represents the contents of the input string.
+    """
+    rules = []
+    line_iter = iter(input_string.split("\n"))
+    line = next(line_iter, None)
+    while line is not None:
+        # if that line continues, we just glue the next line onto the end until it ends
+        # we can and have to do that, as continuation even applies withing comments and quoted strings [sic]
+        # https://www.postgresql.org/docs/current/auth-pg-hba-conf.html#AUTH-PG-HBA-CONF
+        comment = None
+        while line.endswith("\\"):
+            cont_line = next(line_iter, None)
+            if cont_line is None:
+                # we got a line continuation, but there was no more line
+                raise PgHbaRuleError("The last line ended with a '\\' (line continuation).")
+            line += "\n" + cont_line  # add the newline so we don't lose that information
+        # handle comment-only lines
+        if line.strip().startswith('#'):
+            parsed_line = "COMMENT"
+            comment = line
+        # handle empty lines
+        elif line == '' or ONLY_SPACES_RE.match(line):
+            parsed_line = "EMPTY"
+        # handle "normal" lines
         else:
-            filed, _path = tempfile.mkstemp(prefix='pg_hba')
-            fileh = os.fdopen(filed, 'w')
+            # handle lines with comments
+            sanitized_line = line
+            if line.find('#') >= 0:
+                comment = sanitized_line[sanitized_line.index("#"):]
+                sanitized_line = sanitized_line[0:sanitized_line.index("#")]
+            # remove continuation tokens
+            sanitized_line = sanitized_line.replace("\\\n", "")
+            tokens = tokenize(sanitized_line)
+            parsed_line = tokens
+        # create Rule
+        rules.append(Rule(tokens=parsed_line, line=line, comment=comment))
+        line = next(line_iter, None)
+    return rules
 
-        fileh.write(contents)
-        self.unchanged()
-        fileh.close()
-        return True
 
-    def add_rule(self, rule):
-        '''
-        This method can be used to add a rule to the list of rules in this PgHba object
-        '''
-        key = rule.key()
-        try:
-            try:
-                oldrule = self.rules[key]
-            except KeyError:
-                raise PgHbaRuleChanged
-            ekeys = set(list(oldrule.keys()) + list(rule.keys()))
-            ekeys.remove('line')
-            for k in ekeys:
-                if oldrule.get(k) != rule.get(k):
-                    raise PgHbaRuleChanged('{0} changes {1}'.format(rule, oldrule))
-        except PgHbaRuleChanged:
-            self.rules[key] = rule
-            self.diff['after']['pg_hba'].append(rule.line())
-            if rule['db'] not in ['all', 'samerole', 'samegroup', 'replication']:
-                databases = set(rule['db'].split(','))
-                self.databases.update(databases)
-            if rule['usr'] != 'all':
-                user = rule['usr']
-                if user[0] == '+':
-                    user = user[1:]
-                self.users.add(user)
+def from_rule_list(rule_list):
+    """
+    Creates a list of Rule objects from a list of dicts.
+    :param rule_list: A list of dicts where each item in the list represents a rule
+    :return: A list of Rule objects created from the items in the list
+    """
+    rules = []
+    for rule in rule_list:
+        if rule == {}:
+            rules.append(Rule(tokens="EMPTY", line=''))
+        elif not rule['contype'] and rule['comment']:
+            rules.append(Rule(tokens="COMMENT", comment=rule['comment']))
+        else:
+            rules.append(Rule(rule_dict=rule))
+    return rules
 
-    def remove_rule(self, rule):
-        '''
-        This method can be used to find and remove a rule. It doesn't look for the exact rule, only
-        the rule with the same key.
-        '''
-        keys = rule.key()
-        try:
-            del self.rules[keys]
-            self.diff['before']['pg_hba'].append(rule.line())
-        except KeyError:
-            pass
 
-    def get_rules(self, with_lines=False):
-        '''
-        This method returns all the rules of the PgHba object
-        '''
-        rules = sorted(self.rules.values())
-        for rule in rules:
-            ret = {}
-            for key, value in rule.items():
-                ret[key] = value
-            if not with_lines:
-                if 'line' in ret:
-                    del ret['line']
+def tokenize(string):
+    """
+    This function tokenizes a string respecting quotes. It needs to be fed a complete string where all quotes are
+    properly closed (there needs to be an even amount of `"`) otherwise it raises an exception.
+    You can, for example use this to tokenize a full line of a pg_hba-file (make sure to handle any escaped newlines or
+    comments before) or a string of options.
+    :param string: A string to tokenize
+    :return: The tokenized string as a list of strings
+    """
+    bare_tokens = TOKEN_SPLIT_RE.split(string)
+    tokens = []
+    state = "START"
+    current_symbol = ""
+
+    for token in bare_tokens:
+
+        # if the previous token ended a quoted string, we need to decide how to continue
+        if state == "QUOTE_END":
+            state = "START"
+            # if the token consists of only spaces, we know for sure this symbol is finished
+            if token == "" or ONLY_SPACES_RE.match(token):
+                tokens.append(current_symbol.strip())
+                current_symbol = ""
+                continue
+            # otherwise it might continue with more characters or even another quote
+
+        if token == "":
+            continue
+
+        # we either start a new symbol or continue after a finished quote
+        if state == "START":
+            # outside of quotes, whitespaces are ignored
+            if ONLY_SPACES_RE.match(token):
+                continue
+
+            current_symbol += token
+            if token.endswith("\""):
+                state = "QUOTE"
             else:
-                ret['line'] = rule.line()
+                tokens.append(current_symbol.strip())
+                current_symbol = ""
 
-            yield ret
+        # if we are inside a quoted string we consume and append tokens until the quoted string ends
+        elif state == "QUOTE":
+            current_symbol += token
+            if token.endswith("\""):
+                state = "QUOTE_END"
 
-    def render(self):
-        '''
-        This method renders the content of the PgHba rules and comments.
-        The returning value can be used directly to write to a new file.
-        '''
-        comment = '\n'.join(self.comment)
-        rule_lines = []
-        for rule in self.get_rules(with_lines=True):
-            if 'comment' in rule:
-                rule_lines.append(rule['line'] + '\t#' + rule['comment'])
-            else:
-                rule_lines.append(rule['line'])
-        result = comment + '\n' + '\n'.join(rule_lines)
-        # End it properly with a linefeed (if not already).
-        if result and result[-1] not in ['\n', '\r']:
-            result += '\n'
-        return result
+    if state != "START":
+        raise TokenizerException("Unterminated quote")
 
-    def changed(self):
-        '''
-        This method can be called to detect if the PgHba file has been changed.
-        '''
-        if not self.preexisting_rules and not self.rules:
-            return False
-        return self.preexisting_rules != self.rules
+    return tokens
 
 
-class PgHbaRule(dict):
-    '''
-    This class represents one rule as defined in a line in a PgHbaFile.
-    '''
+class Rule(object):
+    def __init__(self, tokens=None, rule_dict=None, line=None, comment=None):
+        self._type = None
+        self._database = None
+        self._user = None
+        self._address = None
+        self._mask = None
+        self._auth_method = None
+        self._auth_options = None
 
-    def __init__(self, contype=None, databases=None, users=None, source=None, netmask=None,
-                 method=None, options=None, line=None, comment=None):
-        '''
-        This function can be called with a comma separated list of databases and a comma separated
-        list of users and it will act as a generator that returns a expanded list of rules one by
-        one.
-        '''
+        self._address_type = None
+        self._prefix_len = None
 
-        super(PgHbaRule, self).__init__()
-
-        if line:
-            # Read values from line if parsed
-            self.fromline(line)
-
+        # includes, comment-only lines and empty lines are special
+        self._is_special = False
+        self._line = line
+        # normalize comment so we can safely compare it if we have to
         if comment:
-            self['comment'] = comment
-
-        # read rule cols from parsed items
-        rule = dict(zip(PG_HBA_HDR, [contype, databases, users, source, netmask, method, options]))
-        for key, value in rule.items():
-            if value:
-                self[key] = value
-
-        # Some sanity checks
-        for key in ['method', 'type']:
-            if key not in self:
-                raise PgHbaRuleError('Missing {method} in rule {rule}'.format(method=key, rule=self))
-
-        if self['method'] not in PG_HBA_METHODS:
-            msg = "invalid method {method} (should be one of '{valid_methods}')."
-            raise PgHbaRuleValueError(msg.format(method=self['method'], valid_methods="', '".join(PG_HBA_METHODS)))
-
-        if self['type'] not in PG_HBA_TYPES:
-            msg = "invalid connection type {0} (should be one of '{1}')."
-            raise PgHbaRuleValueError(msg.format(self['type'], "', '".join(PG_HBA_TYPES)))
-
-        if self['type'] == 'local':
-            self.unset('src')
-            self.unset('mask')
-        elif 'src' not in self:
-            raise PgHbaRuleError('Missing src in rule {rule}'.format(rule=self))
-        elif '/' in self['src']:
-            self.unset('mask')
+            self._comment = comment.strip()
+            self._comment = f"{'# ' if not self._comment.startswith('#') else ''}{self._comment}"
         else:
-            self['src'] = str(self.source())
-            self.unset('mask')
+            self._comment = comment
 
-    def unset(self, key):
-        '''
-        This method is used to unset certain columns if they exist
-        '''
-        if key in self:
-            del self[key]
+        # parse tokens into a rule
+        if tokens is not None:
+            self._from_tokens(tokens)
+        elif rule_dict is not None:
+            self._from_rule_dict(rule_dict)
 
-    def line(self):
-        '''
-        This method can be used to return (or generate) the line
-        '''
-        try:
-            return self['line']
-        except KeyError:
-            self['line'] = "\t".join([self[k] for k in PG_HBA_HDR if k in self.keys()])
-            return self['line']
+        if (tokens is None and rule_dict is None) or (tokens is not None and rule_dict is not None):
+            raise PgHbaRuleError(
+                "Exactly one of 'tokens' and 'rule_dict' needs to be specified when creating a Rule-object")
 
-    def fromline(self, line):
-        '''
-        split into 'type', 'db', 'usr', 'src', 'mask', 'method', 'options' cols
-        '''
-        if WHITESPACES_RE.sub('', line) == '':
-            # empty line. skip this one...
+        # construct the line from the comment if there is no line, but a comment
+        if self._is_special and not line and comment:
+            self._line = self._comment
+
+    def _from_tokens(self, symbols):
+        # empty lines, full line comments and includes are special
+        if symbols == "EMPTY" or symbols == "COMMENT" or symbols[0].startswith("include"):
+            self._is_special = True
             return
-        cols = WHITESPACES_RE.split(line)
-        if len(cols) < 4:
-            msg = "Rule {0} has too few columns."
-            raise PgHbaValueError(msg.format(line))
-        if cols[0] not in PG_HBA_TYPES:
-            msg = "Rule {0} has unknown type: {1}."
-            raise PgHbaValueError(msg.format(line, cols[0]))
-        if cols[0] == 'local':
-            cols.insert(3, None)  # No address
-            cols.insert(3, None)  # No IP-mask
-        if len(cols) < 6:
-            cols.insert(4, None)  # No IP-mask
-        elif cols[5] not in PG_HBA_METHODS:
-            cols.insert(4, None)  # No IP-mask
-        if cols[5] not in PG_HBA_METHODS:
-            raise PgHbaValueError("Rule {0} of '{1}' type has invalid auth-method '{2}'".format(line, cols[0], cols[5]))
 
-        if len(cols) < 7:
-            cols.insert(6, None)  # No auth-options
+        if len(symbols) < 4:
+            raise PgHbaRuleError("The rule has too few symbols")
+
+        self._type = _strip_quotes(symbols[0])
+        if self._type not in PG_HBA_TYPES:
+            raise PgHbaRuleValueError(f"Found an unknown connection-type {symbols[0]}")
+
+        # don't strip quotes from database or user, as they have a special meaning there [sic]
+        # > Quoting one of the keywords in a database, user, or address field (e.g., all or replication) makes the word
+        # > lose its special meaning, and just match a database, user, or host with that name.
+        self._database = handle_db_and_user_strings(symbols[1])
+        self._user = handle_db_and_user_strings(symbols[2])
+
+        if self._type == "local":
+            method_token = 3
         else:
-            cols[6] = " ".join(cols[6:])  # combine all auth-options
-        rule = dict(zip(PG_HBA_HDR, cols[:7]))
-        for key, value in rule.items():
-            if value:
-                self[key] = value
+            self._address, self._address_type, self._prefix_len = handle_address_field(symbols[3])
+            # it is an IP, but without a CIDR suffix, so we expect a netmask in the next token
+            if self._address_type.startswith("IP") and self._prefix_len == -1:
+                self._mask, mask_type, self._prefix_len = handle_netmask_field(symbols[4], raise_not_valid=False)
+                if mask_type == "invalid":
+                    raise PgHbaRuleError("The rule either needs a hostname, full CIDR or an IP-address and a netmask")
+                if mask_type != self._address_type:
+                    raise PgHbaRuleError("Can't mix IPv4 and IPv6 netmasks and addresses")
+                if len(symbols) < 6:
+                    raise PgHbaRuleError("The rule has too few symbols")
+                method_token = 5  # the method should be after the netmask
+            # if it is anything but a bare IP address, we expect the method on index 4
+            else:
+                if len(symbols) < 5:
+                    raise PgHbaRuleError("The rule has too few symbols")
+                method_token = 4
 
-    def key(self):
-        '''
-        This method can be used to get the key from a rule.
-        '''
-        if self['type'] == 'local':
-            source = 'local'
+        self._auth_method = _strip_quotes(symbols[method_token])
+        if self._auth_method not in PG_HBA_METHODS:
+            raise PgHbaRuleValueError(f"Found an unknown method: {symbols[method_token]}")
+
+        # if there is anything after the method, that must be options
+        if len(symbols) > method_token + 1:
+            self._auth_options = parse_auth_options(symbols[method_token + 1:])
+
+    def _from_rule_dict(self, rule_dict):
+        # handle special cases
+        if not rule_dict or len(rule_dict) == 1 and "comment" in rule_dict:
+            self._is_special = True
+        if "comment" in rule_dict and rule_dict["comment"]:
+            comment = rule_dict['comment'].strip()
+            self._comment = f"{'# ' if not comment.startswith('#') else ''}{comment}"
+        # if the rule is special, we are done now
+        if self._is_special:
+            return
+
+        # make sure each rule includes all required fields
+        for field in PG_HBA_REQUIRED_FIELDS:
+            if field not in rule_dict:
+                raise PgHbaRuleError(f"All rules need to contain '{field}'")
+
+        # verify contype and set databases and users
+        self._type = _strip_quotes(rule_dict["contype"])
+        if self._type not in PG_HBA_TYPES:
+            raise PgHbaRuleValueError(f"Unknown type {self._type}")
+        self._database = rule_dict["databases"]
+        self._user = rule_dict["users"]
+
+        # verify address and netmask if the contype isn't "local"
+        if self._type != "local":
+            if "address" not in rule_dict:
+                raise PgHbaRuleError("If the contype isn't 'local', the rule needs to contain an address")
+            self._address, self._address_type, self._prefix_len = handle_address_field(rule_dict["address"])
+            # verify the netmask if there is one
+            if "netmask" in rule_dict and rule_dict['netmask']:
+                if (self._address_type.startswith("IP") and self._prefix_len > -1) or self._address_type == "hostname":
+                    raise PgHbaRuleError("Rule can't contain a netmask if address is a full CIDR or hostname")
+                self._mask, mask_type, self._prefix_len = handle_netmask_field(rule_dict["netmask"])
+                if mask_type != self._address_type:
+                    raise PgHbaRuleError("Can't mix IPv4 and IPv6 netmasks and addresses")
+            else:
+                if self._address_type.startswith("IP") and self._prefix_len == -1:
+                    raise PgHbaRuleError("If the address is a bare ip-address without a CIDR suffix, "
+                                         "the rule needs to contain a netmask")
+
+        # if the contype is "local", the rule can't contain an address or netmask
         else:
-            source = str(self.source())
-        return (source, self['db'], self['usr'])
+            if (("address" in rule_dict and rule_dict["address"]) or
+                    ("netmask" in rule_dict and rule_dict["netmask"])):
+                raise PgHbaRuleError("Rule can't contain an address and netmask if the connection-type is 'local'")
 
+        # verify the method
+        self._auth_method = _strip_quotes(rule_dict["method"])
+        if self._auth_method not in PG_HBA_METHODS:
+            raise PgHbaRuleValueError(f"Unknown method {self._auth_method}")
+
+        if "options" in rule_dict:
+            self._auth_options = copy.deepcopy(rule_dict['options'])
+
+    @property
+    def line(self):
+        return self._line
+
+    @property
+    def is_special(self):
+        return self._is_special
+
+    @property
+    def comment(self):
+        return self._comment
+
+    @property
+    def type(self):
+        return self._type
+
+    @property
+    def user(self):
+        return self._user
+
+    @property
+    def database(self):
+        return self._database
+
+    @property
+    def address(self):
+        return self._address
+
+    @property
+    def netmask(self):
+        return self._mask
+
+    @property
+    def method(self):
+        return self._auth_method
+
+    @property
+    def options(self):
+        return copy.copy(self._auth_options)
+
+    @property
     def source(self):
-        '''
+        """
         This method is used to get the source of a rule as an ipaddress object if possible.
-        '''
-        if 'mask' in self.keys():
-            try:
-                ipaddress.ip_address(u'{0}'.format(self['src']))
-            except ValueError:
-                raise PgHbaValueError('Mask was specified, but source "{0}" '
-                                      'is not valid ip'.format(self['src']))
-            # ipaddress module cannot work with ipv6 netmask, so lets convert it to prefixlen
-            # furthermore ipv4 with bad netmask throws 'Rule {} doesn't seem to be an ip, but has a
-            # mask error that doesn't seem to describe what is going on.
-            try:
-                mask_as_ip = ipaddress.ip_address(u'{0}'.format(self['mask']))
-            except ValueError:
-                raise PgHbaValueError('Mask {0} seems to be invalid'.format(self['mask']))
-            binvalue = "{0:b}".format(int(mask_as_ip))
-            if '01' in binvalue:
-                raise PgHbaValueError('IP mask {0} seems invalid '
-                                      '(binary value has 1 after 0)'.format(self['mask']))
-            prefixlen = binvalue.count('1')
-            sourcenw = '{0}/{1}'.format(self['src'], prefixlen)
-            try:
-                return ipaddress.ip_network(u'{0}'.format(sourcenw), strict=False)
-            except ValueError:
-                raise PgHbaValueError('{0} is not valid address range'.format(sourcenw))
+        """
+        if self._type == "local":
+            return ""
+        if self._address_type == "hostname":
+            return self._address
+        else:
+            return ipaddress.ip_network(f"{self._address}/{self._prefix_len}", strict=False)
 
-        try:
-            return ipaddress.ip_network(u'{0}'.format(self['src']), strict=False)
-        except ValueError:
-            return self['src']
+    @property
+    def source_type(self):
+        return self._address_type
+
+    def __eq__(self, other):
+        # comments are only compared if they are not attached to a rule
+        if self.is_special and other.is_special:
+            if self.comment and other.comment:
+                return self.comment == other.comment
+            return self.line == other.line
+
+        # normal rules are equal if they key matches
+        return (self._type == other.type and
+                self._user == other.user and
+                self._database == other.database and
+                self.source == other.source)
 
     def __lt__(self, other):
         """This function helps sorted to decide how to sort.
@@ -641,7 +681,7 @@ class PgHbaRule(dict):
         if it should be sorted higher or lower in the list.
         The way it works:
         For networks, every 1 in 'netmask in binary' makes the subnet more specific.
-        Therefore I chose to use prefix as the weight.
+        Therefore, I chose to use prefix as the weight.
         So a single IP (/32) should have twice the weight of a /16 network.
         To keep everything in the same weight scale,
         - for ipv6, we use a weight scale of 0 (all possible ipv6 addresses) to 128 (single ip)
@@ -649,6 +689,21 @@ class PgHbaRule(dict):
         Therefore for ipv4, we use prefixlen (0-32) * 4 for weight,
         which corresponds to ipv6 (0-128).
         """
+
+        if self.is_special and other.is_special:
+            myweight = self.special_weight()
+            hisweight = other.special_weight()
+            if myweight != hisweight:
+                return myweight < hisweight
+            else:
+                return self.line < other.line
+
+        # comments go before anything else, the rest goes last
+        if self.is_special and not other.is_special:
+            return bool(self._comment)
+        if not self.is_special and other.is_special:
+            return bool(other.comment)
+
         myweight = self.source_weight()
         hisweight = other.source_weight()
         if myweight != hisweight:
@@ -663,13 +718,51 @@ class PgHbaRule(dict):
         hisweight = other.user_weight()
         if myweight != hisweight:
             return myweight < hisweight
-        try:
-            return self['src'] < other['src']
-        except TypeError:
-            return self.source_type_weight() < other.source_type_weight()
-        except Exception:
-            # When all else fails, just compare the exact line.
-            return self.line() < other.line()
+
+        if self.source_type == other.source_type and self.source != other.source:
+            return self.source < other.source
+
+        myweight = self.source_type_weight()
+        hisweight = other.source_type_weight()
+        if myweight != hisweight:
+            return myweight > hisweight
+
+        # When all else fails, just compare the rendered lines
+        return self.serialize() < other.serialize()
+
+    def __str__(self):
+        return self.serialize()
+
+    def __copy__(self):
+        return Rule(rule_dict=self.to_dict(), line=self._line, comment=self._comment)
+
+    def is_identical(self, other):
+        return (self == other and
+                self._auth_method == other.method and
+                self._auth_options == other.options)
+
+    def serialize(self, delimiter="\t"):
+        if self._line:
+            return self._line
+
+        if self._is_special:
+            if not self._comment:
+                return ""
+            else:
+                return self.comment
+
+        rule = f"{self._type}{delimiter}{self._database}{delimiter}{self._user}{delimiter}"
+        if self._type != "local":
+            rule += f"{self.source}{delimiter}"
+        rule += self._auth_method
+
+        if self._auth_options:
+            rule += self._serialize_auth_options(delimiter)
+
+        if self._comment:
+            rule += f"{delimiter}{self._comment}"
+
+        return rule
 
     def source_weight(self):
         """Report the weight of this source net.
@@ -677,37 +770,63 @@ class PgHbaRule(dict):
         Basically this is the netmask, where IPv4 is normalized to IPv6
         (IPv4/32 has the same weight as IPv6/128).
         """
-        if self['type'] == 'local':
+
+        if self._type == "local":
             return 130
 
-        sourceobj = self.source()
-        if isinstance(sourceobj, ipaddress.IPv4Network):
-            return sourceobj.prefixlen * 4
-        if isinstance(sourceobj, ipaddress.IPv6Network):
-            return sourceobj.prefixlen
-        if isinstance(sourceobj, str):
+        if self._address_type == "IPv4":
+            return self._prefix_len * 4
+        elif self._address_type == "IPv6":
+            return self._prefix_len
+        else:
             # You can also write all to match any IP address,
             # samehost to match any of the server's own IP addresses,
             # or samenet to match any address in any subnet that the server is connected to.
-            if sourceobj == 'all':
+            if self._address == 'all':
                 # (all is considered the full range of all ips, which has a weight of 0)
                 return 0
-            if sourceobj == 'samehost':
+            if self._address == 'samehost':
                 # (sort samehost second after local)
                 return 129
-            if sourceobj == 'samenet':
+            if self._address == 'samenet':
                 # Might write some fancy code to determine all prefix's
                 # from all interfaces and find a sane value for this one.
                 # For now, let's assume IPv4/24 or IPv6/96 (both have weight 96).
                 return 96
-            if sourceobj[0] == '.':
+            if self._address.startswith('.'):
                 # suffix matching (domain name), let's assume a very large scale
                 # and therefore a very low weight IPv4/16 or IPv6/64 (both have weight 64).
                 return 64
             # hostname, let's assume only one host matches, which is
             # IPv4/32 or IPv6/128 (both have weight 128)
             return 128
-        raise PgHbaValueError('Cannot deduct the source weight of this source {sourceobj}'.format(sourceobj=sourceobj))
+
+    def db_weight(self):
+        """Report the weight of the database.
+
+        Normally, just 1, but for replication this is 0, and for 'all', this is more than 2.
+        """
+        if self._database.startswith("\""):
+            # keywords lose their special meaning if quoted
+            return 2
+        db_list = self._database.split(',')
+        if "all" in db_list:
+            return 100000
+        if self._database == 'replication':
+            return 0
+        if self._database in ['samerole', 'samegroup']:
+            return 1
+        return 2 + len(db_list)
+
+    def user_weight(self):
+        """Report weight when comparing users."""
+        if self._database.startswith("\""):
+            # keywords lose their special meaning if quoted
+            return 1
+        user_list = self._user.split(',')
+        if "all" in user_list:
+            return 100000
+        return 1 + len(user_list)
 
     def source_type_weight(self):
         """Give a weight on the type of this source.
@@ -715,10 +834,10 @@ class PgHbaRule(dict):
         Basically make sure that IPv6Networks are sorted higher than IPv4Networks.
         This is a 'when all else fails' solution in __lt__.
         """
-        if self['type'] == 'local':
+        if self._type == 'local':
             return 3
 
-        sourceobj = self.source()
+        sourceobj = self.source
         if isinstance(sourceobj, ipaddress.IPv4Network):
             return 2
         if isinstance(sourceobj, ipaddress.IPv6Network):
@@ -727,50 +846,300 @@ class PgHbaRule(dict):
             return 0
         raise PgHbaValueError('This source {0} is of an unknown type...'.format(sourceobj))
 
-    def db_weight(self):
-        """Report the weight of the database.
-
-        Normally, just 1, but for replication this is 0, and for 'all', this is more than 2.
-        """
-        if self['db'] == 'all':
-            return 100000
-        if self['db'] == 'replication':
-            return 0
-        if self['db'] in ['samerole', 'samegroup']:
+    def special_weight(self):
+        """Determines the weight to sort special lines"""
+        if self.comment:
             return 1
-        return 1 + self['db'].count(',')
+        if self._line.startswith("include_if_exists"):
+            return 3
+        if self._line.startswith("include_dir"):
+            return 4
+        if self._line.startswith("include"):
+            return 2
 
-    def user_weight(self):
-        """Report weight when comparing users."""
-        if self['usr'] == 'all':
-            return 1000000
-        return 1
+        return 99  # only empty lines
+
+    def to_dict(self, header_map=None):
+        if header_map is None:
+            header_map = PG_HBA_HDR_NOMAP
+        if self._is_special:
+            if not self._comment:
+                return {}
+            else:
+                return {'comment': self._comment}
+
+        ret_dict = {header_map['contype']: self._type,
+                    header_map['databases']: self._database,
+                    header_map['users']: self._user,
+                    header_map['method']: self._auth_method}
+        if self._address:
+            ret_dict[header_map['address']] = str(self.source)
+        if self._auth_options:
+            ret_dict[header_map['options']] = copy.copy(self._auth_options)
+        if self._comment:
+            ret_dict['comment'] = self._comment
+        return ret_dict
+
+    def _serialize_auth_options(self, delimiter):
+        option_string = ""
+        for key, value in self._auth_options.items():
+            option_string += f"{delimiter}{key}={value}"
+        return option_string
+
+
+def _strip_quotes(string):
+    if not string:
+        return string
+    return string[1:-1] if string.startswith("\"") else string
+
+
+def parse_auth_options(options):
+    option_dict = {}
+    for option in options:
+        split_option = OPTION_RE.match(_strip_quotes(option))
+        if not split_option:
+            raise PgHbaRuleValueError(f"Found invalid option '{option}'. Options need to be in the format 'key=value'")
+        if split_option.group(1) in option_dict.keys():
+            raise PgHbaRuleValueError(f"The rule contains two options with the same key ('{split_option.group(1)}')")
+        option_dict[split_option.group(1)] = split_option.group(2)
+
+    return option_dict
+
+
+def handle_db_and_user_strings(string):
+    # if the string is quoted or a regex, we return it unaltered
+    if "\"" in string or string.startswith("/"):
+        return string
+    # we sort the dbs/users alphabetically
+    else:
+        return ",".join(sorted(string.split(",")))
+
+
+def handle_address_field(address):
+    ret_addr = ""
+    ret_type = ""
+    suffix = -1
+
+    # only IPv6 addresses contain colons
+    if ":" in address:
+        ip_addr_check = IPV6_ADDR_RE.match(address)
+        if not ip_addr_check:
+            raise PgHbaRuleValueError(f"Address '{address}' contains a ':', but is not a valid IPv6 address")
+        ret_addr = ip_addr_check.group(1)
+        ret_type = "IPv6"
+    else:
+        ip_addr_check = IPV4_ADDR_RE.match(address)
+        if ip_addr_check:
+            ret_addr = ip_addr_check.group(1)
+            ret_type = "IPv4"
+
+    # if it is an address, check if there is a suffix
+    if ret_addr:
+        if ip_addr_check.group(3):
+            suffix = int(ip_addr_check.group(3).strip('/'))
+            if ret_type == "IPv4" and suffix > 32:
+                raise PgHbaRuleValueError(f"The suffix '{suffix}' exceeds the maximum of 32 for IPv4 addresses")
+            elif ret_type == "IPv6" and suffix > 128:
+                raise PgHbaRuleValueError(f"The suffix '{suffix}' exceeds the maximum of 128 for IPv6 addresses")
+    # if it doesn't match the IPv4 or IPv6 regex, we assume it is a hostname
+    else:
+        ret_addr = address
+        ret_type = "hostname"
+
+    return ret_addr, ret_type, suffix
+
+
+def handle_netmask_field(netmask, raise_not_valid=True):
+    mask = _strip_quotes(netmask)
+    prefix_len = -1
+
+    if ":" in mask:
+        verify_mask = IPV6_ADDR_RE.match(mask)
+        if not verify_mask:
+            raise PgHbaRuleValueError(f"Netmask '{mask}' contains a ':', but is not a valid IPv6 netmask")
+        mask_type = "IPv6"
+    else:
+        verify_mask = IPV4_ADDR_RE.match(netmask)
+        mask_type = "IPv4"
+
+    if not verify_mask:  # it is not a netmask, at all
+        if raise_not_valid:
+            raise PgHbaRuleValueError(f"The string '{netmask}' is not a valid netmask")
+        else:
+            mask = ""
+            mask_type = "invalid"
+    else:
+        if verify_mask.group(3):  # somebody put a cidr-suffix on the netmask
+            raise PgHbaRuleValueError("The netmask can't have a CIDR suffix")
+        mask_as_ip = ipaddress.ip_address(u'{0}'.format(mask))
+        binvalue = "{0:b}".format(int(mask_as_ip))
+        if '01' in binvalue:
+            raise PgHbaValueError('IP mask {0} is invalid (binary value has 1 after 0)'.format(mask))
+        prefix_len = binvalue.count('1')
+
+    return mask, mask_type, prefix_len
+
+
+def _from_file(file_path):
+    if not os.path.isfile(file_path):
+        return []
+    with open(file_path, 'r') as file:
+        return parse_hba_file(file.read())
+
+
+def write_hba_file(file_path, rule_string, create, module, file_args, diff):
+    """
+    Writes a set of rules to a file
+    :param file_path: The path to the file to write
+    :param rule_string: The rules rendered into a string to write
+    :param create: If `True` the file will be created if it doesn't exist
+    :param module: The module-object
+    :param file_args: Arguments for the destination file
+    :param diff: Diff to add changes to
+    """
+    if not (os.path.isfile(file_path) or create):
+        raise module.fail_json(msg="pg_hba file '{0}' doesn't exist. "
+                                   "Use the create option to autocreate.".format(file_path))
+
+    # tempfile.NamedTemporaryFile has delete_on_close only for Python>=3.12
+    tmpfile = None
+    try:
+        tmpfile = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        tmpfile.write(rule_string)
+        tmpfile.close()
+        module.atomic_move(tmpfile.name, file_path, unsafe_writes=module.params["unsafe_writes"])
+    finally:
+        # try to remove the temporary file if something goes wrong
+        if tmpfile and os.path.isfile(tmpfile.name):
+            os.unlink(tmpfile.name)
+
+    module.set_fs_attributes_if_different(file_args, True, diff, expand=False)
+
+
+def render_rule_list(rule_list, delimiter="\t"):
+    """
+    Turns a list of rules into a string to write into the hba-file
+    :param rule_list: The list of rules to render
+    :param delimiter: The character or sequence used to separate fields
+    :return: A valid string for a pg_hba file
+    """
+    return "\n".join([r.serialize(delimiter) for r in rule_list])
+
+
+def rule_list_to_dict_list(rule_list, header_map=None):
+    dict_list = []
+    for rule in rule_list:
+        if not rule.is_special:
+            dict_list.append(rule.to_dict(header_map=header_map))
+    return dict_list
+
+
+def search_rule(rules, rule):
+    if not rules:
+        return -1
+    for i in range(0, len(rules)):
+        if rules[i] == rule:
+            return i
+    return -1
+
+
+def update_rules(new_rules, existing_rules, prepend_rules=False):
+    """
+    Updates existing rules with new rules. The existing rules are updated in place.
+    This method exists to extract this part of the logic for better testability.
+    :param new_rules: A list of new rules for updating the existing ones
+    :param existing_rules: The list of rules to update
+    :param prepend_rules: Add new rules to the top instead of in the end
+    :return: changed, msgs, diff_before, diff_after
+    """
+    changed = False
+    msgs = []
+    diff_after = []
+    diff_before = []
+
+    for rule in new_rules:
+        if 'contype' in rule and rule['contype']:
+            rule['databases'] = handle_db_and_user_strings(rule['databases'])
+            rule['users'] = handle_db_and_user_strings(rule['users'])
+            pg_hba_rule = Rule(rule_dict=rule)
+        else:
+            if 'comment' in rule:
+                pg_hba_rule = Rule(tokens="COMMENT", comment=rule['comment'])
+            else:
+                continue
+        index = search_rule(existing_rules, pg_hba_rule)
+
+        # append rule if it doesn't exist
+        if rule['state'] == "present" and index == -1:
+            msgs.append('Adding rule {0}'.format(pg_hba_rule))
+            diff_after.append(str(pg_hba_rule))
+            if prepend_rules:
+                existing_rules.insert(0, pg_hba_rule)
+            else:
+                existing_rules.append(pg_hba_rule)
+            changed = True
+        # update rule if it exists but is not correct
+        elif rule['state'] == "present" and index > -1:
+            if not existing_rules[index].is_identical(pg_hba_rule):
+                msgs.append('Updating rule {0}'.format(pg_hba_rule))
+                diff_before.append(str(existing_rules[index]))
+                diff_after.append(str(pg_hba_rule))
+                existing_rules[index] = pg_hba_rule
+                changed = True
+        # delete rule if it exists
+        elif rule['state'] == "absent" and index > -1:
+            msgs.append('Removing rule {0}'.format(pg_hba_rule))
+            diff_before.append(str(existing_rules[index]))
+            del existing_rules[index]
+            changed = True
+
+    return changed, msgs, diff_before, diff_after
+
+
+def sort_rules(rules):
+    """
+    Sorts a list of rules in place.
+    :param rules: A list of rules to sort
+    """
+    # remove blank lines before sorting
+    index_lst = list(range(0, len(rules)))
+    index_lst.reverse()
+    for i in index_lst:
+        if rules[i].is_special and not rules[i].line and not rules[i].comment:
+            del rules[i]
+    rules.sort()
 
 
 def main():
-    '''
+    """
     This function is the main function of this module
-    '''
+    """
     # argument_spec = postgres_common_argument_spec()
     argument_spec = dict()
     argument_spec.update(
+        # REVIEW: imho, the default here should be 'None' otherwise this crashes when 'contype' is 'local'
         address=dict(type='str', default='samehost', aliases=['source', 'src']),
         backup=dict(type='bool', default=False),
+        # DEPRECATED, will be removed in 5.0.0
         backup_file=dict(type='str'),
         contype=dict(type='str', default=None, choices=PG_HBA_TYPES),
         comment=dict(type='str', default=None),
         create=dict(type='bool', default=False),
         databases=dict(type='str', default='all'),
-        dest=dict(type='path', required=True),
+        path=dict(type='path', required=True, aliases=['dest']),
         method=dict(type='str', default='md5', choices=PG_HBA_METHODS),
         netmask=dict(type='str'),
-        options=dict(type='str'),
-        keep_comments_at_rules=dict(type='bool', default=False),
+        # ?? do strings like "key=value another_key=another_value" get parsed automatically?
+        options=dict(type='dict'),
+        # REVIEW: I think this option is useless and should be removed
+        # keep_comments_at_rules=dict(type='bool', default=False),
         state=dict(type='str', default="present", choices=["absent", "present"]),
         users=dict(type='str', default='all'),
         rules=dict(type='list', elements='dict'),
         rules_behavior=dict(type='str', default='conflict', choices=['combine', 'conflict']),
         overwrite=dict(type='bool', default=False),
+        sort_rules=dict(type='bool', default=True),
+        prepend_rules=dict(type='bool', default=False),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -783,22 +1152,26 @@ def main():
     create = bool(module.params["create"] or module.check_mode)
     if module.check_mode:
         backup = False
+        backup_file = ""
     else:
         backup = module.params['backup']
-    dest = module.params["dest"]
-    keep_comments_at_rules = module.params["keep_comments_at_rules"]
+        backup_file = module.params['backup_file']
+    dest = module.params["path"]
     rules = module.params["rules"]
     rules_behavior = module.params["rules_behavior"]
     overwrite = module.params["overwrite"]
+    sorted_rules = module.params["sort_rules"]
+    prepend_rules = module.params["prepend_rules"]
 
     ret = {'msgs': []}
+    diff = {'before': {'file': dest, 'pg_hba': []},
+            'after': {'file': dest, 'pg_hba': []}}
+    pg_hba_rules = []
     try:
-        pg_hba = PgHba(dest, backup=backup, create=create, keep_comments_at_rules=keep_comments_at_rules)
+        pg_hba_rules = _from_file(dest)
     except PgHbaError as error:
         module.fail_json(msg='Error reading file:\n{0}'.format(error))
-
-    if overwrite:
-        pg_hba.clear_rules()
+    nof_initial_rules = len(pg_hba_rules)
 
     rule_keys = [
         'address',
@@ -811,11 +1184,15 @@ def main():
         'state',
         'users'
     ]
-    if rules is None:
-        single_rule = dict()
-        for key in rule_keys:
-            single_rule[key] = module.params[key]
-        rules = [single_rule]
+    if rules is None or not rules:
+        # if both of those aren't set, we just read the rules from the file
+        if not module.params['contype'] and not module.params['comment']:
+            rules = []
+        else:
+            single_rule = dict()
+            for key in rule_keys:
+                single_rule[key] = module.params[key]
+            rules = [single_rule]
     else:
         if rules_behavior == 'conflict':
             # it's ok if the module default is set
@@ -844,44 +1221,76 @@ def main():
                     else:
                         # use module defaults
                         rule[key] = argument_spec[key].get('default', None)
+                elif key == "options" and isinstance(rule["options"], str):
+                    module.warn("You should use a dictionary for options, "
+                                "parsing them from strings might be removed in the future")
+                    try:
+                        rule["options"] = parse_auth_options(tokenize(rule["options"]))
+                    except TokenizerException as e:
+                        module.fail_json(f"Failed to parse options: {e.args[0]}")
+
             new_rules.append(rule)
         rules = new_rules
 
-    for rule in rules:
-        if rule.get('contype', None) is None:
-            continue
+    # If we add rules to the top, reverse the order so the rules are in the same order as they were specified
+    # in the `rules` argument
+    if prepend_rules and not overwrite:
+        rules.reverse()
 
-        try:
-            for database in rule['databases'].split(','):
-                for user in rule['users'].split(','):
-                    pg_hba_rule = PgHbaRule(rule['contype'], database, user, rule['address'], rule['netmask'],
-                                            rule['method'], rule['options'], comment=rule['comment'])
-                    if rule['state'] == "present":
-                        ret['msgs'].append('Adding rule {0}'.format(pg_hba_rule))
-                        pg_hba.add_rule(pg_hba_rule)
-                    else:
-                        ret['msgs'].append('Removing rule {0}'.format(pg_hba_rule))
-                        pg_hba.remove_rule(pg_hba_rule)
-        except PgHbaError as error:
-            module.fail_json(msg='Error modifying rules:\n{0}'.format(error))
-    file_args = module.load_file_common_arguments(module.params)
-    ret['changed'] = changed = pg_hba.changed()
-    if changed:
+    changed = False
+    try:
+        changed, msgs, diff_before, diff_after = update_rules(rules, pg_hba_rules, prepend_rules=prepend_rules)
+        ret['msgs'] += msgs
+        diff['before']['pg_hba'] += diff_before
+        diff['after']['pg_hba'] += diff_after
+
+        # if overwrite is set and there are changes or the number of rules doesn't match we rewrite the file
+        if (changed or nof_initial_rules != len(rules)) and overwrite:
+            changed = True
+            pg_hba_rules = from_rule_list(rules)
+    except PgHbaError as error:
+        module.fail_json(msg='Error modifying rules:\n{0}'.format(error))
+
+    ret['changed'] = changed
+    if not changed:
+        hba_string = render_rule_list(pg_hba_rules)
+    else:
+        if sorted_rules:
+            sort_rules(pg_hba_rules)
+        hba_string = render_rule_list(pg_hba_rules)
         ret['msgs'].append('Changed')
-        ret['diff'] = pg_hba.diff
-
+        file_args = module.load_file_common_arguments(module.params)
         if not module.check_mode:
-            ret['msgs'].append('Writing')
-            try:
-                if pg_hba.write(module.params['backup_file']):
-                    module.set_fs_attributes_if_different(file_args, True, pg_hba.diff,
-                                                          expand=False)
-            except PgHbaError as error:
-                module.fail_json(msg='Error writing file:\n{0}'.format(error))
-            if pg_hba.last_backup:
-                ret['backup_file'] = pg_hba.last_backup
+            if backup:
+                ret['msgs'].append('Creating Backup')
+                backup_file_args = module.load_file_common_arguments(module.params)
+                if backup_file:
+                    # can't use tempfile.TemporaryFile, as we need to write to it and then move it away,
+                    # without it getting removed after we wrote to it
+                    _tmp_file_path = None
+                    try:
+                        _tmp_file_h, _tmp_file_path = tempfile.mkstemp(prefix="pg_hba")
+                        os.close(_tmp_file_h)  # close it directly, so we can use shutil.copy and atomic_move
+                        shutil.copy(dest, _tmp_file_path)
+                        module.atomic_move(_tmp_file_path, backup_file, backup_file_args.get("unsafe_writes"))
+                    finally:
+                        if _tmp_file_path and os.path.isfile(_tmp_file_path):
+                            os.unlink(_tmp_file_path)  # removing the temporary file, as it has served its purpose
+                else:
+                    backup_file = module.backup_local(dest)
+                backup_file_args['path'] = backup_file
+                module.set_fs_attributes_if_different(backup_file_args, True, diff, expand=False)
+                ret['backup_file'] = backup_file
 
-    ret['pg_hba'] = list(pg_hba.get_rules())
+            ret['msgs'].append('Writing')
+            write_hba_file(dest, hba_string, create, module, file_args, diff)
+            ret['diff'] = diff
+        elif not os.path.isfile(dest) and not create:
+            module.warn(f"The file '{dest}' doesn't exist and `create` is `false`. This will cause the module to fail"
+                        "when not running in check-mode. Set `create: true` to prevent this and create the file.")
+
+    ret['pg_hba'] = hba_string
+    ret['pg_hba_dicts'] = rule_list_to_dict_list(pg_hba_rules, header_map=PG_HBA_HDR_MAP)
     module.exit_json(**ret)
 
 

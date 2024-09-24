@@ -35,11 +35,11 @@
   register: result
 - assert:
     that:
-      - "result.pg_hba|length == 1"
-      - "result.pg_hba[0].db == test_rule1.databases"
-      - "result.pg_hba[0].src == test_rule1.address"
-      - "result.pg_hba[0].usr == test_rule1.users"
-      - "result.pg_hba[0].type == test_rule1.contype"
+      - "result.pg_hba_dicts | length == 1"
+      - "result.pg_hba_dicts[0].db == test_rule1.databases"
+      - "result.pg_hba_dicts[0].src == test_rule1.address"
+      - "result.pg_hba_dicts[0].usr == test_rule1.users"
+      - "result.pg_hba_dicts[0].type == test_rule1.contype"
 - name: 'test the same again (overwrite: true, one normal rule) to ensure nothing changed'
   community.postgresql.postgresql_pg_hba:
     <<: *pghba_defaults
@@ -59,11 +59,11 @@
   register: result
 - assert:
     that:
-      - "result.pg_hba|length == 1"
-      - "result.pg_hba[0].db == test_rule2.databases"
-      - "result.pg_hba[0].src == test_rule2.address"
-      - "result.pg_hba[0].usr == test_rule2.users"
-      - "result.pg_hba[0].type == test_rule2.contype"
+      - "result.pg_hba_dicts | length == 1"
+      - "result.pg_hba_dicts[0].db == test_rule2.databases"
+      - "result.pg_hba_dicts[0].src == test_rule2.address"
+      - "result.pg_hba_dicts[0].usr == test_rule2.users"
+      - "result.pg_hba_dicts[0].type == test_rule2.contype"
 - name: 'test the same again (overwrite: true, one bulk rule) to ensure nothing changes'
   community.postgresql.postgresql_pg_hba:
     <<: *pghba_defaults
@@ -76,7 +76,7 @@
       - "result.changed == false"
 
 - name: test rules_behavior conflict
-  community.postgresql.postgresql_pg_hba: "{{ pghba_defaults|combine(item)|combine({'rules': [test_rule2]}) }}"
+  community.postgresql.postgresql_pg_hba: "{{ pghba_defaults | combine(item) | combine({'rules': [test_rule2]}) }}"
   loop:
     - address: 2001:db8::a/128
     - comment: 'testcomment'
@@ -98,10 +98,10 @@
     that:
       - result.failed
       - not result.changed
-      - "result.results|selectattr('changed')|length == 0"
-      - "result.results|rejectattr('failed')|length == 0"
+      - "result.results | selectattr('changed') | length == 0"
+      - "result.results | rejectattr('failed') | length == 0"
       # the 'in' test was added in jinja 2.10
-      - "jinja2_version.rc == 0 and jinja2_version.stdout|trim is version('2.10', '<') or result.results|selectattr('msg', 'in', 'conflict')|length == 0"
+      - "jinja2_version.rc == 0 and jinja2_version.stdout|trim is version('2.10', '<') or result.results | selectattr('msg', 'in', 'conflict') | length == 0"
 
 - name: test rules with module defaults
   community.postgresql.postgresql_pg_hba:
@@ -113,7 +113,7 @@
     that:
       - result.changed
       # assert that module defaults are used
-      - "{'db': 'all', 'method': 'md5', 'src': 'samehost', 'type': 'hostssl', 'usr': 'all'} in result.pg_hba"
+      - "{'db': 'all', 'method': 'md5', 'src': 'samehost', 'type': 'hostssl', 'usr': 'all'} in result.pg_hba_dicts"
 
 - name: test rules with custom defaults
   community.postgresql.postgresql_pg_hba:
@@ -130,7 +130,122 @@
 - assert:
     that:
       - result.changed
-      - "{'db': 'all', 'method': 'md5', 'src': 'samehost', 'type': 'hostssl', 'usr': 'all'} in result.pg_hba" # unchanged preexisting from previous task
-      - "{'db': test_rule1.databases, 'method': test_rule1.method, 'src': test_rule1.address, 'type': test_rule1.contype, 'usr': test_rule1.users} in result.pg_hba"
-      - "{'db': test_rule2.databases, 'method': test_rule2.method, 'src': test_rule2.address, 'type': test_rule2.contype, 'usr': test_rule2.users} not in result.pg_hba"
-      - "{'db': 'other_db', 'method': test_rule1.method, 'src': test_rule1.address, 'type': test_rule1.contype, 'usr': test_rule1.users} in result.pg_hba"
+      - "{'db': 'all', 'method': 'md5', 'src': 'samehost', 'type': 'hostssl', 'usr': 'all'} in result.pg_hba_dicts" # unchanged preexisting from previous task
+      - "{'db': test_rule1.databases, 'method': test_rule1.method, 'src': test_rule1.address, 'type': test_rule1.contype, 'usr': test_rule1.users} in result.pg_hba_dicts"
+      - "{'db': test_rule2.databases, 'method': test_rule2.method, 'src': test_rule2.address, 'type': test_rule2.contype, 'usr': test_rule2.users} not in result.pg_hba_dicts"
+      - "{'db': 'other_db', 'method': test_rule1.method, 'src': test_rule1.address, 'type': test_rule1.contype, 'usr': test_rule1.users} in result.pg_hba_dicts"
+
+- name: test rules without sorting
+  community.postgresql.postgresql_pg_hba:
+    sort_rules: false
+    path: "/tmp/pg_hba_test.conf"
+    rules_behavior: combine
+    overwrite: true
+    create: true
+    address: ""
+    rules: "{{ pg_hba_bulk_test_rules }}"
+  register: result
+- set_fact:
+    expected_hba: "local\tall\tall\tident\t# local ident\nhostnossl\tall\tall\t0.0.0.0/0\treject\t# reject unencrypted connections\n# production users\nhost\tprod\t+developers\t10.128.0.0/16\tcert\nhost\tprod\tproduser\t10.8.8.0/24\tscram-sha-256\nhost\tmonitoring,prod\tmonitoring\tsamehost\tmd5"
+- debug:
+    var: result.pg_hba
+- assert:
+    that:
+      - result.changed
+      - result.pg_hba == expected_hba
+
+- name: checks that changes to comments don't cause changes in the file
+  community.postgresql.postgresql_pg_hba:
+    sort_rules: true
+    path: "/tmp/pg_hba_test.conf"
+    rules_behavior: combine
+    overwrite: false
+    create: true
+    address: ""
+    rules:
+      - contype: host
+        databases: prod
+        users: +developers
+        address: 10.128.0.0/16
+        method: cert
+        comment: "comments are only added if the rule changes"
+      - contype: local
+        databases: all
+        users: all
+        method: ident
+        comment: " local ident "
+      - comment: "   # production users"
+  register: result
+- assert:
+    that: not result.changed
+- name: read pg_hba
+  community.postgresql.postgresql_pg_hba:
+    path: "/tmp/pg_hba_test.conf"
+  register: result
+- assert:
+    that:
+      - not result.changed
+      - result.pg_hba == expected_hba
+
+- name: test that overwrite is not changed if nothing changes
+  community.postgresql.postgresql_pg_hba:
+    sort_rules: false
+    path: "/tmp/pg_hba_test.conf"
+    rules_behavior: combine
+    overwrite: true
+    create: true
+    address: ""
+    rules: "{{ pg_hba_bulk_test_rules }}"
+  register: result
+
+- assert:
+    that: not result.changed
+
+- name: test that rules are not sorted if nothing changes
+  community.postgresql.postgresql_pg_hba:
+    sort_rules: true
+    path: "/tmp/pg_hba_test.conf"
+    rules_behavior: combine
+    overwrite: true
+    create: true
+    address: ""
+    rules: "{{ pg_hba_bulk_test_rules }}"
+  register: result
+
+- name: read pg_hba
+  community.postgresql.postgresql_pg_hba:
+    path: "/tmp/pg_hba_test.conf"
+  register: read
+- assert:
+    that:
+      - not result.changed
+      - not read.changed
+      - read.pg_hba == expected_hba
+
+- name: test adding rules to the top
+  community.postgresql.postgresql_pg_hba:
+    sort_rules: false
+    path: "/tmp/pg_hba_test.conf"
+    rules_behavior: combine
+    overwrite: false
+    create: true
+    address: ""
+    prepend_rules: true
+    rules:
+      - contype: local
+        databases: all
+        users: olduser
+        method: reject
+      - contype: host
+        databases: all
+        users: olduser
+        address: 0.0.0.0/0
+        method: reject
+  register: result
+
+- assert:
+    that:
+      - result.changed
+      - 'result.pg_hba_dicts[0] == {"db": "all", "usr": "olduser", "type": "local", "method": "reject"}'
+      - 'result.pg_hba_dicts[1] == {"db": "all", "usr": "olduser", "type": "host", "src": "0.0.0.0/0", "method": "reject"}'
+      - (result.pg_hba_dicts | length) == (pg_hba_bulk_test_rules | length) + 1

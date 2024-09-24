@@ -10,8 +10,8 @@
     source: '0000:ffff::'
     netmask: 'ffff:fff0::'
     method: md5
-    backup: 'True'
-    state: "{{item}}"
+    backup: true
+    state: "{{ item }}"
   check_mode: true
   with_items:
   - present
@@ -24,15 +24,15 @@
 
 - name: Remove several ip addresses for idempotency check
   postgresql_pg_hba:
-    contype: "{{item.contype|default('host')}}"
-    databases: "{{item.databases|default('all')}}"
+    contype: "{{ item.contype | default('host') }}"
+    databases: "{{ item.databases | default('all') }}"
     dest: /tmp/pg_hba.conf
-    method: "{{item.method|default('md5')}}"
-    netmask: "{{item.netmask|default('')}}"
-    source: "{{item.source|default('')}}"
+    method: "{{ item.method | default('md5') }}"
+    netmask: "{{ item.netmask | default('') }}"
+    source: "{{ item.source | default('') }}"
     state: absent
-    users: "{{item.users|default('all')}}"
-  with_items: "{{pg_hba_test_ips}}"
+    users: "{{ item.users | default('all') }}"
+  with_items: "{{ pg_hba_test_ips }}"
   register: pg_hba_idempotency_check1
 
 - name: idempotency not creating file check
@@ -42,18 +42,18 @@
 
 - name: Add several ip addresses
   postgresql_pg_hba:
-    backup: 'True'
-    contype: "{{item.contype|default('host')}}"
-    create: 'True'
-    databases: "{{item.databases|default('all')}}"
+    backup: false
+    contype: "{{ item.contype | default('host') }}"
+    create: true
+    databases: "{{ item.databases | default('all') }}"
     dest: /tmp/pg_hba.conf
-    method: "{{item.method|default('md5')}}"
-    netmask: "{{item.netmask|default('')}}"
-    source: "{{item.source|default('')}}"
+    method: "{{ item.method | default('md5') }}"
+    netmask: "{{ item.netmask | default('') }}"
+    source: "{{ item.source | default('') }}"
     state: present
-    users: "{{item.users|default('all')}}"
+    users: "{{ item.users | default('all') }}"
   register: pg_hba_change
-  with_items: "{{pg_hba_test_ips}}"
+  with_items: "{{ pg_hba_test_ips }}"
 
 - name: Able to add options on rule without
   postgresql_pg_hba:
@@ -62,25 +62,20 @@
     state: "present"
     contype: "local"
     method: "cert"
-    options: "{{ item }}"
+    options:
+      clientcert: 1
     address: ""
-  with_items:
-  - ""
-  - "clientcert=1"
 
 - name: Retain options even if they contain spaces
   postgresql_pg_hba:
     dest: "/tmp/pg_hba.conf"
     users: "+some"
     state: "present"
-    contype: "{{ item.contype }}"
-    method: "{{ item.method }}"
-    options: "{{ item.options }}"
-    address: "{{ item.address }}"
-  with_items:
-  - { address: "", contype: "local", method: "ldap", options: "ldapserver=example.com ldapport=389 ldapprefix=\"cn=\"" }
-  - { address: "red", contype: "hostssl", method: "cert", options: "clientcert=1 map=mymap" }
-  - { address: "blue", contype: "hostssl", method: "cert", options: "clientcert=1 map=mymap" }
+    rules:
+      - { address: "", contype: "local", method: "ldap", options: "ldapserver=example.com ldapport=389 ldapprefix=\"cn=\"" }
+      - { address: "red", contype: "hostssl", method: "cert", options: "clientcert=1 map=mymap" }
+      - { address: "blue", contype: "hostssl", method: "cert", options: "clientcert=1 map=mymap" }
+    rules_behavior: "combine"
   register: pg_hba_options
 
 - name: read pg_hba rules
@@ -88,17 +83,38 @@
     dest: /tmp/pg_hba.conf
   register: pg_hba
 
+- debug:
+    var: pg_hba.pg_hba_dicts
+- assert:
+    that:
+      - 'pg_hba.pg_hba_dicts == [
+           { "db": "all", "method": "ldap", "type": "local", "usr": "+some", "options": {"ldapserver": "example.com", "ldapport": "389", "ldapprefix": "\"cn=\""}},
+           { "db": "all", "method": "md5", "type": "local", "usr": "all,postgres,test" },
+           { "db": "all", "method": "md5", "src": "2001:db8::1/128", "type": "hostgssenc", "usr": "postgres" },
+           { "db": "all", "method": "cert", "src": "blue", "type": "hostssl", "usr": "+some", "options": {"clientcert": "1", "map": "mymap"}},
+           { "db": "all", "method": "cert", "src": "red", "type": "hostssl", "usr": "+some", "options": {"clientcert": "1", "map": "mymap"}},
+           { "db": "all", "method": "md5", "src": "127.0.0.1/32", "type": "host", "usr": "all" },
+           { "db": "all", "method": "md5", "src": "::1/128", "type": "host", "usr": "all" },
+           { "db": "all", "method": "md5", "src": "2001:db8::1/128", "type": "hostnogssenc", "usr": "all" },
+           { "db": "all", "method": "scram-sha-256", "src": "0:ff00::/120", "type": "host", "usr": "all" },
+           { "db": "replication", "method": "md5", "src": "192.168.0.0/24", "type": "host", "usr": "all" },
+           { "db": "all", "method": "md5", "src": "192.168.0.0/24", "type": "host", "usr": "all" },
+           { "db": "all", "method": "reject", "src": "192.168.1.0/24", "type": "host", "usr": "all" },
+           { "db": "all", "method": "trust", "src": "172.16.0.0/16", "type": "host", "usr": "all" },
+           { "db": "all", "method": "md5", "src": "0:fff0::/28", "type": "host", "usr": "all" }
+      ]'
+
 - name: Add several ip addresses again for idempotency check
   postgresql_pg_hba:
-    contype: "{{item.contype|default('host')}}"
-    databases: "{{item.databases|default('all')}}"
+    contype: "{{ item.contype | default('host') }}"
+    databases: "{{ item.databases | default('all') }}"
     dest: /tmp/pg_hba.conf
-    method: "{{item.method|default('md5')}}"
-    netmask: "{{item.netmask|default('')}}"
-    source: "{{item.source|default('')}}"
+    method: "{{ item.method | default('md5') }}"
+    netmask: "{{ item.netmask | default('') }}"
+    source: "{{ item.source | default('') }}"
     state: present
-    users: "{{item.users|default('all')}}"
-  with_items: "{{pg_hba_test_ips}}"
+    users: "{{ item.users | default('all') }}"
+  with_items: "{{ pg_hba_test_ips }}"
   register: pg_hba_idempotency_check2
 
 - name: pre-backup stat
@@ -108,7 +124,7 @@
 
 - name: Add new ip address for backup check and netmask_sameas_prefix check
   postgresql_pg_hba:
-    backup: 'True'
+    backup: true
     contype: host
     dest: /tmp/pg_hba.conf
     method: md5
@@ -119,7 +135,7 @@
 
 - name: Add new ip address for netmask_sameas_prefix check
   postgresql_pg_hba:
-    backup: 'True'
+    backup: true
     contype: host
     dest: /tmp/pg_hba.conf
     method: md5
@@ -129,7 +145,7 @@
 
 - name: post-backup stat
   stat:
-    path: "{{pg_hba_backup_check2.backup_file}}"
+    path: "{{ pg_hba_backup_check2.backup_file }}"
   register: postbackupstat
 
 - name: Dont allow netmask for src in [all, samehost, samenet]
@@ -143,28 +159,8 @@
   register: pg_hba_fail_src_all_with_netmask
   ignore_errors: true
 
-- debug:
-    var: pg_hba.pg_hba
 - assert:
     that:
-    - 'pg_hba.pg_hba == [
-           { "db": "all", "method": "ldap", "type": "local", "usr": "+some", "options": "ldapserver=example.com ldapport=389 ldapprefix=\"cn=\"" },
-           { "db": "all", "method": "md5", "type": "local", "usr": "postgres" },
-           { "db": "all", "method": "md5", "type": "local", "usr": "test" },
-           { "db": "all", "method": "md5", "type": "local", "usr": "all" },
-           { "db": "all", "method": "md5", "src": "2001:db8::1/128", "type": "hostgssenc", "usr": "postgres" },
-           { "db": "all", "method": "cert", "src": "blue", "type": "hostssl", "usr": "+some", "options": "clientcert=1 map=mymap" },
-           { "db": "all", "method": "cert", "src": "red", "type": "hostssl", "usr": "+some", "options": "clientcert=1 map=mymap" },
-           { "db": "all", "method": "md5", "src": "127.0.0.1/32", "type": "host", "usr": "all" },
-           { "db": "all", "method": "md5", "src": "2001:db8::1/128", "type": "hostnogssenc", "usr": "all" },
-           { "db": "all", "method": "md5", "src": "::1/128", "type": "host", "usr": "all" },
-           { "db": "all", "method": "scram-sha-256", "src": "0:ff00::/120", "type": "host", "usr": "all" },
-           { "db": "replication", "method": "md5", "src": "192.168.0.0/24", "type": "host", "usr": "all" },
-           { "db": "all", "method": "md5", "src": "192.168.0.0/24", "type": "host", "usr": "all" },
-           { "db": "all", "method": "reject", "src": "192.168.1.0/24", "type": "host", "usr": "all" },
-           { "db": "all", "method": "trust", "src": "172.16.0.0/16", "type": "host", "usr": "all" },
-           { "db": "all", "method": "md5", "src": "0:fff0::/28", "type": "host", "usr": "all" }
-      ]'
     - 'pg_hba_change is changed'
     - 'pg_hba_checkmode_check.stat.exists == false'
     - 'not pg_hba_idempotency_check1 is changed'
@@ -202,7 +198,7 @@
     var: content
 - assert:
     that:
-      - '"\nhost\tall\tall\t2001:db8::1/128\tmd5\t#comment1" == content'
+      - '"host\tall\tall\t2001:db8::1/128\tmd5\t# comment1" == content'
 
 - name: Create a rule with the comment 'comment2'
   postgresql_pg_hba:
@@ -225,9 +221,9 @@
     var: content
 - assert:
     that:
-      - '"#comment1\nhost\tall\tall\t2001:db8::1/128\tmd5\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2" == content'
+      - '"host\tall\tall\t2001:db8::1/128\tmd5\t# comment1\nhost\tall\tall\t2001:db8::2/128\tmd5\t# comment2" == content'
 
-- name: Create a rule with the comment 'comment3' and keep_comments_at_rules
+- name: Create a rule with the comment 'comment3'
   postgresql_pg_hba:
     contype: host
     dest: /tmp/pg_hba2.conf
@@ -235,7 +231,6 @@
     address: "2001:db8::3/128"
     state: present
     comment: "comment3"
-    keep_comments_at_rules: true
 
 - name: Fetch the file
   fetch:
@@ -249,4 +244,4 @@
     var: content
 - assert:
     that:
-      - '"#comment1\nhost\tall\tall\t2001:db8::1/128\tmd5\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2\nhost\tall\tall\t2001:db8::3/128\tmd5\t#comment3" == content'
+      - '"host\tall\tall\t2001:db8::1/128\tmd5\t# comment1\nhost\tall\tall\t2001:db8::2/128\tmd5\t# comment2\nhost\tall\tall\t2001:db8::3/128\tmd5\t# comment3" == content'

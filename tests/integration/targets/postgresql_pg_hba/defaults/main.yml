@@ -6,7 +6,10 @@ pg_hba_test_ips:
   netmask: 'ffff:fff0::'
 - source: '192.168.0.0/24'
   netmask: ''
-  databases: 'all,replication'
+  databases: 'all'
+- source: '192.168.0.0/24'
+  netmask: ''
+  databases: 'replication'
 - source: '192.168.1.0/24'
   netmask: ''
   databases: 'all'
@@ -27,3 +30,32 @@ pg_hba_test_ips:
 - contype: hostnogssenc
   users: all
   source: '2001:db8::1/128'
+
+pg_hba_bulk_test_rules:
+  - contype: local
+    databases: all
+    users: all
+    method: ident
+    comment: "local ident"
+  - contype: hostnossl
+    databases: all
+    users: all
+    address: 0.0.0.0/0
+    method: reject
+    comment: "reject unencrypted connections"
+  - comment: "# production users"
+  - contype: host
+    databases: prod
+    users: +developers
+    address: 10.128.0.0/16
+    method: cert
+  - contype: host
+    databases: prod
+    users: produser
+    address: 10.8.8.0/24
+    method: scram-sha-256
+  - contype: host
+    databases: prod,monitoring
+    users: monitoring
+    address: samehost
+    method: md5
