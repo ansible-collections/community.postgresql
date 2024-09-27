@@ -134,8 +134,8 @@ stages:
           targets:
             - name: Fedora 40
               test: fedora40
-            # - name: Ubuntu 24.04
-            #   test: ubuntu2404
+            - name: Ubuntu 24.04
+              test: ubuntu2404
             - name: Ubuntu 22.04
               test: ubuntu2204
 
@@ -162,8 +162,6 @@ stages:
           targets:
             - name: Fedora 39
               test: fedora39
-            - name: Ubuntu 20.04
-              test: ubuntu2004
             - name: Ubuntu 22.04
               test: ubuntu2204
 
@@ -175,10 +173,6 @@ stages:
         parameters:
           testFormat: 2.16/linux/{0}/1
           targets:
-            - name: Fedora 38
-              test: fedora38
-            - name: Ubuntu 20.04
-              test: ubuntu2004
             - name: Ubuntu 22.04
               test: ubuntu2204
 
@@ -192,8 +186,6 @@ stages:
           targets:
             - name: Fedora 37
               test: fedora37
-            - name: Ubuntu 20.04
-              test: ubuntu2004
             - name: Ubuntu 22.04
               test: ubuntu2204
 

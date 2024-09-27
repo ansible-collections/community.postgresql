@@ -1,4 +1,4 @@
-pg_ver: 15
+pg_ver: 16
 
 postgresql_packages:
   - "apt-utils"
@@ -8,7 +8,7 @@ postgresql_packages:
   - "postgresql-client-{{ pg_ver }}"
 
 pip_packages:
-  - "psycopg==3.1.9" # We need at least 3.1 for Client-side-binding cursors
+  - "psycopg==3.2.2" # We need at least 3.1 for Client-side-binding cursors
 
 pg_conf_location: "/etc/postgresql/{{ pg_ver }}/main/postgresql.conf"
 pg_hba_location: "/etc/postgresql/{{ pg_ver }}/main/pg_hba.conf"
