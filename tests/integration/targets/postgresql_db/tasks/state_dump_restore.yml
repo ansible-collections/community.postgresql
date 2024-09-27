@@ -125,6 +125,10 @@
   become_user: "{{ pg_user }}"
   become: true
 
+- name: Debug task to trigger tests
+  debug:
+    msg: Remove this task
+
 - name: assert output message restore the database
   assert:
     that:
