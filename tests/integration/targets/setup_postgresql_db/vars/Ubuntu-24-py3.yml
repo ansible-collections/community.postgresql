@@ -5,7 +5,7 @@ postgresql_packages:
   - "postgresql-{{ pg_ver }}"
   - "postgresql-common"
   # - "python3-psycopg2"
-  - "postgresql-client"
+  - "postgresql-client-{{ pg_ver }}"
 
 pip_packages:
   - "psycopg==3.2.2" # We need at least 3.1 for Client-side-binding cursors
