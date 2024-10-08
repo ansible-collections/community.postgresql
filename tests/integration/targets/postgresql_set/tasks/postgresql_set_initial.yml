@@ -348,6 +348,7 @@
   - assert:
       that:
       - result is changed
+      - result.queries == ["ALTER SYSTEM SET archive_command = ''"]
 
   - name: postgresql_set - set empty string as value again
     <<: *task_parameters
@@ -440,31 +441,3 @@
   - assert:
       that:
       - result is changed
-
-  ########################################################################
-  # https://github.com/ansible-collections/community.postgresql/issues/744
-  - name: Pass an empty string as value
-    <<: *task_parameters
-    postgresql_set:
-      <<: *pg_parameters
-      name: shared_preload_libraries
-      value: 'pg_stat_statements'
-
-  - name: Restart PostgreSQL
-    become: true
-    service:
-      name: "{{ postgresql_service }}"
-      state: restarted
-
-  - name: Pass an empty string as value
-    <<: *task_parameters
-    postgresql_set:
-      <<: *pg_parameters
-      name: shared_preload_libraries
-      value: ''
-    register: result
-
-  - assert:
-      that:
-      - result is changed
-      - result.queries == ["ALTER SYSTEM SET shared_preload_libraries = ''"]
