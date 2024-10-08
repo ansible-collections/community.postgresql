@@ -425,6 +425,13 @@ def main():
         elif len(value) > 1 and ('b' in value[-1] and value[:-1].isdigit()):
             value = value.upper()
 
+    if name == 'shared_preload_libraries' and value == '':
+        msg = ("Due to a PostgreSQL bug in resetting shared_preload_libraries "
+               "with ALTER SYSTEM SET, setting it as an empty string is "
+               "not supported by the module to avoid crashes. "
+               "If you think the bug has been fixed, please let us know.")
+        module.fail_json(msg=msg)
+
     if value is not None and reset:
         module.fail_json(msg="%s: value and reset params are mutually exclusive" % name)
 

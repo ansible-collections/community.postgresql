@@ -388,6 +388,22 @@
       - result is failed
       - result.msg is search('No such parameter')
 
+  ########################################################################
+  # https://github.com/ansible-collections/community.postgresql/issues/744
+  - name: Try to reset shared_preload_libraries
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: shared_preload_libraries
+      value: ''
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - result.msg is search('Due to a PostgreSQL bug in resetting shared_preload_libraries')
+
   #######################################################################
   # https://github.com/ansible-collections/community.postgresql/issues/48
   - name: Pass a parameter containing b in check_mode
