@@ -1,2 +1,2 @@
 bugfixes:
-- postgresql_set - forbids re-setting shared_preload_libraries by passing an emty string (https://github.com/ansible-collections/community.postgresql/issues/744).
+- postgresql_set - forbids re-setting shared_preload_libraries by passing an empty string (https://github.com/ansible-collections/community.postgresql/issues/744).
