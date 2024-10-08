@@ -390,7 +390,6 @@ def param_set(cursor, module, name, value, context, server_version):
         cursor.execute(query)
 
         if context != 'postmaster':
-            executed_queries.append(query)
             cursor.execute("SELECT pg_reload_conf()")
 
     except Exception as e:
