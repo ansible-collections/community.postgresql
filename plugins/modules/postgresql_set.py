@@ -386,6 +386,19 @@ def param_set(cursor, module, name, value, context, server_version):
     return True
 
 
+def param_reset(cursor, module, name, context):
+    try:
+        query = "ALTER SYSTEM RESET %s" % name
+        cursor.execute(query)
+
+        if context != 'postmaster':
+            cursor.execute("SELECT pg_reload_conf()")
+
+    except Exception as e:
+        module.fail_json(msg="Unable to reset %s due to : %s" % (name, to_native(e)))
+
+    return True
+
 # ===========================================
 # Module execution.
 #
@@ -427,8 +440,9 @@ def main():
 
     if name == 'shared_preload_libraries' and value == '':
         msg = ("Due to a PostgreSQL bug in resetting shared_preload_libraries "
-               "with ALTER SYSTEM SET, setting it as an empty string is "
-               "not supported by the module to avoid crashes. "
+               "with ALTER SYSTEM SET, setting it as an empty string "
+               "is not supported by the module to avoid crashes. "
+               "Use the `value: default` or `reset: true` argument instead. "
                "If you think the bug has been fixed, please let us know.")
         module.fail_json(msg=msg)
 
@@ -527,7 +541,7 @@ def main():
             )
             module.exit_json(**kw)
 
-        changed = param_set(cursor, module, name, boot_val, context, ver)
+        changed = param_reset(cursor, module, name, context)
 
     cursor.close()
     db_connection.close()

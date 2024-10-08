@@ -404,6 +404,37 @@
       - result is failed
       - result.msg is search('Due to a PostgreSQL bug in resetting shared_preload_libraries')
 
+  - name: Try to reset shared_preload_libraries with default
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: shared_preload_libraries
+      value: default
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: Try to reset shared_preload_libraries with reset
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: shared_preload_libraries
+      reset: true
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is not changed
+
+  - name: Restart PostgreSQL
+    become: true
+    service:
+      name: "{{ postgresql_service }}"
+      state: restarted
+
   #######################################################################
   # https://github.com/ansible-collections/community.postgresql/issues/48
   - name: Pass a parameter containing b in check_mode
