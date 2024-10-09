@@ -171,19 +171,21 @@
 
 - block:
 
-    - name: Check that the DB has all of our options including icu
-      become_user: "{{ pg_user }}"
-      become: true
-      shell: echo "select datname, datconnlimit, pg_encoding_to_char(encoding), datcollate, datctype, daticulocale, CASE datlocprovider WHEN 'i' THEN 'lib_icu' WHEN 'c' THEN 'libc' END AS localeprovider from pg_database where datname = '{{ db_name_icu }}';" | psql -d postgres
-      register: result
+    - name: Set a column name depending for PG < 17
       when: postgres_version_resp.stdout is version('17.0', '<')
+      set_fact:
+        datlocale: daticulocale
+
+    - name: Set a column name depending for PG >= 17
+      when: postgres_version_resp.stdout is version('17.0', '>=')
+      set_fact:
+        datlocale: datlocale
 
     - name: Check that the DB has all of our options including icu
       become_user: "{{ pg_user }}"
       become: true
-      shell: echo "select datname, datconnlimit, pg_encoding_to_char(encoding), datcollate, datctype, datlocale, CASE datlocprovider WHEN 'i' THEN 'lib_icu' WHEN 'c' THEN 'libc' END AS localeprovider from pg_database where datname = '{{ db_name_icu }}';" | psql -d postgres
+      shell: echo "select datname, datconnlimit, pg_encoding_to_char(encoding), datcollate, datctype, {{ datlocale }}, CASE datlocprovider WHEN 'i' THEN 'lib_icu' WHEN 'c' THEN 'libc' END AS localeprovider from pg_database where datname = '{{ db_name_icu }}';" | psql -d postgres
       register: result
-      when: postgres_version_resp.stdout is version('17.0', '>=')
 
     - assert:
         that:
