@@ -171,6 +171,14 @@ context:
   returned: success
   type: str
   sample: user
+queries:
+  description:
+  - List of executed DML queries.
+  returned: success
+  type: list
+  elements: str
+  sample: ["ALTER SYSTEM SET shared_preload_libraries = ''"]
+  version_added: '3.7.0'
 '''
 
 from copy import deepcopy
@@ -187,6 +195,8 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     pg_cursor_args,
     postgres_common_argument_spec,
 )
+
+executed_queries = []
 
 PG_REQ_VER = 90400
 
@@ -375,6 +385,8 @@ def param_set(cursor, module, name, value, context, server_version):
                 query = "ALTER SYSTEM SET %s = %s" % (name, value)
             else:
                 query = "ALTER SYSTEM SET %s = '%s'" % (name, value)
+
+        executed_queries.append(query)
         cursor.execute(query)
 
         if context != 'postmaster':
@@ -502,6 +514,7 @@ def main():
             unit=unit,
         )
         kw['restart_required'] = restart_required
+        kw['queries'] = executed_queries
         module.exit_json(**kw)
 
     # Set param (value can be an empty string):
@@ -518,6 +531,7 @@ def main():
                 value=raw_val,
                 unit=unit,
             )
+            kw['queries'] = executed_queries
             module.exit_json(**kw)
 
         changed = param_set(cursor, module, name, boot_val, context, ver)
@@ -552,6 +566,7 @@ def main():
 
     kw['changed'] = changed
     kw['restart_required'] = restart_required
+    kw['queries'] = executed_queries
 
     if restart_required and changed:
         module.warn("Restart of PostgreSQL is required for setting %s" % name)

@@ -348,6 +348,7 @@
   - assert:
       that:
       - result is changed
+      - result.queries == ["ALTER SYSTEM SET archive_command = ''"]
 
   - name: postgresql_set - set empty string as value again
     <<: *task_parameters
