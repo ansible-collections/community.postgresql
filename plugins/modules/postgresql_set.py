@@ -365,51 +365,46 @@ def pretty_to_bytes(pretty_val):
         return pretty_val
 
 
-def param_set(cursor, module, name, value, context, server_version):
-    try:
-        if str(value).lower() == 'default':
-            query = "ALTER SYSTEM SET %s = DEFAULT" % name
-        else:
-            if isinstance(value, str) and \
-                    ',' in value and \
-                    not name.endswith(('_command', '_prefix')) and \
-                    not (server_version < 140000 and name == 'unix_socket_directories'):
-                # Issue https://github.com/ansible-collections/community.postgresql/issues/78
-                # Change value from 'one, two, three' -> "'one','two','three'"
-                # PR https://github.com/ansible-collections/community.postgresql/pull/400
-                # Parameter names ends with '_command' or '_prefix' can contains commas but are not lists
-                # PR https://github.com/ansible-collections/community.postgresql/pull/521
-                # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and
-                # GUC_LIST_QUOTE options so it is a single value parameter
-                value = ','.join(["'" + elem.strip() + "'" for elem in value.split(',')])
-                query = "ALTER SYSTEM SET %s = %s" % (name, value)
-            else:
-                query = "ALTER SYSTEM SET %s = '%s'" % (name, value)
+def param_set(cursor, module, name, value, server_version):
+    if isinstance(value, str) and ',' in value and \
+            not name.endswith(('_command', '_prefix')) and \
+            not (server_version < 140000 and name == 'unix_socket_directories'):
+        # Issue https://github.com/ansible-collections/community.postgresql/issues/78
+        # Change value from 'one, two, three' -> "'one','two','three'"
+        # PR https://github.com/ansible-collections/community.postgresql/pull/400
+        # Parameter names ends with '_command' or '_prefix' can contains commas but are not lists
+        # PR https://github.com/ansible-collections/community.postgresql/pull/521
+        # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and
+        # GUC_LIST_QUOTE options so it is a single value parameter
+        value = ','.join(["'" + elem.strip() + "'" for elem in value.split(',')])
+        query = "ALTER SYSTEM SET %s = %s" % (name, value)
+    else:
+        query = "ALTER SYSTEM SET %s = '%s'" % (name, value)
 
+    fail_msg = "Unable to set %s value due to : %s"
+    return exec_set_sql(cursor, module, query, name, fail_msg)
+
+
+def param_set_default(cursor, module, name):
+    query = "ALTER SYSTEM SET %s = DEFAULT" % name
+    fail_msg = "Unable to set default value for %s due to : %s"
+    return exec_set_sql(cursor, module, query, name, fail_msg)
+
+
+def param_reset(cursor, module, name):
+    query = "ALTER SYSTEM RESET %s" % name
+    fail_msg = "Unable to reset %s due to : %s"
+    return exec_set_sql(cursor, module, query, name, fail_msg)
+
+
+def exec_set_sql(cursor, module, query, setting_name, fail_msg):
+    try:
         executed_queries.append(query)
         cursor.execute(query)
-
-        if context != 'postmaster':
-            cursor.execute("SELECT pg_reload_conf()")
-
     except Exception as e:
-        module.fail_json(msg="Unable to set %s value due to : %s" % (name, to_native(e)))
-
+        module.fail_json(msg=fail_msg % (setting_name, to_native(e)))
     return True
 
-
-def param_reset(cursor, module, name, context):
-    try:
-        query = "ALTER SYSTEM RESET %s" % name
-        cursor.execute(query)
-
-        if context != 'postmaster':
-            cursor.execute("SELECT pg_reload_conf()")
-
-    except Exception as e:
-        module.fail_json(msg="Unable to reset %s due to : %s" % (name, to_native(e)))
-
-    return True
 
 # ===========================================
 # Module execution.
@@ -540,7 +535,10 @@ def main():
 
     # Set param (value can be an empty string):
     if value is not None and value != current_val:
-        changed = param_set(cursor, module, name, value, context, ver)
+        if value == 'default':
+            changed = param_set_default(cursor, module, name)
+        else:
+            changed = param_set(cursor, module, name, value, ver)
 
         kw['value_pretty'] = value
 
@@ -555,7 +553,11 @@ def main():
             kw['queries'] = executed_queries
             module.exit_json(**kw)
 
-        changed = param_reset(cursor, module, name, context)
+        changed = param_reset(cursor, module, name)
+
+    # When the setting can be changed w/o restart, apply it
+    if not module.check_mode and changed and context != 'postmaster':
+        cursor.execute("SELECT pg_reload_conf()")
 
     cursor.close()
     db_connection.close()
