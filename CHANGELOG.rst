@@ -4,6 +4,27 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v3.7.0
+======
+
+Release Summary
+---------------
+
+This is a minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- postgresql_set - adds the ``queries`` return value to return executed DML statements.
+
+Bugfixes
+--------
+
+- postgresql_set - fixes resetting logic to allow resetting shared_preload_libraries with ``reset: true`` (https://github.com/ansible-collections/community.postgresql/issues/744).
+- postgresql_set - forbids resetting shared_preload_libraries by passing an empty string (https://github.com/ansible-collections/community.postgresql/issues/744).
+
 v3.6.1
 ======
 

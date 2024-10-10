@@ -1,10 +1,10 @@
 namespace: community
 name: postgresql
-version: 3.6.1
+version: 3.7.0
 readme: README.md
 authors:
   - Ansible PostgreSQL community
-description: null
+description: A collection of PostgreSQL community modules for Ansible
 license_file: COPYING
 tags:
   - database
