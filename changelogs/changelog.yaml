@@ -765,3 +765,23 @@ releases:
     - 0-comment.yml
     - 3.6.1.yml
     release_date: '2024-09-17'
+  3.7.0:
+    changes:
+      bugfixes:
+      - 'postgresql_set - fixes resetting logic to allow resetting shared_preload_libraries
+        with ``reset: true`` (https://github.com/ansible-collections/community.postgresql/issues/744).'
+      - postgresql_set - forbids resetting shared_preload_libraries by passing an
+        empty string (https://github.com/ansible-collections/community.postgresql/issues/744).
+      minor_changes:
+      - postgresql_set - adds the ``queries`` return value to return executed DML
+        statements.
+      release_summary: 'This is a minor release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 0-pg_set.yml
+    - 1-pg_set.yml
+    - 3.7.0.yml
+    release_date: '2024-10-10'

@@ -1,2 +1,0 @@
-minor_changes:
-- postgresql_set - adds the ``queries`` return value to return executed DML statements.
