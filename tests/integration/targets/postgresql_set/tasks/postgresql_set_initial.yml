@@ -107,6 +107,7 @@
       that:
       - reset_wm.name == 'work_mem'
       - reset_wm.changed == true
+      - result.queries == ["ALTER SYSTEM RESET work_mem"]
       - reset_wm.value_pretty != reset_wm.prev_val_pretty
       - reset_wm.restart_required == false
       - reset_wm.value.value != '12582912' 
@@ -168,6 +169,7 @@
 
   - assert:
       that:
+      - result.queries == ["ALTER SYSTEM SET work_mem = DEFAULT"]
       - def_wm.name == 'work_mem'
       - def_wm.changed == true
       - def_wm.value_pretty != def_wm.prev_val_pretty
@@ -415,6 +417,7 @@
 
   - assert:
       that:
+      - result.queries == ["ALTER SYSTEM SET shared_preload_libraries = DEFAULT"]
       - result is changed
 
   - name: Try to reset shared_preload_libraries with reset
@@ -424,7 +427,6 @@
       name: shared_preload_libraries
       reset: true
     register: result
-    ignore_errors: true
 
   - assert:
       that:
