@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright: (c) 2021, Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
+# Copyright: (c) 2021, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 
 from __future__ import absolute_import, division, print_function
 

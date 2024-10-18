@@ -1,5 +1,5 @@
 # The tests below were added initially and moved here
-# from the shared target called ``postgresql`` by @Andersson007 <aaklychkov@mail.ru>.
+# from the shared target called ``postgresql`` by @Andersson007 <andrew.a.klychkov@gmail.com>.
 # You can see modern examples of CI tests in postgresql_publication directory, for example.
 
 #

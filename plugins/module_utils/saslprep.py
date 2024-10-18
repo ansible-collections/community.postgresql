@@ -6,7 +6,7 @@
 # still belong to the author of the module, and may assign their own license
 # to the complete work.
 
-# Copyright: (c) 2020, Andrew Klychkov (@Andersson007) <aaklychkov@mail.ru>
+# Copyright: (c) 2020, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 #
 # Simplified BSD License (see simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
 
