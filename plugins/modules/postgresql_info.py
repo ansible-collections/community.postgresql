@@ -143,7 +143,7 @@ roles:
   type: dict
 pending_restart_settings:
   description:
-  - List of settings that are pending until restart to be set.
+  - List of changed settings that will take effect upon restart .
   returned: success
   type: list
 settings:
