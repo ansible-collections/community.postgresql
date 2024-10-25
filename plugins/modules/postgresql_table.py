@@ -208,6 +208,14 @@ EXAMPLES = r'''
     name: bar
     state: absent
     cascade: true
+
+- name: Create table with composite primary key
+  community.postgresql.postgresql_table:
+    name: composite_pk_table
+    columns:
+    - id bigserial
+    - num bigint
+    - primary key (id, num)
 '''
 
 RETURN = r'''
