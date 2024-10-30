@@ -13,15 +13,15 @@ import sys
 import pytest
 
 if sys.version_info[0] == 3:
-    from plugins.modules.postgresql_pg_hba import Rule, search_rule, parse_hba_file, from_rule_list, PgHbaError, \
-    PgHbaRuleError, PgHbaRuleValueError, handle_db_and_user_strings, handle_address_field, handle_netmask_field, \
-    PG_HBA_HDR_MAP, tokenize, TokenizerException, PgHbaValueError, update_rules, render_rule_list, \
-    rule_list_to_dict_list, sort_rules
+    from plugins.modules.postgresql_pg_hba import Rule, search_rule, parse_hba_file, from_rule_list, \
+        PgHbaRuleError, PgHbaRuleValueError, handle_db_and_user_strings, handle_address_field, handle_netmask_field, \
+        PG_HBA_HDR_MAP, tokenize, TokenizerException, PgHbaValueError, update_rules, render_rule_list, \
+        rule_list_to_dict_list, sort_rules
 elif sys.version_info[0] == 2:
-    from ansible_collections.community.postgresql.plugins.modules.postgresql_pg_hba import (Rule, search_rule,
-        parse_hba_file, from_rule_list, PgHbaError, PgHbaRuleError, PgHbaRuleValueError, handle_db_and_user_strings,
-        handle_address_field, handle_netmask_field, PG_HBA_HDR_MAP, tokenize, TokenizerException, PgHbaValueError,
-        update_rules, render_rule_list, rule_list_to_dict_list, sort_rules)
+    from ansible_collections.community.postgresql.plugins.modules.postgresql_pg_hba import Rule, search_rule, \
+        parse_hba_file, from_rule_list, PgHbaRuleError, PgHbaRuleValueError, handle_db_and_user_strings, \
+        handle_address_field, handle_netmask_field, PG_HBA_HDR_MAP, tokenize, TokenizerException, PgHbaValueError, \
+        update_rules, render_rule_list, rule_list_to_dict_list, sort_rules
 
 VALID_PG_HBA = \
     r'''local   all             all                                     trust
@@ -238,10 +238,17 @@ def test_rule_is_identical():
 def test_rule_eq():
     assert (Rule(tokens=["local", "all", "all", "ident"], comment=" ident  ") ==
             Rule(tokens=["local", "all", "all", "ident"], comment="ident"))
-    assert (Rule(
-        rule_dict={"contype": "local", "databases": "all", "users": "all", "method": "ident", "comment": " ident "}) ==
-            Rule(rule_dict={"contype": "local", "databases": "all", "users": "all", "method": "ident",
-                            "comment": "ident"}))
+    assert (Rule(rule_dict={"contype": "local",
+                            "databases": "all",
+                            "users": "all",
+                            "method": "ident",
+                            "comment": " ident "}) ==
+            Rule(rule_dict={"contype": "local",
+                            "databases": "all",
+                            "users": "all",
+                            "method": "ident",
+                            "comment": "ident"})
+            )
 
 
 def test_rule_lt():
@@ -467,17 +474,17 @@ def test_update_rules():
 
     tmp_rule_dict = rule_list_to_dict_list(rules)
     local_all = {"contype": "local", "databases": "all", "users": "all", "method": "ident", "state": "present"}
-    changed, _, _, _ = update_rules([local_all], rules)
+    changed, a, b, c = update_rules([local_all], rules)
     assert not changed
     assert tmp_rule_dict == rule_list_to_dict_list(rules)
 
     local_all["method"] = "trust"
-    changed, _, _, _ = update_rules([local_all], rules)
+    changed, a, b, c = update_rules([local_all], rules)
     assert changed
     assert rules[0].method == "trust"
 
     local_all["state"] = "absent"
-    changed, _, _, _ = update_rules([local_all], rules)
+    changed, a, b, c = update_rules([local_all], rules)
     assert changed
     assert len(rules) == 2
     assert rules[0].method == "md5"
