@@ -486,7 +486,7 @@ class Rule(object):
         # normalize comment so we can safely compare it if we have to
         if comment:
             self._comment = comment.strip()
-            self._comment = f"{'# ' if not self._comment.startswith('#') else ''}{self._comment}"
+            self._comment = '# ' + self._comment if not self._comment.startswith('#') else self._comment
         else:
             self._comment = comment
 
@@ -593,8 +593,8 @@ class Rule(object):
 
         # if the contype is "local", the rule can't contain an address or netmask
         else:
-            if (("address" in rule_dict and rule_dict["address"]) or
-                    ("netmask" in rule_dict and rule_dict["netmask"])):
+            if (("address" in rule_dict and rule_dict["address"])
+                    or ("netmask" in rule_dict and rule_dict["netmask"])):
                 raise PgHbaRuleError("Rule can't contain an address and netmask if the connection-type is 'local'")
 
         # verify the method
@@ -669,10 +669,10 @@ class Rule(object):
             return self.line == other.line
 
         # normal rules are equal if they key matches
-        return (self._type == other.type and
-                self._user == other.user and
-                self._database == other.database and
-                self.source == other.source)
+        return (self._type == other.type
+                and self._user == other.user
+                and self._database == other.database
+                and self.source == other.source)
 
     def __lt__(self, other):
         """This function helps sorted to decide how to sort.
@@ -737,9 +737,9 @@ class Rule(object):
         return Rule(rule_dict=self.to_dict(), line=self._line, comment=self._comment)
 
     def is_identical(self, other):
-        return (self == other and
-                self._auth_method == other.method and
-                self._auth_options == other.options)
+        return (self == other
+                and self._auth_method == other.method
+                and self._auth_options == other.options)
 
     def serialize(self, delimiter="\t"):
         if self._line:

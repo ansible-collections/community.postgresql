@@ -236,18 +236,18 @@ def test_rule_is_identical():
 
 
 def test_rule_eq():
-    assert (Rule(tokens=["local", "all", "all", "ident"], comment=" ident  ") ==
-            Rule(tokens=["local", "all", "all", "ident"], comment="ident"))
+    assert (Rule(tokens=["local", "all", "all", "ident"], comment=" ident  ")
+            == Rule(tokens=["local", "all", "all", "ident"], comment="ident"))
     assert (Rule(rule_dict={"contype": "local",
                             "databases": "all",
                             "users": "all",
                             "method": "ident",
-                            "comment": " ident "}) ==
-            Rule(rule_dict={"contype": "local",
-                            "databases": "all",
-                            "users": "all",
-                            "method": "ident",
-                            "comment": "ident"})
+                            "comment": " ident "})
+            == Rule(rule_dict={"contype": "local",
+                               "databases": "all",
+                               "users": "all",
+                               "method": "ident",
+                               "comment": "ident"})
             )
 
 
@@ -302,15 +302,15 @@ def test_rule_serialize():
     assert Rule(tokens="COMMENT", line="# comment", comment="# comment").serialize(" ") == "# comment"
     assert Rule(tokens="EMPTY", line='').serialize(" ") == ""
     assert Rule(tokens=['local', 'all', 'all', 'ident']).serialize(" ") == "local all all ident"
-    assert (Rule(tokens=['local', 'all', 'all', 'ident'], comment="# comment").serialize(" ") ==
-            "local all all ident # comment")
+    assert (Rule(tokens=['local', 'all', 'all', 'ident'], comment="# comment").serialize(" ")
+            == "local all all ident # comment")
     assert Rule(tokens=['host', 'all', 'all', '127.0.0.1/32', 'md5']).serialize(" ") == "host all all 127.0.0.1/32 md5"
-    assert (Rule(tokens=['host', 'all', 'all', '127.0.0.1', '255.255.255.255', 'md5']).serialize(" ") ==
-            "host all all 127.0.0.1/32 md5")
+    assert (Rule(tokens=['host', 'all', 'all', '127.0.0.1', '255.255.255.255', 'md5']).serialize(" ")
+            == "host all all 127.0.0.1/32 md5")
     assert (Rule(tokens=['host', 'all', 'all', '0.0.0.0/0', 'radius', 'radiusservers="server1,server2"',
-                         'radiussecrets="""secret one"",""secret two"""']).serialize(" ") ==
-            'host all all 0.0.0.0/0 radius radiusservers="server1,server2" '
-            'radiussecrets="""secret one"",""secret two"""')
+                         'radiussecrets="""secret one"",""secret two"""']).serialize(" ")
+            == 'host all all 0.0.0.0/0 radius radiusservers="server1,server2" '
+               'radiussecrets="""secret one"",""secret two"""')
 
 
 def test_search_rule():
