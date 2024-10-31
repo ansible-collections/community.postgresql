@@ -329,7 +329,7 @@ def parse_hba_file(input_string):
     line = next(line_iter, None)
     while line is not None:
         # if that line continues, we just glue the next line onto the end until it ends
-        # we can and have to do that, as continuation even applies withing comments and quoted strings [sic]
+        # we can and have to do that, as continuation even applies within comments and quoted strings [sic]
         # https://www.postgresql.org/docs/current/auth-pg-hba-conf.html#AUTH-PG-HBA-CONF
         comment = None
         while line.endswith("\\"):
@@ -1112,9 +1112,9 @@ def main():
             for database in rule['databases'].split(','):
                 for user in rule['users'].split(','):
                     if len(tokenize(database)) != 1:
-                        module.fail_json(msg="Invalid sting for database: {0}".format(database))
+                        module.fail_json(msg="Invalid string for database: {0}".format(database))
                     if len(tokenize(user)) != 1:
-                        module.fail_json(msg="Invalid sting for users: {0}".format(user))
+                        module.fail_json(msg="Invalid string for users: {0}".format(user))
                     pg_hba_rule = PgHbaRule(rule['contype'], database, user, rule['address'], rule['netmask'],
                                             rule['method'], rule['options'], comment=rule['comment'])
                     if rule['state'] == "present":
