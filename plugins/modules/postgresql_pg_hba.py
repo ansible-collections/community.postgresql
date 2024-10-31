@@ -487,7 +487,7 @@ class PgHba(object):
 
         contype = _strip_quotes(symbols[0])
         if contype not in PG_HBA_TYPES:
-            raise PgHbaRuleValueError(f"Found an unknown connection-type {symbols[0]}")
+            raise PgHbaRuleValueError("Found an unknown connection-type {0}".format(symbols[0]))
 
         # don't strip quotes from database or user, as they have a special meaning there [sic]
         # > Quoting one of the keywords in a database, user, or address field (e.g., all or replication) makes the word
@@ -522,7 +522,7 @@ class PgHba(object):
 
         auth_method = _strip_quotes(symbols[method_token])
         if auth_method not in PG_HBA_METHODS:
-            raise PgHbaRuleValueError(f"Found an unknown method: {symbols[method_token]}")
+            raise PgHbaRuleValueError("Found an unknown method: {0}".format(symbols[method_token]))
 
         auth_options = None
         # if there is anything after the method, that must be options
@@ -918,9 +918,11 @@ def parse_auth_options(options):
     for option in options:
         split_option = OPTION_RE.match(_strip_quotes(option))
         if not split_option:
-            raise PgHbaRuleValueError(f"Found invalid option '{option}'. Options need to be in the format 'key=value'")
+            raise PgHbaRuleValueError(
+                "Found invalid option '{}'. Options need to be in the format 'key=value'".format(option))
         if split_option.group(1) in option_dict.keys():
-            raise PgHbaRuleValueError(f"The rule contains two options with the same key ('{split_option.group(1)}')")
+            raise PgHbaRuleValueError(
+                "The rule contains two options with the same key ('{0}')".format(split_option.group(1)))
         option_dict[split_option.group(1)] = split_option.group(2)
 
     return option_dict
@@ -944,7 +946,7 @@ def handle_address_field(address):
     if ":" in address:
         ip_addr_check = IPV6_ADDR_RE.match(address)
         if not ip_addr_check:
-            raise PgHbaRuleValueError(f"Address '{address}' contains a ':', but is not a valid IPv6 address")
+            raise PgHbaRuleValueError("Address '{0}' contains a ':', but is not a valid IPv6 address".format(address))
         ret_addr = ip_addr_check.group(1)
         ret_type = "IPv6"
     else:
@@ -958,9 +960,11 @@ def handle_address_field(address):
         if ip_addr_check.group(3):
             suffix = int(ip_addr_check.group(3).strip('/'))
             if ret_type == "IPv4" and suffix > 32:
-                raise PgHbaRuleValueError(f"The suffix '{suffix}' exceeds the maximum of 32 for IPv4 addresses")
+                raise PgHbaRuleValueError(
+                    "The suffix '{0}' exceeds the maximum of 32 for IPv4 addresses".format(suffix))
             elif ret_type == "IPv6" and suffix > 128:
-                raise PgHbaRuleValueError(f"The suffix '{suffix}' exceeds the maximum of 128 for IPv6 addresses")
+                raise PgHbaRuleValueError(
+                    "The suffix '{0}' exceeds the maximum of 128 for IPv6 addresses".format(suffix))
     # if it doesn't match the IPv4 or IPv6 regex, we assume it is a hostname
     else:
         ret_addr = address
@@ -976,7 +980,7 @@ def handle_netmask_field(netmask, raise_not_valid=True):
     if ":" in mask:
         verify_mask = IPV6_ADDR_RE.match(mask)
         if not verify_mask:
-            raise PgHbaRuleValueError(f"Netmask '{mask}' contains a ':', but is not a valid IPv6 netmask")
+            raise PgHbaRuleValueError("Netmask '{0}' contains a ':', but is not a valid IPv6 netmask".format(mask))
         mask_type = "IPv6"
     else:
         verify_mask = IPV4_ADDR_RE.match(netmask)
@@ -984,7 +988,7 @@ def handle_netmask_field(netmask, raise_not_valid=True):
 
     if not verify_mask:  # it is not a netmask, at all
         if raise_not_valid:
-            raise PgHbaRuleValueError(f"The string '{netmask}' is not a valid netmask")
+            raise PgHbaRuleValueError("The string '{0}' is not a valid netmask".format(netmask))
         else:
             mask = ""
             mask_type = "invalid"
