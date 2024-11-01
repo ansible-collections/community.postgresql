@@ -412,7 +412,7 @@ def tokenize(string):
                 continue
 
             current_symbol += token
-            # we use endswith here, to correctly handle stings like 'somekey="somevalue"'
+            # we use endswith here, to correctly handle strings like 'somekey="somevalue"'
             # if there was a space before it, the quote will be alone, so that is not an issue
             if token.endswith("\""):
                 state = "QUOTE"

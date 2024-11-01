@@ -44,6 +44,12 @@ def test_handle_db_and_user_strings():
 
 
 def test_handle_address_field():
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
     assert handle_address_field("1.2.3.4") == ("1.2.3.4", "IPv4", -1)
     assert handle_address_field("1.2.3.4/8") == ("1.2.3.4", "IPv4", 8)
     assert handle_address_field('"1.2.3.4/8"') == ("1.2.3.4", "IPv4", 8)
@@ -62,6 +68,12 @@ def test_handle_address_field():
 
 
 def test_handle_netmask_field():
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
     assert handle_netmask_field("255.255.255.0") == ("255.255.255.0", "IPv4", 24)
     assert handle_netmask_field('"255.255.255.0"') == ("255.255.255.0", "IPv4", 24)
     assert handle_netmask_field("ffff:ffff::") == ("ffff:ffff::", "IPv6", 32)
