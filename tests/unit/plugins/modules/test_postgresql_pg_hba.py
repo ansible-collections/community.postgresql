@@ -50,6 +50,7 @@ def test_handle_address_field():
         import ipaddress
     except ImportError:
         return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     assert handle_address_field("1.2.3.4") == ("1.2.3.4", "IPv4", -1)
     assert handle_address_field("1.2.3.4/8") == ("1.2.3.4", "IPv4", 8)
     assert handle_address_field('"1.2.3.4/8"') == ("1.2.3.4", "IPv4", 8)
@@ -74,6 +75,7 @@ def test_handle_netmask_field():
         import ipaddress
     except ImportError:
         return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     assert handle_netmask_field("255.255.255.0") == ("255.255.255.0", "IPv4", 24)
     assert handle_netmask_field('"255.255.255.0"') == ("255.255.255.0", "IPv4", 24)
     assert handle_netmask_field("ffff:ffff::") == ("ffff:ffff::", "IPv6", 32)
