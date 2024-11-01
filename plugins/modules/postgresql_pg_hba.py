@@ -274,6 +274,7 @@ PG_HBA_HDR = ['type', 'db', 'usr', 'src', 'mask', 'method', 'options']
 
 WHITESPACES_RE = re.compile(r'\s+')
 TOKEN_SPLIT_RE = re.compile(r'(?<=[\s"])')
+WHITESPACE_OR_QUOTE_RE = re.compile(r'[\s"]')
 ONLY_SPACES_RE = re.compile(r"^\s+$")
 OPTION_RE = re.compile(r"([^=]+)=(.+)")
 IPV4_ADDR_RE = re.compile(r'^"?((\d{1,3}\.){3}\d{1,3})(/(\d{1,2}))?"?$')
@@ -371,7 +372,20 @@ def tokenize(string):
     :param string: A string to tokenize
     :return: The tokenized string as a list of strings
     """
-    bare_tokens = TOKEN_SPLIT_RE.split(string)
+
+    # We need to do this charade for splitting to be compatible with Python 3.6 which has been EOL for three years
+    # at the time of writing. If you come across this after support for Python 3.6 has been dropped, please replace
+    # WHITESPACE_OR_QUOTE_RE in the beginning of the file with `TOKEN_SPLIT_RE = re.compile(r'(?<=[\s"])')`
+    # and the next 8 lines (including bare_tokens.append) with `bare_tokens = TOKEN_SPLIT_RE.split(string)`
+    bare_tokens = []
+    lastpos = 0
+    nextmatch = WHITESPACE_OR_QUOTE_RE.search(string)
+    while nextmatch:
+        bare_tokens.append(string[lastpos:nextmatch.end()])
+        lastpos = nextmatch.end()
+        nextmatch = WHITESPACE_OR_QUOTE_RE.search(string, lastpos)
+    bare_tokens.append(string[lastpos:])
+
     tokens = []
     state = "START"
     current_symbol = ""
@@ -398,6 +412,8 @@ def tokenize(string):
                 continue
 
             current_symbol += token
+            # we use endswith here, to correctly handle stings like 'somekey="somevalue"'
+            # if there was a space before it, the quote will be alone, so that is not an issue
             if token.endswith("\""):
                 state = "QUOTE"
             else:
@@ -529,6 +545,8 @@ class PgHba(object):
         if len(symbols) > method_token + 1:
             # we will handle options in a smarter way in the future
             # auth_options = parse_auth_options(symbols[method_token + 1:])
+            # now we run it just to validate the options
+            parse_auth_options(symbols[method_token + 1:])
             auth_options = " ".join(symbols[method_token + 1:])
 
         self.add_rule(
