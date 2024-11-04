@@ -28,6 +28,12 @@ options:
       the publication state will be changed.
     aliases: [ login_db ]
     type: str
+  columns:
+    description:
+    - List of tables and its columns to add to the publication.
+    - If no columns are passed for table, it will be published as a whole.
+    - Mutually exclusive with I(tables) I(tables_in_schema).
+    type: dict
   tables:
     description:
     - List of tables to add to the publication.
@@ -36,7 +42,7 @@ options:
       nothing will be changed.
     - If you need to add all tables to the publication with the same name,
       drop existent and create new without passing I(tables).
-    - Mutually exclusive with I(tables_in_schema).
+    - Mutually exclusive with I(tables_in_schema) I(columns).
     type: list
     elements: str
   tables_in_schema:
@@ -45,7 +51,7 @@ options:
       for all tables in those schemas.
     - If you want to remove all schemas, explicitly pass an empty list C([]).
     - Supported since PostgreSQL 15.
-    - Mutually exclusive with I(tables).
+    - Mutually exclusive with I(tables) I(columns).
     type: list
     elements: str
     version_added: '3.5.0'
@@ -250,6 +256,24 @@ def transform_tables_representation(tbl_list):
     return tbl_list
 
 
+def pg_quote_column_list(table, columns):
+    """Convert a list of columns to a string.
+
+    Args:
+        table (str): Table name.
+        columns (list): List of columns.
+
+    Returns:
+        str: String with columns.
+    """
+    if len(columns) == 0:
+        return pg_quote_identifier(table, 'table')
+
+    quoted_columns = [pg_quote_identifier(c, 'column') for c in columns]
+    quoted_sql = "%s (%s)" % (pg_quote_identifier(table, 'table'), ', '.join(quoted_columns))
+    return quoted_sql
+
+
 class PgPublication():
     """Class to work with PostgreSQL publication.
 
@@ -279,6 +303,7 @@ class PgPublication():
             'parameters': {},
             'owner': '',
             'schemas': [],
+            'columns': {}
         }
         self.exists = self.check_pub()
 
@@ -326,13 +351,15 @@ class PgPublication():
             # FOR TABLES IN SCHEMA statement is supported since PostgreSQL 15
             if self.pg_srv_ver >= 150000:
                 self.attrs['schemas'] = self.__get_schema_pub_info()
+            if self.pg_srv_ver >= 150000:
+                self.attrs['columns'] = self.__get_columns_pub_info()
         else:
             self.attrs['alltables'] = True
 
         # Publication exists:
         return True
 
-    def create(self, tables, tables_in_schema, params, owner, comment, check_mode=True):
+    def create(self, tables, tables_in_schema, columns, params, owner, comment, check_mode=True):
         """Create the publication.
 
         Args:
@@ -353,7 +380,12 @@ class PgPublication():
 
         query_fragments = ["CREATE PUBLICATION %s" % pg_quote_identifier(self.name, 'publication')]
 
-        if tables:
+        if columns:
+            table_strings = []
+            for table, cols in columns:
+                table_strings.append(pg_quote_column_list(table, cols))
+            query_fragments.append("FOR TABLE %s" % ', '.join(table_strings))
+        elif tables:
             query_fragments.append("FOR TABLE %s" % ', '.join(tables))
         elif tables_in_schema:
             tables_in_schema = [pg_quote_identifier(schema, 'schema') for schema in tables_in_schema]
@@ -383,7 +415,7 @@ class PgPublication():
 
         return changed
 
-    def update(self, tables, tables_in_schema, params, owner, comment, check_mode=True):
+    def update(self, tables, tables_in_schema, columns, params, owner, comment, check_mode=True):
         """Update the publication.
 
         Args:
@@ -403,6 +435,20 @@ class PgPublication():
         changed = False
 
         # Add or drop tables from published tables suit:
+        if columns and not self.attrs['alltables']:
+            for table, cols in columns:
+                if table not in self.attrs['tables']:
+                    changed = self.__pub_add_columns(table, cols, check_mode=check_mode)
+                else:
+                    changed = self.__pub_set_columns(table, cols, check_mode=check_mode)
+
+            # Drop columns that are not in the passed columns:
+            for row in self.attrs['columns'].items():
+                if columns[row[0]] is None:
+                    changed = self.__pub_drop_table(table, check_mode=check_mode)
+        elif columns and self.attrs['alltables']:
+            for table, cols in columns:
+                changed = self.__pub_set_columns(table, cols, check_mode=check_mode)
         if tables and not self.attrs['alltables']:
 
             # 1. If needs to add table to the publication:
@@ -537,6 +583,16 @@ class PgPublication():
                  "FROM pg_publication_tables WHERE pubname = %(pname)s")
         return exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
 
+    def __get_columns_pub_info(self):
+        """Get and return columns that are published by the publication.
+
+        Returns:
+            List of dicts with published columns.
+        """
+        query = ("SELECT schemaname || '.' || tablename as schema_dot_table, attnames as columns "
+                 "FROM pg_publication_tables WHERE pubname = %(pname)s")
+        return exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
+
     def __get_schema_pub_info(self):
         """Get and return schemas added to the publication.
 
@@ -605,6 +661,36 @@ class PgPublication():
         quoted_tables = [pg_quote_identifier(t, 'table') for t in tables]
         query = ("ALTER PUBLICATION %s SET TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
                                                         ', '.join(quoted_tables)))
+        return self.__exec_sql(query, check_mode=check_mode)
+
+    def __pub_add_columns(self, table, columns, check_mode=False):
+        """ Add table with specific columns to the publication.
+        Args:
+            table (str): Table name.
+            columns (list): List of columns.
+        Kwargs:
+            check_mode (bool): If True, don't actually change anything,
+                just make SQL, add it to ``self.executed_queries`` and return True.
+        Returns:
+            True if successful, False otherwise.
+        """
+        query = ("ALTER PUBLICATION %s ADD TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
+                                                        pg_quote_column_list(table, columns)))
+        return self.__exec_sql(query, check_mode=check_mode)
+
+    def __pub_set_columns(self, table, columns, check_mode=False):
+        """Set columns that need to be published by the publication.
+        Args:
+            table (str): Table name.
+            columns (list): List of columns.
+        Kwargs:
+            check_mode (bool): If True, don't actually change anything,
+                just make SQL, add it to ``self.executed_queries`` and return True.
+        Returns:
+            True if successful, False otherwise.
+        """
+        query = ("ALTER PUBLICATION %s SET TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
+                                                        pg_quote_column_list(table, columns)))
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_add_schema(self, schema, check_mode=False):
@@ -720,11 +806,12 @@ def main():
         trust_input=dict(type='bool', default=True),
         comment=dict(type='str', default=None),
         tables_in_schema=dict(type='list', elements='str', default=None),
+        columns=dict(type='dict', default=None),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
-        mutually_exclusive=[('tables', 'tables_in_schema')],
+        mutually_exclusive=[('tables', 'tables_in_schema', "columns")],
     )
 
     # Parameters handling:
@@ -738,6 +825,7 @@ def main():
     trust_input = module.params['trust_input']
     comment = module.params['comment']
     tables_in_schema = module.params['tables_in_schema']
+    columns = module.params['columns']
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -775,6 +863,8 @@ def main():
 
     if tables_in_schema is not None and pg_srv_ver < 150000:
         module.fail_json(msg="Publication of tables in schema is supported by PostgreSQL 15 or greater")
+    if columns is not None and pg_srv_ver < 150000:
+        module.fail_json(msg="Publication of columns is supported by PostgreSQL 15 or greater")
 
     # Nothing was changed by default:
     changed = False
@@ -789,11 +879,11 @@ def main():
     # If module.check_mode=True, nothing will be changed:
     if state == 'present':
         if not publication.exists:
-            changed = publication.create(tables, tables_in_schema, params, owner, comment,
+            changed = publication.create(tables, tables_in_schema, columns, params, owner, comment,
                                          check_mode=module.check_mode)
 
         else:
-            changed = publication.update(tables, tables_in_schema, params, owner, comment,
+            changed = publication.update(tables, tables_in_schema, columns, params, owner, comment,
                                          check_mode=module.check_mode)
 
     elif state == 'absent':
