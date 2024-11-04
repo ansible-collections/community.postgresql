@@ -136,6 +136,15 @@ EXAMPLES = r'''
     tables:
     - prices
     - vehicles
+    
+- name: Create publication "acme" publishing only prices table and id and named from vehicles tables
+  community.postgresql.postgresql_publication:
+    name: acme
+    columns:
+      prices:
+      vehicles:
+        - id
+        - name        
 
 - name: Create a new publication "acme" for tables in schema "myschema"
   community.postgresql.postgresql_publication:
@@ -266,6 +275,9 @@ def pg_quote_column_list(table, columns):
     Returns:
         str: String with columns.
     """
+    if columns is None:
+        return pg_quote_identifier(table, 'table')
+
     if len(columns) == 0:
         return pg_quote_identifier(table, 'table')
 
