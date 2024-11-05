@@ -956,70 +956,49 @@ def handle_db_and_user_strings(string):
 
 
 def handle_address_field(address):
-    ret_addr = ""
-    ret_type = ""
     suffix = -1
 
-    # only IPv6 addresses contain colons
-    if ":" in address:
-        ip_addr_check = IPV6_ADDR_RE.match(address)
-        if not ip_addr_check:
-            raise PgHbaRuleValueError("Address '{0}' contains a ':', but is not a valid IPv6 address".format(address))
-        ret_addr = ip_addr_check.group(1)
-        ret_type = "IPv6"
-    else:
-        ip_addr_check = IPV4_ADDR_RE.match(address)
-        if ip_addr_check:
-            ret_addr = ip_addr_check.group(1)
-            ret_type = "IPv4"
-
-    # if it is an address, check if there is a suffix
-    if ret_addr:
-        if ip_addr_check.group(3):
-            suffix = int(ip_addr_check.group(3).strip('/'))
-            if ret_type == "IPv4" and suffix > 32:
-                raise PgHbaRuleValueError(
-                    "The suffix '{0}' exceeds the maximum of 32 for IPv4 addresses".format(suffix))
-            elif ret_type == "IPv6" and suffix > 128:
-                raise PgHbaRuleValueError(
-                    "The suffix '{0}' exceeds the maximum of 128 for IPv6 addresses".format(suffix))
-    # if it doesn't match the IPv4 or IPv6 regex, we assume it is a hostname
-    else:
-        ret_addr = address
-        ret_type = "hostname"
+    try:
+        ret_addr = ipaddress.ip_network(address, strict=True)
+        ret_type = "IPv" + str(ret_addr.version)
+        if "/" in address:
+            suffix = ret_addr.prefixlen
+        ret_addr = str(ret_addr.network_address)
+    except ValueError as e:
+        # it is a network, but has host bits set
+        if "has host bits set" in e.args[0]:
+            raise PgHbaValueError("{0} has host bits set".format(address))
+        # it might be a quoted address or network
+        if address.startswith("\""):
+            ret_addr, ret_type, suffix = handle_address_field(_strip_quotes(address))
+            # if it was a quoted address, we return it without quotes
+            if ret_type != "hostname":
+                return ret_addr, ret_type, suffix
+        # not a valid network or address, may be a hostname or keyword
+        if re.search(r'[:\\/@+ ]', address) or IPV4_ADDR_RE.match(address):
+            raise PgHbaValueError(
+                "The string '{0}' is neither a valid IP address, network, hostname or keyword".format(address))
+        else:
+            ret_addr = address
+            ret_type = "hostname"
 
     return ret_addr, ret_type, suffix
 
 
 def handle_netmask_field(netmask, raise_not_valid=True):
     mask = _strip_quotes(netmask)
-    prefix_len = -1
 
-    if ":" in mask:
-        verify_mask = IPV6_ADDR_RE.match(mask)
-        if not verify_mask:
-            raise PgHbaRuleValueError("Netmask '{0}' contains a ':', but is not a valid IPv6 netmask".format(mask))
-        mask_type = "IPv6"
-    else:
-        verify_mask = IPV4_ADDR_RE.match(netmask)
-        mask_type = "IPv4"
-
-    if not verify_mask:  # it is not a netmask, at all
-        if raise_not_valid:
-            raise PgHbaRuleValueError("The string '{0}' is not a valid netmask".format(netmask))
-        else:
-            mask = ""
-            mask_type = "invalid"
-    else:
-        if verify_mask.group(3):  # somebody put a cidr-suffix on the netmask
-            raise PgHbaRuleValueError("The netmask can't have a CIDR suffix")
+    try:
         mask_as_ip = ipaddress.ip_address(u'{0}'.format(mask))
         binvalue = "{0:b}".format(int(mask_as_ip))
         if '01' in binvalue:
             raise PgHbaValueError('IP mask {0} is invalid (binary value has 1 after 0)'.format(mask))
-        prefix_len = binvalue.count('1')
-
-    return mask, mask_type, prefix_len
+        return mask, "IPv" + str(mask_as_ip.version), binvalue.count('1')
+    except ValueError:
+        if raise_not_valid:
+            raise PgHbaValueError("The string '{0}' is not a valid netmask".format(mask))
+        else:
+            return "", "invalid", -1
 
 
 def main():

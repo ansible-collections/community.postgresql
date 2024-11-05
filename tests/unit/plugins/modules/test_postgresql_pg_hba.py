@@ -52,19 +52,25 @@ def test_handle_address_field():
         return
     ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     assert handle_address_field("1.2.3.4") == ("1.2.3.4", "IPv4", -1)
-    assert handle_address_field("1.2.3.4/8") == ("1.2.3.4", "IPv4", 8)
-    assert handle_address_field('"1.2.3.4/8"') == ("1.2.3.4", "IPv4", 8)
+    assert handle_address_field("1.0.0.0/8") == ("1.0.0.0", "IPv4", 8)
+    assert handle_address_field('"1.0.0.0/8"') == ("1.0.0.0", "IPv4", 8)
     assert handle_address_field("ffff::") == ("ffff::", "IPv6", -1)
-    assert handle_address_field("ffff::/8") == ("ffff::", "IPv6", 8)
-    assert handle_address_field('"ffff::/8"') == ("ffff::", "IPv6", 8)
+    assert handle_address_field("ffff::/16") == ("ffff::", "IPv6", 16)
+    assert handle_address_field('"ffff::/16"') == ("ffff::", "IPv6", 16)
     assert handle_address_field("host.example.com") == ("host.example.com", "hostname", -1)
     assert handle_address_field('"host.example.com"') == ('"host.example.com"', "hostname", -1)
+    assert handle_address_field("samehost") == ("samehost", "hostname", -1)
 
-    with pytest.raises(PgHbaRuleValueError, match=".* contains a ':', but is not a valid IPv6 address"):
+    with pytest.raises(PgHbaValueError, match=".* has host bits set"):
+        handle_address_field("1.2.3.4/8")
+    with pytest.raises(PgHbaValueError, match=".* has host bits set"):
+        handle_address_field("ffff::/8")
+
+    with pytest.raises(PgHbaValueError, match=".* is neither a valid IP address, network, hostname or keyword"):
         handle_address_field("host.example.com:1234")
-    with pytest.raises(PgHbaRuleValueError, match=".* exceeds the maximum of 32 for IPv4 addresses"):
+    with pytest.raises(PgHbaValueError, match=".* is neither a valid IP address, network, hostname or keyword"):
         handle_address_field("1.2.3.4/33")
-    with pytest.raises(PgHbaRuleValueError, match=".* exceeds the maximum of 128 for IPv6 addresses"):
+    with pytest.raises(PgHbaValueError, match=".* is neither a valid IP address, network, hostname or keyword"):
         handle_address_field("1234:ffff::/129")
 
 
@@ -82,11 +88,11 @@ def test_handle_netmask_field():
     assert handle_netmask_field('"ffff:ffff::"') == ("ffff:ffff::", "IPv6", 32)
     assert handle_netmask_field('hello', raise_not_valid=False) == ("", "invalid", -1)
 
-    with pytest.raises(PgHbaRuleValueError, match="The netmask can't have a CIDR suffix"):
+    with pytest.raises(PgHbaValueError, match=".* is not a valid netmask"):
         handle_netmask_field("255.0.0.0/8")
-    with pytest.raises(PgHbaRuleValueError, match="The netmask can't have a CIDR suffix"):
-        handle_netmask_field("ffff::/8")
-    with pytest.raises(PgHbaRuleValueError, match=".* contains a ':', but is not a valid IPv6 netmask"):
+    with pytest.raises(PgHbaValueError, match=".* is not a valid netmask"):
+        handle_netmask_field("ffff::/16")
+    with pytest.raises(PgHbaValueError, match=".* is not a valid netmask"):
         handle_netmask_field("1:2.3.4")
     with pytest.raises(PgHbaValueError, match="IP mask .* is invalid .*"):
         handle_netmask_field("255.255.0.255")
