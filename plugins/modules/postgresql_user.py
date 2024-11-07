@@ -185,7 +185,8 @@ notes:
 - SCRAM-SHA-256-hashed passwords (SASL Authentication) require PostgreSQL version 10 or newer.
   On the previous versions the whole hashed string is used as a password.
 - 'Working with SCRAM-SHA-256-hashed passwords, be sure you use the I(environment:) variable
-  C(PGOPTIONS: "-c password_encryption=scram-sha-256") (see the provided example).'
+  C(PGOPTIONS: "-c password_encryption=scram-sha-256") when it is not default
+  for your PostgreSQL version (see the provided example).'
 - On some systems (such as AWS RDS), C(pg_authid) is not accessible, thus, the module cannot compare
   the current and desired C(password). In this case, the module assumes that the passwords are
   different and changes it reporting that the state has been changed.
@@ -439,7 +440,12 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
     return True
 
 
-def user_should_we_change_password(current_role_attrs, user, password, encrypted):
+def get_passwd_encryption(cursor):
+    cursor.execute("SHOW password_encryption")[0]
+    return cursor.fetchone()
+
+
+def user_should_we_change_password(cursor, current_role_attrs, user, password, encrypted):
     """Check if we should change the user's password.
 
     Compare the proposed password with the existing one, comparing
@@ -514,6 +520,16 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
             if hashed_password != current_password:
                 pwchanging = True
 
+        # https://github.com/ansible-collections/community.postgresql/issues/688
+        # When the current password is not none and is not hashed as scram-sha-256
+        # but the default password encryption is scram-sha-256, update it.
+        # Can be relevant when migrating from older version of postgres.
+        #elif not password.startswith('md5') and current_password is not None \
+        #        and not re.match(SCRAM_SHA256_REGEX, current_password):
+        #    default_pw_encryption = get_passwd_encryption(cursor)
+        #    if default_pw_encryption == 'scram-sha-256':
+        #        pwchanging = True
+
     return pwchanging
 
 
@@ -544,7 +560,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             current_role_attrs = None
             db_connection.rollback()
 
-        pwchanging = user_should_we_change_password(current_role_attrs, user, password, encrypted)
+        pwchanging = user_should_we_change_password(cursor, current_role_attrs, user, password, encrypted)
 
         if current_role_attrs is None:
             try:
