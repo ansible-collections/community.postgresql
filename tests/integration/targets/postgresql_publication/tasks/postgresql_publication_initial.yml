@@ -497,8 +497,10 @@
       that:
       - result.rowcount == 1
 
+  # Test publication with specific columns
+
   # Test
-  - name: postgresql_publication - add set columns for table in publication
+  - name: postgresql_publication - add set columns for table in already existing publication
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     vars:
@@ -519,11 +521,268 @@
 
   - assert:
       that:
-        - result.tables == ["\"public\".\"{{ test_table1 }}\"", "\"{{ test_schema }}\".\"{{ test_table2 }}\""]
         - result is changed
-        - result.queries == ["ALTER PUBLICATION \"{{ test_pub }}\" SET TABLE \"{{ test_schema }}\".\"{{ test_table2 }}\" (\"name\")", "ALTER PUBLICATION \"{{ test_pub }}\" ADD TABLE \"public\".\"{{ test_table3 }}\" (\"id\")"]
+        - result.queries == ["ALTER PUBLICATION \"{{ test_pub }}\" SET TABLE \"public\".\"{{ test_table1 }}\", \"{{ test_schema }}\".\"{{ test_table2 }}\" (\"name\"), \"public\".\"{{ test_table3 }}\" (\"id\")"]
 
-  # https://github.com/ansible-collections/community.postgresql/pull/718
+  # Test
+  - name: postgresql_publication - create publication with specific columns
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_table1 }}'
+          value:
+        - key: '{{ test_schema }}.{{ test_table2 }}'
+          value: [ 'name' ]
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub_with_columns
+      columns: '{{ columns_map | items2dict }}'
+
+      trust_input: false
+    check_mode: true
+
+  - assert:
+      that:
+        - result is changed
+        - result.exists == false
+        - result.queries == ["CREATE PUBLICATION \"test_pub_with_columns\" FOR TABLE \"public\".\"{{ test_table1 }}\", \"{{ test_schema }}\".\"{{ test_table2 }}\" (\"name\")"]
+
+    # Check
+  - name: postgresql_publication - check that nothing has been changed
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication WHERE pubname = 'test_pub_with_columns'
+
+  - assert:
+      that:
+        - result.rowcount == 0
+
+  # Test
+  - name: postgresql_publication - create publication with specific columns
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_table1 }}'
+          value:
+        - key: '{{ test_schema }}.{{ test_table2 }}'
+          value: [ 'name' ]
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub_with_columns
+      columns: '{{ columns_map | items2dict }}'
+
+      trust_input: false
+
+  - assert:
+      that:
+          - result is changed
+          - result.exists == true
+          - result.queries == ["CREATE PUBLICATION \"test_pub_with_columns\" FOR TABLE \"public\".\"{{ test_table1 }}\", \"{{ test_schema }}\".\"{{ test_table2 }}\" (\"name\")"]
+          - result.owner == '{{ pg_user }}'
+          - result.alltables == false
+          - result.tables == ["\"public\".\"{{ test_table1 }}\"", "\"{{ test_schema }}\".\"{{ test_table2 }}\""]
+          - result.columns != {}
+
+  # Check 1
+  - name: postgresql_publication - check that test publication exists
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >
+        SELECT * FROM pg_publication WHERE pubname = 'test_pub_with_columns'
+        AND puballtables = 'f'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
+  # Check 2
+  - name: postgresql_publication - check that test_table1 from schema public is in publication
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = 'public' AND tablename = '{{ test_table1 }}'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
+  # Check 3
+  - name: postgresql_publication - check that test_table2 from test schema is in publication
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = '{{ test_schema }}' AND tablename = '{{ test_table2 }}'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
+  # check 4
+  - name: postgresql_publication - check that columns are set for test_table2
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT unnest(attnames) as column FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = '{{ test_schema }}' AND tablename = '{{ test_table2 }}'
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['column'] == 'name'
+
+  # check 5
+  - name: postgresql_publication - check that columns are set for test_table1
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT unnest(attnames) as column FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = 'public' AND tablename = '{{ test_table1 }}'
+
+  - assert:
+      that:
+        - result.rowcount == 2
+        - result.query_result[0]['column'] == 'id'
+        - result.query_result[1]['column'] == 'name'
+
+  # Test
+  - name: postgresql_publication - update publication with specific columns
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_table1 }}'
+          value: [ 'id']
+        - key: '{{ test_schema }}.{{ test_table2 }}'
+          value: [ 'name' ]
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub_with_columns
+      columns: '{{ columns_map | items2dict }}'
+
+      trust_input: false
+
+  - assert:
+      that:
+          - result is changed
+          - result.exists == true
+          - result.queries == ["ALTER PUBLICATION \"test_pub_with_columns\" SET TABLE \"public\".\"{{ test_table1 }}\" (\"id\"), \"{{ test_schema }}\".\"{{ test_table2 }}\" (\"name\")",]
+          - result.owner == '{{ pg_user }}'
+          - result.alltables == false
+          - result.tables == ["\"public\".\"{{ test_table1 }}\"", "\"{{ test_schema }}\".\"{{ test_table2 }}\""]
+          - result.columns != {}
+
+  # check 1
+  - name: postgresql_publication - check that columns are set for test_table2
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT unnest(attnames) as column FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = '{{ test_schema }}' AND tablename = '{{ test_table2 }}'
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['column'] == 'name'
+
+  # check 2
+  - name: postgresql_publication - check that columns are set for test_table1
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT unnest(attnames) as column FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = 'public' AND tablename = '{{ test_table1 }}'
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['column'] == 'id'
+
+  # Test
+  - name: postgresql_publication - add and remove tables from publication with specific columns
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_schema }}.{{ test_table2 }}'
+          value: [ 'name' ]
+        - key: '{{ test_table3 }}'
+          value: [ 'id' ]
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub_with_columns
+      columns: '{{ columns_map | items2dict }}'
+
+      trust_input: false
+
+  - assert:
+      that:
+          - result is changed
+          - result.exists == true
+          - result.queries == ["ALTER PUBLICATION \"test_pub_with_columns\" ADD TABLE \"public\".\"{{ test_table3 }}\" (\"id\")", "ALTER PUBLICATION \"test_pub_with_columns\" DROP TABLE \"public\".\"{{ test_table1 }}\""]
+          - result.owner == '{{ pg_user }}'
+          - result.alltables == false
+          - result.tables == ["\"{{ test_schema }}\".\"{{ test_table2 }}\"", "\"public\".\"{{ test_table3 }}\""]
+          - result.columns != {}
+
+  # Check 1
+  - name: postgresql_publication - check that test_table1 from schema public is not in publication
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = 'public' AND tablename = '{{ test_table1 }}'
+
+  - assert:
+      that:
+        - result.rowcount == 0
+
+  # Check 2
+  - name: postgresql_publication - check that test_table2 from test schema is in publication
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = '{{ test_schema }}' AND tablename = '{{ test_table2 }}'
+
+  - assert:
+      that:
+        - result.rowcount == 1
+
+  # Check 3
+  - name: postgresql_publication - check that test_table3 from schema public is in publication
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = 'public' AND tablename = '{{ test_table3 }}'
+
+  - assert:
+      that:
+        - result.rowcount == 1
+
+  # check 4
+  - name: postgresql_publication - check that columns are set for test_table2
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT unnest(attnames) as column FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = '{{ test_schema }}' AND tablename = '{{ test_table2 }}'
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['column'] == 'name'
+
+  # check 4
+  - name: postgresql_publication - check that columns are set for test_table3
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT unnest(attnames) as column FROM pg_publication_tables WHERE pubname = 'test_pub_with_columns' AND schemaname = 'public' AND tablename = '{{ test_table3 }}'
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['column'] == 'id'
+
+    # https://github.com/ansible-collections/community.postgresql/pull/718
   - name: Create publication for schema in check mode
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters

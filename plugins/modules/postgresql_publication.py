@@ -474,23 +474,33 @@ class PgPublication():
 
         # Add or drop tables from published tables suit:
         if columns and not self.attrs['alltables']:
+            need_set_columns = False
             for table in columns:
                 if table not in self.attrs['tables']:
-                    changed = self.__pub_add_columns(table, columns[table], check_mode=check_mode)
+                    continue
                 elif not columns[table]:
                     all_columns = self.__get_table_columns(table)
                     if all_columns != self.attrs['columns'][table]:
-                        changed = self.__pub_set_columns(table, columns[table], check_mode=check_mode)
+                        need_set_columns = True
+                        break
                 elif self.attrs['columns'][table] != columns[table]:
-                    changed = self.__pub_set_columns(table, columns[table], check_mode=check_mode)
+                    need_set_columns = True
+                    break
 
-            # Drop columns that are not in the passed columns:
-            for table in self.attrs['columns']:
-                if table not in columns.keys():
-                    changed = self.__pub_drop_table(table, check_mode=check_mode)
+            if need_set_columns:
+                changed = self.__pub_set_columns(columns, check_mode=check_mode)
+            else:
+                # Add new tables to the publication:
+                for table in columns:
+                    if table not in self.attrs['tables']:
+                        changed = self.__pub_add_columns(table, columns[table], check_mode=check_mode)
+
+                # Drop redundant tables from the publication:
+                for table in self.attrs['columns']:
+                    if table not in columns.keys():
+                        changed = self.__pub_drop_table(table, check_mode=check_mode)
         elif columns and self.attrs['alltables']:
-            for table in columns:
-                changed = self.__pub_set_columns(table, columns[table], check_mode=check_mode)
+            changed = self.__pub_set_columns(columns, check_mode=check_mode)
         if tables and not self.attrs['alltables']:
 
             # 1. If needs to add table to the publication:
@@ -730,19 +740,18 @@ class PgPublication():
                                                         pg_quote_column_list(table, columns)))
         return self.__exec_sql(query, check_mode=check_mode)
 
-    def __pub_set_columns(self, table, columns, check_mode=False):
+    def __pub_set_columns(self, columns_map, check_mode=False):
         """Set columns that need to be published by the publication.
         Args:
-            table (str): Table name.
-            columns (list): List of columns.
+            columns_map (dict): Dictionary of all tables and list of columns.
         Kwargs:
             check_mode (bool): If True, don't actually change anything,
                 just make SQL, add it to ``self.executed_queries`` and return True.
         Returns:
             True if successful, False otherwise.
         """
-        query = ("ALTER PUBLICATION %s SET TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
-                                                        pg_quote_column_list(table, columns)))
+        table_list = [pg_quote_column_list(table, columns_map[table]) for table in columns_map]
+        query = ("ALTER PUBLICATION %s SET TABLE %s" % (pg_quote_identifier(self.name, 'publication'), ', '.join(table_list)))
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_add_schema(self, schema, check_mode=False):
