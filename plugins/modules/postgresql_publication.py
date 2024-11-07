@@ -32,8 +32,9 @@ options:
     description:
     - List of tables and its columns to add to the publication.
     - If no columns are passed for table, it will be published as a whole.
-    - Mutually exclusive with I(tables) I(tables_in_schema).
+    - Mutually exclusive with I(tables) and I(tables_in_schema).
     type: dict
+    version_added: '3.8.0'
   tables:
     description:
     - List of tables to add to the publication.
@@ -42,7 +43,7 @@ options:
       nothing will be changed.
     - If you need to add all tables to the publication with the same name,
       drop existent and create new without passing I(tables).
-    - Mutually exclusive with I(tables_in_schema) I(columns).
+    - Mutually exclusive with I(tables_in_schema) and I(columns).
     type: list
     elements: str
   tables_in_schema:
@@ -51,7 +52,7 @@ options:
       for all tables in those schemas.
     - If you want to remove all schemas, explicitly pass an empty list C([]).
     - Supported since PostgreSQL 15.
-    - Mutually exclusive with I(tables) I(columns).
+    - Mutually exclusive with I(tables) and I(columns).
     type: list
     elements: str
     version_added: '3.5.0'
@@ -298,10 +299,7 @@ def pg_quote_column_list(table, columns):
     """
     table = normalize_table_name(table)
 
-    if columns is None:
-        return table
-
-    if len(columns) == 0:
+    if not columns:
         return table
 
     quoted_columns = [pg_quote_identifier(col, 'column') for col in columns]
@@ -924,7 +922,7 @@ def main():
 
     if tables_in_schema is not None and pg_srv_ver < 150000:
         module.fail_json(msg="Publication of tables in schema is supported by PostgreSQL 15 or greater")
-    if columns is not None and pg_srv_ver < 150000:
+    if columns and pg_srv_ver < 150000:
         module.fail_json(msg="Publication of columns is supported by PostgreSQL 15 or greater")
 
     # Nothing was changed by default:
