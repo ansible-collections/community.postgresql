@@ -32,7 +32,7 @@
 
   - name: postgresql_publication - create test schema
     <<: *task_parameters
-    postgresql_schema: 
+    postgresql_schema:
       <<: *pg_parameters
       name: '{{ test_schema }}'
 
@@ -63,7 +63,7 @@
   # Test
   - name: postgresql_publication - create publication, check_mode
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       trust_input: false
@@ -89,7 +89,7 @@
   # Test
   - name: postgresql_publication - create publication
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       comment: 'Made by Ansible'
@@ -106,7 +106,7 @@
       - result.parameters.publish != {}
 
   # Check
-  - name: postgresql_publication - check the publication was created 
+  - name: postgresql_publication - check the publication was created
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -118,7 +118,7 @@
       that:
       - result.rowcount == 1
 
-  - name: Check the comment 
+  - name: Check the comment
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -130,7 +130,7 @@
 
   - name: Not specify the comment explicitly
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
 
@@ -141,7 +141,7 @@
 
   - name: Change the comment in check mode
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       comment: 'Made by me'
@@ -164,7 +164,7 @@
 
   - name: Reset the comment in real mode
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       comment: ''
@@ -186,7 +186,7 @@
 
   - name: Reset the comment again in check mode
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       comment: ''
@@ -200,7 +200,7 @@
   # Test
   - name: postgresql_publication - drop publication, check_mode
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       state: absent
@@ -231,7 +231,7 @@
   # Test
   - name: postgresql_publication - drop publication
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       state: absent
@@ -257,7 +257,7 @@
   # Test
   - name: postgresql_publication - create publication with tables, owner, params
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       owner: '{{ test_role }}'
@@ -283,7 +283,7 @@
     postgresql_query:
       <<: *pg_parameters
       query: >
-        SELECT * FROM pg_publication WHERE pubname = '{{ test_pub }}' 
+        SELECT * FROM pg_publication WHERE pubname = '{{ test_pub }}'
         AND pubowner != '10' AND puballtables = 'f' AND pubinsert = 't' AND pubdelete = 'f'
 
   - assert:
@@ -315,7 +315,7 @@
   # Test
   - name: postgresql_publication - test trust_input parameter
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       session_role: '{{ dangerous_name }}'
@@ -331,7 +331,7 @@
   # Test
   - name: postgresql_publication - add table to publication, change owner, check_mode
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       owner: '{{ pg_user }}'
@@ -354,7 +354,7 @@
     postgresql_query:
       <<: *pg_parameters
       query: >
-        SELECT * FROM pg_publication WHERE pubname = '{{ test_pub }}' 
+        SELECT * FROM pg_publication WHERE pubname = '{{ test_pub }}'
         AND pubowner != '10' AND puballtables = 'f' AND pubinsert = 't' AND pubupdate = 't'
 
   - assert:
@@ -375,7 +375,7 @@
   # Test
   - name: postgresql_publication - add table to publication, change owner
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       owner: '{{ pg_user }}'
@@ -417,7 +417,7 @@
   # Test
   - name: postgresql_publication - remove table from publication, check_mode
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       tables:
@@ -459,7 +459,7 @@
   # Test
   - name: postgresql_publication - remove table from publication
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
       tables:
@@ -500,29 +500,34 @@
   # Test
   - name: postgresql_publication - add set columns for table in publication
     when: postgres_version_resp.stdout is version('15', '>=')
-
     <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_table1 }}'
+          value: [ ]
+        - key: '{{ test_schema }}.{{ test_table2 }}'
+          value: [ 'name' ]
+        - key: '{{ test_table3 }}'
+          value: [ 'id' ]
     postgresql_publication:
       <<: *pg_parameters
       name: '{{ test_pub }}'
-      columns:
-        '{{ test_table1 }}': []
-        '{{ test_schema }}.{{ test_table2 }}': ['name']
-        '{{ test_table3 }}': ['id']
+      columns: '{{ columns_map | items2dict }}'
+
       trust_input: false
     check_mode: true
 
   - assert:
       that:
+        - result.tables == ["\"public\".\"{{ test_table1 }}\"", "\"{{ test_schema }}\".\"{{ test_table2 }}\""]
         - result is changed
-        - result.queries == ["ALTER PUBLICATION \"{{ test_pub }}\" SET TABLE \"{{ test_schema }}\".\"{{ test_table3 }}\" ("name")"]
-        - result.tables == ["\"public\".\"{{ test_table1 }}\"", "\"{{ test_schema }}\".\"{{ test_table2 }}\"", "\"public\".\"{{ test_table3 }}\""]
+        - result.queries == ["ALTER PUBLICATION \"{{ test_pub }}\" SET TABLE \"{{ test_schema }}\".\"{{ test_table2 }}\" (\"name\")", "ALTER PUBLICATION \"{{ test_pub }}\" ADD TABLE \"public\".\"{{ test_table3 }}\" (\"id\")"]
 
   # https://github.com/ansible-collections/community.postgresql/pull/718
   - name: Create publication for schema in check mode
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: test_schema_pub
       tables_in_schema: '{{ test_schema }}'
@@ -538,7 +543,7 @@
   - name: Check it's not been created
     <<: *task_parameters
     when: postgres_version_resp.stdout is version('15', '>=')
-    postgresql_query: 
+    postgresql_query:
       <<: *pg_parameters
       query: SELECT * FROM pg_publication_namespace
 
@@ -550,7 +555,7 @@
   - name: Create publication for schema
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: test_schema_pub
       tables_in_schema: '{{ test_schema }}'
@@ -565,7 +570,7 @@
   - name: Check it's been created
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_query: 
+    postgresql_query:
       <<: *pg_parameters
       query: SELECT * FROM pg_publication_namespace
 
@@ -577,14 +582,14 @@
   - name: Create another schema
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_schema: 
+    postgresql_schema:
       <<: *pg_parameters
       name: '{{ test_schema2 }}'
 
   - name: Add another schema
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: test_schema_pub
       tables_in_schema:
@@ -601,7 +606,7 @@
   - name: Drop schemas
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: test_schema_pub
       tables_in_schema:
@@ -617,7 +622,7 @@
   - name: Drop all schemas
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: test_schema_pub
       tables_in_schema: []
@@ -628,11 +633,11 @@
       - result.queries == ["ALTER PUBLICATION \"test_schema_pub\" DROP TABLES IN SCHEMA \"{{ test_schema }}\""]
       - result.schemas == []
     when: postgres_version_resp.stdout is version('15', '>=')
- 
+
   - name: Check there are no publications
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_query: 
+    postgresql_query:
       <<: *pg_parameters
       query: SELECT * FROM pg_publication_namespace
 
@@ -644,7 +649,7 @@
   - name: Try to drop all schemas again
     when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
-    postgresql_publication: 
+    postgresql_publication:
       <<: *pg_parameters
       name: test_schema_pub
       tables_in_schema: []

@@ -136,7 +136,7 @@ EXAMPLES = r'''
     tables:
     - prices
     - vehicles
-    
+
 - name: Create publication "acme" publishing only prices table and id and named from vehicles tables
   community.postgresql.postgresql_publication:
     name: acme
@@ -144,7 +144,7 @@ EXAMPLES = r'''
       prices:
       vehicles:
         - id
-        - name        
+        - name
 
 - name: Create a new publication "acme" for tables in schema "myschema"
   community.postgresql.postgresql_publication:
@@ -225,19 +225,11 @@ parameters:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    check_input,
-    pg_quote_identifier,
-)
+    check_input, pg_quote_identifier)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
-    connect_to_db,
-    ensure_required_libs,
-    exec_sql,
-    get_conn_params,
-    get_server_version,
-    pg_cursor_args,
-    postgres_common_argument_spec,
-    set_comment,
-)
+    connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
+    get_server_version, pg_cursor_args, postgres_common_argument_spec,
+    set_comment)
 
 SUPPORTED_PG_VERSION = 10000
 
@@ -245,6 +237,22 @@ SUPPORTED_PG_VERSION = 10000
 ################################
 # Module functions and classes #
 ################################
+
+def normalize_table_name(table):
+    """Add 'public.' to name of table where a schema identifier is absent
+    and add quotes to each element.
+
+    Args:
+        table (str): Table name.
+
+    Returns:
+        str: Normalized table name.
+    """
+    if '.' not in table:
+        return pg_quote_identifier('public.%s' % table.strip(), 'table')
+    else:
+        return pg_quote_identifier(table.strip(), 'table')
+
 
 def transform_tables_representation(tbl_list):
     """Add 'public.' to names of tables where a schema identifier is absent
@@ -257,12 +265,25 @@ def transform_tables_representation(tbl_list):
         tbl_list (list): Changed list.
     """
     for i, table in enumerate(tbl_list):
-        if '.' not in table:
-            tbl_list[i] = pg_quote_identifier('public.%s' % table.strip(), 'table')
-        else:
-            tbl_list[i] = pg_quote_identifier(table.strip(), 'table')
+        tbl_list[i] = normalize_table_name(table)
 
     return tbl_list
+
+
+def transform_columns_keys(columns):
+    """Add quotes to each element of the columns list.
+
+    Args:
+        columns (dict): Dict with tables and columns.
+
+    Returns:
+        columns (dict): Changed dict.
+    """
+    revmap_columns = {}
+    for table in columns:
+        revmap_columns[normalize_table_name(table)] = set(c.strip() for c in columns[table]) if columns[table] else None
+
+    return revmap_columns
 
 
 def pg_quote_column_list(table, columns):
@@ -275,14 +296,16 @@ def pg_quote_column_list(table, columns):
     Returns:
         str: String with columns.
     """
+    table = normalize_table_name(table)
+
     if columns is None:
-        return pg_quote_identifier(table, 'table')
+        return table
 
     if len(columns) == 0:
-        return pg_quote_identifier(table, 'table')
+        return table
 
-    quoted_columns = [pg_quote_identifier(c, 'column') for c in columns]
-    quoted_sql = "%s (%s)" % (pg_quote_identifier(table, 'table'), ', '.join(quoted_columns))
+    quoted_columns = [pg_quote_identifier(col, 'column') for col in columns]
+    quoted_sql = "%s (%s)" % (table, ', '.join(quoted_columns))
     return quoted_sql
 
 
@@ -363,8 +386,11 @@ class PgPublication():
             # FOR TABLES IN SCHEMA statement is supported since PostgreSQL 15
             if self.pg_srv_ver >= 150000:
                 self.attrs['schemas'] = self.__get_schema_pub_info()
-            if self.pg_srv_ver >= 150000:
-                self.attrs['columns'] = self.__get_columns_pub_info()
+                column_info = self.__get_columns_pub_info()
+                columns = {}
+                for row in column_info:
+                    columns[normalize_table_name(row["schema_dot_table"])] = set(row['columns'])
+                self.attrs['columns'] = columns
         else:
             self.attrs['alltables'] = True
 
@@ -394,8 +420,8 @@ class PgPublication():
 
         if columns:
             table_strings = []
-            for table, cols in columns:
-                table_strings.append(pg_quote_column_list(table, cols))
+            for table in columns:
+                table_strings.append(pg_quote_column_list(table, columns[table]))
             query_fragments.append("FOR TABLE %s" % ', '.join(table_strings))
         elif tables:
             query_fragments.append("FOR TABLE %s" % ', '.join(tables))
@@ -448,19 +474,23 @@ class PgPublication():
 
         # Add or drop tables from published tables suit:
         if columns and not self.attrs['alltables']:
-            for table, cols in columns:
+            for table in columns:
                 if table not in self.attrs['tables']:
-                    changed = self.__pub_add_columns(table, cols, check_mode=check_mode)
-                else:
-                    changed = self.__pub_set_columns(table, cols, check_mode=check_mode)
+                    changed = self.__pub_add_columns(table, columns[table], check_mode=check_mode)
+                elif not columns[table]:
+                    all_columns = self.__get_table_columns(table)
+                    if all_columns != self.attrs['columns'][table]:
+                        changed = self.__pub_set_columns(table, columns[table], check_mode=check_mode)
+                elif self.attrs['columns'][table] != columns[table]:
+                    changed = self.__pub_set_columns(table, columns[table], check_mode=check_mode)
 
             # Drop columns that are not in the passed columns:
-            for row in self.attrs['columns'].items():
-                if columns[row[0]] is None:
+            for table in self.attrs['columns']:
+                if table not in columns.keys():
                     changed = self.__pub_drop_table(table, check_mode=check_mode)
         elif columns and self.attrs['alltables']:
-            for table, cols in columns:
-                changed = self.__pub_set_columns(table, cols, check_mode=check_mode)
+            for table in columns:
+                changed = self.__pub_set_columns(table, columns[table], check_mode=check_mode)
         if tables and not self.attrs['alltables']:
 
             # 1. If needs to add table to the publication:
@@ -523,9 +553,8 @@ class PgPublication():
                     changed = self.__pub_set_param(key, val, check_mode=check_mode)
 
         # Update pub owner:
-        if owner:
-            if owner != self.attrs['owner']:
-                changed = self.__pub_set_owner(owner, check_mode=check_mode)
+        if owner and owner != self.attrs['owner']:
+            changed = self.__pub_set_owner(owner, check_mode=check_mode)
 
         if comment is not None and comment != self.attrs['comment']:
             changed = set_comment(self.cursor, comment, 'publication',
@@ -622,6 +651,17 @@ class PgPublication():
         for d in list_of_dicts:
             list_of_schemas.extend(d.values())
         return list_of_schemas
+
+    def __get_table_columns(self, table):
+        """Get and return columns names of the table.
+
+        Returns:
+            Set of columns.
+        """
+        query = ("SELECT attname as column_name FROM pg_attribute "
+                 "WHERE attrelid = %(table)s::regclass and attnum > 0 AND NOT attisdropped;")
+        result = exec_sql(self, query, query_params={'table': table}, add_to_executed=False)
+        return set([row['column_name'] for row in result])
 
     def __pub_add_table(self, table, check_mode=False):
         """Add a table to the publication.
@@ -887,6 +927,9 @@ def main():
 
     if tables:
         tables = transform_tables_representation(tables)
+
+    if columns:
+        columns = transform_columns_keys(columns)
 
     # If module.check_mode=True, nothing will be changed:
     if state == 'present':
