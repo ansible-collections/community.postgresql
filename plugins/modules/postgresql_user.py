@@ -508,26 +508,25 @@ def user_should_we_change_password(cursor, current_role_attrs, user, password, e
                 # or we cannot check it properly, e.g. due to missing dependencies
                 pwchanging = True
 
-        # https://github.com/ansible-collections/community.postgresql/issues/688
-        # When the current password is not none and is not hashed as scram-sha-256
-        # / not explicitly declared as plain text
-        # but the default password encryption is scram-sha-256, update the password.
-        # Can be relevant when migrating from older version of postgres.
-        elif not (is_pg_passwd_md5(password) or encrypted == 'UNENCRYPTED') \
-                and current_password is not None \
-                and not re.match(SCRAM_SHA256_REGEX, current_password):
-            default_pw_encryption = get_passwd_encryption(cursor)
-            if default_pw_encryption == 'scram-sha-256':
-                pwchanging = True
-
         # When the provided password looks like a MD5-hash, value of
         # 'encrypted' is ignored.
         elif is_pg_passwd_md5(password) or encrypted == 'UNENCRYPTED':
             if password != current_password:
                 pwchanging = True
         elif encrypted == 'ENCRYPTED':
-            hashed_password = 'md5{0}'.format(md5(to_bytes(password) + to_bytes(user)).hexdigest())
-            if hashed_password != current_password:
+            default_pw_encryption = get_passwd_encryption(cursor)
+
+            if default_pw_encryption == 'md5':
+                hashed_password = 'md5{0}'.format(md5(to_bytes(password) + to_bytes(user)).hexdigest())
+                if hashed_password != current_password:
+                    pwchanging = True
+            elif default_pw_encryption == 'scram-sha-256':
+                # https://github.com/ansible-collections/community.postgresql/issues/688
+                # When the current password is not none and is not
+                # hashed as scram-sha-256 / not explicitly declared as plain text
+                # (if we are here, these conditions should be met)
+                # but the default password encryption is scram-sha-256, update the password.
+                # Can be relevant when migrating from older version of postgres.
                 pwchanging = True
 
     return pwchanging
