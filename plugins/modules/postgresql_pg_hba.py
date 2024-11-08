@@ -344,7 +344,7 @@ def parse_hba_file(input_string):
             parsed_line = "COMMENT"
             comment = line
         # handle empty lines
-        elif line == '' or ONLY_SPACES_RE.match(line):
+        elif not line.strip():
             parsed_line = "EMPTY"
         # handle "normal" lines
         else:
