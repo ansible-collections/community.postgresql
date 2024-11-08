@@ -705,6 +705,7 @@
 
   # check 2
   - name: postgresql_publication - check that columns are set for test_table1
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -746,6 +747,7 @@
 
   # Check 1
   - name: postgresql_publication - check that test_table1 from schema public is not in publication
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
