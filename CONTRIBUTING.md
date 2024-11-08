@@ -96,27 +96,3 @@ $ python3 -m venv .venv
 $ source .venv
 $ pip install tox
 ```
-
-### Automatically for each commit
-
-This repo contains some pre-commit configuration to automatically check your
-code foreach commit. To use that configuration you should "install" it by
-running:
-
-``` console
-$ pre-commit install
-```
-
-Then autoflake, flake8, isort and codespell must run when you add some commits.
-You can also force them to run with this command:
-
-``` console
-$ pre-commit run --all-file
-```
-
-If pre-commit is missing on your system, you can install it (on Debian based
-system) with `apt`:
-
-``` console
-$ sudo apt install pre-commit
-```
