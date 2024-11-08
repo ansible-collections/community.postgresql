@@ -523,6 +523,7 @@
       that:
         - result is changed
         - result.queries == ["ALTER PUBLICATION \"{{ test_pub }}\" SET TABLE \"public\".\"{{ test_table1 }}\", \"{{ test_schema }}\".\"{{ test_table2 }}\" (\"name\"), \"public\".\"{{ test_table3 }}\" (\"id\")"]
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Test
   - name: postgresql_publication - create publication with specific columns
@@ -547,6 +548,7 @@
         - result is changed
         - result.exists == false
         - result.queries == ["CREATE PUBLICATION \"test_pub_with_columns\" FOR TABLE \"public\".\"{{ test_table1 }}\", \"{{ test_schema }}\".\"{{ test_table2 }}\" (\"name\")"]
+    when: postgres_version_resp.stdout is version('15', '>=')
 
     # Check
   - name: postgresql_publication - check that nothing has been changed
@@ -559,6 +561,7 @@
   - assert:
       that:
         - result.rowcount == 0
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Test
   - name: postgresql_publication - create publication with specific columns
@@ -586,9 +589,11 @@
           - result.alltables == false
           - result.tables == ["\"public\".\"{{ test_table1 }}\"", "\"{{ test_schema }}\".\"{{ test_table2 }}\""]
           - result.columns != {}
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Check 1
   - name: postgresql_publication - check that test publication exists
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -599,9 +604,11 @@
   - assert:
       that:
       - result.rowcount == 1
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Check 2
   - name: postgresql_publication - check that test_table1 from schema public is in publication
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -610,9 +617,11 @@
   - assert:
       that:
       - result.rowcount == 1
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Check 3
   - name: postgresql_publication - check that test_table2 from test schema is in publication
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -621,9 +630,11 @@
   - assert:
       that:
       - result.rowcount == 1
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # check 4
   - name: postgresql_publication - check that columns are set for test_table2
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -633,9 +644,11 @@
       that:
         - result.rowcount == 1
         - result.query_result[0]['column'] == 'name'
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # check 5
   - name: postgresql_publication - check that columns are set for test_table1
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -646,6 +659,7 @@
         - result.rowcount == 2
         - result.query_result[0]['column'] == 'id'
         - result.query_result[1]['column'] == 'name'
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Test
   - name: postgresql_publication - update publication with specific columns
@@ -673,9 +687,11 @@
           - result.alltables == false
           - result.tables == ["\"public\".\"{{ test_table1 }}\"", "\"{{ test_schema }}\".\"{{ test_table2 }}\""]
           - result.columns != {}
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # check 1
   - name: postgresql_publication - check that columns are set for test_table2
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -685,6 +701,7 @@
       that:
         - result.rowcount == 1
         - result.query_result[0]['column'] == 'name'
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # check 2
   - name: postgresql_publication - check that columns are set for test_table1
@@ -697,6 +714,7 @@
       that:
         - result.rowcount == 1
         - result.query_result[0]['column'] == 'id'
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Test
   - name: postgresql_publication - add and remove tables from publication with specific columns
@@ -724,6 +742,7 @@
           - result.alltables == false
           - result.tables == ["\"{{ test_schema }}\".\"{{ test_table2 }}\"", "\"public\".\"{{ test_table3 }}\""]
           - result.columns != {}
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Check 1
   - name: postgresql_publication - check that test_table1 from schema public is not in publication
@@ -735,9 +754,11 @@
   - assert:
       that:
         - result.rowcount == 0
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Check 2
   - name: postgresql_publication - check that test_table2 from test schema is in publication
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -746,9 +767,11 @@
   - assert:
       that:
         - result.rowcount == 1
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # Check 3
   - name: postgresql_publication - check that test_table3 from schema public is in publication
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -757,9 +780,11 @@
   - assert:
       that:
         - result.rowcount == 1
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # check 4
   - name: postgresql_publication - check that columns are set for test_table2
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -769,9 +794,11 @@
       that:
         - result.rowcount == 1
         - result.query_result[0]['column'] == 'name'
+    when: postgres_version_resp.stdout is version('15', '>=')
 
   # check 4
   - name: postgresql_publication - check that columns are set for test_table3
+    when: postgres_version_resp.stdout is version('15', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -781,6 +808,7 @@
       that:
         - result.rowcount == 1
         - result.query_result[0]['column'] == 'id'
+    when: postgres_version_resp.stdout is version('15', '>=')
 
     # https://github.com/ansible-collections/community.postgresql/pull/718
   - name: Create publication for schema in check mode
