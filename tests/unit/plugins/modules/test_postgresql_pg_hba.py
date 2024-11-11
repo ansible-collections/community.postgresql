@@ -29,6 +29,16 @@ def test_tokenize():
     assert tokenize('one="two three" four') == ['one="two three"', "four"]
     assert tokenize('"one two"') == ['"one two"']
     assert tokenize('"one"') == ['"one"']
+    assert tokenize('one two # three four') == ['one', 'two', '# three four']
+    assert tokenize('one\ttwo\t#\tthree\tfour') == ['one', 'two', '#\tthree\tfour']
+    assert tokenize('one two# three four') == ['one', 'two', '# three four']
+    assert tokenize('one two#three four') == ['one', 'two', '#three four']
+    assert tokenize('one "two # three" four # five six') == ['one', '"two # three"', 'four', "# five six"]
+    assert tokenize('# one two') == ['# one two']
+    assert tokenize(' # one two') == ['# one two']
+    assert tokenize('one # two "three four" five') == ['one', '# two "three four" five']
+    assert tokenize('one # two "three four" five # six seven') == ['one', '# two "three four" five # six seven']
+    assert tokenize('one ##two') == ['one', "##two"]
     with pytest.raises(TokenizerException, match="Unterminated quote"):
         tokenize('one="two three four')
     with pytest.raises(TokenizerException, match="Unterminated quote"):
