@@ -329,12 +329,15 @@ def parse_hba_file(input_string):
     rules = []
     line_iter = iter(input_string.split("\n"))
     line = next(line_iter, None)
+    this_line_nr = 1
+    next_line_nr = 1
     while line is not None:
         # if that line continues, we just glue the next line onto the end until it ends
         # we can and have to do that, as continuation even applies within comments and quoted strings [sic]
         # https://www.postgresql.org/docs/current/auth-pg-hba-conf.html#AUTH-PG-HBA-CONF
         comment = None
         while line.endswith("\\"):
+            next_line_nr += 1
             cont_line = next(line_iter, None)
             if cont_line is None:
                 # we got a line continuation, but there was no more line
@@ -351,15 +354,20 @@ def parse_hba_file(input_string):
         else:
             # remove continuation tokens
             sanitized_line = line.replace("\\\n", "")
-            tokens = tokenize(sanitized_line)
+            try:
+                tokens = tokenize(sanitized_line)
+            except TokenizerException as e:
+                raise TokenizerException("Error in line {0}: {1}".format(this_line_nr, e.args[0]))
             parsed_line = tokens
             # a comment would always be the last token
             if parsed_line[-1].startswith("#"):
                 comment = parsed_line[-1]
                 parsed_line = parsed_line[:-1]
         # create Rule
-        rules.append({"tokens": parsed_line, "line": line, "comment": comment})
+        rules.append({"tokens": parsed_line, "line": line, "comment": comment, "line_nr": this_line_nr})
         line = next(line_iter, None)
+        this_line_nr = next_line_nr + 1
+        next_line_nr = this_line_nr
     return rules
 
 
@@ -498,14 +506,18 @@ class PgHba(object):
             if line["tokens"] == "COMMENT":
                 self.comment.append(line["comment"])
             elif line["tokens"] != "EMPTY":
-                if not line["comment"]:
-                    self._from_tokens(line["tokens"])
-                else:
-                    if self.keep_comments_at_rules:
-                        self._from_tokens(line["tokens"], line["comment"])
-                    else:
-                        self.comment.append(line["comment"])
+                try:
+                    if not line["comment"]:
                         self._from_tokens(line["tokens"])
+                    else:
+                        if self.keep_comments_at_rules:
+                            self._from_tokens(line["tokens"], line["comment"])
+                        else:
+                            self.comment.append(line["comment"])
+                            self._from_tokens(line["tokens"])
+                except PgHbaError as e:
+                    raise e.__class__("Error in line {0}: {1}".format(line["line_nr"], e.args[0]))
+
         self.unchanged()
         self.preexisting_rules = dict(self.rules)
 
@@ -1060,7 +1072,7 @@ def main():
     ret = {'msgs': []}
     try:
         pg_hba = PgHba(dest, backup=backup, create=create, keep_comments_at_rules=keep_comments_at_rules)
-    except PgHbaError as error:
+    except (PgHbaError, TokenizerException) as error:
         module.fail_json(msg='Error reading file:\n{0}'.format(error))
 
     if overwrite:

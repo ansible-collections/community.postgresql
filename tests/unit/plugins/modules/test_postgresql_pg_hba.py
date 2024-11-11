@@ -13,11 +13,12 @@ import pytest
 
 if sys.version_info[0] == 3:
     from plugins.modules.postgresql_pg_hba import tokenize, TokenizerException, handle_address_field, \
-        handle_netmask_field, handle_db_and_user_strings, PgHbaRuleValueError, PgHbaValueError, parse_auth_options
+        handle_netmask_field, handle_db_and_user_strings, PgHbaRuleValueError, PgHbaValueError, parse_auth_options, \
+        parse_hba_file
 elif sys.version_info[0] == 2:
     from ansible_collections.community.postgresql.plugins.modules.postgresql_pg_hba import tokenize, \
         TokenizerException, handle_address_field, handle_netmask_field, handle_db_and_user_strings, \
-        PgHbaRuleValueError, PgHbaValueError, parse_auth_options
+        PgHbaRuleValueError, PgHbaValueError, parse_auth_options, parse_hba_file
 
 
 def test_tokenize():
@@ -43,6 +44,83 @@ def test_tokenize():
         tokenize('one="two three four')
     with pytest.raises(TokenizerException, match="Unterminated quote"):
         tokenize('one two"')
+
+
+def test_parse_hba_file():
+    string_1 = "one two\n# comment\none two #three"
+    expected_1 = [
+        {"line": "one two",
+         "tokens": ["one", "two"],
+         "comment": None,
+         "line_nr": 1},
+        {"line": "# comment",
+         "tokens": "COMMENT",
+         "comment": "# comment",
+         "line_nr": 2},
+        {"line": "one two #three",
+         "tokens": ["one", "two"],
+         "comment": "#three",
+         "line_nr": 3},
+    ]
+    assert parse_hba_file(string_1) == expected_1
+
+    string_2 = "one two\n# comment\none \\\ntwo #three\nfour"
+    expected_2 = [
+        {"line": "one two",
+         "tokens": ["one", "two"],
+         "comment": None,
+         "line_nr": 1},
+        {"line": "# comment",
+         "tokens": "COMMENT",
+         "comment": "# comment",
+         "line_nr": 2},
+        {"line": "one \\\ntwo #three",
+         "tokens": ["one", "two"],
+         "comment": "#three",
+         "line_nr": 3},
+        {"line": "four",
+         "tokens": ["four"],
+         "comment": None,
+         "line_nr": 5},
+    ]
+    assert parse_hba_file(string_2) == expected_2
+
+    string_3 = "one two\n\n# comment\none \\\ntwo #three\nfour"
+    expected_3 = [
+        {"line": "one two",
+         "tokens": ["one", "two"],
+         "comment": None,
+         "line_nr": 1},
+        {"line": "",
+         "tokens": "EMPTY",
+         "comment": None,
+         "line_nr": 2},
+        {"line": "# comment",
+         "tokens": "COMMENT",
+         "comment": "# comment",
+         "line_nr": 3},
+        {"line": "one \\\ntwo #three",
+         "tokens": ["one", "two"],
+         "comment": "#three",
+         "line_nr": 4},
+        {"line": "four",
+         "tokens": ["four"],
+         "comment": None,
+         "line_nr": 6},
+    ]
+    assert parse_hba_file(string_3) == expected_3
+
+    string_err = "one two\" three"
+    with pytest.raises(TokenizerException, match="Error in line 1: Unterminated quote"):
+        parse_hba_file(string_err)
+
+    string_err = "asdf\none two\" three"
+    with pytest.raises(TokenizerException, match="Error in line 2: Unterminated quote"):
+        parse_hba_file(string_err)
+
+    string_err = "asdf\\\nxxx\none two\" three"
+    with pytest.raises(TokenizerException, match="Error in line 3: Unterminated quote"):
+        parse_hba_file(string_err)
 
 
 def test_handle_db_and_user_strings():
