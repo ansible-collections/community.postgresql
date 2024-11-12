@@ -185,7 +185,8 @@ notes:
 - SCRAM-SHA-256-hashed passwords (SASL Authentication) require PostgreSQL version 10 or newer.
   On the previous versions the whole hashed string is used as a password.
 - 'Working with SCRAM-SHA-256-hashed passwords, be sure you use the I(environment:) variable
-  C(PGOPTIONS: "-c password_encryption=scram-sha-256") (see the provided example).'
+  C(PGOPTIONS: "-c password_encryption=scram-sha-256") when it is not default
+  for your PostgreSQL version (see the provided example).'
 - On some systems (such as AWS RDS), C(pg_authid) is not accessible, thus, the module cannot compare
   the current and desired C(password). In this case, the module assumes that the passwords are
   different and changes it reporting that the state has been changed.
@@ -439,7 +440,12 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
     return True
 
 
-def user_should_we_change_password(current_role_attrs, user, password, encrypted):
+def get_passwd_encryption(cursor):
+    cursor.execute("SHOW password_encryption")
+    return cursor.fetchone()["password_encryption"]
+
+
+def user_should_we_change_password(cursor, current_role_attrs, user, password, encrypted):
     """Check if we should change the user's password.
 
     Compare the proposed password with the existing one, comparing
@@ -502,19 +508,34 @@ def user_should_we_change_password(current_role_attrs, user, password, encrypted
                 # or we cannot check it properly, e.g. due to missing dependencies
                 pwchanging = True
 
-        # 32: MD5 hashes are represented as a sequence of 32 hexadecimal digits
-        #  3: The size of the 'md5' prefix
         # When the provided password looks like a MD5-hash, value of
         # 'encrypted' is ignored.
-        elif (password.startswith('md5') and len(password) == 32 + 3) or encrypted == 'UNENCRYPTED':
+        elif is_pg_passwd_md5(password) or encrypted == 'UNENCRYPTED':
             if password != current_password:
                 pwchanging = True
         elif encrypted == 'ENCRYPTED':
-            hashed_password = 'md5{0}'.format(md5(to_bytes(password) + to_bytes(user)).hexdigest())
-            if hashed_password != current_password:
+            default_pw_encryption = get_passwd_encryption(cursor)
+
+            if default_pw_encryption == 'md5':
+                hashed_password = 'md5{0}'.format(md5(to_bytes(password) + to_bytes(user)).hexdigest())
+                if hashed_password != current_password:
+                    pwchanging = True
+            elif default_pw_encryption == 'scram-sha-256':
+                # https://github.com/ansible-collections/community.postgresql/issues/688
+                # When the current password is not none and is not
+                # hashed as scram-sha-256 / not explicitly declared as plain text
+                # (if we are here, these conditions should be met)
+                # but the default password encryption is scram-sha-256, update the password.
+                # Can be relevant when migrating from older version of postgres.
                 pwchanging = True
 
     return pwchanging
+
+
+def is_pg_passwd_md5(password):
+    # 32: MD5 hashes are represented as a sequence of 32 hexadecimal digits
+    #  3: The size of the 'md5' prefix
+    return True if password.startswith('md5') and len(password) == 32 + 3 else False
 
 
 def user_alter(db_connection, module, user, password, role_attr_flags, encrypted, expires, no_password_changes, conn_limit):
@@ -544,7 +565,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             current_role_attrs = None
             db_connection.rollback()
 
-        pwchanging = user_should_we_change_password(current_role_attrs, user, password, encrypted)
+        pwchanging = user_should_we_change_password(cursor, current_role_attrs, user, password, encrypted)
 
         if current_role_attrs is None:
             try:

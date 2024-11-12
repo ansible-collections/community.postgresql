@@ -1,0 +1,2 @@
+bugfixes:
+- postgresql_user - doesn't take password_encryption into account when checking if a password should be updated (https://github.com/ansible-collections/community.postgresql/issues/688).
