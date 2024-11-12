@@ -423,82 +423,87 @@ def db_delete(cursor, db, force=False):
 
 
 def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_locale, locale_provider, conn_limit, tablespace, comment, check_mode):
+
     params = dict(enc=encoding, collate=lc_collate, ctype=lc_ctype, iculocale=icu_locale, localeprovider=locale_provider, conn_limit=conn_limit,
                   tablespace=tablespace)
+
     icu_supported = get_server_version(cursor.connection) >= 150000
-    if not db_exists(cursor, db):
-        query_fragments = ['CREATE DATABASE "%s"' % db]
-        if owner:
-            query_fragments.append('OWNER "%s"' % owner)
-        if template:
-            query_fragments.append('TEMPLATE "%s"' % template)
-        if encoding:
-            query_fragments.append('ENCODING %(enc)s')
-        if lc_collate:
-            query_fragments.append('LC_COLLATE %(collate)s')
-        if lc_ctype:
-            query_fragments.append('LC_CTYPE %(ctype)s')
-        if icu_locale and icu_supported:
-            query_fragments.append('ICU_LOCALE %(iculocale)s')
-        if locale_provider and icu_supported:
-            query_fragments.append('LOCALE_PROVIDER %(localeprovider)s')
-        if tablespace:
-            query_fragments.append('TABLESPACE "%s"' % tablespace)
-        if conn_limit:
-            query_fragments.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
-        query = ' '.join(query_fragments)
-        executed_commands.append(cursor.mogrify(query, params))
-        cursor.execute(query, params)
-        if comment:
-            set_comment(cursor, comment, 'database', db, check_mode, executed_commands)
-        return True
-    else:
-        db_info = get_db_info(cursor, db)
-        if (encoding and get_encoding_id(cursor, encoding) != db_info['encoding_id']):
-            raise NotSupportedError(
-                'Changing database encoding is not supported. '
-                'Current encoding: %s' % db_info['encoding']
-            )
-        elif lc_collate and lc_collate != db_info['lc_collate']:
-            raise NotSupportedError(
-                'Changing LC_COLLATE is not supported. '
-                'Current LC_COLLATE: %s' % db_info['lc_collate']
-            )
-        elif lc_ctype and lc_ctype != db_info['lc_ctype']:
-            raise NotSupportedError(
-                'Changing LC_CTYPE is not supported.'
-                'Current LC_CTYPE: %s' % db_info['lc_ctype']
-            )
-        elif icu_locale and icu_locale != db_info['icu_locale']:
-            raise NotSupportedError(
-                'Changing ICU_LOCALE is not supported.'
-                'Current ICU_LOCALE: %s' % db_info['icu_locale']
-            )
-        elif locale_provider and locale_provider != db_info['locale_provider']:
-            raise NotSupportedError(
-                'Changing LOCALE_PROVIDER is not supported.'
-                'Current LOCALE_PROVIDER: %s' % db_info['locale_provider']
-            )
-        else:
-            changed = False
 
-            if db_info['comment'] is None:
-                # For the resetting comment feature (comment: '') to work correctly
-                db_info['comment'] = ''
+    query_fragments = ['CREATE DATABASE "%s"' % db]
+    if owner:
+        query_fragments.append('OWNER "%s"' % owner)
+    if template:
+        query_fragments.append('TEMPLATE "%s"' % template)
+    if encoding:
+        query_fragments.append('ENCODING %(enc)s')
+    if lc_collate:
+        query_fragments.append('LC_COLLATE %(collate)s')
+    if lc_ctype:
+        query_fragments.append('LC_CTYPE %(ctype)s')
+    if icu_locale and icu_supported:
+        query_fragments.append('ICU_LOCALE %(iculocale)s')
+    if locale_provider and icu_supported:
+        query_fragments.append('LOCALE_PROVIDER %(localeprovider)s')
+    if tablespace:
+        query_fragments.append('TABLESPACE "%s"' % tablespace)
+    if conn_limit:
+        query_fragments.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
+    query = ' '.join(query_fragments)
+    executed_commands.append(cursor.mogrify(query, params))
+    cursor.execute(query, params)
+    if comment:
+        set_comment(cursor, comment, 'database', db, check_mode, executed_commands)
+    return True
 
-            if owner and owner != db_info['owner']:
-                changed = set_owner(cursor, db, owner)
 
-            if conn_limit and conn_limit != str(db_info['conn_limit']):
-                changed = set_conn_limit(cursor, db, conn_limit)
+def db_update(cursor, db, owner, encoding, lc_collate, lc_ctype, icu_locale, locale_provider, conn_limit, tablespace, comment, check_mode):
+    db_info = get_db_info(cursor, db)
 
-            if tablespace and tablespace != db_info['tablespace']:
-                changed = set_tablespace(cursor, db, tablespace)
+    if (encoding and get_encoding_id(cursor, encoding) != db_info['encoding_id']):
+        raise NotSupportedError(
+            'Changing database encoding is not supported. '
+            'Current encoding: %s' % db_info['encoding']
+        )
+    elif lc_collate and lc_collate != db_info['lc_collate']:
+        raise NotSupportedError(
+            'Changing LC_COLLATE is not supported. '
+            'Current LC_COLLATE: %s' % db_info['lc_collate']
+        )
+    elif lc_ctype and lc_ctype != db_info['lc_ctype']:
+        raise NotSupportedError(
+            'Changing LC_CTYPE is not supported.'
+            'Current LC_CTYPE: %s' % db_info['lc_ctype']
+        )
+    elif icu_locale and icu_locale != db_info['icu_locale']:
+        raise NotSupportedError(
+            'Changing ICU_LOCALE is not supported.'
+            'Current ICU_LOCALE: %s' % db_info['icu_locale']
+        )
+    elif locale_provider and locale_provider != db_info['locale_provider']:
+        raise NotSupportedError(
+            'Changing LOCALE_PROVIDER is not supported.'
+            'Current LOCALE_PROVIDER: %s' % db_info['locale_provider']
+        )
 
-            if comment is not None and comment != db_info['comment']:
-                changed = set_comment(cursor, comment, 'database', db, check_mode, executed_commands)
+    changed = False
 
-            return changed
+    if db_info['comment'] is None:
+        # For the resetting comment feature (comment: '') to work correctly
+        db_info['comment'] = ''
+
+    if owner and owner != db_info['owner']:
+        changed = set_owner(cursor, db, owner)
+
+    if conn_limit and conn_limit != str(db_info['conn_limit']):
+        changed = set_conn_limit(cursor, db, conn_limit)
+
+    if tablespace and tablespace != db_info['tablespace']:
+        changed = set_tablespace(cursor, db, tablespace)
+
+    if comment is not None and comment != db_info['comment']:
+        changed = set_comment(cursor, comment, 'database', db, check_mode, executed_commands)
+
+    return changed
 
 
 def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_locale, locale_provider, conn_limit, tablespace, comment):
@@ -815,6 +820,7 @@ def main():
                 module.fail_json(msg="Could not switch role: %s" % to_native(e), exception=traceback.format_exc())
 
     try:
+        # Handle check mode
         if module.check_mode:
             if state == "absent":
                 changed = db_exists(cursor, db)
@@ -828,43 +834,41 @@ def main():
 
             module.exit_json(changed=changed, db=db, executed_commands=executed_commands)
 
+        # Handle real mode
         if state == "absent":
-            try:
-                changed = db_delete(cursor, db, force)
-            except SQLParseError as e:
-                module.fail_json(msg=to_native(e), exception=traceback.format_exc())
+            changed = db_delete(cursor, db, force)
 
         elif state == "present":
-            try:
+            if not db_exists(cursor, db):
                 changed = db_create(cursor, db, owner, template, encoding, lc_collate,
                                     lc_ctype, icu_locale, locale_provider, conn_limit,
                                     tablespace, comment, module.check_mode)
-            except SQLParseError as e:
-                module.fail_json(msg=to_native(e), exception=traceback.format_exc())
+            else:
+                changed = db_update(cursor, db, owner, encoding, lc_collate,
+                                    lc_ctype, icu_locale, locale_provider, conn_limit,
+                                    tablespace, comment, module.check_mode)
 
         elif raw_connection:
             # Parameters for performing dump/restore
             conn_params = get_conn_params(module, module.params, warn_db_default=False)
 
             method = state == "dump" and db_dump or db_restore
-            try:
-                if state == 'dump':
-                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, dump_extra_args, **conn_params)
-                else:
-                    rc, stdout, stderr, cmd = method(module, target, target_opts, db, **conn_params)
 
-                if rc != 0:
-                    module.fail_json(msg=stderr, stdout=stdout, rc=rc, cmd=cmd)
-                else:
-                    module.exit_json(changed=True, msg=stdout, stderr=stderr, rc=rc, cmd=cmd,
-                                     executed_commands=executed_commands)
-            except SQLParseError as e:
-                module.fail_json(msg=to_native(e), exception=traceback.format_exc())
+            if state == 'dump':
+                rc, stdout, stderr, cmd = method(module, target, target_opts, db, dump_extra_args, **conn_params)
+            else:
+                rc, stdout, stderr, cmd = method(module, target, target_opts, db, **conn_params)
+
+            if rc != 0:
+                module.fail_json(msg=stderr, stdout=stdout, rc=rc, cmd=cmd)
+            else:
+                module.exit_json(changed=True, msg=stdout, stderr=stderr, rc=rc, cmd=cmd,
+                                 executed_commands=executed_commands)
 
         elif state == 'rename':
             changed = rename_db(module, cursor, db, target)
 
-    except NotSupportedError as e:
+    except (SQLParseError, NotSupportedError) as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
     except SystemExit:
         # Avoid catching this on Python 2.4
