@@ -538,6 +538,57 @@ def is_pg_passwd_md5(password):
     return True if password.startswith('md5') and len(password) == 32 + 3 else False
 
 
+def get_role_attrs(db_connection, module, cursor, user):
+    current_role_attrs = None
+
+    # Let's first try to get the attrs from pg_authid.
+    # Some systems like AWS RDS instances
+    # do not allow user to access pg_authid
+    try:
+        query = "SELECT * FROM pg_authid where rolname=%(user)s"
+        cursor.execute(query, {"user": user})
+        current_role_attrs = cursor.fetchone()
+    except psycopg.ProgrammingError:
+        db_connection.rollback()
+
+    # If we succeeded, return it
+    if current_role_attrs is not None:
+        return current_role_attrs
+
+    # If we haven't succeeded, like in case of AWS RDS,
+    # try to get the attrs from the pg_roles table
+    try:
+        query = "SELECT * FROM pg_roles where rolname=%(user)s"
+        cursor.execute(query, {"user": user})
+        current_role_attrs = cursor.fetchone()
+    except psycopg.ProgrammingError as e:
+        db_connection.rollback()
+        module.fail_json(msg="Failed to get role details for current user %s: %s" % (user, e))
+
+    return current_role_attrs
+
+
+def need_to_change_role_attr_flags(role_attr_flags, current_role_attrs):
+    # Compare the desired role_attr_flags and current ones.
+    # If they don't match, return True which means
+    # they need to be updated, False otherwise.
+
+    role_attr_flags_changing = False
+    if role_attr_flags:
+        role_attr_flags_dict = {}
+        for r in role_attr_flags.split(' '):
+            if r.startswith('NO'):
+                role_attr_flags_dict[r.replace('NO', '', 1)] = False
+            else:
+                role_attr_flags_dict[r] = True
+
+        for role_attr_name, role_attr_value in role_attr_flags_dict.items():
+            if current_role_attrs[PRIV_TO_AUTHID_COLUMN[role_attr_name]] != role_attr_value:
+                role_attr_flags_changing = True
+
+    return role_attr_flags_changing
+
+
 def user_alter(db_connection, module, user, password, role_attr_flags, encrypted, expires, no_password_changes, conn_limit):
     """Change user password and/or attributes. Return True if changed, False otherwise."""
     changed = False
@@ -555,55 +606,29 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
     # Handle passwords.
     if not no_password_changes and (password is not None or role_attr_flags != '' or expires is not None or conn_limit is not None):
-        # Select password and all flag-like columns in order to verify changes.
-        try:
-            select = "SELECT * FROM pg_authid where rolname=%(user)s"
-            cursor.execute(select, {"user": user})
-            # Grab current role attributes.
-            current_role_attrs = cursor.fetchone()
-        except psycopg.ProgrammingError:
-            current_role_attrs = None
-            db_connection.rollback()
+        current_role_attrs = get_role_attrs(db_connection, module, cursor, user)
 
         pwchanging = user_should_we_change_password(cursor, current_role_attrs, user, password, encrypted)
 
-        if current_role_attrs is None:
-            try:
-                # AWS RDS instances does not allow user to access pg_authid
-                # so try to get current_role_attrs from pg_roles tables
-                select = "SELECT * FROM pg_roles where rolname=%(user)s"
-                cursor.execute(select, {"user": user})
-                # Grab current role attributes from pg_roles
-                current_role_attrs = cursor.fetchone()
-            except psycopg.ProgrammingError as e:
-                db_connection.rollback()
-                module.fail_json(msg="Failed to get role details for current user %s: %s" % (user, e))
-
-        role_attr_flags_changing = False
-        if role_attr_flags:
-            role_attr_flags_dict = {}
-            for r in role_attr_flags.split(' '):
-                if r.startswith('NO'):
-                    role_attr_flags_dict[r.replace('NO', '', 1)] = False
-                else:
-                    role_attr_flags_dict[r] = True
-
-            for role_attr_name, role_attr_value in role_attr_flags_dict.items():
-                if current_role_attrs[PRIV_TO_AUTHID_COLUMN[role_attr_name]] != role_attr_value:
-                    role_attr_flags_changing = True
+        # Do role attributes need to be changed?
+        role_attr_flags_changing = need_to_change_role_attr_flags(role_attr_flags, current_role_attrs)
 
         if expires is not None:
             cursor.execute("SELECT %s::timestamptz exp_timestamp", (expires,))
             expires_with_tz = cursor.fetchone()["exp_timestamp"]
+            # If the desired expiration date is not equal to
+            # what is already set for the role, set this to True
             expires_changing = expires_with_tz != current_role_attrs.get('rolvaliduntil')
         else:
             expires_changing = False
 
         conn_limit_changing = (conn_limit is not None and conn_limit != current_role_attrs['rolconnlimit'])
 
+        # Now let's check if anything needs to be changed. If nothing, just return False
         if not pwchanging and not role_attr_flags_changing and not expires_changing and not conn_limit_changing:
             return False
 
+        # Compose the query and execute it
         alter = ['ALTER USER %(user)s' % {"user": _pg_quote_user(user, module)}]
         if pwchanging:
             if password != '':
@@ -640,26 +665,9 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
 
     elif no_password_changes and role_attr_flags != '':
-        # Grab role information from pg_roles instead of pg_authid
-        select = "SELECT * FROM pg_roles where rolname=%(user)s"
-        cursor.execute(select, {"user": user})
-        # Grab current role attributes.
-        current_role_attrs = cursor.fetchone()
+        current_role_attrs = get_role_attrs(db_connection, module, cursor, user)
 
-        role_attr_flags_changing = False
-
-        if role_attr_flags:
-            role_attr_flags_dict = {}
-            for r in role_attr_flags.split(' '):
-                if r.startswith('NO'):
-                    role_attr_flags_dict[r.replace('NO', '', 1)] = False
-                else:
-                    role_attr_flags_dict[r] = True
-
-            for role_attr_name, role_attr_value in role_attr_flags_dict.items():
-                if current_role_attrs[PRIV_TO_AUTHID_COLUMN[role_attr_name]] != role_attr_value:
-                    role_attr_flags_changing = True
-
+        role_attr_flags_changing = need_to_change_role_attr_flags(role_attr_flags, current_role_attrs)
         if not role_attr_flags_changing:
             return False
 
@@ -684,8 +692,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
                 raise psycopg.InternalError(e)
 
         # Grab new role attributes.
-        cursor.execute(select, {"user": user})
-        new_role_attrs = cursor.fetchone()
+        new_role_attrs = get_role_attrs(db_connection, module, cursor, user)
 
         # Detect any differences between current_ and new_role_attrs.
         changed = current_role_attrs != new_role_attrs
