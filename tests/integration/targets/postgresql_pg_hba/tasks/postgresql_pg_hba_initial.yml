@@ -318,9 +318,12 @@
   register: faulty_pg_hba
   ignore_errors: true
 
+- debug:
+    var: faulty_pg_hba
 - assert:
     that:
       - faulty_pg_hba is failed
+      - faulty_pg_hba.msg is search("The last line ended with a '\\\\' \(line continuation\)\.")
 
 - name: create faulty file
   copy:
@@ -338,6 +341,7 @@
 - assert:
     that:
       - faulty_pg_hba is failed
+      - faulty_pg_hba.msg is search("Error in line 2")
 
 - name: create faulty file
   copy:
@@ -356,3 +360,4 @@
 - assert:
     that:
       - faulty_pg_hba is failed
+      - faulty_pg_hba.msg is search("Error in line 2")
