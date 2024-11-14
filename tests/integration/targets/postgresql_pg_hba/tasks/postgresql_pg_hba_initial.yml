@@ -81,6 +81,7 @@
   - { address: "", contype: "local", method: "ldap", options: "ldapserver=example.com ldapport=389 ldapprefix=\"cn=\"" }
   - { address: "red", contype: "hostssl", method: "cert", options: "clientcert=1 map=mymap" }
   - { address: "blue", contype: "hostssl", method: "cert", options: "clientcert=1 map=mymap" }
+  - { address: "green", contype: "hostssl", method: "ldap", options: "ldapserver=example.com ldapport=389 ldapprefix=\"cn=\" ldapbindpasswd=\"#BROKEN\"" }
   register: pg_hba_options
 
 - name: read pg_hba rules
@@ -154,6 +155,7 @@
            { "db": "all", "method": "md5", "type": "local", "usr": "all" },
            { "db": "all", "method": "md5", "src": "2001:db8::1/128", "type": "hostgssenc", "usr": "postgres" },
            { "db": "all", "method": "cert", "src": "blue", "type": "hostssl", "usr": "+some", "options": "clientcert=1 map=mymap" },
+           { "db": "all", "method": "ldap", "src": "green", "type": "hostssl", "usr": "+some", "options": "ldapserver=example.com ldapport=389 ldapprefix=\"cn=\" ldapbindpasswd=\"#BROKEN\"" },
            { "db": "all", "method": "cert", "src": "red", "type": "hostssl", "usr": "+some", "options": "clientcert=1 map=mymap" },
            { "db": "all", "method": "md5", "src": "127.0.0.1/32", "type": "host", "usr": "all" },
            { "db": "all", "method": "md5", "src": "2001:db8::1/128", "type": "hostnogssenc", "usr": "all" },
@@ -269,3 +271,93 @@
     state: present
     contype: host
     create: true
+
+- name: create file that contains edge-cases
+  copy:
+    dest: /tmp/edgecase_test_pg_hba.conf
+    content: |
+      # full line comment
+      local all all ident # comment
+
+      hostssl all all 192.168.0.0/24 md5
+      hostssl all all \
+      10.10.0.0/16 md5
+      hostssl all all 10.11.0.0/16 md5#comment
+      hostssl all all 10.12.0.0/16 ldap ldapserver=example.com ldapport=389 ldapprefix="cn=" ldapbindpasswd="#BROKEN"
+      hostssl all all 10.13.0.0/16 radius radiusservers="server1,server2" radiussecrets="""secret one"",""secret two"""
+
+- name: check that there are no errors while parsing the file
+  postgresql_pg_hba:
+    dest: /tmp/edgecase_test_pg_hba.conf
+  register: pg_hba
+
+- debug:
+    var: pg_hba.pg_hba
+
+- assert:
+    that:
+      - 'pg_hba.pg_hba == [
+              {"db": "all", "method": "ident", "type": "local", "usr": "all"},
+              {"db": "all", "method": "md5", "src": "192.168.0.0/24", "type": "hostssl", "usr": "all"},
+              {"db": "all", "method": "md5", "src": "10.10.0.0/16",  "type": "hostssl", "usr": "all"},
+              {"db": "all", "method": "md5", "src": "10.11.0.0/16", "type": "hostssl", "usr": "all"},
+              {"db": "all", "method": "ldap", "options": "ldapserver=example.com ldapport=389 ldapprefix=\"cn=\" ldapbindpasswd=\"#BROKEN\"", "src": "10.12.0.0/16", "type": "hostssl", "usr": "all"},
+              {"db": "all", "method": "radius", "options": "radiusservers=\"server1,server2\" radiussecrets=\"\"\"secret one\"\",\"\"secret two\"\"\"", "src": "10.13.0.0/16", "type": "hostssl", "usr": "all"}
+        ]'
+
+- name: create faulty file
+  copy:
+    dest: /tmp/faulty_test_pg_hba.conf
+    content: |-
+      local all all ident # comment
+      hostssl all all \
+
+- name: check that parsing failed (invalid continuation)
+  postgresql_pg_hba:
+    dest: /tmp/faulty_test_pg_hba.conf
+  register: faulty_pg_hba
+  ignore_errors: true
+
+- debug:
+    var: faulty_pg_hba
+- assert:
+    that:
+      - faulty_pg_hba is failed
+      - faulty_pg_hba.msg is search("The last line ended with a '\\\\' \(line continuation\)\.")
+
+- name: create faulty file
+  copy:
+    dest: /tmp/faulty_test_pg_hba.conf
+    content: |
+      local all all ident # comment
+      hostssl all all 192.168.0.0/24 ldap ldapserver=example.com ldapport=389 ldapprefix="cn=" ldapbindpasswd="#BROKEN
+
+- name: check that parsing failed (unterminated quote)
+  postgresql_pg_hba:
+    dest: /tmp/faulty_test_pg_hba.conf
+  register: faulty_pg_hba
+  ignore_errors: true
+
+- assert:
+    that:
+      - faulty_pg_hba is failed
+      - faulty_pg_hba.msg is search("Error in line 2")
+
+- name: create faulty file
+  copy:
+    dest: /tmp/faulty_test_pg_hba.conf
+    content: |-
+      local all all ident # comment
+      hostssl all all
+      hostssl all all 192.168.0.0/24 md5
+
+- name: check that parsing failed (too few symbols)
+  postgresql_pg_hba:
+    dest: /tmp/faulty_test_pg_hba.conf
+  register: faulty_pg_hba
+  ignore_errors: true
+
+- assert:
+    that:
+      - faulty_pg_hba is failed
+      - faulty_pg_hba.msg is search("Error in line 2")

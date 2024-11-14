@@ -153,6 +153,7 @@ attributes:
 author:
 - Sebastiaan Mannem (@sebasmannem)
 - Felix Hamme (@betanummeric)
+- Thomas Ziegler (@toydarian)
 '''
 
 EXAMPLES = '''
@@ -273,8 +274,8 @@ PG_HBA_TYPES = ["local", "host", "hostssl", "hostnossl", "hostgssenc", "hostnogs
 PG_HBA_HDR = ['type', 'db', 'usr', 'src', 'mask', 'method', 'options']
 
 WHITESPACES_RE = re.compile(r'\s+')
-TOKEN_SPLIT_RE = re.compile(r'(?<=[\s"])')
-WHITESPACE_OR_QUOTE_RE = re.compile(r'[\s"]')
+TOKEN_SPLIT_RE = re.compile(r'(?<=[\s"#])')
+WHITESPACE_QUOTE_OR_COMMENT_RE = re.compile(r'[\s"#]')
 ONLY_SPACES_RE = re.compile(r"^\s+$")
 OPTION_RE = re.compile(r"([^=]+)=(.+)")
 IPV4_ADDR_RE = re.compile(r'^"?((\d{1,3}\.){3}\d{1,3})(/(\d{1,2}))?"?$')
@@ -328,12 +329,15 @@ def parse_hba_file(input_string):
     rules = []
     line_iter = iter(input_string.split("\n"))
     line = next(line_iter, None)
+    this_line_nr = 1
+    next_line_nr = 1
     while line is not None:
         # if that line continues, we just glue the next line onto the end until it ends
         # we can and have to do that, as continuation even applies within comments and quoted strings [sic]
         # https://www.postgresql.org/docs/current/auth-pg-hba-conf.html#AUTH-PG-HBA-CONF
         comment = None
         while line.endswith("\\"):
+            next_line_nr += 1
             cont_line = next(line_iter, None)
             if cont_line is None:
                 # we got a line continuation, but there was no more line
@@ -348,18 +352,22 @@ def parse_hba_file(input_string):
             parsed_line = "EMPTY"
         # handle "normal" lines
         else:
-            # handle lines with comments
-            sanitized_line = line
-            if line.find('#') >= 0:
-                comment = sanitized_line[sanitized_line.index("#"):]
-                sanitized_line = sanitized_line[0:sanitized_line.index("#")]
             # remove continuation tokens
-            sanitized_line = sanitized_line.replace("\\\n", "")
-            tokens = tokenize(sanitized_line)
+            sanitized_line = line.replace("\\\n", "")
+            try:
+                tokens = tokenize(sanitized_line)
+            except TokenizerException as e:
+                raise TokenizerException("Error in line {0}: {1}".format(this_line_nr, e.args[0]))
             parsed_line = tokens
+            # a comment would always be the last token
+            if parsed_line[-1].startswith("#"):
+                comment = parsed_line[-1]
+                parsed_line = parsed_line[:-1]
         # create Rule
-        rules.append({"tokens": parsed_line, "line": line, "comment": comment})
+        rules.append({"tokens": parsed_line, "line": line, "comment": comment, "line_nr": this_line_nr})
         line = next(line_iter, None)
+        this_line_nr = next_line_nr + 1
+        next_line_nr = this_line_nr
     return rules
 
 
@@ -367,23 +375,23 @@ def tokenize(string):
     """
     This function tokenizes a string respecting quotes. It needs to be fed a complete string where all quotes are
     properly closed (there needs to be an even amount of `"`) otherwise it raises an exception.
-    You can, for example use this to tokenize a full line of a pg_hba-file (make sure to handle any escaped newlines or
-    comments before) or a string of options.
+    You can, for example use this to tokenize a full line of a pg_hba-file (make sure to handle any escaped newlines)
+    or a string of options.
     :param string: A string to tokenize
     :return: The tokenized string as a list of strings
     """
 
     # We need to do this charade for splitting to be compatible with Python 3.6 which has been EOL for three years
     # at the time of writing. If you come across this after support for Python 3.6 has been dropped, please replace
-    # WHITESPACE_OR_QUOTE_RE in the beginning of the file with `TOKEN_SPLIT_RE = re.compile(r'(?<=[\s"])')`
+    # WHITESPACE_OR_QUOTE_RE in the beginning of the file with `TOKEN_SPLIT_RE = re.compile(r'(?<=[\s"#])')`
     # and the next 8 lines (including bare_tokens.append) with `bare_tokens = TOKEN_SPLIT_RE.split(string)`
     bare_tokens = []
     lastpos = 0
-    nextmatch = WHITESPACE_OR_QUOTE_RE.search(string)
+    nextmatch = WHITESPACE_QUOTE_OR_COMMENT_RE.search(string)
     while nextmatch:
         bare_tokens.append(string[lastpos:nextmatch.end()])
         lastpos = nextmatch.end()
-        nextmatch = WHITESPACE_OR_QUOTE_RE.search(string, lastpos)
+        nextmatch = WHITESPACE_QUOTE_OR_COMMENT_RE.search(string, lastpos)
     bare_tokens.append(string[lastpos:])
 
     tokens = []
@@ -396,7 +404,7 @@ def tokenize(string):
         if state == "QUOTE_END":
             state = "START"
             # if the token consists of only spaces, we know for sure this symbol is finished
-            if token == "" or ONLY_SPACES_RE.match(token):
+            if token == "" or not token.strip():
                 tokens.append(current_symbol.strip())
                 current_symbol = ""
                 continue
@@ -408,7 +416,7 @@ def tokenize(string):
         # we either start a new symbol or continue after a finished quote
         if state == "START":
             # outside of quotes, whitespaces are ignored
-            if ONLY_SPACES_RE.match(token):
+            if not token.strip():
                 continue
 
             current_symbol += token
@@ -416,9 +424,19 @@ def tokenize(string):
             # if there was a space before it, the quote will be alone, so that is not an issue
             if token.endswith("\""):
                 state = "QUOTE"
+            elif token.endswith("#"):
+                # handle edge-case of a comment having no space before the #-symbol like "... md5#some comment"
+                if not token.startswith("#"):
+                    current_symbol = current_symbol[:-1]
+                    tokens.append(current_symbol.strip())
+                    current_symbol = "#"
+                state = "COMMENT"
             else:
                 tokens.append(current_symbol.strip())
                 current_symbol = ""
+
+        elif state == "COMMENT":
+            current_symbol += token
 
         # if we are inside a quoted string we consume and append tokens until the quoted string ends
         elif state == "QUOTE":
@@ -426,7 +444,9 @@ def tokenize(string):
             if token.endswith("\""):
                 state = "QUOTE_END"
 
-    if state != "START":
+    if state == "COMMENT":
+        tokens.append(current_symbol)
+    elif state == "QUOTE":
         raise TokenizerException("Unterminated quote")
 
     return tokens
@@ -486,14 +506,18 @@ class PgHba(object):
             if line["tokens"] == "COMMENT":
                 self.comment.append(line["comment"])
             elif line["tokens"] != "EMPTY":
-                if not line["comment"]:
-                    self._from_tokens(line["tokens"])
-                else:
-                    if self.keep_comments_at_rules:
-                        self._from_tokens(line["tokens"], line["comment"])
-                    else:
-                        self.comment.append(line["comment"])
+                try:
+                    if not line["comment"]:
                         self._from_tokens(line["tokens"])
+                    else:
+                        if self.keep_comments_at_rules:
+                            self._from_tokens(line["tokens"], line["comment"])
+                        else:
+                            self.comment.append(line["comment"])
+                            self._from_tokens(line["tokens"])
+                except PgHbaError as e:
+                    raise e.__class__("Error in line {0}: {1}".format(line["line_nr"], e.args[0]))
+
         self.unchanged()
         self.preexisting_rules = dict(self.rules)
 
@@ -1048,7 +1072,7 @@ def main():
     ret = {'msgs': []}
     try:
         pg_hba = PgHba(dest, backup=backup, create=create, keep_comments_at_rules=keep_comments_at_rules)
-    except PgHbaError as error:
+    except (PgHbaError, TokenizerException) as error:
         module.fail_json(msg='Error reading file:\n{0}'.format(error))
 
     if overwrite:
