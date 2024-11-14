@@ -1,0 +1,2 @@
+bugfixes:
+  - "postgresql_pg_hba - fixes #730 by extending the key we use to identify a rule with the connection type (https://github.com/ansible-collections/community.postgresql/pull/769)"
