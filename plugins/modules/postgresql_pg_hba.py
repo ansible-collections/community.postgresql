@@ -284,33 +284,33 @@ IPV6_ADDR_RE = re.compile(r'^"?([a-f0-9]*:[a-f0-9:]*:[a-f0-9]*)(/(\d{1,3}))?"?$'
 
 
 class PgHbaError(Exception):
-    '''
+    """
     This exception is raised when parsing the pg_hba file ends in an error.
-    '''
+    """
 
 
 class PgHbaRuleError(PgHbaError):
-    '''
+    """
     This exception is raised when parsing the pg_hba file ends in an error.
-    '''
+    """
 
 
 class PgHbaRuleChanged(PgHbaRuleError):
-    '''
+    """
     This exception is raised when a new parsed rule is a changed version of an existing rule.
-    '''
+    """
 
 
 class PgHbaValueError(PgHbaError):
-    '''
+    """
     This exception is raised when a new parsed rule is a changed version of an existing rule.
-    '''
+    """
 
 
 class PgHbaRuleValueError(PgHbaRuleError):
-    '''
+    """
     This exception is raised when a new parsed rule is a changed version of an existing rule.
-    '''
+    """
 
 
 class TokenizerException(Exception):
@@ -956,6 +956,13 @@ def _strip_quotes(string):
 
 
 def parse_auth_options(options):
+    """
+    Parses a list of strings into a dict. Each input-string needs to be in the format key=value, if that isn't the case
+    it raises an exception. If the same key is used twice, an exception is raised, as well.
+    :param options: A list of strings, where each string is an option
+    :return: A dict mapping str -> str where the key is the part before the first "=" in the input and the value is the
+    rest
+    """
     option_dict = {}
     for option in options:
         split_option = OPTION_RE.match(_strip_quotes(option))
@@ -971,6 +978,11 @@ def parse_auth_options(options):
 
 
 def handle_db_and_user_strings(string):
+    """
+    Sorts a comma-delimited string of dbs or users alphabetically but returns quoted strings or regexes as-is.
+    :param string: The string to work with
+    :return: The new string
+    """
     # if the string is quoted or a regex, we return it unaltered
     if "\"" in string or string.startswith("/"):
         return string
@@ -980,12 +992,22 @@ def handle_db_and_user_strings(string):
 
 
 def handle_address_field(address):
+    """
+    Parses and address field and does some basic validation. Will detect IPv4 and IPv6 addresses and networks.
+    Otherwise, assumes it is a hostname and checks for basic invalid characters, but doesn't do a full validation.
+    Will raise an exception if the network has host bits set or is an invalid range in another way.
+    :param address: The address to process
+    :return: A tuple of (address, type, suffix) where type is "IPv4", "IPv6" or "hostname" and suffix is the size of the
+    network if the address is an IP address. If it is a keyword (like "samehost", we still return "hostname" as type)
+    """
     suffix = -1
 
     try:
+        # try to parse it to a network
         ret_addr = ipaddress.ip_network(address, strict=True)
         ret_type = "IPv" + str(ret_addr.version)
         if "/" in address:
+            # if it contains a slash, it is a network
             suffix = ret_addr.prefixlen
         ret_addr = str(ret_addr.network_address)
     except ValueError as e:
@@ -1010,6 +1032,14 @@ def handle_address_field(address):
 
 
 def handle_netmask_field(netmask, raise_not_valid=True):
+    """
+    Processes a netmask-field and validates it. Will raise an exception if the netmask is a valid IP address, but the
+    binary representation has at least one zero before a one.
+    :param netmask: The netmask to process
+    :param raise_not_valid: If True, an exception is raised if the netmask is not a valid IP address
+    :return: A tuple of (netmask, type, length) where type is "IPv4" or "IPv6" and length is the size of the network
+    if `raise_not_valid` is `False` and the netmask is not a valid IP address, the type-field is "invalid"
+    """
     mask = _strip_quotes(netmask)
 
     try:
