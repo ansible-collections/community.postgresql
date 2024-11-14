@@ -589,13 +589,56 @@ def need_to_change_role_attr_flags(role_attr_flags, current_role_attrs):
     return role_attr_flags_changing
 
 
+def need_to_change_role_expiration(cursor, expires, current_role_attrs):
+    expires_changing = False
+
+    if expires is not None:
+        cursor.execute("SELECT %s::timestamptz exp_timestamp", (expires,))
+        expires_with_tz = cursor.fetchone()["exp_timestamp"]
+        # If the desired expiration date is not equal to
+        # what is already set for the role, set this to True
+        expires_changing = expires_with_tz != current_role_attrs.get('rolvaliduntil')
+
+    return expires_changing
+
+
+def need_to_change_conn_limit(conn_limit, current_role_attrs):
+    return (conn_limit is not None and conn_limit != current_role_attrs['rolconnlimit'])
+
+
+def exec_alter_user(module, cursor, statement, params=None):
+    changed = False
+
+    if params is None:
+        params = {}
+
+    try:
+        cursor.execute(statement, params)
+        executed_queries.append(statement)
+        changed = True
+    # We could catch psycopg.errors.ReadOnlySqlTransaction directly,
+    # but that was added only in Psycopg 2.8
+    except psycopg.InternalError as e:
+        if e.diag.sqlstate == "25006":
+            # Handle errors due to read-only transactions indicated by pgcode 25006
+            # ERROR:  cannot execute ALTER ROLE in a read-only transaction
+            changed = False
+            module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
+            return changed
+        else:
+            raise psycopg.InternalError(e)
+    except psycopg.NotSupportedError as e:
+        module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
+
+    return changed
+
+
 def user_alter(db_connection, module, user, password, role_attr_flags, encrypted, expires, no_password_changes, conn_limit):
     """Change user password and/or attributes. Return True if changed, False otherwise."""
     changed = False
 
     cursor = db_connection.cursor(**pg_cursor_args)
-    # Note: role_attr_flags escaped by parse_role_attrs and encrypted is a
-    # literal
+    # Note: role_attr_flags escaped by parse_role_attrs and encrypted is a literal
     if user == 'PUBLIC':
         if password is not None:
             module.fail_json(msg="cannot change the password for PUBLIC user")
@@ -606,29 +649,27 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
     # Handle passwords.
     if not no_password_changes and (password is not None or role_attr_flags != '' or expires is not None or conn_limit is not None):
+        # Get role's current attributes to check if they match with the desired state
         current_role_attrs = get_role_attrs(db_connection, module, cursor, user)
 
+        # Does password need to changed?
         pwchanging = user_should_we_change_password(cursor, current_role_attrs, user, password, encrypted)
 
-        # Do role attributes need to be changed?
+        # Do role attributes need to changed?
         role_attr_flags_changing = need_to_change_role_attr_flags(role_attr_flags, current_role_attrs)
 
-        if expires is not None:
-            cursor.execute("SELECT %s::timestamptz exp_timestamp", (expires,))
-            expires_with_tz = cursor.fetchone()["exp_timestamp"]
-            # If the desired expiration date is not equal to
-            # what is already set for the role, set this to True
-            expires_changing = expires_with_tz != current_role_attrs.get('rolvaliduntil')
-        else:
-            expires_changing = False
+        # Does role expiration date need to changed?
+        expires_changing = need_to_change_role_expiration(cursor, expires, current_role_attrs)
 
-        conn_limit_changing = (conn_limit is not None and conn_limit != current_role_attrs['rolconnlimit'])
+        # Does role connection limit need to change?
+        conn_limit_changing = need_to_change_conn_limit(conn_limit, current_role_attrs)
 
-        # Now let's check if anything needs to be changed. If nothing, just return False
+        # Now let's check if anything needs to changed. If nothing, just return False
         if not pwchanging and not role_attr_flags_changing and not expires_changing and not conn_limit_changing:
             return False
 
-        # Compose the query and execute it
+        # If we are here, something does need to change.
+        # Compose a statement and execute it
         alter = ['ALTER USER %(user)s' % {"user": _pg_quote_user(user, module)}]
         if pwchanging:
             if password != '':
@@ -645,53 +686,29 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
             alter.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
 
         query_password_data = dict(password=password, expires=expires)
-        try:
-            statement = ' '.join(alter)
-            cursor.execute(statement, query_password_data)
-            changed = True
-            executed_queries.append(statement)
-        # We could catch psycopg.errors.ReadOnlySqlTransaction directly,
-        # but that was added only in Psycopg 2.8
-        except psycopg.InternalError as e:
-            if e.diag.sqlstate == "25006":
-                # Handle errors due to read-only transactions indicated by pgcode 25006
-                # ERROR:  cannot execute ALTER ROLE in a read-only transaction
-                changed = False
-                module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
-                return changed
-            else:
-                raise psycopg.InternalError(e)
-        except psycopg.NotSupportedError as e:
-            module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
+        statement = ' '.join(alter)
+        changed = exec_alter_user(module, cursor, statement, query_password_data)
 
     elif no_password_changes and role_attr_flags != '':
+        # Get role's current attributes to check if they match with the desired state
         current_role_attrs = get_role_attrs(db_connection, module, cursor, user)
 
+        # Do role attributes need to changed? If not, just return False right away
         role_attr_flags_changing = need_to_change_role_attr_flags(role_attr_flags, current_role_attrs)
         if not role_attr_flags_changing:
             return False
 
+        # If they need, compose a statement and execute
         alter = ['ALTER USER %(user)s' %
                  {"user": _pg_quote_user(user, module)}]
         if role_attr_flags:
             alter.append('WITH %s' % role_attr_flags)
 
-        try:
-            statement = ' '.join(alter)
-            cursor.execute(statement)
-            executed_queries.append(statement)
+        statement = ' '.join(alter)
 
-        except psycopg.InternalError as e:
-            if e.diag.sqlstate == "25006":
-                # Handle errors due to read-only transactions indicated by pgcode 25006
-                # ERROR:  cannot execute ALTER ROLE in a read-only transaction
-                changed = False
-                module.fail_json(msg=e.diag.message_primary, exception=traceback.format_exc())
-                return changed
-            else:
-                raise psycopg.InternalError(e)
+        changed = exec_alter_user(module, cursor, statement)
 
-        # Grab new role attributes.
+        # Fetch new role attributes.
         new_role_attrs = get_role_attrs(db_connection, module, cursor, user)
 
         # Detect any differences between current_ and new_role_attrs.
