@@ -1,2 +1,0 @@
-minor_changes:
-  - postgresql_publication - add possibility of creating publication with column list (https://github.com/ansible-collections/community.postgresql/pull/763).
