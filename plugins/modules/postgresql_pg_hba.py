@@ -801,7 +801,7 @@ class PgHbaRule(dict):
             source = 'local'
         else:
             source = str(self.source())
-        return (source, self['db'], self['usr'])
+        return (source, self['db'], self['usr'], self['type'])
 
     def source(self):
         '''

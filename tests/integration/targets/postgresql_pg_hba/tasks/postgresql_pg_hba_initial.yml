@@ -361,3 +361,32 @@
     that:
       - faulty_pg_hba is failed
       - faulty_pg_hba.msg is search("Error in line 2")
+
+- name: add two lines with the same user
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/pg_hba_same_user_twice.conf
+    create: true
+    contype: "{{ item.contype }}"
+    databases: all
+    source: "0.0.0.0/0"
+    users: "{{ item.users }}"
+    method: "{{ item.method }}"
+  loop:
+    - users: "user1"
+      method: "scram-sha-256"
+      contype: "hostnossl"
+    - users: "user1"
+      method: "scram-sha-256"
+      contype: "hostssl"
+
+- name: load the config to check the users
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/pg_hba_same_user_twice.conf
+  register: double_user_pg_hba
+
+- assert:
+    that:
+      - 'double_user_pg_hba.pg_hba == [
+          {"db": "all", "method": "scram-sha-256", "src": "0.0.0.0/0", "type": "hostnossl", "usr": "user1"},
+          {"db": "all", "method": "scram-sha-256", "src": "0.0.0.0/0", "type": "hostssl", "usr": "user1"},
+        ]'
