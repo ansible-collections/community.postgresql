@@ -381,8 +381,8 @@ def test_rule_serialize():
             == "host all all 127.0.0.1/32 md5")
     assert (PgHbaRule(tokens=['host', 'all', 'all', '0.0.0.0/0', 'radius', 'radiusservers="server1,server2"',
                               'radiussecrets="""secret one"",""secret two"""']).serialize(" ")
-            == 'host all all 0.0.0.0/0 radius radiusservers="server1,server2" '
-               'radiussecrets="""secret one"",""secret two"""')
+            == 'host all all 0.0.0.0/0 radius radiussecrets="""secret one"",""secret two""" '
+               'radiusservers="server1,server2"')
 
 
 def test_parse_hba_file():

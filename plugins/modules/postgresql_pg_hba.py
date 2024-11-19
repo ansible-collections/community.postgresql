@@ -992,8 +992,8 @@ class PgHbaRule:
 
     def _serialize_auth_options(self, delimiter):
         option_string = ""
-        for key, value in self._auth_options.items():
-            option_string += delimiter + key + "=" + value
+        for key in sorted(self._auth_options.keys()):
+            option_string += delimiter + key + "=" + self._auth_options[key]
         return option_string
 
     def _from_tokens(self, symbols):
