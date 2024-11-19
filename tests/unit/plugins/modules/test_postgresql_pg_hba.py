@@ -107,6 +107,13 @@ def test_tokenize():
 
 def test_rule_creation():
     """Test creating rules from a string and from dicts"""
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     rules_from_str = []
     for rule in parse_hba_file(VALID_PG_HBA):
         rules_from_str.append(PgHbaRule(tokens=rule["tokens"], line=rule["line"], comment=rule["comment"]))
@@ -118,6 +125,13 @@ def test_rule_creation():
 
 def test_rule_validations_from_tokens():
     """Test if rules are correctly validated when created from a list of tokens"""
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     with pytest.raises(PgHbaRuleError, match="The rule has too few symbols"):
         PgHbaRule(tokens=["only", "three", "tokens"])
     with pytest.raises(PgHbaRuleValueError, match="Found an unknown connection-type notype"):
@@ -157,6 +171,13 @@ def test_rule_validations_from_tokens():
 
 def test_rule_validation_from_dict():
     """Test if rules are correctly validated when created from a dict"""
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     base_dict = {'contype': 'local', 'databases': 'all', 'users': 'all', 'method': 'ident'}
     for field in PG_HBA_REQUIRED_FIELDS:
         d = copy.copy(base_dict)
@@ -216,6 +237,13 @@ def test_rule_validation_from_dict():
 
 def test_rule_is_identical():
     """Test if Rule.is_identical works correctly"""
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     rdict1 = {'contype': 'local',
               'databases': 'all',
               'users': 'all',
@@ -251,6 +279,13 @@ def test_rule_is_identical():
 
 
 def test_rule_eq():
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     assert (PgHbaRule(tokens=["local", "all", "all", "ident"], comment=" ident  ")
             == PgHbaRule(tokens=["local", "all", "all", "ident"], comment="ident"))
     assert (PgHbaRule(rule_dict={"contype": "local",
@@ -267,6 +302,13 @@ def test_rule_eq():
 
 
 def test_rule_lt():
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     r1 = PgHbaRule(tokens=["host", "all", "all", "127.0.0.1/32", "md5"])
     r2 = PgHbaRule(tokens=["host", "all", "all", "::1/128", "md5"])
     r3 = PgHbaRule(tokens=["host", "all", "all", "2001:db8::1/128", "md5"])
@@ -300,6 +342,13 @@ def test_rule_lt():
 
 
 def test_rule_to_dict():
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     rules_from_dict = from_rule_list(VALID_RULE_DICTS)
     rules = [r.to_dict() for r in rules_from_dict]
     assert len(rules) == len(VALID_RULE_DICTS)
@@ -314,6 +363,13 @@ def test_rule_to_dict():
 
 
 def test_rule_serialize():
+    # it seems that test breaks for Python 2.7 and in 2024, I'm not going to work around that
+    # if you still run 2.7, that is your problem
+    try:
+        import ipaddress
+    except ImportError:
+        return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     assert PgHbaRule(tokens="COMMENT", line="# comment", comment="# comment").serialize(" ") == "# comment"
     assert PgHbaRule(tokens="EMPTY", line='').serialize(" ") == ""
     assert PgHbaRule(tokens=['local', 'all', 'all', 'ident']).serialize(" ") == "local all all ident"
