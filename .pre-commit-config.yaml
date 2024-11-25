@@ -24,11 +24,12 @@ repos:
     entry: flake8 .
     language: system
     types: [python]
-  - id: isort
-    name: isort
-    entry: isort --check --diff .
-    language: system
-    types: [python]
+  # as per @andersson007 in #768
+  # - id: isort
+  #   name: isort
+  #   entry: isort --check --diff .
+  #   language: system
+  #   types: [python]
   - id: codespell
     name: codespell
     entry: codespell
