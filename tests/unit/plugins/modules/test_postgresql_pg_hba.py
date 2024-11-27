@@ -64,7 +64,7 @@ VALID_RULE_DICTS = [
     {'contype': 'hostgssenc', 'databases': 'all', 'users': 'all', 'method': 'gss', 'address': '0.0.0.0/0'},
     {'contype': 'host', 'databases': 'all', 'users': 'all', 'method': 'gss', 'address': '192.168.12.10/32'},
     {'contype': 'host', 'databases': 'all', 'users': 'all', 'method': 'ident', 'address': '192.168.0.0/16',
-     'options': {'map': 'omicron'}},
+     'options': 'map=omicron'},
     {'contype': 'local', 'databases': 'sameuser', 'users': 'all', 'method': 'md5'},
     {'contype': 'local', 'databases': 'all', 'users': '/^.*helpdesk$', 'method': 'md5'},
     {'contype': 'local', 'databases': 'all', 'users': '@admins', 'method': 'md5'},
@@ -72,9 +72,9 @@ VALID_RULE_DICTS = [
     {'contype': 'local', 'databases': 'all', 'users': '+support,@admins', 'method': 'md5'},
     {'contype': 'local', 'databases': '@demodbs,db1,db2', 'users': 'all', 'method': 'md5'},
     {'contype': 'host', 'databases': 'all', 'users': 'all', 'method': 'radius', 'address': '0.0.0.0/0',
-     'options': {'radiusservers': '"server1,server2"', 'radiussecrets': '"""secret one"",""secret two"""'}},
+     'options': 'radiussecrets="""secret one"",""secret two""" radiusservers="server1,server2"'},
     {'contype': 'host', 'databases': 'all', 'users': 'all', 'method': 'radius', 'address': '10.0.0.0/8',
-     'options': {'radiusservers': '"server1,server2"', 'radiussecrets': '"""secret one"",""secret two"""'}},
+     'options': 'radiussecrets="""secret one"",""secret two""" radiusservers="server1,server2"'},
 ]
 
 PG_HBA_REQUIRED_FIELDS = ['contype', 'databases', 'users', 'method']

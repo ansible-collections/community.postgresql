@@ -934,7 +934,10 @@ class PgHbaRule:
         if self._address:
             ret_dict[header_map['address']] = str(self.source)
         if self._auth_options:
-            ret_dict[header_map['options']] = copy.copy(self._auth_options)
+            # we might want to change the return-type to a dict at some point, but right now we return a string
+            # to not introduce breaking changes
+            # ret_dict[header_map['options']] = copy.copy(self._auth_options)
+            ret_dict[header_map['options']] = self._serialize_auth_options(delimiter=" ")
         if self._comment:
             ret_dict['comment'] = self._comment
         return ret_dict
@@ -970,7 +973,7 @@ class PgHbaRule:
         rule += self._auth_method
 
         if self._auth_options:
-            rule += self._serialize_auth_options(delimiter)
+            rule += delimiter + self._serialize_auth_options(delimiter=" ")
 
         if self._comment and with_comment:
             if self._comment.startswith("#"):
@@ -991,10 +994,10 @@ class PgHbaRule:
         return source, self._database, self._user, self._type
 
     def _serialize_auth_options(self, delimiter):
-        option_string = ""
+        options = []
         for key in sorted(self._auth_options.keys()):
-            option_string += delimiter + key + "=" + self._auth_options[key]
-        return option_string
+            options.append(key + "=" + self._auth_options[key])
+        return delimiter.join(options)
 
     def _from_tokens(self, symbols):
         # empty lines, full line comments and includes are special
@@ -1097,7 +1100,7 @@ class PgHbaRule:
             if isinstance(rule_dict["options"], dict):
                 self._auth_options = copy.deepcopy(rule_dict['options'])
             elif isinstance(rule_dict["options"], str):
-                self._auth_options = parse_auth_options([rule_dict["options"]])
+                self._auth_options = parse_auth_options(tokenize(rule_dict["options"]))
             elif isinstance(rule_dict["options"], list):
                 self._auth_options = parse_auth_options(rule_dict["options"])
             else:
