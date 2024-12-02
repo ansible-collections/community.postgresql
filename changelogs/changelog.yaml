@@ -816,3 +816,20 @@ releases:
     - 763-add-publication-with-specific-columns.yml
     - 8.3.0.yml
     release_date: '2024-11-15'
+  3.9.0:
+    changes:
+      minor_changes:
+      - postgresql_pg_hba - changes ordering of entries that are identical except
+        for the ip-range, but only if the ranges are of the same size, this isn't
+        breaking as ranges of equal size can't overlap (https://github.com/ansible-collections/community.postgresql/pull/772)
+      - postgresql_pg_hba - orders auth-options alphabetically, this isn't breaking
+        as the order of those options is not relevant to postgresql (https://github.com/ansible-collections/community.postgresql/pull/772)
+      release_summary: 'This is a minor release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 3.9.0.yml
+    - 772-refactoring-pg_hba-module.yml
+    release_date: '2024-12-02'
