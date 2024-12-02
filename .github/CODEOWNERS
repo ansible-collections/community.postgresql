@@ -6,3 +6,7 @@
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
 *       @Andersson007 @hunleyd
+
+plugins/modules/postgresql_pg_hba.py                  @Andersson007 @hunleyd @jchancojr @toydarian
+tests/integration/targets/postgresql_pg_hba/*         @Andersson007 @hunleyd @jchancojr @toydarian
+tests/unit/plugins/modules/test_postgresql_pg_hba.py  @Andersson007 @hunleyd @jchancojr @toydarian
