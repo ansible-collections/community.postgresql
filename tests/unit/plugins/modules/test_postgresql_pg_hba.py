@@ -631,7 +631,7 @@ def test_sort_rules():
     assert render_rule_list(rules, " ") == '''# This is a comment
 local @demodbs,db1,db2 all md5
 local all +support,@admins md5
-host all all 0.0.0.0/0 radius radiussecrets="""secret one"",""secret two""" radiusservers="server1,server2" # a comment
+host all all 0.0.0.0/0 radius radiussecrets="""secret one"",""secret two""" radiusservers="server1,server2" #a comment
 include somefile.conf
 include_if_exists somefile.conf
 include_dir some/dir'''

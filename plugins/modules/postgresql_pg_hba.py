@@ -87,8 +87,7 @@ options:
     default: false
   keep_comments_at_rules:
     description:
-      - If C(true), comments that stand together with a rule in one line are kept behind that line.
-      - If C(false), such comments are moved to the beginning of the file, like all other comments.
+      - This option has been deprecated and doesn't do anything
     type: bool
     default: false
     version_added: '1.5.0'
@@ -487,169 +486,6 @@ def from_rule_list(rule_list):
             rules.append(PgHbaRule(rule_dict=rule))
     return rules
 
-
-class PgHba(object):
-    """
-    PgHba object to read/write entries to/from.
-    pg_hba_file - the pg_hba file almost always /etc/pg_hba
-    """
-
-    def __init__(self, pg_hba_file=None, backup=False, create=False, keep_comments_at_rules=False):
-        self.pg_hba_file = pg_hba_file
-        self.rules = None
-        self.comment = None
-        self.backup = backup
-        self.last_backup = None
-        self.create = create
-        self.keep_comments_at_rules = keep_comments_at_rules
-        self.unchanged()
-
-        self.preexisting_rules = None
-        self.read()
-
-    def clear_rules(self):
-        self.rules = {}
-
-    def unchanged(self):
-        '''
-        This method resets self.diff to a empty default
-        '''
-        self.diff = {'before': {'file': self.pg_hba_file, 'pg_hba': []},
-                     'after': {'file': self.pg_hba_file, 'pg_hba': []}}
-
-    def read(self):
-        '''
-        Read in the pg_hba from the system
-        '''
-        self.rules = {}
-        self.comment = []
-        # read the pg_hbafile
-        try:
-            with open(self.pg_hba_file, 'r') as file:
-                hba_string = file.read()
-        except IOError:
-            return
-
-        for line in parse_hba_file(hba_string):
-            if line["tokens"] == "COMMENT":
-                self.comment.append(line["comment"])
-            elif line["tokens"] != "EMPTY":
-                try:
-                    if not line["comment"]:
-                        self.add_rule(PgHbaRule(tokens=line["tokens"], line=line["line"]))
-                    else:
-                        if self.keep_comments_at_rules:
-                            self.add_rule(PgHbaRule(tokens=line["tokens"], line=line["line"], comment=line["comment"]))
-                        else:
-                            self.comment.append(line["comment"])
-                            self.add_rule(PgHbaRule(tokens=line["tokens"], line=line["line"]))
-                except PgHbaError as e:
-                    raise e.__class__("Error in line {0}: {1}".format(line["line_nr"], e.args[0]))
-
-        self.unchanged()
-        self.preexisting_rules = copy.deepcopy(self.rules)
-
-    def write(self, backup_file=''):
-        '''
-        This method writes the PgHba rules (back) to a file.
-        '''
-        if not self.changed():
-            return False
-
-        contents = self.render()
-        if self.pg_hba_file:
-            if not (os.path.isfile(self.pg_hba_file) or self.create):
-                raise PgHbaError("pg_hba file '{0}' doesn't exist. "
-                                 "Use create option to autocreate.".format(self.pg_hba_file))
-            if self.backup and os.path.isfile(self.pg_hba_file):
-                if backup_file:
-                    self.last_backup = backup_file
-                else:
-                    _backup_file_h, self.last_backup = tempfile.mkstemp(prefix='pg_hba')
-                shutil.copy(self.pg_hba_file, self.last_backup)
-            fileh = open(self.pg_hba_file, 'w')
-        else:
-            filed, _path = tempfile.mkstemp(prefix='pg_hba')
-            fileh = os.fdopen(filed, 'w')
-
-        fileh.write(contents)
-        self.unchanged()
-        fileh.close()
-        return True
-
-    def add_rule(self, rule):
-        """
-        This method can be used to add a rule to the list of rules in this PgHba object
-        :param rule: The rule to add
-        """
-        key = rule.key()
-
-        if key in self.rules:
-            if not self.rules[key].is_identical(rule):
-                self.diff['after']['pg_hba'].append(rule.serialize(use_line=False))
-                self.rules[key] = rule
-        else:
-            self.rules[key] = rule
-
-    def remove_rule(self, rule):
-        '''
-        This method can be used to find and remove a rule. It doesn't look for the exact rule, only
-        the rule with the same key.
-        '''
-        keys = rule.key()
-        try:
-            del self.rules[keys]
-            self.diff['before']['pg_hba'].append(rule.serialize(use_line=False))
-        except KeyError:
-            pass
-
-    def get_rules(self, with_lines=False):
-        '''
-        This method returns all the rules of the PgHba object
-        '''
-        rules = sorted(self.rules.values())
-        for rule in rules:
-            yield rule.to_dict(header_map=PG_HBA_HDR_MAP)
-
-    def render(self):
-        '''
-        This method renders the content of the PgHba rules and comments.
-        The returning value can be used directly to write to a new file.
-        '''
-        comment = '\n'.join(self.comment)
-        rule_lines = []
-        for rule in sorted(self.rules.values()):
-            if rule.comment:
-                if not rule.comment.startswith('#'):
-                    rule_lines.append(rule.serialize(use_line=False, with_comment=False) + '\t#' + rule.comment)
-                else:
-                    rule_lines.append(rule.serialize(use_line=False, with_comment=False) + '\t' + rule.comment)
-            else:
-                rule_lines.append(rule.serialize(use_line=False, with_comment=False))
-        result = comment + '\n' + '\n'.join(rule_lines)
-        # End it properly with a linefeed (if not already).
-        if result and result[-1] not in ['\n', '\r']:
-            result += '\n'
-        return result
-
-    def changed(self):
-        '''
-        This method can be called to detect if the PgHba file has been changed.
-        '''
-        if not self.preexisting_rules and not self.rules:
-            return False
-        if (not self.preexisting_rules and self.rules) or (self.preexisting_rules and not self.rules):
-            return True
-        if len(self.preexisting_rules) != len(self.rules):
-            return True
-        for key in self.rules.keys():
-            if key not in self.preexisting_rules:
-                return True
-            if not self.rules[key].is_identical(self.preexisting_rules[key]):
-                return True
-        return False
-
-
 class PgHbaRule:
     """
     This class represents one rule as defined in a line in a PgHbaFile.
@@ -957,8 +793,9 @@ class PgHbaRule:
             # to not introduce breaking changes
             # ret_dict[header_map['options']] = copy.copy(self._auth_options)
             ret_dict[header_map['options']] = self._serialize_auth_options(delimiter=" ")
-        if self._comment:
-            ret_dict['comment'] = self._comment
+        # we haven't included the comment before, should we?
+        # if self._comment:
+        #     ret_dict['comment'] = self._comment
         return ret_dict
 
     def is_identical(self, other):
@@ -1386,7 +1223,7 @@ def main():
         netmask=dict(type='str'),
         # TODO this can probably be changed to dict without breaking
         options=dict(type='str'),
-        # TODO this should be removed
+        # DEPRECATED, does nothing
         keep_comments_at_rules=dict(type='bool', default=False),
         state=dict(type='str', default="present", choices=["absent", "present"]),
         users=dict(type='str', default='all'),
@@ -1411,7 +1248,6 @@ def main():
         backup = module.params['backup']
         backup_file = module.params['backup_file']
     dest = module.params["dest"]
-    keep_comments_at_rules = module.params["keep_comments_at_rules"]
     rules = module.params["rules"]
     rules_behavior = module.params["rules_behavior"]
     overwrite = module.params["overwrite"]
@@ -1423,7 +1259,7 @@ def main():
     pg_hba_rules = []
     try:
         pg_hba_rules = _from_file(dest)
-    except PgHbaError as error:
+    except (PgHbaError, TokenizerException) as error:
         module.fail_json(msg='Error reading file:\n{0}'.format(error))
     nof_initial_rules = len(pg_hba_rules)
 

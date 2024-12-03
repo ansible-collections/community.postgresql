@@ -227,7 +227,7 @@
     var: content
 - assert:
     that:
-      - '"#comment1\nhost\tall\tall\t2001:db8::1/128\tmd5\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2" == content'
+      - '"host\tall\tall\t2001:db8::1/128\tmd5\t#comment1\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2" == content'
 
 - name: Create a rule with the comment 'comment3' and keep_comments_at_rules
   postgresql_pg_hba:
@@ -251,7 +251,7 @@
     var: content
 - assert:
     that:
-      - '"#comment1\nhost\tall\tall\t2001:db8::1/128\tmd5\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2\nhost\tall\tall\t2001:db8::3/128\tmd5\t#comment3" == content'
+      - '"host\tall\tall\t2001:db8::1/128\tmd5\t#comment1\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2\nhost\tall\tall\t2001:db8::3/128\tmd5\t#comment3" == content'
 
 - community.postgresql.postgresql_pg_hba:
     dest: /tmp/pg_hba3.conf
