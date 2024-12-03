@@ -1334,6 +1334,9 @@ def main():
                 if len(tokenize(user)) != 1:
                     module.fail_json(msg="Invalid string for users: {0}".format(user))
                 new_rule = copy.deepcopy(rule)
+                # temporary workaround to avoid setting a default that will cause the module to break
+                if new_rule['contype'] == "local" and "address" in new_rule and new_rule['address'] == "samehost":
+                    del new_rule['address']
                 new_rule['databases'] = database
                 new_rule['users'] = user
                 rules.append(new_rule)
