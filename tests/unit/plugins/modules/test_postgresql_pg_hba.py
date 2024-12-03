@@ -15,12 +15,14 @@ import pytest
 if sys.version_info[0] == 3:
     from plugins.modules.postgresql_pg_hba import tokenize, TokenizerException, handle_address_field, \
         handle_netmask_field, handle_db_and_user_strings, PgHbaRuleValueError, PgHbaValueError, parse_auth_options, \
-        parse_hba_file, PgHbaRuleError, PgHbaRule, from_rule_list, PG_HBA_HDR_MAP
+        parse_hba_file, PgHbaRuleError, PgHbaRule, from_rule_list, PG_HBA_HDR_MAP, search_rule, update_rules, \
+        sort_rules, render_rule_list, rule_list_to_dict_list, rule_list_from_hba_file
 elif sys.version_info[0] == 2:
     from ansible_collections.community.postgresql.plugins.modules.postgresql_pg_hba import tokenize, \
         TokenizerException, handle_address_field, handle_netmask_field, handle_db_and_user_strings, \
         PgHbaRuleValueError, PgHbaValueError, parse_auth_options, parse_hba_file, PgHbaRuleError, PgHbaRule, \
-        from_rule_list, PG_HBA_HDR_MAP
+        from_rule_list, PG_HBA_HDR_MAP, search_rule, update_rules, sort_rules, render_rule_list, \
+        rule_list_to_dict_list, rule_list_from_hba_file
 
 VALID_PG_HBA = \
     r'''local   all             all                                     trust
@@ -115,8 +117,8 @@ def test_rule_creation():
         return
     ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     rules_from_str = []
-    for rule in parse_hba_file(VALID_PG_HBA):
-        rules_from_str.append(PgHbaRule(tokens=rule["tokens"], line=rule["line"], comment=rule["comment"]))
+    for rule in rule_list_from_hba_file(VALID_PG_HBA):
+        rules_from_str.append(rule)
     rules_from_dict = from_rule_list(VALID_RULE_DICTS)
     assert len(rules_from_dict) == len(rules_from_str)
     for i in range(0, len(rules_from_dict)):
@@ -535,3 +537,137 @@ def test_parse_auth_options():
         parse_auth_options(["notkeyvalue"])
     with pytest.raises(PgHbaRuleValueError, match="The rule contains two options with the same key"):
         parse_auth_options(["key=value", "key=value2"])
+
+
+def test_search_rule():
+    """Test if search_rule works correctly"""
+    ruleset = [
+        PgHbaRule(rule_dict={'contype': 'local',
+                        'databases': 'all',
+                        'users': 'all',
+                        'method': 'ident', }),
+        PgHbaRule(rule_dict={'contype': 'host',
+                        'databases': 'all',
+                        'users': 'admin',
+                        'address': '10.0.0.0/8',
+                        'method': 'cert', }),
+        PgHbaRule(rule_dict={'contype': 'host',
+                        'databases': 'app',
+                        'users': 'appuser',
+                        'address': '10.0.0.0/8',
+                        'method': 'md5', }),
+    ]
+    # look for exact rule
+    assert search_rule(ruleset, PgHbaRule(rule_dict={'contype': 'host',
+                                                'databases': 'all',
+                                                'users': 'admin',
+                                                'address': '10.0.0.0/8',
+                                                'method': 'cert', })) == 1
+    # look for prefix
+    assert search_rule(ruleset, PgHbaRule(rule_dict={'contype': 'host',
+                                                'databases': 'app',
+                                                'users': 'appuser',
+                                                'address': '10.0.0.0/8',
+                                                'method': 'cert', })) == 2
+    # look for non-existent rule
+    assert search_rule(ruleset, PgHbaRule(rule_dict={'contype': 'host',
+                                                'databases': 'notadatabase',
+                                                'users': 'appuser',
+                                                'address': '0.0.0.0/0',
+                                                'method': 'md5', })) == -1
+
+
+def test_render_rule_list():
+    rules = [
+        PgHbaRule(tokens="COMMENT", line="# This is a comment", comment="# This is a comment"),
+        PgHbaRule(tokens="EMPTY"),
+    ]
+    seed = [
+        {'contype': 'local', 'databases': 'all', 'users': '+support,@admins', 'method': 'md5'},
+        {'contype': 'local', 'databases': '@demodbs,db1,db2', 'users': 'all', 'method': 'md5'},
+        {'contype': 'host', 'databases': 'all', 'users': 'all', 'method': 'radius', 'address': '0.0.0.0/0',
+         'options': {'radiusservers': '"server1,server2"', 'radiussecrets': '"""secret one"",""secret two"""'},
+         'comment': "a comment"},
+        {'comment': " this is another comment "},
+        {'comment': "   # this is a third comment "},
+    ]
+    for s in seed:
+        rules.append(PgHbaRule(rule_dict=s))
+    rules.append(PgHbaRule(tokens=["local", "all", "all", "trust"], comment="# comment"))
+    rules.append(PgHbaRule(tokens=["local", "all", "all", "trust"], line="local all all \\\ntrust"))
+    rules.append(PgHbaRule(tokens=["include", "somefile.conf"], line="include somefile.conf"))
+    assert render_rule_list(rules, " ") == '''# This is a comment
+
+local all +support,@admins md5
+local @demodbs,db1,db2 all md5
+host all all 0.0.0.0/0 radius radiussecrets="""secret one"",""secret two""" radiusservers="server1,server2" #a comment
+#this is another comment
+# this is a third comment
+local all all trust # comment
+local all all \\
+trust
+include somefile.conf'''
+
+
+def test_sort_rules():
+    seed = [
+        {'contype': 'local', 'databases': 'all', 'users': '+support,@admins', 'method': 'md5'},
+        {'contype': 'local', 'databases': '@demodbs,db1,db2', 'users': 'all', 'method': 'md5'},
+        {'contype': 'host', 'databases': 'all', 'users': 'all', 'method': 'radius', 'address': '0.0.0.0/0',
+         'options': {'radiusservers': '"server1,server2"', 'radiussecrets': '"""secret one"",""secret two"""'},
+         'comment': "a comment"},
+    ]
+    rules = from_rule_list(seed)
+    rules.append(PgHbaRule(tokens="EMPTY"))
+    rules.append(PgHbaRule(tokens=["include_dir", "some/dir"], line="include_dir some/dir"))
+    rules.append(PgHbaRule(tokens="EMPTY"))
+    rules.append(PgHbaRule(tokens=["include_if_exists", "somefile.conf"], line="include_if_exists somefile.conf"))
+    rules.append(PgHbaRule(tokens="EMPTY"))
+    rules.append(PgHbaRule(tokens="COMMENT", line="# This is a comment", comment="# This is a comment"))
+    rules.append(PgHbaRule(tokens="EMPTY"))
+    rules.append(PgHbaRule(tokens=["include", "somefile.conf"], line="include somefile.conf"))
+
+    sort_rules(rules)
+    assert render_rule_list(rules, " ") == '''# This is a comment
+local @demodbs,db1,db2 all md5
+local all +support,@admins md5
+host all all 0.0.0.0/0 radius radiussecrets="""secret one"",""secret two""" radiusservers="server1,server2" # a comment
+include somefile.conf
+include_if_exists somefile.conf
+include_dir some/dir'''
+
+
+def test_update_rules():
+    rules = rule_list_from_hba_file("local all all ident\nhost user db 192.168.10.0/24 md5")
+
+    new_rules = [
+        {"contype": "hostssl",
+         "databases": "somedb",
+         "users": "appuser",
+         "address": "10.8.16.10/32",
+         "method": "md5",
+         "state": "present"}]
+    changed, msgs, diff_before, diff_after = update_rules(new_rules, rules)
+    assert changed
+    assert msgs[0].startswith("Adding rule")
+    assert len(diff_after) == 1
+    assert len(diff_before) == 0
+    assert len(rules) == 3
+    assert rules[2].user == "appuser"
+
+    tmp_rule_dict = rule_list_to_dict_list(rules)
+    local_all = {"contype": "local", "databases": "all", "users": "all", "method": "ident", "state": "present"}
+    changed, a, b, c = update_rules([local_all], rules)
+    assert not changed
+    assert tmp_rule_dict == rule_list_to_dict_list(rules)
+
+    local_all["method"] = "trust"
+    changed, a, b, c = update_rules([local_all], rules)
+    assert changed
+    assert rules[0].method == "trust"
+
+    local_all["state"] = "absent"
+    changed, a, b, c = update_rules([local_all], rules)
+    assert changed
+    assert len(rules) == 2
+    assert rules[0].method == "md5"

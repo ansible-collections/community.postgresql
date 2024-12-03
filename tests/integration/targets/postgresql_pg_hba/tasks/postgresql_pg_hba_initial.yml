@@ -204,7 +204,7 @@
     var: content
 - assert:
     that:
-      - '"\nhost\tall\tall\t2001:db8::1/128\tmd5\t#comment1" == content'
+      - '"host\tall\tall\t2001:db8::1/128\tmd5\t#comment1" == content'
 
 - name: Create a rule with the comment 'comment2'
   postgresql_pg_hba:
