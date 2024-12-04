@@ -326,11 +326,17 @@ def test_rule_lt():
 
     all_normal_rules = [r1, r2, r3, rh1, r4, r5, rdb_1, rdb_2, rusr_1, rusr_2, rlocal]
 
-    full_comment = PgHbaRule(tokens="COMMENT", comment="# some full line comment")
-    include = PgHbaRule(tokens=["include", "some_file"], line="include somefile")
-    include_dir = PgHbaRule(tokens=["include_dir", "some_dir"], line="include_dir some_dir")
+    full_comment = PgHbaRule(tokens="COMMENT", comment="# some full line comment", line_nr=10)
+    include = PgHbaRule(tokens=["include", "some_file"], line="include somefile", line_nr=7)
+    include_dir = PgHbaRule(tokens=["include_dir", "some_dir"], line="include_dir some_dir", line_nr=8)
     include_if_exists = (
-        PgHbaRule(tokens=["include_if_exists", "some_other_file"], line="include_if_exists some_other_file"))
+        PgHbaRule(tokens=["include_if_exists", "some_other_file"], line="include_if_exists some_other_file",
+                  line_nr=9)
+    )
+
+    another_comment = PgHbaRule(tokens="COMMENT", comment="# xxx full line comment", line_nr=9)
+    another_comment_2 = PgHbaRule(tokens="COMMENT", comment="# aaa full line comment", line_nr=0)
+    another_comment_3 = PgHbaRule(tokens="COMMENT", comment="# zzz full line comment", line_nr=0)
 
     assert r1 < r2
     assert r2 < r3
@@ -354,9 +360,13 @@ def test_rule_lt():
         assert r < include_dir
         assert r < include_if_exists
 
+    assert another_comment < full_comment
+    assert full_comment < another_comment_2
+    assert another_comment_2 < another_comment_3
+
     assert full_comment < include
     assert include < include_dir
-    assert include_if_exists < include_dir
+    assert include_dir < include_if_exists
 
 
 def test_rule_to_dict():
@@ -637,22 +647,23 @@ def test_sort_rules():
     ]
     rules = from_rule_list(seed)
     rules.append(PgHbaRule(tokens="EMPTY"))
-    rules.append(PgHbaRule(tokens=["include_dir", "some/dir"], line="include_dir some/dir"))
+    rules.append(PgHbaRule(tokens=["include_dir", "some/dir"], line="include_dir some/dir", line_nr=7))
     rules.append(PgHbaRule(tokens="EMPTY"))
-    rules.append(PgHbaRule(tokens=["include_if_exists", "somefile.conf"], line="include_if_exists somefile.conf"))
+    rules.append(
+        PgHbaRule(tokens=["include_if_exists", "somefile.conf"], line="include_if_exists somefile.conf", line_nr=8))
     rules.append(PgHbaRule(tokens="EMPTY"))
     rules.append(PgHbaRule(tokens="COMMENT", line="# This is a comment", comment="# This is a comment"))
     rules.append(PgHbaRule(tokens="EMPTY"))
-    rules.append(PgHbaRule(tokens=["include", "somefile.conf"], line="include somefile.conf"))
+    rules.append(PgHbaRule(tokens=["include", "somefile.conf"], line="include somefile.conf", line_nr=9))
 
     sort_rules(rules)
     assert render_rule_list(rules, " ") == '''# This is a comment
 local @demodbs,db1,db2 all md5
 local all +support,@admins md5
 host all all 0.0.0.0/0 radius radiussecrets="""secret one"",""secret two""" radiusservers="server1,server2" #a comment
-include somefile.conf
+include_dir some/dir
 include_if_exists somefile.conf
-include_dir some/dir'''
+include somefile.conf'''
 
 
 def test_update_rules():

@@ -83,6 +83,7 @@ options:
   overwrite:
     description:
       - Remove all existing rules before adding rules. (Like I(state=absent) for all pre-existing rules.)
+      - Ignores all errors in the existing file.
     type: bool
     default: false
   keep_comments_at_rules:
@@ -259,6 +260,11 @@ pg_hba:
             "usr": "all"
          }
       ]
+pg_hba_string:
+    description: The string in the pg_hba file after the module finished.
+    returned: success
+    type: str
+    sample: "local\tall\tall\tpeer"
 '''
 
 import copy
@@ -503,7 +509,7 @@ class PgHbaRule:
     This class represents one rule as defined in a line in a PgHbaFile.
     """
 
-    def __init__(self, tokens=None, rule_dict=None, line=None, comment=None, line_nr=None):
+    def __init__(self, tokens=None, rule_dict=None, line=None, comment=None, line_nr=0):
         """
         Creates a new PgHbaRule object, either from a list of tokens or a dictionary of fields. It will validate the
         input and raise an exception if the rule is invalid. It will also decide if a rule is special in a sense that
@@ -528,6 +534,7 @@ class PgHbaRule:
         # includes, comment-only lines and empty lines are special
         self._is_special = False
         self._line = line
+        self._line_nr = line_nr
         # normalize comment so we can safely compare it if we have to
         if comment:
             self._comment = comment.strip()
@@ -554,6 +561,10 @@ class PgHbaRule:
         # construct the line from the comment if there is no line, but a comment
         if self._is_special and not line and comment:
             self._line = self._comment
+
+    @property
+    def line_nr(self):
+        return self._line_nr
 
     @property
     def line(self):
@@ -650,7 +661,16 @@ class PgHbaRule:
             if myweight != hisweight:
                 return myweight < hisweight
             else:
-                return self.line < other.line
+                # if both have a line number, don't change the initial order
+                if self._line_nr and other.line_nr:
+                    return self._line_nr < other.line_nr
+                # if neither has a line number, order alphabetically
+                elif not self._line_nr and not other.line_nr:
+                    return self.line < other.line
+                # if only one of the rules has a line number, that one is sorted before the other
+                # like that, new full-line comments are always added after existing ones
+                else:
+                    return self.line_nr > other.line_nr
 
         # comments go before anything else, includes go last
         if self.is_special and not other.is_special:
@@ -778,12 +798,8 @@ class PgHbaRule:
         """Determines the weight to sort special lines"""
         if self.comment:
             return 1
-        if self._line.startswith("include_if_exists"):
-            return 3
-        if self._line.startswith("include_dir"):
-            return 4
         if self._line.startswith("include"):
-            return 2
+            return 90
 
         return 99  # only empty lines
 
@@ -1216,10 +1232,32 @@ def sort_rules(rules):
     rules.sort()
 
 
+def rules_are_identical(rule_list_one, rule_list_two):
+    """
+    Compares two lists of rules and returns True if the rules in them are identical and in the same order, returns
+    False otherwise.
+    :param rule_list_one: One of the lists
+    :param rule_list_two: The other list
+    :return: True if the two lists consist of identical rules in the same order
+    """
+
+    # if the lists have different lengths, they are not identical
+    if len(rule_list_one) != len(rule_list_two):
+        return False
+
+    for i in range(0, len(rule_list_one)):
+        # if any rule is not identical to the rule in the same list at the same index, the lists are not identical
+        if not rule_list_one[i].is_identical(rule_list_two[i]):
+            return False
+
+    # if we didn't find a mismatch, the lists are identical
+    return True
+
+
 def main():
-    '''
+    """
     This function is the main function of this module
-    '''
+    """
     # argument_spec = postgres_common_argument_spec()
     argument_spec = dict()
     argument_spec.update(
@@ -1273,8 +1311,9 @@ def main():
     try:
         pg_hba_rules = _from_file(dest)
     except (PgHbaError, TokenizerException) as error:
-        module.fail_json(msg='Error reading file:\n{0}'.format(error))
-    nof_initial_rules = len(pg_hba_rules)
+        # if overwrite is true, we don't care that we can't parse the file and just start with an empty one
+        if not overwrite:
+            module.fail_json(msg='Error reading file:\n{0}'.format(error))
 
     rule_keys = [
         'address',
@@ -1353,15 +1392,20 @@ def main():
 
     changed = False
     try:
-        changed, msgs, diff_before, diff_after = update_rules(rules, pg_hba_rules)
-        ret['msgs'] += msgs
-        diff['before']['pg_hba'] += diff_before
-        diff['after']['pg_hba'] += diff_after
-
-        # if overwrite is set and there are changes or the number of rules doesn't match we rewrite the file
-        if (changed or nof_initial_rules != len(rules)) and overwrite:
-            changed = True
-            pg_hba_rules = from_rule_list(rules)
+        if overwrite:
+            new_rules = from_rule_list(rules)
+            # if sorting is turned on, we need to compare the sorted list
+            if sorted_rules:
+                sort_rules(new_rules)
+            # compare the new rules to existing rules, if they are not identical, we overwrite everything
+            changed = not rules_are_identical(new_rules, pg_hba_rules)
+            if changed:
+                pg_hba_rules = new_rules
+        else:
+            changed, msgs, diff_before, diff_after = update_rules(rules, pg_hba_rules)
+            ret['msgs'] += msgs
+            diff['before']['pg_hba'] += diff_before
+            diff['after']['pg_hba'] += diff_after
     except PgHbaError as error:
         module.fail_json(msg='Error modifying rules:\n{0}'.format(error))
 
