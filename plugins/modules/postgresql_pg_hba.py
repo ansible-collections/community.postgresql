@@ -1084,12 +1084,7 @@ class PgHbaRule:
                 if self._address_type.startswith("IP") and self._prefix_len == -1:
                     raise PgHbaRuleError("If the address is a bare ip-address without a CIDR suffix, "
                                          "the rule needs to contain a netmask")
-
-        # if the contype is "local", the rule can't contain an address or netmask
-        else:
-            if (("address" in rule_dict and rule_dict["address"])
-                    or ("netmask" in rule_dict and rule_dict["netmask"])):
-                raise PgHbaRuleError("Rule can't contain an address and netmask if the connection-type is 'local'")
+        # we ignore address / netmask when contype is 'local'
 
         # verify the method
         self._auth_method = _strip_quotes(rule_dict["method"])

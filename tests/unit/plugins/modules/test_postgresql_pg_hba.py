@@ -195,20 +195,18 @@ def test_rule_validation_from_dict():
 
     d = copy.copy(base_dict)
     d['address'] = '127.0.0.1/32'
-    with pytest.raises(PgHbaRuleError,
-                       match="Rule can't contain an address and netmask if the connection-type is 'local'"):
-        PgHbaRule(rule_dict=d)
+    assert not PgHbaRule(rule_dict=d).address
+
     d = copy.copy(base_dict)
-    d['address'] = '255.255.255.255'
-    with pytest.raises(PgHbaRuleError,
-                       match="Rule can't contain an address and netmask if the connection-type is 'local'"):
-        PgHbaRule(rule_dict=d)
+    d['netmask'] = '255.255.255.255'
+    assert not PgHbaRule(rule_dict=d).netmask
+
     d = copy.copy(base_dict)
     d['address'] = '127.0.0.1/32'
     d['address'] = '255.255.255.255'
-    with pytest.raises(PgHbaRuleError,
-                       match="Rule can't contain an address and netmask if the connection-type is 'local'"):
-        PgHbaRule(rule_dict=d)
+    rule = PgHbaRule(rule_dict=d)
+    assert (not rule.address) and (not rule.netmask)
+
     base_dict['contype'] = 'host'
     with pytest.raises(PgHbaRuleError, match="If the contype isn't 'local', the rule needs to contain an address"):
         PgHbaRule(rule_dict=base_dict)
