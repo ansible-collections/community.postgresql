@@ -324,6 +324,14 @@ def test_rule_lt():
 
     rlocal = PgHbaRule(tokens=["local", "postgres", "postgres", "trust"])
 
+    all_normal_rules = [r1, r2, r3, rh1, r4, r5, rdb_1, rdb_2, rusr_1, rusr_2, rlocal]
+
+    full_comment = PgHbaRule(tokens="COMMENT", comment="# some full line comment")
+    include = PgHbaRule(tokens=["include", "some_file"], line="include somefile")
+    include_dir = PgHbaRule(tokens=["include_dir", "some_dir"], line="include_dir some_dir")
+    include_if_exists = (
+        PgHbaRule(tokens=["include_if_exists", "some_other_file"], line="include_if_exists some_other_file"))
+
     assert r1 < r2
     assert r2 < r3
     assert r3 < r4
@@ -339,6 +347,16 @@ def test_rule_lt():
     assert rlocal < r1
     assert rlocal < rusr_1
     assert rlocal < rdb_1
+
+    for r in all_normal_rules:
+        assert r > full_comment
+        assert r < include
+        assert r < include_dir
+        assert r < include_if_exists
+
+    assert full_comment < include
+    assert include < include_dir
+    assert include_if_exists < include_dir
 
 
 def test_rule_to_dict():
@@ -543,38 +561,38 @@ def test_search_rule():
     """Test if search_rule works correctly"""
     ruleset = [
         PgHbaRule(rule_dict={'contype': 'local',
-                        'databases': 'all',
-                        'users': 'all',
-                        'method': 'ident', }),
+                             'databases': 'all',
+                             'users': 'all',
+                             'method': 'ident', }),
         PgHbaRule(rule_dict={'contype': 'host',
-                        'databases': 'all',
-                        'users': 'admin',
-                        'address': '10.0.0.0/8',
-                        'method': 'cert', }),
+                             'databases': 'all',
+                             'users': 'admin',
+                             'address': '10.0.0.0/8',
+                             'method': 'cert', }),
         PgHbaRule(rule_dict={'contype': 'host',
-                        'databases': 'app',
-                        'users': 'appuser',
-                        'address': '10.0.0.0/8',
-                        'method': 'md5', }),
+                             'databases': 'app',
+                             'users': 'appuser',
+                             'address': '10.0.0.0/8',
+                             'method': 'md5', }),
     ]
     # look for exact rule
     assert search_rule(ruleset, PgHbaRule(rule_dict={'contype': 'host',
-                                                'databases': 'all',
-                                                'users': 'admin',
-                                                'address': '10.0.0.0/8',
-                                                'method': 'cert', })) == 1
+                                                     'databases': 'all',
+                                                     'users': 'admin',
+                                                     'address': '10.0.0.0/8',
+                                                     'method': 'cert', })) == 1
     # look for prefix
     assert search_rule(ruleset, PgHbaRule(rule_dict={'contype': 'host',
-                                                'databases': 'app',
-                                                'users': 'appuser',
-                                                'address': '10.0.0.0/8',
-                                                'method': 'cert', })) == 2
+                                                     'databases': 'app',
+                                                     'users': 'appuser',
+                                                     'address': '10.0.0.0/8',
+                                                     'method': 'cert', })) == 2
     # look for non-existent rule
     assert search_rule(ruleset, PgHbaRule(rule_dict={'contype': 'host',
-                                                'databases': 'notadatabase',
-                                                'users': 'appuser',
-                                                'address': '0.0.0.0/0',
-                                                'method': 'md5', })) == -1
+                                                     'databases': 'notadatabase',
+                                                     'users': 'appuser',
+                                                     'address': '0.0.0.0/0',
+                                                     'method': 'md5', })) == -1
 
 
 def test_render_rule_list():
