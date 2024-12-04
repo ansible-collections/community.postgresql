@@ -294,7 +294,7 @@
 - name: create a broken existing file
   copy:
     dest: /tmp/toy_bulk_test.conf
-    content: 'not a vaild pg_hba'
+    content: 'not a valid pg_hba'
 
 - name: overwrite file
   community.postgresql.postgresql_pg_hba:

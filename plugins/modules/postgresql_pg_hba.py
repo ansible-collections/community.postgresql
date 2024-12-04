@@ -1437,8 +1437,9 @@ def main():
             write_hba_file(dest, hba_string, create, module, file_args, diff)
             ret['diff'] = diff
         elif not os.path.isfile(dest) and not create:
-            module.warn(f"The file '{dest}' doesn't exist and `create` is `false`. This will cause the module to fail"
-                        "when not running in check-mode. Set `create: true` to prevent this and create the file.")
+            module.warn("The file '{}' doesn't exist and `create` is `false`. This will cause the module to fail"
+                        "when not running in check-mode. Set `create: true` to prevent this and create the file."
+                        .format(dest))
 
     ret['pg_hba_string'] = hba_string
     ret['pg_hba'] = rule_list_to_dict_list(pg_hba_rules, header_map=PG_HBA_HDR_MAP)
