@@ -406,6 +406,40 @@
       - faulty_pg_hba is failed
       - faulty_pg_hba.msg is search("Error in line 2")
 
+- name: check if we recognize unparsable options
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/test.conf
+    create: true
+    contype: host
+    address: 10.0.0.0/8
+    users: all
+    databases: all
+    method: ldap
+    options: "ldapbindpasswd=\"#BROKEN\" ldapport=389 ldapprefix=\"cn= ldapserver=example.com"
+  check_mode: true
+  ignore_errors: true
+  register: should_fail
+
+- assert:
+    that: should_fail is failed
+
+- name: check if we recognize unparsable options
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/test.conf
+    create: true
+    contype: host
+    address: 10.0.0.0/8
+    users: all
+    databases: all
+    method: ldap
+    options: "ldapbindpasswd=\"#BROKEN\" ldapport=389 ldapprefix ldapserver=example.com"
+  check_mode: true
+  ignore_errors: true
+  register: should_fail
+
+- assert:
+    that: should_fail is failed
+
 - name: add two lines with the same user
   community.postgresql.postgresql_pg_hba:
     dest: /tmp/pg_hba_same_user_twice.conf
