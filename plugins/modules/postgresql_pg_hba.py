@@ -109,6 +109,17 @@ options:
     type: str
     choices: [ conflict, combine ]
     default: conflict
+  sort_rules:
+    description:
+      - Sorts the rules in the file only if a change is required. It will sort the rules so more specific rules are at
+        the top. For example, a rule matching a single host will be before a rule that matches an ip-range.
+      - The order of rules is important, as they are evaluated top-down and the first one that matches is used.
+        This means changing the order of rules in the file can change how your instance behaves.
+      - Will sort comments to the top, includes to the bottom and remove empty lines.
+      - I would advise to turn this off when managing a file that receives manual changes, as well or if the order
+        you specify your rules in is important.
+    type: bool
+    default: true
   state:
     description:
       - The lines will be added/modified when C(state=present) and removed when C(state=absent).
@@ -486,6 +497,7 @@ def from_rule_list(rule_list):
             rules.append(PgHbaRule(rule_dict=rule))
     return rules
 
+
 class PgHbaRule:
     """
     This class represents one rule as defined in a line in a PgHbaFile.
@@ -640,11 +652,13 @@ class PgHbaRule:
             else:
                 return self.line < other.line
 
-        # comments go before anything else, the rest goes last
+        # comments go before anything else, includes go last
         if self.is_special and not other.is_special:
-            return bool(self._comment)
+            # this line is less than the other if it is not an include and a (full-line) comment
+            return (not self._line.startswith("include")) and bool(self._comment)
         if not self.is_special and other.is_special:
-            return bool(other.comment)
+            # this line is less than the other if the other is an include and not a comment
+            return other.line.startswith("include") and (not bool(other.comment))
 
         myweight = self.source_weight()
         hisweight = other.source_weight()
@@ -819,7 +833,7 @@ class PgHbaRule:
 
         if self._is_special:
             if not self._comment:
-                return ""
+                return self._line if self._line else ""
             else:
                 return self._comment if self._comment.startswith("#") else "#{0}".format(self._comment)
 
@@ -1209,7 +1223,6 @@ def main():
     # argument_spec = postgres_common_argument_spec()
     argument_spec = dict()
     argument_spec.update(
-        # FIXME the default should be None, as this defalt crashes if the contype is local
         address=dict(type='str', default='samehost', aliases=['source', 'src']),
         backup=dict(type='bool', default=False),
         # FIXME this should be removed and we should use standard methods

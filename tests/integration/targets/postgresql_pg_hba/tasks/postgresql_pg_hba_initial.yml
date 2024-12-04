@@ -308,6 +308,9 @@
       hostssl all all 10.11.0.0/16 md5#comment
       hostssl all all 10.12.0.0/16 ldap ldapserver=example.com ldapport=389 ldapprefix="cn=" ldapbindpasswd="#BROKEN"
       hostssl all all 10.13.0.0/16 radius radiusservers="server1,server2" radiussecrets="""secret one"",""secret two"""
+      include_if_exists schroedingers_file.conf
+      include_dir /etc/some/dir
+      include some_file.conf
 
 - name: check that there are no errors while parsing the file
   postgresql_pg_hba:
@@ -327,6 +330,23 @@
               {"db": "all", "method": "ldap", "options": "ldapbindpasswd=\"#BROKEN\" ldapport=389 ldapprefix=\"cn=\" ldapserver=example.com", "src": "10.12.0.0/16", "type": "hostssl", "usr": "all"},
               {"db": "all", "method": "radius", "options": "radiussecrets=\"\"\"secret one\"\",\"\"secret two\"\"\" radiusservers=\"server1,server2\"", "src": "10.13.0.0/16", "type": "hostssl", "usr": "all"}
         ]'
+
+- name: change something in the file
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/edgecase_test_pg_hba.conf
+    users: all
+    databases: all
+    contype: hostssl
+    address: 192.168.0.0/24
+    method: scram-sha-256
+
+- name: Read the edge-case file
+  set_fact:
+    content: "{{ lookup('file', '/tmp/edgecase_test_pg_hba.conf') }}"
+
+- name: assert that the include is still there
+  assert:
+    that: 'content == "# full line comment\nlocal all all ident # comment\nhostssl\tall\tall\t192.168.0.0/24\tscram-sha-256\nhostssl all all \\\n10.10.0.0/16 md5\nhostssl all all 10.11.0.0/16 md5#comment\nhostssl all all 10.12.0.0/16 ldap ldapserver=example.com ldapport=389 ldapprefix=\"cn=\" ldapbindpasswd=\"#BROKEN\"\nhostssl all all 10.13.0.0/16 radius radiusservers=\"server1,server2\" radiussecrets=\"\"\"secret one\"\",\"\"secret two\"\"\"\ninclude some_file.conf\ninclude_if_exists schroedingers_file.conf\ninclude_dir /etc/some/dir"'
 
 - name: create faulty file
   copy:
