@@ -1363,13 +1363,6 @@ def main():
                     else:
                         # use module defaults
                         rule[key] = argument_spec[key].get('default', None)
-                elif key == "options" and isinstance(rule["options"], str):
-                    module.warn("You should use a dictionary for options, "
-                                "parsing them from strings might be removed in the future")
-                    try:
-                        rule["options"] = parse_auth_options(tokenize(rule["options"]))
-                    except TokenizerException as e:
-                        module.fail_json(f"Failed to parse options: {e.args[0]}")
 
             new_rules.append(rule)
     # TODO
@@ -1406,7 +1399,7 @@ def main():
             ret['msgs'] += msgs
             diff['before']['pg_hba'] += diff_before
             diff['after']['pg_hba'] += diff_after
-    except PgHbaError as error:
+    except (PgHbaError, TokenizerException) as error:
         module.fail_json(msg='Error modifying rules:\n{0}'.format(error))
 
     ret['changed'] = changed
