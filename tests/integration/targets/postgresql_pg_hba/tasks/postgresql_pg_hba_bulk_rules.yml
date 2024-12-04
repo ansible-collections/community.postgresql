@@ -21,6 +21,16 @@
       users: "user2"
       address: "2001:db8::2/128"
       method: pam
+    bulk_test_file_1: |-
+      local all all ident
+      host all all 127.0.0.1/32 trust
+      hostssl all all 10.10.0.0/24 scram-sha-256
+    bulk_test_file_2: |-
+      # comment
+      local all all ident
+      host all all 127.0.0.1/32 trust
+      hostssl all all 10.10.0.0/24 scram-sha-256
+      include file.conf
 
 - name: create one rule to clear
   community.postgresql.postgresql_pg_hba:
@@ -134,3 +144,177 @@
       - "{'db': test_rule1.databases, 'method': test_rule1.method, 'src': test_rule1.address, 'type': test_rule1.contype, 'usr': test_rule1.users} in result.pg_hba"
       - "{'db': test_rule2.databases, 'method': test_rule2.method, 'src': test_rule2.address, 'type': test_rule2.contype, 'usr': test_rule2.users} not in result.pg_hba"
       - "{'db': 'other_db', 'method': test_rule1.method, 'src': test_rule1.address, 'type': test_rule1.contype, 'usr': test_rule1.users} in result.pg_hba"
+
+### Testing bulk-rules and overwrite with pre-existing file
+- name: create an existing file
+  copy:
+    dest: /tmp/toy_bulk_test.conf
+    content: '{{ bulk_test_file_1 }}'
+
+- name: same rules without overwrite
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/toy_bulk_test.conf
+    databases: all
+    users: all
+    rules_behavior: combine
+    rules:
+      - contype: local
+        method: ident
+      - contype: host
+        address: 127.0.0.1/32
+        method: trust
+      - contype: hostssl
+        address: 10.10.0.0/24
+        method: scram-sha-256
+  register: result
+
+- name: read the file
+  set_fact:
+    content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
+
+- name: unchanged and file is the same
+  assert:
+    that:
+      - not result.changed
+      - content == bulk_test_file_1
+
+- name: same rules with overwrite
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/toy_bulk_test.conf
+    databases: all
+    users: all
+    rules_behavior: combine
+    overwrite: true
+    rules:
+      - contype: local
+        method: ident
+      - contype: host
+        address: 127.0.0.1/32
+        method: trust
+      - contype: hostssl
+        address: 10.10.0.0/24
+        method: scram-sha-256
+  register: result
+
+- name: read the file
+  set_fact:
+    content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
+
+- name: unchanged and file is the same
+  assert:
+    that:
+      - not result.changed
+      - content == bulk_test_file_1
+
+- name: same rules with overwrite but in a different order and sort false
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/toy_bulk_test.conf
+    databases: all
+    users: all
+    rules_behavior: combine
+    overwrite: true
+    sort_rules: false
+    rules:
+      - contype: host
+        address: 127.0.0.1/32
+        method: trust
+      - contype: local
+        method: ident
+      - contype: hostssl
+        address: 10.10.0.0/24
+        method: scram-sha-256
+  register: result
+  check_mode: true
+
+- name: this should be changed now
+  assert:
+    that: result.changed
+
+- name: create a new existing file
+  copy:
+    dest: /tmp/toy_bulk_test.conf
+    content: '{{ bulk_test_file_2 }}'
+
+- name: same rules without overwrite should not change anything
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/toy_bulk_test.conf
+    databases: all
+    users: all
+    rules_behavior: combine
+    rules:
+      - contype: local
+        method: ident
+      - contype: host
+        address: 127.0.0.1/32
+        method: trust
+      - contype: hostssl
+        address: 10.10.0.0/24
+        method: scram-sha-256
+  register: result
+
+- name: read the file
+  set_fact:
+    content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
+
+- name: unchanged and file is the same
+  assert:
+    that:
+      - not result.changed
+      - content == bulk_test_file_2
+
+- name: same rules with overwrite should remove comments and include
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/toy_bulk_test.conf
+    databases: all
+    users: all
+    rules_behavior: combine
+    overwrite: true
+    rules:
+      - contype: local
+        method: ident
+      - contype: host
+        address: 127.0.0.1/32
+        method: trust
+      - contype: hostssl
+        address: 10.10.0.0/24
+        method: scram-sha-256
+  register: result
+
+- name: read the file
+  set_fact:
+    content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
+
+- name: unchanged and file is the same
+  assert:
+    that:
+      - result.changed
+      - 'result.pg_hba == [{"db": "all", "method": "ident", "type": "local", "usr": "all"}, {"db": "all", "method": "trust", "src": "127.0.0.1/32", "type": "host", "usr": "all"}, {"db": "all", "method": "scram-sha-256", "src": "10.10.0.0/24", "type": "hostssl", "usr": "all"}]'
+      - 'content == "local\tall\tall\tident\nhost\tall\tall\t127.0.0.1/32\ttrust\nhostssl\tall\tall\t10.10.0.0/24\tscram-sha-256"'
+
+- name: create a broken existing file
+  copy:
+    dest: /tmp/toy_bulk_test.conf
+    content: 'not a vaild pg_hba'
+
+- name: overwrite file
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/toy_bulk_test.conf
+    databases: all
+    users: all
+    rules_behavior: combine
+    overwrite: true
+    rules:
+      - contype: local
+        method: ident
+  register: result
+
+- name: read the file
+  set_fact:
+    content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
+
+- name: unchanged and file is the same
+  assert:
+    that:
+      - result.changed
+      - 'result.pg_hba == [{"db": "all", "method": "ident", "type": "local", "usr": "all"}]'
+      - 'content == "local\tall\tall\tident"'

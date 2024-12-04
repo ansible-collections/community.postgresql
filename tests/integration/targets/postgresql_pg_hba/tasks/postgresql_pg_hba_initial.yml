@@ -299,7 +299,8 @@
   copy:
     dest: /tmp/edgecase_test_pg_hba.conf
     content: |
-      # full line comment
+      # z full line comment
+      # a full line comment
       local all all ident # comment
 
       hostssl all all 192.168.0.0/24 md5
@@ -346,7 +347,7 @@
 
 - name: assert that the include is still there
   assert:
-    that: 'content == "# full line comment\nlocal all all ident # comment\nhostssl\tall\tall\t192.168.0.0/24\tscram-sha-256\nhostssl all all \\\n10.10.0.0/16 md5\nhostssl all all 10.11.0.0/16 md5#comment\nhostssl all all 10.12.0.0/16 ldap ldapserver=example.com ldapport=389 ldapprefix=\"cn=\" ldapbindpasswd=\"#BROKEN\"\nhostssl all all 10.13.0.0/16 radius radiusservers=\"server1,server2\" radiussecrets=\"\"\"secret one\"\",\"\"secret two\"\"\"\ninclude some_file.conf\ninclude_if_exists schroedingers_file.conf\ninclude_dir /etc/some/dir"'
+    that: 'content == "# z full line comment\n# a full line comment\nlocal all all ident # comment\nhostssl\tall\tall\t192.168.0.0/24\tscram-sha-256\nhostssl all all \\\n10.10.0.0/16 md5\nhostssl all all 10.11.0.0/16 md5#comment\nhostssl all all 10.12.0.0/16 ldap ldapserver=example.com ldapport=389 ldapprefix=\"cn=\" ldapbindpasswd=\"#BROKEN\"\nhostssl all all 10.13.0.0/16 radius radiusservers=\"server1,server2\" radiussecrets=\"\"\"secret one\"\",\"\"secret two\"\"\"\ninclude_if_exists schroedingers_file.conf\ninclude_dir /etc/some/dir\ninclude some_file.conf"'
 
 - name: create faulty file
   copy:
