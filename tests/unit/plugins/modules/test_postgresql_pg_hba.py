@@ -575,6 +575,7 @@ def test_search_rule():
         import ipaddress
     except ImportError:
         return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     ruleset = [
         PgHbaRule(rule_dict={'contype': 'local',
                              'databases': 'all',
@@ -618,6 +619,7 @@ def test_render_rule_list():
         import ipaddress
     except ImportError:
         return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     rules = [
         PgHbaRule(tokens="COMMENT", line="# This is a comment", comment="# This is a comment"),
         PgHbaRule(tokens="EMPTY"),
@@ -656,6 +658,7 @@ def test_sort_rules():
         import ipaddress
     except ImportError:
         return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     seed = [
         {'contype': 'local', 'databases': 'all', 'users': '+support,@admins', 'method': 'md5'},
         {'contype': 'local', 'databases': '@demodbs,db1,db2', 'users': 'all', 'method': 'md5'},
@@ -691,6 +694,7 @@ def test_update_rules():
         import ipaddress
     except ImportError:
         return
+    ipaddress.ip_address("0.0.0.0")  # otherwise flake complains
     rules = rule_list_from_hba_file("local all all ident\nhost user db 192.168.10.0/24 md5")
 
     new_rules = [
