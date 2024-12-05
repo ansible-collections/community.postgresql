@@ -1,0 +1,2 @@
+bugfixes:
+  - "postgresql_pg_hba - fixes #777 the module will ignore the 'address' and 'netmask' options again when the contype is 'local' (https://github.com/ansible-collections/community.postgresql/pull/779)"
