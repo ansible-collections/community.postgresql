@@ -833,3 +833,17 @@ releases:
     - 3.9.0.yml
     - 772-refactoring-pg_hba-module.yml
     release_date: '2024-12-02'
+  3.9.1:
+    changes:
+      bugfixes:
+      - 'postgresql_pg_hba - fixes #777 the module will ignore the ''address'' and
+        ''netmask'' options again when the contype is ''local'' (https://github.com/ansible-collections/community.postgresql/pull/779)'
+      release_summary: 'This is a patch release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 3.9.1.yml
+    - 779-fix-address.yaml
+    release_date: '2024-12-05'
