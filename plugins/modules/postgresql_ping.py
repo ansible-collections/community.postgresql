@@ -66,7 +66,7 @@ EXAMPLES = r'''
   register: result
   # If you need to fail when the server is not available,
   # uncomment the following line:
-  #failed_when: not result.is_available
+  # failed_when: not result.is_available
 
 # You can use the registered result with another task
 - name: This task should be executed only if the server is available
