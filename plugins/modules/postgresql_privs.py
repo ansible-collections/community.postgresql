@@ -658,7 +658,7 @@ class Connection(object):
         else:
             query = ("SELECT proacl::text FROM pg_catalog.pg_proc WHERE proname = ANY (%s) "
                      "ORDER BY proname, proargtypes")
-            self.execute(query)
+            self.execute(query, (funcnames))
         return [t["proacl"] for t in self.cursor.fetchall()]
 
     def get_schema_acls(self, schemas):
