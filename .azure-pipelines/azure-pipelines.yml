@@ -111,18 +111,6 @@ stages:
             - name: Units
               test: '2.16/units/1'
 
-  - stage: Ansible_2_15
-    displayName: Sanity & Units 2.15
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          targets:
-            - name: Sanity
-              test: '2.15/sanity/1'
-            - name: Units
-              test: '2.15/units/1'
-
 ## Docker
   - stage: Docker_devel
     displayName: Docker devel
@@ -176,6 +164,11 @@ stages:
             - name: Ubuntu 22.04
               test: ubuntu2204
 
+  # Newer ansible versions don't work on Fedora 37.
+  # Left it here to keep testing against PostgreSQL 14
+  # that is still not EOL at the time being.
+  # TODO Remove this on 2026-11-12 or
+  # when it just breaks, what'll happen sooner.
   - stage: Docker_2_15
     displayName: Docker 2.15
     dependsOn: []
@@ -186,8 +179,6 @@ stages:
           targets:
             - name: Fedora 37
               test: fedora37
-            - name: Ubuntu 22.04
-              test: ubuntu2204
 
 ## Remote
   - stage: Remote_devel
@@ -234,17 +225,6 @@ stages:
             - name: RHEL 8.8
               test: rhel/8.8
 
-  - stage: Remote_2_15
-    displayName: Remote 2.15
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.15/{0}/1
-          targets:
-            - name: RHEL 8.7
-              test: rhel/8.7
-
 ## Finally
 
   - stage: Summary
@@ -254,7 +234,6 @@ stages:
       - Ansible_2_18
       - Ansible_2_17
       - Ansible_2_16
-      - Ansible_2_15
       - Docker_devel
       - Docker_2_18
       - Docker_2_17
@@ -264,6 +243,5 @@ stages:
       - Remote_2_18
       - Remote_2_17
       - Remote_2_16
-      - Remote_2_15
     jobs:
       - template: templates/coverage.yml
