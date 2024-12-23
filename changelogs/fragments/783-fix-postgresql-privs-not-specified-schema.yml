@@ -1,2 +1,2 @@
 bugfixes:
-  - "postgresql_privs - #783 fix error: Cannot execute SQL 'SELECT proacl::text FROM pg_catalog.pg_proc WHERE proname = ANY (%s) ORDER BY proname, proargtypes': syntax error at or near %, when trying to grant a function execution and set the schema to not-specified"
+  - postgresql_privs -  fix the error occurring when trying to grant a function execution and set the schema to not-specified (https://github.com/ansible-collections/community.postgresql/pull/783).
