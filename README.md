@@ -4,6 +4,10 @@
 |[![Build Status](https://dev.azure.com/ansible/community.postgres/_apis/build/status/CI?branchName=main)](https://dev.azure.com/ansible/community.postgres/_build?definitionId=28)|[![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.postgresql)](https://codecov.io/gh/ansible-collections/community.postgresql)| |[![Discuss on Matrix at #postgresql:ansible.com](https://img.shields.io/matrix/postgresql:ansible.com.svg?server_fqdn=ansible-accounts.ems.host&label=Discuss%20on%20Matrix%20at%20%23postgresql:ansible.com&logo=matrix)](https://matrix.to/#/#postgresql:ansible.com)|
 
 This collection is a part of the Ansible package.
+> NOTE: This collection is only for interacting with an existing database
+> installation! If you are looking for a collection to *install* PostgreSQL
+> you need to use another collection/role, for example,
+> [galaxyproject.postgresql](https://galaxy.ansible.com/ui/standalone/roles/galaxyproject/postgresql/install/).
 
 ## Our mission
 
