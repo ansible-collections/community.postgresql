@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_info - fix issue when gathering information fails if user doesn't have access to all databases (https://github.com/ansible-collections/community.postgresql/pull/788)
