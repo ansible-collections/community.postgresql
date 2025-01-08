@@ -704,7 +704,6 @@ class PgClusterInfo(object):
         self.pg_info["databases"] = db_dict
         self.cursor = self.db_obj.reconnect(default_db)
 
-
     def __get_pretty_val(self, setting):
         """Get setting's value represented by SHOW command."""
         return self.__exec_sql('SHOW "%s"' % setting)[0][setting]
