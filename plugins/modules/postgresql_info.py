@@ -669,6 +669,8 @@ class PgClusterInfo(object):
 
         res = self.__exec_sql(query)
 
+        default_db = self.__exec_sql("SELECT current_database()")[0]["current_database"]
+
         db_dict = {}
         for i in res:
             db_dict[i["datname"]] = dict(
@@ -700,6 +702,8 @@ class PgClusterInfo(object):
                 db_dict[datname]['subscriptions'] = subscr_info.get(datname, {})
 
         self.pg_info["databases"] = db_dict
+        self.cursor = self.db_obj.reconnect(default_db)
+
 
     def __get_pretty_val(self, setting):
         """Get setting's value represented by SHOW command."""
