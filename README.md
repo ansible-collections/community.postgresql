@@ -116,7 +116,7 @@ Our AZP CI includes testing with the following docker images / PostgreSQL versio
 | Fedora 37    |           2.9.6 |               14   |
 | Fedora 39    |           2.9.6 |               15   |
 | Ubuntu 22.04 |           3.1.9 |               16   |
-| Fedora 40    |           2.9.9 |               16   |
+| Fedora 40/41 |           2.9.9 |               16   |
 | Ubuntu 24.04 |           3.2.2 |               17   |
 
 ## Included content
