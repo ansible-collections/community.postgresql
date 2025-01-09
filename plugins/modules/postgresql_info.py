@@ -230,6 +230,7 @@ class PgClusterInfo(object):
         self.module = module
         self.db_obj = db_conn_obj
         self.cursor = db_conn_obj.connect()
+        self.default_db = module.params['login_db']
         self.pg_info = {
             "version": {},
             "in_recovery": None,
@@ -669,8 +670,6 @@ class PgClusterInfo(object):
 
         res = self.__exec_sql(query)
 
-        default_db = self.__exec_sql("SELECT current_database()")[0]["current_database"]
-
         db_dict = {}
         for i in res:
             db_dict[i["datname"]] = dict(
@@ -702,7 +701,8 @@ class PgClusterInfo(object):
                 db_dict[datname]['subscriptions'] = subscr_info.get(datname, {})
 
         self.pg_info["databases"] = db_dict
-        self.cursor = self.db_obj.reconnect(default_db)
+        # Reconnect to the default DB after gathering info in other DBs
+        self.cursor = self.db_obj.reconnect(self.default_db)
 
     def __get_pretty_val(self, setting):
         """Get setting's value represented by SHOW command."""
