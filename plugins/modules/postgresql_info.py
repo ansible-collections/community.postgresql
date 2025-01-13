@@ -327,7 +327,7 @@ class PgClusterInfo(object):
 
     def get_subscr_info(self):
         """Get subscription statistics."""
-        columns_sub_table = ("SELECT column_name "
+        columns_sub_table = ("SELECT quote_ident(column_name) "
                              "FROM information_schema.columns "
                              "WHERE table_schema = 'pg_catalog' "
                              "AND table_name = 'pg_subscription'")
