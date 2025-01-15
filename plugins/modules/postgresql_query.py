@@ -249,9 +249,19 @@ rowcount:
     returned: changed
     type: int
     sample: 5
+execution_time_ms:
+    description:
+    - A list containing execution time per query in milliseconds.
+    - The measurements are done right before and after passing
+      the query to the driver for execution.
+    returned: success
+    type: list
+    sample: [7104]
+    version_added: '3.10.0'
 '''
 
 import re
+import time
 
 from ansible.module_utils._text import to_native
 from ansible.module_utils.basic import AnsibleModule
@@ -367,6 +377,7 @@ def main():
     changed = False
 
     query_all_results = []
+    execution_time_ms = []
     rowcount = 0
     statusmessage = ''
 
@@ -374,7 +385,16 @@ def main():
     for query in query_list:
         try:
             current_query_txt = cursor.mogrify(query, args)
+
+            # Measure query execution time in milliseconds as requested in
+            # https://github.com/ansible-collections/community.postgresql/issues/787
+            start_time = time.perf_counter()
+
             cursor.execute(query, args)
+
+            # Calculate the execution time rounding it to 4 decimal places
+            execution_time_ms.append(round((time.perf_counter() - start_time) * 1000, 4))
+
             statusmessage = cursor.statusmessage
             if cursor.rowcount > 0:
                 rowcount += cursor.rowcount
@@ -444,6 +464,7 @@ def main():
         query_result=query_result,
         query_all_results=query_all_results,
         rowcount=rowcount,
+        execution_time_ms=execution_time_ms,
     )
 
     cursor.close()

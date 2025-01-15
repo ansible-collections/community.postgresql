@@ -43,6 +43,7 @@
       - result.statusmessage == 'ANALYZE'
       - result.query_result == {}
       - result.query_all_results == [{}]
+      - result.execution_time_ms[0] > 0
 
   - name: postgresql_query - simple select query to test_table
     become_user: '{{ pg_user }}'
@@ -524,6 +525,7 @@
   - assert:
       that:
       - result.rowcount == 1
+      - result.execution_time_ms[0] > 0
 
   #############################################################################
   # Issue https://github.com/ansible-collections/community.postgresql/issues/47
@@ -575,6 +577,9 @@
       - result.rowcount == 3
       - result.query_result == [{"?column?": 1}]
       - 'result.query_all_results == [[{"?column?": 1}], [{"?column?": 1}], [{"?column?": 1}]]'
+      - result.execution_time_ms[0] > 0
+      - result.execution_time_ms[1] > 0
+      - result.execution_time_ms[2] > 0
 
   - name: Run SHOW query
     become_user: '{{ pg_user }}'
