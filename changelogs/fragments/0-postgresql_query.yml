@@ -1,0 +1,2 @@
+minor_changes:
+- postgresql_query - returns the `execution_time_ms` list containing execution time per query in milliseconds (https://github.com/ansible-collections/community.postgresql/issues/787).
