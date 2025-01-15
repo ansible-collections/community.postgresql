@@ -295,6 +295,18 @@ elif HAS_PSYCOPG:
 #
 
 
+def execute_and_return_time(cursor, query, args):
+    # Measure query execution time in milliseconds as requested in
+    # https://github.com/ansible-collections/community.postgresql/issues/787
+    start_time = time.perf_counter()
+
+    cursor.execute(query, args)
+
+    # Calculate the execution time rounding it to 4 decimal places
+    exec_time_ms = round((time.perf_counter() - start_time) * 1000, 4)
+    return cursor, exec_time_ms
+
+
 def insane_query(string):
     for c in string:
         if c not in (' ', '\n', '', '\t'):
@@ -386,14 +398,9 @@ def main():
         try:
             current_query_txt = cursor.mogrify(query, args)
 
-            # Measure query execution time in milliseconds as requested in
-            # https://github.com/ansible-collections/community.postgresql/issues/787
-            start_time = time.perf_counter()
+            cursor, exec_time_ms = execute_and_return_time(cursor, query, args)
 
-            cursor.execute(query, args)
-
-            # Calculate the execution time rounding it to 4 decimal places
-            execution_time_ms.append(round((time.perf_counter() - start_time) * 1000, 4))
+            execution_time_ms.append(exec_time_ms)
 
             statusmessage = cursor.statusmessage
             if cursor.rowcount > 0:
