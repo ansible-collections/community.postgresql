@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_privs -  fix the error occurring when trying to grant a function execution and set the schema to not-specified (https://github.com/ansible-collections/community.postgresql/pull/783).
