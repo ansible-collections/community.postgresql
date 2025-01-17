@@ -4,6 +4,27 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v3.10.0
+=======
+
+Release Summary
+---------------
+
+This is a minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- postgresql_query - returns the `execution_time_ms` list containing execution time per query in milliseconds (https://github.com/ansible-collections/community.postgresql/issues/787).
+
+Bugfixes
+--------
+
+- postgresql_info - fix issue when gathering information fails if user doesn't have access to all databases (https://github.com/ansible-collections/community.postgresql/pull/788).
+- postgresql_privs -  fix the error occurring when trying to grant a function execution and set the schema to not-specified (https://github.com/ansible-collections/community.postgresql/pull/783).
+
 v3.9.1
 ======
 
