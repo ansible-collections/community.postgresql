@@ -133,7 +133,6 @@ EXAMPLES = r'''
   community.postgresql.postgresql_set:
     name: TimeZone
     value: 'Europe/Paris'
-
 '''
 
 RETURN = r'''

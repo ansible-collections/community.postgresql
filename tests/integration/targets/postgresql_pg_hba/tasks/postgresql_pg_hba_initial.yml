@@ -277,6 +277,29 @@
     that: 'local_with_address.pg_hba == [{"db": "all", "method": "trust", "type": "local", "usr": "all"}]'
 
 - community.postgresql.postgresql_pg_hba:
+    dest: /tmp/pg_hba3.conf
+    contype: local
+    method: trust
+    state: present
+    create: true
+  register: local_with_address
+
+- assert:
+    that: 'local_with_address.pg_hba == [{"db": "all", "method": "trust", "type": "local", "usr": "all"}]'
+
+- community.postgresql.postgresql_pg_hba:
+    dest: /tmp/pg_hba3.conf
+    contype: local
+    method: trust
+    address: 127.0.0.0
+    netmask: 255.0.0.0
+    state: present
+  register: local_with_address
+
+- assert:
+    that: 'local_with_address.pg_hba == [{"db": "all", "method": "trust", "type": "local", "usr": "all"}]'
+
+- community.postgresql.postgresql_pg_hba:
     dest: pg_hba.conf
     users: '{ "oh": "no" }'
     state: present

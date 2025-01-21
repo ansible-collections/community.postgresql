@@ -5,6 +5,8 @@
 
 This collection is a part of the Ansible package.
 
+> NOTE: This collection is only for interacting with an existing database installation! If you are looking for a collection to *install* PostgreSQL you need to use another collection/role, for example, [galaxyproject.postgresql](https://galaxy.ansible.com/ui/standalone/roles/galaxyproject/postgresql/install/).
+
 ## Our mission
 
 At the `community.postgresql` Ansible collection project,
@@ -99,9 +101,10 @@ Even if they are present in our test matrix now, they can be removed at any mome
 ## Tested with ansible-core
 
 Tested with the following `ansible-core` releases:
-- 2.15
+- 2.15 (only integration on Fedora 37)
 - 2.16
 - 2.17
+- 2.18
 - current development version
 
 Ansible-core versions before 2.12.0 are not supported.
@@ -113,7 +116,7 @@ Our AZP CI includes testing with the following docker images / PostgreSQL versio
 | Fedora 37    |           2.9.6 |               14   |
 | Fedora 39    |           2.9.6 |               15   |
 | Ubuntu 22.04 |           3.1.9 |               16   |
-| Fedora 40    |           2.9.9 |               16   |
+| Fedora 40/41 |           2.9.9 |               16   |
 | Ubuntu 24.04 |           3.2.2 |               17   |
 
 ## Included content
