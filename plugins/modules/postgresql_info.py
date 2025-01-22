@@ -230,7 +230,9 @@ class PgClusterInfo(object):
         self.module = module
         self.db_obj = db_conn_obj
         self.cursor = db_conn_obj.connect()
-        self.default_db = module.params['login_db']
+        self.default_db = module.params['db'] or \
+            module.params['login_db'] or \
+            module.params['database']
         self.pg_info = {
             "version": {},
             "in_recovery": None,
