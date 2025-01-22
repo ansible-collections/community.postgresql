@@ -4,6 +4,21 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v3.10.1
+=======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Bugfixes
+--------
+
+- postgresql_info - fix module failure when the ``db`` parameter is used instead of ``login_db`` (https://github.com/ansible-collections/community.postgresql/issues/794).
+
 v3.10.0
 =======
 

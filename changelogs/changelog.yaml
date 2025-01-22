@@ -628,6 +628,20 @@ releases:
     - 783-fix-postgresql-privs-not-specified-schema.yml
     - 788-fix-postresql-info-db-connection.yml
     release_date: '2025-01-17'
+  3.10.1:
+    changes:
+      bugfixes:
+      - postgresql_info - fix module failure when the ``db`` parameter is used instead
+        of ``login_db`` (https://github.com/ansible-collections/community.postgresql/issues/794).
+      release_summary: 'This is a patch release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 0-postgresql_info.yml
+    - 3.10.1.yml
+    release_date: '2025-01-22'
   3.2.0:
     changes:
       bugfixes:
