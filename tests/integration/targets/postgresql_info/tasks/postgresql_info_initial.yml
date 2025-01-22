@@ -215,10 +215,12 @@
   - name: postgresql_info - test return publication info
     <<: *task_parameters
     postgresql_info:
-      <<: *pg_parameters
-      login_db: '{{ test_db }}'
+      login_user: '{{ pg_user }}'
+      db: '{{ db_default }}'
       login_port: '{{ primary_port }}'
       trust_input: true
+      connect_params:
+        connect_timeout: 30
 
   - assert:
       that:
