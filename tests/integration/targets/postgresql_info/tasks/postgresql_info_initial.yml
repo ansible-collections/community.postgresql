@@ -148,7 +148,7 @@
   - name: postgresql_info - check filter param passed by list
     <<: *task_parameters
     postgresql_info:
-      <<: *pg_parameters
+      login_user: '{{ pg_user }}'
       login_port: '{{ replica_port }}'
       filter:
         - ver*
