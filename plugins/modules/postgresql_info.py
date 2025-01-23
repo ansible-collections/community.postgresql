@@ -727,7 +727,6 @@ class PgClusterInfo(object):
         # https://github.com/ansible-collections/community.postgresql/issues/794
         return self.__exec_sql('SELECT current_database() AS db')[0]['db']
 
-
 # ===========================================
 # Module execution.
 #

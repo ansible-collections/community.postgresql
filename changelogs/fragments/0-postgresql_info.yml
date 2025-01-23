@@ -1,2 +1,2 @@
 bugfixes:
-- postgresql_info - fix failure when a default database is used (neigher ``db`` nor ``login_db`` are specified) (https://github.com/ansible-collections/community.postgresql/issues/794).
+- postgresql_info - fix failure when a default database is used (neither ``db`` nor ``login_db`` are specified) (https://github.com/ansible-collections/community.postgresql/issues/794).
