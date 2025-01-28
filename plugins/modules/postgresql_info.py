@@ -28,12 +28,12 @@ options:
       the excluding values will be ignored.
     type: list
     elements: str
-  db:
+  login_db:
     description:
     - Name of database to connect.
     type: str
     aliases:
-    - login_db
+    - db
   session_role:
     description:
     - Switch to session_role after connecting. The specified session_role must
@@ -94,7 +94,7 @@ EXAMPLES = r'''
   become: true
   become_user: pgsql
   community.postgresql.postgresql_info:
-    db: postgres
+    login_db: postgres
     filter:
     - tablesp*
     - repl_sl*
@@ -735,7 +735,13 @@ class PgClusterInfo(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '4.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         filter=dict(type='list', elements='str'),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
