@@ -325,6 +325,17 @@ class PgClusterInfo(object):
 
         return publications
 
+    def __decode_col_name_from_bin_to_utf8(self, returned_columns):
+        # When column names are returned as bytes we need
+        # to decode them to UTF-8 before using them in queries
+        # https://github.com/ansible-collections/community.postgresql/issues/790
+        # https://github.com/ansible-collections/community.postgresql/pull/791
+        for row in returned_columns:
+            if isinstance(row["column_name"], bytes):
+                row["column_name"] = row["column_name"].decode('utf-8')
+
+        return returned_columns
+
     def get_subscr_info(self):
         """Get subscription statistics."""
         columns_sub_table = ("SELECT column_name "
@@ -332,6 +343,7 @@ class PgClusterInfo(object):
                              "WHERE table_schema = 'pg_catalog' "
                              "AND table_name = 'pg_subscription'")
         columns_result = self.__exec_sql(columns_sub_table)
+        columns_result = self.__decode_col_name_from_bin_to_utf8(columns_result)
         columns = ", ".join(["s.%s" % column["column_name"] for column in columns_result])
 
         query = ("SELECT %s, r.rolname AS ownername, d.datname AS dbname "
