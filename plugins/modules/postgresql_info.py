@@ -230,6 +230,7 @@ class PgClusterInfo(object):
         self.module = module
         self.db_obj = db_conn_obj
         self.cursor = db_conn_obj.connect()
+        self.cursor.execute("SET client_encoding TO 'UTF8'")
         self.default_db = self.__get_current_db()
         self.pg_info = {
             "version": {},
