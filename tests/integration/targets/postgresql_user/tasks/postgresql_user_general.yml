@@ -829,6 +829,65 @@
         - result is failed
         - result.msg == "The key of a configuration may not contain single or double quotes"
 
+  - name: Test setting search_path
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values: false
+      configuration:
+        search_path: 'pg_catalog,public'
+
+  - name: Test that search_path is correct
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['rolconfig'] == ["search_path=pg_catalog, public"]
+
+  - name: Test idempotency
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values: false
+      configuration:
+        search_path: 'pg_catalog, public'
+
+  - assert:
+      that: not result.changed
+
+  - name: Test setting search_path
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values: false
+      configuration:
+        search_path: 'pg_catalog, public'
+        work_mem: "'16MB'"
+
+  - name: Test that settings are correct is correct
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - result.query_result[0]['rolconfig'] == ["search_path=pg_catalog, public", "work_mem=16MB"]
+
+  - name: Purge configuration parameters from user
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      configuration: {}
+      reset_unspecified_configuration: true
+
   ########################
   # Test trust_input param
 
