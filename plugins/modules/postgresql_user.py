@@ -177,6 +177,17 @@ options:
     type: bool
     default: false
     version_added: '3.5.0'
+  quote_configuration_values:
+    description:
+      - Automatically quote the values of configuration variables added via I(configuration). The default is C(true)
+        and setting this to C(false) leaves these options open to SQL-injections and makes the user responsible for
+        properly quoting values.
+      - This is required to be C(false) to modify settings like C(search_path), that need to be unquoted.
+      - If this is C(false) you will also need to make sure that strings are properly quoted.
+        For example C("'16MB'") for C(work_mem).
+      - Set this only to C(false) if you know what you are doing!
+    type: bool
+    default: true
 notes:
 - The module creates a user (role) with login privilege by default.
   Use C(NOLOGIN) I(role_attr_flags) to change this behaviour.
@@ -315,6 +326,14 @@ EXAMPLES = r'''
     configuration:
       work_mem: "16MB"
     reset_unspecified_configuration: true
+
+# Set the search_path
+- name: Set search_path for user
+  community.postgresql.postgresql_user:
+    name: postgres_exporter
+    quote_configuration_values: false
+    configuration:
+      search_path: postgres_exporter, pg_catalog, public
 '''
 
 RETURN = r'''
@@ -1038,7 +1057,7 @@ def parse_user_configuration(module, configs):
         return {}
 
 
-def user_configuration(cursor, module, user, configuration, reset_unspec_config):
+def user_configuration(cursor, module, user, configuration, reset_unspec_config, quote_values):
     """Updates the user's configuration parameters if necessary."""
     current_config_query = "SELECT rolconfig FROM pg_roles WHERE rolname = %(user)s;"
     cursor.execute(current_config_query, {"user": user})
@@ -1060,8 +1079,12 @@ def user_configuration(cursor, module, user, configuration, reset_unspec_config)
             cursor.execute(query)
             changed = True
         for key, value in config_updates["update"].items():
-            query = ('ALTER ROLE %(user)s SET "%(key)s" TO \'%(value)s\';' %
-                     {"user": _pg_quote_user(user, module), "key": key, "value": value})
+            if quote_values:
+                query = ('ALTER ROLE %(user)s SET "%(key)s" TO \'%(value)s\';' %
+                         {"user": _pg_quote_user(user, module), "key": key, "value": value})
+            else:
+                query = ('ALTER ROLE %(user)s SET "%(key)s" TO %(value)s;' %
+                         {"user": _pg_quote_user(user, module), "key": key, "value": value})
             executed_queries.append(query)
             cursor.execute(query)
             changed = True
@@ -1108,6 +1131,7 @@ def main():
         trust_input=dict(type='bool', default=True),
         configuration=dict(type='dict', default={}),
         reset_unspecified_configuration=dict(type='bool', default=False),
+        quote_configuration_values=dict(type='bool', default=True),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -1135,6 +1159,7 @@ def main():
     session_role = module.params['session_role']
     configuration = module.params['configuration']
     reset_unspec_config = module.params['reset_unspecified_configuration']
+    quote_configuration_values = module.params['quote_configuration_values']
 
     trust_input = module.params['trust_input']
     if not trust_input:
@@ -1151,10 +1176,11 @@ def main():
     srv_version = get_server_version(db_connection)
 
     # sanitize configuration
-    for key, value in configuration.items():
-        if '"' in key or '\'' in key:
-            module.fail_json("The key of a configuration may not contain single or double quotes")
-        configuration[key] = value.replace("'", "''")
+    if quote_configuration_values:
+        for key, value in configuration.items():
+            if '"' in key or '\'' in key:
+                module.fail_json("The key of a configuration may not contain single or double quotes")
+            configuration[key] = value.replace("'", "''")
 
     try:
         role_attr_flags = parse_role_attrs(role_attr_flags, srv_version)
@@ -1196,7 +1222,8 @@ def main():
                                  exception=traceback.format_exc())
 
         # handle user-specific configuration-defaults
-        changed = user_configuration(cursor, module, user, configuration, reset_unspec_config) or changed
+        changed = user_configuration(cursor, module, user, configuration, reset_unspec_config,
+                                     quote_configuration_values) or changed
 
     else:
         if user_exists(cursor, user):
