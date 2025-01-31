@@ -1123,7 +1123,10 @@ def write_hba_file(file_path, rule_string, create, module, file_args, diff):
         tmpfile = tempfile.NamedTemporaryFile(mode='w', delete=False)
         tmpfile.write(rule_string)
         tmpfile.close()
-        module.atomic_move(tmpfile.name, file_path, unsafe_writes=module.params["unsafe_writes"])
+        try:
+            shutil.copy(tmpfile.name, file_path)
+        except (IOError, OSError) as e:
+            module.fail_json(msg='Failed to write file:\n{0}'.format(e))
     finally:
         # try to remove the temporary file if something goes wrong
         if tmpfile and os.path.isfile(tmpfile.name):
@@ -1416,17 +1419,10 @@ def main():
                 ret['msgs'].append('Creating Backup')
                 backup_file_args = module.load_file_common_arguments(module.params)
                 if backup_file:
-                    # can't use tempfile.TemporaryFile, as we need to write to it and then move it away,
-                    # without it getting removed after we wrote to it
-                    backup_tmp_file = None
                     try:
-                        backup_tmp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-                        backup_tmp_file.close()
-                        shutil.copy(dest, backup_tmp_file.name)
-                        module.atomic_move(backup_tmp_file.name, backup_file, backup_file_args.get("unsafe_writes"))
-                    finally:
-                        if backup_tmp_file and os.path.isfile(backup_tmp_file.name):
-                            os.unlink(backup_tmp_file.name)  # removing the temporary file, as it has served its purpose
+                        shutil.copy(dest, backup_file)
+                    except (IOError, OSError) as e:
+                        module.fail_json(msg='Failed to create backup:\n{0}'.format(e))
                 else:
                     backup_file = module.backup_local(dest)
                 backup_file_args['path'] = backup_file
