@@ -271,6 +271,7 @@ import copy
 import os
 import re
 import traceback
+import time
 
 IPADDRESS_IMP_ERR = None
 try:
@@ -1132,7 +1133,7 @@ def write_hba_file(file_path, rule_string, create, module, file_args, diff):
         if tmpfile and os.path.isfile(tmpfile.name):
             os.unlink(tmpfile.name)
 
-    module.set_fs_attributes_if_different(file_args, True, diff, expand=False)
+    # module.set_fs_attributes_if_different(file_args, True, diff, expand=False)
 
 
 def render_rule_list(rule_list, delimiter="\t"):
@@ -1413,20 +1414,21 @@ def main():
             sort_rules(pg_hba_rules)
         hba_string = render_rule_list(pg_hba_rules)
         ret['msgs'].append('Changed')
-        file_args = module.load_file_common_arguments(module.params)
+        file_args = None
+        # file_args = module.load_file_common_arguments(module.params)
         if not module.check_mode:
             if backup:
                 ret['msgs'].append('Creating Backup')
-                backup_file_args = module.load_file_common_arguments(module.params)
-                if backup_file:
-                    try:
-                        shutil.copy(dest, backup_file)
-                    except (IOError, OSError) as e:
-                        module.fail_json(msg='Failed to create backup:\n{0}'.format(e))
-                else:
-                    backup_file = module.backup_local(dest)
-                backup_file_args['path'] = backup_file
-                module.set_fs_attributes_if_different(backup_file_args, True, diff, expand=False)
+                # backup_file_args = module.load_file_common_arguments(module.params)
+                if not backup_file:
+                    ext = time.strftime("%Y-%m-%d@%H:%M:%S~", time.localtime(time.time()))
+                    backup_file = '%s.%s.%s' % (dest, os.getpid(), ext)
+                try:
+                    shutil.copy(dest, backup_file)
+                except (IOError, OSError) as e:
+                    module.fail_json(msg='Failed to create backup:\n{0}'.format(e))
+                # backup_file_args['path'] = backup_file
+                # module.set_fs_attributes_if_different(backup_file_args, True, diff, expand=False)
                 ret['backup_file'] = backup_file
 
             ret['msgs'].append('Writing')
