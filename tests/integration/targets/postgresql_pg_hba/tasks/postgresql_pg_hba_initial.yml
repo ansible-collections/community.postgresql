@@ -253,7 +253,8 @@
     that:
       - '"host\tall\tall\t2001:db8::1/128\tmd5\t#comment1\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2\nhost\tall\tall\t2001:db8::3/128\tmd5\t#comment3" == content'
 
-- community.postgresql.postgresql_pg_hba:
+- name: test local with default address
+  community.postgresql.postgresql_pg_hba:
     dest: /tmp/pg_hba3.conf
     contype: local
     method: trust
@@ -264,7 +265,8 @@
 - assert:
     that: 'local_with_address.pg_hba == [{"db": "all", "method": "trust", "type": "local", "usr": "all"}]'
 
-- community.postgresql.postgresql_pg_hba:
+- name: test that local ignores address when supplied
+  community.postgresql.postgresql_pg_hba:
     dest: /tmp/pg_hba3.conf
     contype: local
     method: trust
@@ -276,8 +278,9 @@
 - assert:
     that: 'local_with_address.pg_hba == [{"db": "all", "method": "trust", "type": "local", "usr": "all"}]'
 
-- community.postgresql.postgresql_pg_hba:
-    dest: pg_hba.conf
+- name: test that it fails on invalid usernames
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/pg_hba.conf
     users: '{ "oh": "no" }'
     state: present
     contype: host
@@ -289,7 +292,7 @@
     that: invalid_username is failed
 
 - community.postgresql.postgresql_pg_hba:
-    dest: pg_hba.conf
+    dest: /tmp/pg_hba.conf
     users: oops
     state: present
     contype: host
