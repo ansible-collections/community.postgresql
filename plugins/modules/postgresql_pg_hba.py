@@ -1417,7 +1417,7 @@ def main():
         file_args = None
         # file_args = module.load_file_common_arguments(module.params)
         if not module.check_mode:
-            if backup:
+            if backup and os.path.exists(dest):
                 ret['msgs'].append('Creating Backup')
                 # backup_file_args = module.load_file_common_arguments(module.params)
                 if not backup_file:
