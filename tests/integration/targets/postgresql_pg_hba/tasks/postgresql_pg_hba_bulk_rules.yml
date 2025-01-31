@@ -168,6 +168,11 @@
         method: scram-sha-256
   register: result
 
+- name: Fetch the file
+  fetch:
+    src: /tmp/toy_bulk_test.conf
+    dest: /tmp/toy_bulk_test.conf
+    flat: true
 - name: read the file
   set_fact:
     content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
@@ -196,6 +201,11 @@
         method: scram-sha-256
   register: result
 
+- name: Fetch the file
+  fetch:
+    src: /tmp/toy_bulk_test.conf
+    dest: /tmp/toy_bulk_test.conf
+    flat: true
 - name: read the file
   set_fact:
     content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
@@ -252,6 +262,11 @@
         method: scram-sha-256
   register: result
 
+- name: Fetch the file
+  fetch:
+    src: /tmp/toy_bulk_test.conf
+    dest: /tmp/toy_bulk_test.conf
+    flat: true
 - name: read the file
   set_fact:
     content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
@@ -280,6 +295,11 @@
         method: scram-sha-256
   register: result
 
+- name: Fetch the file
+  fetch:
+    src: /tmp/toy_bulk_test.conf
+    dest: /tmp/toy_bulk_test.conf
+    flat: true
 - name: read the file
   set_fact:
     content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
@@ -308,6 +328,11 @@
         method: ident
   register: result
 
+- name: Fetch the file
+  fetch:
+    src: /tmp/toy_bulk_test.conf
+    dest: /tmp/toy_bulk_test.conf
+    flat: true
 - name: read the file
   set_fact:
     content: "{{ lookup('file', '/tmp/toy_bulk_test.conf') }}"
