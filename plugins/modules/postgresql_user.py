@@ -1096,7 +1096,7 @@ def main():
         password=dict(type='str', default=None, no_log=True),
         state=dict(type='str', default='present', choices=['absent', 'present']),
         priv=dict(type='str', default=None, removed_in_version='4.0.0', removed_from_collection='community.postgreql'),
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+        login_db=dict(type='str', default="", aliases=['db'], deprecated_aliases=[
             {
                 'name': 'db',
                 'version': '4.0.0',
