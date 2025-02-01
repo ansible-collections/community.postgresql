@@ -1,0 +1,2 @@
+breaking_changes:
+- postgresql_user - the ``db`` alias is deprecated and will be removed in the next major release, use the ``login_db`` argument instead.
