@@ -188,6 +188,7 @@ options:
       - Set this only to C(false) if you know what you are doing!
     type: bool
     default: true
+    version_added: '3.11.0'
 notes:
 - The module creates a user (role) with login privilege by default.
   Use C(NOLOGIN) I(role_attr_flags) to change this behaviour.
