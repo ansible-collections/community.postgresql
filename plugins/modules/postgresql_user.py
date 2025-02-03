@@ -328,7 +328,6 @@ EXAMPLES = r'''
       work_mem: "16MB"
     reset_unspecified_configuration: true
 
-# Set the search_path
 - name: Set search_path for user
   community.postgresql.postgresql_user:
     name: postgres_exporter
