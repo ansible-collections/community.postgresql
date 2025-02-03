@@ -46,13 +46,13 @@ options:
     - Note that if the provided password string is already in MD5-hashed
       format, then it is used as-is, regardless of I(encrypted) option.
     type: str
-  db:
+  login_db:
     description:
     - Name of database to connect to and where user's permissions are granted.
     type: str
     default: ''
     aliases:
-    - login_db
+    - db
   fail_on_user:
     description:
     - If C(true), fails when the user (role) cannot be removed. Otherwise just log and continue.
@@ -220,7 +220,7 @@ EXAMPLES = r'''
 # You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database, create django user, and grant access to database and products table
   community.postgresql.postgresql_user:
-    db: acme
+    login_db: acme
     name: django
     password: ceec4eif7ya
     priv: "CONNECT/products:ALL"
@@ -228,7 +228,7 @@ EXAMPLES = r'''
 
 - name: Add a comment on django user
   community.postgresql.postgresql_user:
-    db: acme
+    login_db: acme
     name: django
     comment: This is a test user
 
@@ -249,7 +249,7 @@ EXAMPLES = r'''
 # You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database and remove test user privileges from there
   community.postgresql.postgresql_user:
-    db: acme
+    login_db: acme
     name: test
     priv: "ALL/products:ALL"
     state: absent
@@ -259,7 +259,7 @@ EXAMPLES = r'''
 # You should use the 'postgresql_privs' module instead.
 - name: Connect to test database, remove test user from cluster
   community.postgresql.postgresql_user:
-    db: test
+    login_db: test
     name: test
     priv: ALL
     state: absent
@@ -268,7 +268,7 @@ EXAMPLES = r'''
 # You should use the 'postgresql_privs' module instead.
 - name: Connect to acme database and set user's password with no expire date
   community.postgresql.postgresql_user:
-    db: acme
+    login_db: acme
     name: django
     password: mysupersecretword
     priv: "CONNECT/products:ALL"
@@ -279,7 +279,7 @@ EXAMPLES = r'''
 
 - name: Connect to test database and remove an existing user's password
   community.postgresql.postgresql_user:
-    db: test
+    login_db: test
     user: test
     password: ""
 
@@ -1096,7 +1096,13 @@ def main():
         password=dict(type='str', default=None, no_log=True),
         state=dict(type='str', default='present', choices=['absent', 'present']),
         priv=dict(type='str', default=None, removed_in_version='4.0.0', removed_from_collection='community.postgreql'),
-        db=dict(type='str', default='', aliases=['login_db']),
+        login_db=dict(type='str', default="", aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '4.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         fail_on_user=dict(type='bool', default=True, aliases=['fail_on_role']),
         role_attr_flags=dict(type='str', default=''),
         encrypted=dict(type='bool', default=True),
@@ -1119,10 +1125,10 @@ def main():
     state = module.params["state"]
     fail_on_user = module.params["fail_on_user"]
     # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
-    if module.params['db'] == '' and module.params["priv"] is not None:
+    if module.params['login_db'] == '' and module.params["priv"] is not None:
         module.fail_json(msg="privileges require a database to be specified")
     # WARNING: privs are deprecated and will  be removed in community.postgresql 4.0.0
-    privs = parse_privs(module.params["priv"], module.params["db"])
+    privs = parse_privs(module.params["priv"], module.params["login_db"])
     no_password_changes = module.params["no_password_changes"]
     if module.params["encrypted"]:
         encrypted = "ENCRYPTED"
