@@ -88,9 +88,9 @@ options:
     default: false
   keep_comments_at_rules:
     description:
-      - This option has been deprecated and doesn't do anything.
+      - This option has been deprecated and doesn't do anything. The module behaves as if this is C(true).
     type: bool
-    default: false
+    default: true
     version_added: '1.5.0'
   rules:
     description:
@@ -1279,7 +1279,10 @@ def main():
         # TODO this can probably be changed to dict without breaking
         options=dict(type='str'),
         # DEPRECATED, does nothing
-        keep_comments_at_rules=dict(type='bool', default=False),
+        keep_comments_at_rules=dict(type='bool',
+                                    default=True,
+                                    removed_in_version="5.0.0",
+                                    removed_from_collection="community.postgresql"),
         state=dict(type='str', default="present", choices=["absent", "present"]),
         users=dict(type='str', default='all'),
         rules=dict(type='list', elements='dict'),
