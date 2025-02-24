@@ -88,7 +88,7 @@ options:
     default: false
   keep_comments_at_rules:
     description:
-      - This option has been deprecated and doesn't do anything
+      - This option has been deprecated and doesn't do anything.
     type: bool
     default: false
     version_added: '1.5.0'
