@@ -204,7 +204,7 @@
     var: content
 - assert:
     that:
-      - '"\nhost\tall\tall\t2001:db8::1/128\tmd5\t#comment1" == content'
+      - '"host\tall\tall\t2001:db8::1/128\tmd5\t#comment1" == content'
 
 - name: Create a rule with the comment 'comment2'
   postgresql_pg_hba:
@@ -227,7 +227,7 @@
     var: content
 - assert:
     that:
-      - '"#comment1\nhost\tall\tall\t2001:db8::1/128\tmd5\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2" == content'
+      - '"host\tall\tall\t2001:db8::1/128\tmd5\t#comment1\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2" == content'
 
 - name: Create a rule with the comment 'comment3' and keep_comments_at_rules
   postgresql_pg_hba:
@@ -251,9 +251,10 @@
     var: content
 - assert:
     that:
-      - '"#comment1\nhost\tall\tall\t2001:db8::1/128\tmd5\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2\nhost\tall\tall\t2001:db8::3/128\tmd5\t#comment3" == content'
+      - '"host\tall\tall\t2001:db8::1/128\tmd5\t#comment1\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2\nhost\tall\tall\t2001:db8::3/128\tmd5\t#comment3" == content'
 
-- community.postgresql.postgresql_pg_hba:
+- name: test local with default address
+  community.postgresql.postgresql_pg_hba:
     dest: /tmp/pg_hba3.conf
     contype: local
     method: trust
@@ -264,7 +265,8 @@
 - assert:
     that: 'local_with_address.pg_hba == [{"db": "all", "method": "trust", "type": "local", "usr": "all"}]'
 
-- community.postgresql.postgresql_pg_hba:
+- name: test that local ignores address when supplied
+  community.postgresql.postgresql_pg_hba:
     dest: /tmp/pg_hba3.conf
     contype: local
     method: trust
@@ -276,8 +278,9 @@
 - assert:
     that: 'local_with_address.pg_hba == [{"db": "all", "method": "trust", "type": "local", "usr": "all"}]'
 
-- community.postgresql.postgresql_pg_hba:
-    dest: pg_hba.conf
+- name: test that it fails on invalid usernames
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/pg_hba.conf
     users: '{ "oh": "no" }'
     state: present
     contype: host
@@ -289,7 +292,7 @@
     that: invalid_username is failed
 
 - community.postgresql.postgresql_pg_hba:
-    dest: pg_hba.conf
+    dest: /tmp/pg_hba.conf
     users: oops
     state: present
     contype: host
@@ -299,7 +302,8 @@
   copy:
     dest: /tmp/edgecase_test_pg_hba.conf
     content: |
-      # full line comment
+      # z full line comment
+      # a full line comment
       local all all ident # comment
 
       hostssl all all 192.168.0.0/24 md5
@@ -308,6 +312,9 @@
       hostssl all all 10.11.0.0/16 md5#comment
       hostssl all all 10.12.0.0/16 ldap ldapserver=example.com ldapport=389 ldapprefix="cn=" ldapbindpasswd="#BROKEN"
       hostssl all all 10.13.0.0/16 radius radiusservers="server1,server2" radiussecrets="""secret one"",""secret two"""
+      include_if_exists schroedingers_file.conf
+      include_dir /etc/some/dir
+      include some_file.conf
 
 - name: check that there are no errors while parsing the file
   postgresql_pg_hba:
@@ -327,6 +334,28 @@
               {"db": "all", "method": "ldap", "options": "ldapbindpasswd=\"#BROKEN\" ldapport=389 ldapprefix=\"cn=\" ldapserver=example.com", "src": "10.12.0.0/16", "type": "hostssl", "usr": "all"},
               {"db": "all", "method": "radius", "options": "radiussecrets=\"\"\"secret one\"\",\"\"secret two\"\"\" radiusservers=\"server1,server2\"", "src": "10.13.0.0/16", "type": "hostssl", "usr": "all"}
         ]'
+
+- name: change something in the file
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/edgecase_test_pg_hba.conf
+    users: all
+    databases: all
+    contype: hostssl
+    address: 192.168.0.0/24
+    method: scram-sha-256
+
+- name: Fetch the file
+  fetch:
+    src: /tmp/edgecase_test_pg_hba.conf
+    dest: /tmp/edgecase_test_pg_hba.conf
+    flat: true
+- name: Read the edge-case file
+  set_fact:
+    content: "{{ lookup('file', '/tmp/edgecase_test_pg_hba.conf') }}"
+
+- name: assert that the include is still there
+  assert:
+    that: 'content == "# z full line comment\n# a full line comment\nlocal all all ident # comment\nhostssl\tall\tall\t192.168.0.0/24\tscram-sha-256\nhostssl all all \\\n10.10.0.0/16 md5\nhostssl all all 10.11.0.0/16 md5#comment\nhostssl all all 10.12.0.0/16 ldap ldapserver=example.com ldapport=389 ldapprefix=\"cn=\" ldapbindpasswd=\"#BROKEN\"\nhostssl all all 10.13.0.0/16 radius radiusservers=\"server1,server2\" radiussecrets=\"\"\"secret one\"\",\"\"secret two\"\"\"\ninclude_if_exists schroedingers_file.conf\ninclude_dir /etc/some/dir\ninclude some_file.conf"'
 
 - name: create faulty file
   copy:
@@ -384,6 +413,40 @@
     that:
       - faulty_pg_hba is failed
       - faulty_pg_hba.msg is search("Error in line 2")
+
+- name: check if we recognize unparsable options
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/test.conf
+    create: true
+    contype: host
+    address: 10.0.0.0/8
+    users: all
+    databases: all
+    method: ldap
+    options: "ldapbindpasswd=\"#BROKEN\" ldapport=389 ldapprefix=\"cn= ldapserver=example.com"
+  check_mode: true
+  ignore_errors: true
+  register: should_fail
+
+- assert:
+    that: should_fail is failed
+
+- name: check if we recognize unparsable options
+  community.postgresql.postgresql_pg_hba:
+    dest: /tmp/test.conf
+    create: true
+    contype: host
+    address: 10.0.0.0/8
+    users: all
+    databases: all
+    method: ldap
+    options: "ldapbindpasswd=\"#BROKEN\" ldapport=389 ldapprefix ldapserver=example.com"
+  check_mode: true
+  ignore_errors: true
+  register: should_fail
+
+- assert:
+    that: should_fail is failed
 
 - name: add two lines with the same user
   community.postgresql.postgresql_pg_hba:
