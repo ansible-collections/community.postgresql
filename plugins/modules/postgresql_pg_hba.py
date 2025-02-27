@@ -121,6 +121,7 @@ options:
         you specify your rules in is important.
     type: bool
     default: true
+    version_added: '3.11.0'
   state:
     description:
       - The lines will be added/modified when C(state=present) and removed when C(state=absent).
