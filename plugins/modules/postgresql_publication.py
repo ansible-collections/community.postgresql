@@ -35,6 +35,12 @@ options:
     - Mutually exclusive with I(tables) and I(tables_in_schema).
     type: dict
     version_added: '3.8.0'
+  rowfilters:
+    description:
+    - Optional dictionary of row filters to apply to I(tables) or I(columns) of the publication.
+    - Mutually exclusive with I(tables_in_schema).
+    type: dict
+    version_added: '3.12.0'
   tables:
     description:
     - List of tables to add to the publication.
@@ -120,6 +126,7 @@ seealso:
 author:
 - Loic Blot (@nerzhul) <loic.blot@unix-experience.fr>
 - Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+- George Spanos (@grantanplan) <spanosgeorge@gmail.com>
 extends_documentation_fragment:
 - community.postgresql.postgres
 '''
@@ -138,7 +145,7 @@ EXAMPLES = r'''
     - prices
     - vehicles
 
-- name: Create publication "acme" publishing only prices table and id and named from vehicles tables
+- name: Create publication "acme" publishing only prices table and id and name from vehicles tables
   community.postgresql.postgresql_publication:
     name: acme
     columns:
@@ -146,6 +153,28 @@ EXAMPLES = r'''
       vehicles:
         - id
         - name
+
+- name: Create publication "acme" publishing id and name from vehicles tables, with a row filter
+  community.postgresql.postgresql_publication:
+    name: acme
+    columns:
+      vehicles:
+        - id
+        - name
+    rowfilters:
+        vehicles: (id > 100)
+
+- name: >
+    Assuming publication "acme" exists, publishing id and name from vehicles table with a
+    row filter (id > 100), remove and re-add the table to the publication, with the updated row filter
+  community.postgresql.postgresql_publication:
+    name: acme
+    columns:
+      vehicles:
+        - id
+        - name
+    rowfilters:
+        vehicles: WHERE (id > 100) AND (id < 200)
 
 - name: Create a new publication "acme" for tables in schema "myschema"
   community.postgresql.postgresql_publication:
@@ -287,6 +316,27 @@ def transform_columns_keys(columns):
     return revmap_columns
 
 
+def transform_rowfilters_keys(rowfilters):
+    """Add quotes to each element of the rowfilters list and removes any "WHERE" clauses
+    from the filter, since it's not retained in the publication `rowfilter` column
+
+    Args:
+        rowfilters (dict): Dict with tables and row filter conditions.
+
+    Returns:
+        rowfilters (dict): Changed dict.
+    """
+    revmap_filters = {}
+    for table, fltr in iteritems(rowfilters):
+        fltr = fltr.strip()
+        if fltr:
+            if fltr[:5].lower() == 'where':
+                fltr = fltr[5:].strip()
+            revmap_filters[normalize_table_name(table)] = RowFilter(fltr)
+
+    return revmap_filters
+
+
 def pg_quote_column_list(table, columns):
     """Convert a list of columns to a string.
 
@@ -305,6 +355,28 @@ def pg_quote_column_list(table, columns):
     quoted_columns = [pg_quote_identifier(col, 'column') for col in columns]
     quoted_sql = "%s (%s)" % (table, ', '.join(quoted_columns))
     return quoted_sql
+
+
+class RowFilter(str):
+    """Represents a row filter `WHERE` clause on a particular `table`
+
+    We overload the `==` and `!=` operators so that when comparing:
+        1. any possible quoting on columns is not considered
+        2. whitespace is not considered
+
+    This makes possible to identify identical row filters and not perform any
+    changes, regardless of insignificant (for Postgres) syntactic differences.
+    e.g.
+        '(  id > 10)' will be equivalent to '("id" > 10)'
+    """
+    def __init__(self, rfilter):
+        self.rfilter = rfilter
+
+    def __eq__(self, other):
+        return (self.rfilter.replace('"', '').replace(' ', '') == other.rfilter.replace('"', '').replace(' ', ''))
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class PgPublication():
@@ -336,7 +408,8 @@ class PgPublication():
             'parameters': {},
             'owner': '',
             'schemas': [],
-            'columns': {}
+            'columns': {},
+            'rowfilters': {},
         }
         self.exists = self.check_pub()
 
@@ -381,21 +454,27 @@ class PgPublication():
 
             self.attrs['tables'] = table_info
 
-            # FOR TABLES IN SCHEMA statement is supported since PostgreSQL 15
             if self.pg_srv_ver >= 150000:
+                # FOR TABLES IN SCHEMA statement and row filters are supported since PostgreSQL 15
                 self.attrs['schemas'] = self.__get_schema_pub_info()
                 column_info = self.__get_columns_pub_info()
                 columns = {}
                 for row in column_info:
                     columns[normalize_table_name(row["schema_dot_table"])] = set(row['columns'])
                 self.attrs['columns'] = columns
+
+                filters_info = self.__get_rowfilters_pub_info()
+                filters = {}
+                for row in filters_info:
+                    filters[normalize_table_name(row["schema_dot_table"])] = RowFilter(row['rowfilter'])
+                self.attrs['rowfilters'] = filters
         else:
             self.attrs['alltables'] = True
 
         # Publication exists:
         return True
 
-    def create(self, tables, tables_in_schema, columns, params, owner, comment, check_mode=True):
+    def create(self, tables, tables_in_schema, columns, rowfilters, params, owner, comment, check_mode=True):
         """Create the publication.
 
         Args:
@@ -419,10 +498,19 @@ class PgPublication():
         if columns:
             table_strings = []
             for table in columns:
-                table_strings.append(pg_quote_column_list(table, columns[table]))
+                quoted_cols = pg_quote_column_list(table, columns[table])
+                if table in rowfilters:
+                    quoted_cols += (" WHERE %s" % rowfilters[table])
+                table_strings.append(quoted_cols)
             query_fragments.append("FOR TABLE %s" % ', '.join(table_strings))
         elif tables:
-            query_fragments.append("FOR TABLE %s" % ', '.join(tables))
+            table_strings = []
+            for table in tables:
+                tbl_str = pg_quote_identifier(table, 'table')
+                if table in rowfilters:
+                    tbl_str += " WHERE %s" % rowfilters[table]
+                table_strings.append(tbl_str)
+            query_fragments.append("FOR TABLE %s" % ', '.join(table_strings))
         elif tables_in_schema:
             tables_in_schema = [pg_quote_identifier(schema, 'schema') for schema in tables_in_schema]
             query_fragments.append("FOR TABLES IN SCHEMA %s" % ', '.join(tables_in_schema))
@@ -451,7 +539,7 @@ class PgPublication():
 
         return changed
 
-    def update(self, tables, tables_in_schema, columns, params, owner, comment, check_mode=True):
+    def update(self, tables, tables_in_schema, columns, rowfilters, params, owner, comment, check_mode=True):
         """Update the publication.
 
         Args:
@@ -484,27 +572,42 @@ class PgPublication():
                 elif self.attrs['columns'][table] != columns[table]:
                     need_set_columns = True
                     break
+                elif columns[table] == self.attrs['columns'][table]:
+                    if (table in rowfilters
+                            and table in self.attrs['rowfilters']
+                            and rowfilters[table] != self.attrs['rowfilters'][table]):
+                        need_set_columns = True
+                        break
 
             if need_set_columns:
-                changed = self.__pub_set_columns(columns, check_mode=check_mode)
+                changed = self.__pub_set_columns(columns, rowfilters, check_mode=check_mode)
             else:
                 # Add new tables to the publication:
                 for table in columns:
                     if table not in self.attrs['tables']:
-                        changed = self.__pub_add_columns(table, columns[table], check_mode=check_mode)
+                        changed = self.__pub_add_columns(table, columns[table], rowfilters, check_mode=check_mode)
 
                 # Drop redundant tables from the publication:
                 for table in self.attrs['columns']:
                     if table not in columns.keys():
                         changed = self.__pub_drop_table(table, check_mode=check_mode)
+
         elif columns and self.attrs['alltables']:
-            changed = self.__pub_set_columns(columns, check_mode=check_mode)
+            changed = self.__pub_set_columns(columns, rowfilters, check_mode=check_mode)
         if tables and not self.attrs['alltables']:
 
             # 1. If needs to add table to the publication:
             for tbl in tables:
                 if tbl not in self.attrs['tables']:
-                    changed = self.__pub_add_table(tbl, check_mode=check_mode)
+                    changed = self.__pub_add_table(tbl, rowfilters, check_mode=check_mode)
+                elif ((tbl in rowfilters and rowfilters[tbl] != self.attrs['rowfilters'][tbl])
+                        or (tbl in self.attrs['rowfilters'] and tbl not in rowfilters)):
+                    # If table is part of the publication, but row filter input
+                    # doesn't match the actual state of the publication, then drop it and
+                    # re-ADD it so that the row filter gets applied.
+                    changed = self.__pub_drop_table(tbl, check_mode=check_mode)
+                    if changed:
+                        changed = self.__pub_add_table(tbl, rowfilters, check_mode=check_mode)
 
             # 2. if there is a table in targeted tables
             # that's not present in the passed tables:
@@ -513,7 +616,7 @@ class PgPublication():
                     changed = self.__pub_drop_table(tbl, check_mode=check_mode)
 
         elif tables and self.attrs['alltables']:
-            changed = self.__pub_set_tables(tables, check_mode=check_mode)
+            changed = self.__pub_set_tables(tables, rowfilters, check_mode=check_mode)
 
         elif tables_in_schema is not None:
 
@@ -632,6 +735,17 @@ class PgPublication():
                  "FROM pg_publication_tables WHERE pubname = %(pname)s")
         return exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
 
+    def __get_rowfilters_pub_info(self):
+        """Get and return any row filters for each table that are published by the publication.
+
+        Returns:
+            List of dicts with row filters for each table.
+        """
+        query = ("SELECT schemaname || '.' || tablename as schema_dot_table, rowfilter "
+                 "FROM pg_publication_tables "
+                 "WHERE pubname = %(pname)s AND rowfilter is not NULL")
+        return exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
+
     def __get_columns_pub_info(self):
         """Get and return columns that are published by the publication.
 
@@ -671,7 +785,7 @@ class PgPublication():
         result = exec_sql(self, query, query_params={'table': table}, add_to_executed=False)
         return set([row['column_name'] for row in result])
 
-    def __pub_add_table(self, table, check_mode=False):
+    def __pub_add_table(self, table, rowfilters, check_mode=False):
         """Add a table to the publication.
 
         Args:
@@ -684,8 +798,11 @@ class PgPublication():
         Returns:
             True if successful, False otherwise.
         """
+        quoted_tbl = pg_quote_identifier(table, 'table')
+        if table in rowfilters:
+            quoted_tbl += (" WHERE %s" % rowfilters[table])
         query = ("ALTER PUBLICATION %s ADD TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
-                                                        pg_quote_identifier(table, 'table')))
+                                                        quoted_tbl))
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_drop_table(self, table, check_mode=False):
@@ -705,7 +822,7 @@ class PgPublication():
                                                          pg_quote_identifier(table, 'table')))
         return self.__exec_sql(query, check_mode=check_mode)
 
-    def __pub_set_tables(self, tables, check_mode=False):
+    def __pub_set_tables(self, tables, rowfilters, check_mode=False):
         """Set a table suit that need to be published by the publication.
 
         Args:
@@ -718,12 +835,17 @@ class PgPublication():
         Returns:
             True if successful, False otherwise.
         """
-        quoted_tables = [pg_quote_identifier(t, 'table') for t in tables]
+        quoted_tables = []
+        for table in tables:
+            quoted_tbl = pg_quote_identifier(table, 'table')
+            if table in rowfilters:
+                quoted_tbl += (" WHERE %s" % rowfilters[table])
+                quoted_tables.append(quoted_tbl)
         query = ("ALTER PUBLICATION %s SET TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
                                                         ', '.join(quoted_tables)))
         return self.__exec_sql(query, check_mode=check_mode)
 
-    def __pub_add_columns(self, table, columns, check_mode=False):
+    def __pub_add_columns(self, table, columns, rowfilters, check_mode=False):
         """ Add table with specific columns to the publication.
         Args:
             table (str): Table name.
@@ -734,11 +856,14 @@ class PgPublication():
         Returns:
             True if successful, False otherwise.
         """
+        quoted_cols = pg_quote_column_list(table, columns)
+        if table in rowfilters:
+            quoted_cols += (" WHERE %s" % rowfilters[table])
         query = ("ALTER PUBLICATION %s ADD TABLE %s" % (pg_quote_identifier(self.name, 'publication'),
-                                                        pg_quote_column_list(table, columns)))
+                                                        quoted_cols))
         return self.__exec_sql(query, check_mode=check_mode)
 
-    def __pub_set_columns(self, columns_map, check_mode=False):
+    def __pub_set_columns(self, columns_map, rowfilters, check_mode=False):
         """Set columns that need to be published by the publication.
         Args:
             columns_map (dict): Dictionary of all tables and list of columns.
@@ -748,8 +873,17 @@ class PgPublication():
         Returns:
             True if successful, False otherwise.
         """
-        table_list = [pg_quote_column_list(table, columns_map[table]) for table in columns_map]
-        query = ("ALTER PUBLICATION %s SET TABLE %s" % (pg_quote_identifier(self.name, 'publication'), ', '.join(table_list)))
+        table_list = []
+        for table, columns in iteritems(columns_map):
+            quoted_cols = pg_quote_column_list(table, columns)
+            if table in rowfilters:
+                quoted_cols += (" WHERE %s" % rowfilters[table])
+            table_list.append(quoted_cols)
+        query = (
+            "ALTER PUBLICATION %s SET TABLE %s" %
+            (pg_quote_identifier(self.name, 'publication'),
+             ', '.join(table_list))
+        )
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __pub_add_schema(self, schema, check_mode=False):
@@ -866,11 +1000,13 @@ def main():
         comment=dict(type='str', default=None),
         tables_in_schema=dict(type='list', elements='str', default=None),
         columns=dict(type='dict', default=None),
+        rowfilters=dict(type='dict', default=None),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
-        mutually_exclusive=[('tables', 'tables_in_schema', "columns")],
+        mutually_exclusive=[('tables', 'tables_in_schema', "columns"),
+                            ('rowfilters', 'tables_in_schema')],
     )
 
     # Parameters handling:
@@ -885,6 +1021,7 @@ def main():
     comment = module.params['comment']
     tables_in_schema = module.params['tables_in_schema']
     columns = module.params['columns']
+    rowfilters = module.params['rowfilters']
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -924,7 +1061,8 @@ def main():
         module.fail_json(msg="Publication of tables in schema is supported by PostgreSQL 15 or greater")
     if columns and pg_srv_ver < 150000:
         module.fail_json(msg="Publication of columns is supported by PostgreSQL 15 or greater")
-
+    if rowfilters is not None and pg_srv_ver < 150000:
+        module.fail_json(msg="Row filtering is supported by PostgreSQL 15 or greater")
     # Nothing was changed by default:
     changed = False
 
@@ -938,15 +1076,17 @@ def main():
     if columns:
         columns = transform_columns_keys(columns)
 
+    rowfilters = transform_rowfilters_keys(rowfilters) if rowfilters else {}
+
     # If module.check_mode=True, nothing will be changed:
     if state == 'present':
         if not publication.exists:
-            changed = publication.create(tables, tables_in_schema, columns, params, owner, comment,
-                                         check_mode=module.check_mode)
+            changed = publication.create(tables, tables_in_schema, columns, rowfilters, params, owner,
+                                         comment, check_mode=module.check_mode)
 
         else:
-            changed = publication.update(tables, tables_in_schema, columns, params, owner, comment,
-                                         check_mode=module.check_mode)
+            changed = publication.update(tables, tables_in_schema, columns, rowfilters, params, owner,
+                                         comment, check_mode=module.check_mode)
 
     elif state == 'absent':
         changed = publication.drop(cascade=cascade, check_mode=module.check_mode)

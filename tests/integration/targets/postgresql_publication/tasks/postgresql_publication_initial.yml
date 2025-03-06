@@ -950,6 +950,293 @@
       - result.schemas == []
     when: postgres_version_resp.stdout is version('15', '>=')
 
+  - name: Create publication with specific columns and row filter, check_mode
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_table1 }}'
+          value: [ 'name' ]
+        - key: '{{ test_table3 }}'
+          value: [ ]
+      table_rowfilter_map:
+        - key: '{{ test_table1 }}'
+          value: 'WHERE ("id" < 10)'
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub_rowfilter
+      columns: '{{ columns_map | items2dict }}'
+      rowfilters: '{{ table_rowfilter_map | items2dict }}'
+    check_mode: true
+
+  - assert:
+      that:
+        - result is changed
+        - result.queries == ["CREATE PUBLICATION \"test_pub_rowfilter\" FOR TABLE \"public\".\"acme1\" (\"name\") WHERE (\"id\" < 10), \"public\".\"acme3\""]
+        - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Check it's not been created
+    <<: *task_parameters
+    when: postgres_version_resp.stdout is version('15', '>=')
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication WHERE pubname = 'test_pub_rowfilter'
+
+  - assert:
+      that:
+        - result.rowcount == 0
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Create publication with specific columns and row filter
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_table1 }}'
+          value: [ 'name' ]
+        - key: '{{ test_table3 }}'
+          value: [ ]
+      table_rowfilter_map:
+        - key: '{{ test_table1 }}'
+          value: 'WHERE ("id" < 10)'
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub_rowfilter
+      columns: '{{ columns_map | items2dict }}'
+      rowfilters: '{{ table_rowfilter_map | items2dict }}'
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["CREATE PUBLICATION \"test_pub_rowfilter\" FOR TABLE \"public\".\"acme1\" (\"name\") WHERE (\"id\" < 10), \"public\".\"acme3\""]
+      - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Check it's been created
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT * FROM pg_publication WHERE pubname = 'test_pub_rowfilter'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Check row filter has been applied
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >- 
+        SELECT rowfilter FROM pg_publication_tables 
+        WHERE pubname = 'test_pub_rowfilter' AND tablename = 'acme1'
+
+  - assert:
+      that:
+        - result.query_result[0]['rowfilter'] == '(id < 10)'
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Update row filter on existing publication with specific columns, check_mode
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_table1 }}'
+          value: [ 'name' ]
+        - key: '{{ test_table3 }}'
+          value: [ ]
+      table_rowfilter_map:
+        - key: '{{ test_table1 }}'
+          value: 'WHERE ("id" > 100)'
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub_rowfilter
+      columns: '{{ columns_map | items2dict }}'
+      rowfilters: '{{ table_rowfilter_map | items2dict }}'
+    check_mode: true
+
+  - assert:
+      that:
+        - result is changed
+        - result.queries == ["ALTER PUBLICATION \"test_pub_rowfilter\" SET TABLE \"public\".\"acme1\" (\"name\") WHERE (\"id\" > 100), \"public\".\"acme3\""]
+        - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Check row filter has not been altered
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >-
+        SELECT rowfilter FROM pg_publication_tables 
+        WHERE pubname = 'test_pub_rowfilter' AND tablename = 'acme1'
+
+  - assert:
+      that:
+        - result.query_result[0]['rowfilter'] == '(id < 10)'
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Update row filter on existing publication with specific columns
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_table1 }}'
+          value: [ 'name' ]
+        - key: '{{ test_table3 }}'
+          value: [ ]
+      table_rowfilter_map:
+        - key: '{{ test_table1 }}'
+          value: 'WHERE ("id" > 100)'
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub_rowfilter
+      columns: '{{ columns_map | items2dict }}'
+      rowfilters: '{{ table_rowfilter_map | items2dict }}'
+
+  - assert:
+      that:
+        - result is changed
+        - result.queries == ["ALTER PUBLICATION \"test_pub_rowfilter\" SET TABLE \"public\".\"acme1\" (\"name\") WHERE (\"id\" > 100), \"public\".\"acme3\""]
+        - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Check row filter has been altered
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >-
+        SELECT rowfilter FROM pg_publication_tables 
+        WHERE pubname = 'test_pub_rowfilter' AND tablename = 'acme1'
+
+  - assert:
+      that:
+        - result.query_result[0]['rowfilter'] == '(id > 100)'
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Test that same row filter won't cause any changes, with columns
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      columns_map:
+        - key: '{{ test_table1 }}'
+          value: [ 'name' ]
+        - key: '{{ test_table3 }}'
+          value: [ ]
+      table_rowfilter_map:
+        - key: '{{ test_table1 }}'
+          value: 'WHERE ("id" > 100)'
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub_rowfilter
+      columns: '{{ columns_map | items2dict }}'
+      rowfilters: '{{ table_rowfilter_map | items2dict }}'
+
+  - assert:
+      that:
+        - result is not changed
+        - result.queries == []
+        - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Create publication with tables and row filter
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      table_rowfilter_map:
+        - key: '{{ test_table1 }}'
+          value: 'WHERE ("id" < 10)'
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub2_rowfilter
+      tables:
+        - '{{ test_table1 }}'
+        - '{{ test_table3 }}'
+      rowfilters: '{{ table_rowfilter_map | items2dict }}'
+
+  - assert:
+      that:
+        - result is changed
+        - result.queries == ["CREATE PUBLICATION \"test_pub2_rowfilter\" FOR TABLE \"public\".\"acme1\" WHERE (\"id\" < 10), \"public\".\"acme3\""]
+        - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Check row filter has been applied
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >-
+        SELECT rowfilter FROM pg_publication_tables 
+        WHERE pubname = 'test_pub2_rowfilter' AND tablename = 'acme1'
+
+  - assert:
+      that:
+        - result.query_result[0]['rowfilter'] == '(id < 10)'
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Update row filter on existing publication with tables
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      table_rowfilter_map:
+        - key: '{{ test_table1 }}'
+          value: 'WHERE ("id" > 100)'
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub2_rowfilter
+      tables:
+        - '{{ test_table1 }}'
+        - '{{ test_table3 }}'
+      rowfilters: '{{ table_rowfilter_map | items2dict }}'
+
+  - assert:
+      that:
+        - result is changed
+        - result.queries == ["ALTER PUBLICATION \"test_pub2_rowfilter\" DROP TABLE \"public\".\"acme1\"", "ALTER PUBLICATION \"test_pub2_rowfilter\" ADD TABLE \"public\".\"acme1\" WHERE (\"id\" > 100)"]
+        - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Check row filter has been applied
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >-
+        SELECT rowfilter FROM pg_publication_tables 
+        WHERE pubname = 'test_pub2_rowfilter' AND tablename = 'acme1'
+
+  - assert:
+      that:
+        - result.query_result[0]['rowfilter'] == '(id > 100)'
+    when: postgres_version_resp.stdout is version('15', '>=')
+
+  - name: Test that same row filter won't cause any changes, with tables
+    when: postgres_version_resp.stdout is version('15', '>=')
+    <<: *task_parameters
+    vars:
+      table_rowfilter_map:
+        - key: '{{ test_table1 }}'
+          value: 'WHERE ("id" > 100)'
+    postgresql_publication:
+      <<: *pg_parameters
+      name: test_pub2_rowfilter
+      tables:
+        - '{{ test_table1 }}'
+        - '{{ test_table3 }}'
+      rowfilters: '{{ table_rowfilter_map | items2dict }}'
+
+  - assert:
+      that:
+        - result is not changed
+        - result.queries == []
+        - result.schemas == []
+    when: postgres_version_resp.stdout is version('15', '>=')
+
   always:
   ###########
   # Clean up:
