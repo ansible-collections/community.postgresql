@@ -170,6 +170,57 @@ class Value():
         self.pending_restart = attrs["pending_restart"]
 
 
+class ValueInteger():
+
+    VALID_UNITS = {"B", "kB", "MB", "GB", "TB"}
+
+    def __init__(self, module, param_name, value, unit):
+        self.module = module
+        self.unit = unit
+        self.value, self.unit = self.__set(param_name, value)
+        self.value_in_default_units = None  # Fix this
+
+    def __set(self, param_name, value):
+        return self.__validate(param_name, value)
+        # TODO: convert it to the default units here too
+
+    def __validate(self, param_name, value):
+        int_part = None
+        unit_part = None
+
+        # When the value is like 1024MB
+        if len(value) > 2 and value[-2:].isalpha():
+            int_part = int(value[:-2])
+            unit_part = value[-2:]
+
+        # When the value is like 1024B
+        elif len(value) > 1 and value[-1].isalpha():
+            int_part = self.__to_int(value[:-2])
+            unit_part = value[-1]
+
+        # When it doesn't contain a unit part
+        # we set it as the unit defined for this
+        # parameter in pg_settings
+        else:
+            int_part = self.__to_int(value)
+            unit_part = self.unit
+
+        if unit_part not in VALID_UNITS:
+            val_err_msg = ('invalid value for parameter "%s": "%s", '
+                           'Valid units for this parameter '
+                           'are %s' % (param_name, value, ', '.join(VALID_UNITS)))
+            self.module.fail_json(msg=val_err_msg)
+
+        return (int_part, unit_part)
+
+    def __to_int(value):
+        try:
+            return int(value)
+        except Exception:
+            val_err_msg = "Value %s cannot be converted to int" % value
+            self.module_fail_json(msg=val_err_msg)
+
+
 class PgParam():
     def __init__(self, module, cursor, name):
         self.module = module
@@ -182,7 +233,7 @@ class PgParam():
         query = ("SELECT setting, unit, context, vartype, enumvals, "
                  "boot_val, reset_val, pending_restart "
                  "FROM pg_settings where name = %s")
-        res = self.__exec_sql(query, self.name)
+        res = self.__exec_sql(query, (self.name,))
         # DEBUG
         return res
 
