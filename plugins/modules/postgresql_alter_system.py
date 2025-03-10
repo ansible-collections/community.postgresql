@@ -140,6 +140,7 @@ executed_queries:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils._text import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
     check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -164,6 +165,7 @@ class Value():
         self.unit = attrs["unit"]
         self.context = attrs["context"]
         self.boot_val = attrs["boot_val"]
+        self.enumvals = attrs["enumvals"]
         self.reset_val = attrs["reset_val"]
         self.pending_restart = attrs["pending_restart"]
 
@@ -173,13 +175,28 @@ class PgParam():
         self.module = module
         self.cursor = cursor
         self.name = name
-        self.init_value = Value(self.__get_attrs())
+        #self.init_value = Value(self.__get_attrs())
+        self.init_attrs = self.__get_attrs()
 
     def __get_attrs(self):
         query = ("SELECT setting, unit, context, vartype, enumvals, "
                  "boot_val, reset_val, pending_restart "
                  "FROM pg_settings where name = %s")
-        pass
+        res = self.__exec_sql(query, self.name)
+        # DEBUG
+        return res
+
+    def __exec_sql(self, query, params=()):
+        try:
+            self.cursor.execute(query, params)
+            res = self.cursor.fetchall()
+            if res:
+                return res
+        except Exception as e:
+            msg = "Cannot execute SQL '%s': %s" % (query, to_native(e))
+            self.module.fail_json(msg=msg)
+            self.cursor.close()
+        return False
 
 
 # ===========================================
@@ -228,7 +245,11 @@ def main():
     cursor.close()
     db_connection.close()
 
-    module.exit_json(changed=changed)
+    module.exit_json(
+        changed=changed,
+        # DEBUG below
+        attrs=pg_param.init_attrs,
+    )
 
 
 if __name__ == '__main__':
