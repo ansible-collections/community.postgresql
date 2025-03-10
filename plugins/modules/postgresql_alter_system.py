@@ -64,7 +64,6 @@ options:
     default: true
 
 notes:
-- Supported version of PostgreSQL is 9.4 and later.
 - For some parameters restart of PostgreSQL server is required.
   See official documentation U(https://www.postgresql.org/docs/current/view-pg-settings.html).
 
@@ -153,15 +152,33 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 
 executed_queries = []
 
+VALID_UNITS_OF_TYPE = {
+    "integer": {"B", "kB", "MB", "GB", "TB"},
+}
+
+
+class Value():
+    def __init__(self, attrs):
+        self.vartype = attrs["vartype"]
+        self.setting = attrs["setting"]
+        self.unit = attrs["unit"]
+        self.context = attrs["context"]
+        self.boot_val = attrs["boot_val"]
+        self.reset_val = attrs["reset_val"]
+        self.pending_restart = attrs["pending_restart"]
+
 
 class PgParam():
     def __init__(self, module, cursor, name):
         self.module = module
         self.cursor = cursor
         self.name = name
-        self.attrs = self.__get_attrs()
+        self.init_value = Value(self.__get_attrs())
 
     def __get_attrs(self):
+        query = ("SELECT setting, unit, context, vartype, enumvals, "
+                 "boot_val, reset_val, pending_restart "
+                 "FROM pg_settings where name = %s")
         pass
 
 
