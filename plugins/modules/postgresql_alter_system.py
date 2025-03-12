@@ -178,7 +178,7 @@ class ValueInt():
         self.module = module
         self.unit = unit
         self.value, self.unit = self.__set(param_name, value)
-        self.value_in_default_units = None  # Fix this
+        self.value_in_bytes = None  # Fix this
 
     def __set(self, param_name, value):
         return self.__validate(param_name, value)
