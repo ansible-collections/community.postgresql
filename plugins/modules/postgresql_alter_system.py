@@ -153,11 +153,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 
 executed_queries = []
 
-# VALID_UNITS_OF_TYPE = {
-#     "integer": {"B", "kB", "MB", "GB", "TB"},
-# }
-
-
 # class Value():
 #     def __init__(self, attrs):
 #         self.vartype = attrs["vartype"]
@@ -171,9 +166,15 @@ executed_queries = []
 
 
 class ValueInt():
-
+    # If you pass anything else for int,
+    # Postgres will show that only the following
+    # units are acceptable
     VALID_UNITS = {"B", "kB", "MB", "GB", "TB"}
 
+    # Bytes = MB << 20, etc.
+    # This looks a bit better and maybe
+    # even works more efficiently than
+    # Bytes = MB * 1024 * 1024
     UNIT_TO_BYTES_BITWISE_SHIFT = {
         "kB": 10,
         "MB": 20,
@@ -228,20 +229,19 @@ class ValueInt():
             self.module.fail_json(msg=val_err_msg)
 
 
-# Add support for vartypes:
+# This dict maps vartypes to appropriate classes.
+# TODO: Add support for all vartypes (enum, string, bool, integer, real)
 # To get a list of supported vartypes for settings in PostgreSQL
 # run "SELECT DISTINCT vartype FROM pg_settings;"
-# enum
-# string
-# bool
-# integer
-# real
 VARTYPE_CLASS_MAP = {
     "integer": ValueInt,
 }
 
 
 def build_value_class(module, param_name, value, unit, vartype):
+    # This function is a wrapper around
+    # the VARTYPE_CLASS_MAP dict for readability.
+    # The dict maps vartypes to appropriate classes.
     return VARTYPE_CLASS_MAP[vartype](module, param_name, value, unit)
 
 
