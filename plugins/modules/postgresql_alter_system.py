@@ -153,24 +153,24 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 
 executed_queries = []
 
-VALID_UNITS_OF_TYPE = {
-    "integer": {"B", "kB", "MB", "GB", "TB"},
-}
+# VALID_UNITS_OF_TYPE = {
+#     "integer": {"B", "kB", "MB", "GB", "TB"},
+# }
 
 
-class Value():
-    def __init__(self, attrs):
-        self.vartype = attrs["vartype"]
-        self.setting = attrs["setting"]
-        self.unit = attrs["unit"]
-        self.context = attrs["context"]
-        self.boot_val = attrs["boot_val"]
-        self.enumvals = attrs["enumvals"]
-        self.reset_val = attrs["reset_val"]
-        self.pending_restart = attrs["pending_restart"]
+# class Value():
+#     def __init__(self, attrs):
+#         self.vartype = attrs["vartype"]
+#         self.setting = attrs["setting"]
+#         self.unit = attrs["unit"]
+#         self.context = attrs["context"]
+#         self.boot_val = attrs["boot_val"]
+#         self.enumvals = attrs["enumvals"]
+#         self.reset_val = attrs["reset_val"]
+#         self.pending_restart = attrs["pending_restart"]
 
 
-class ValueInteger():
+class ValueInt():
 
     VALID_UNITS = {"B", "kB", "MB", "GB", "TB"}
 
@@ -205,29 +205,50 @@ class ValueInteger():
             int_part = self.__to_int(value)
             unit_part = self.unit
 
-        if unit_part not in VALID_UNITS:
+        if unit_part not in ValueInt.VALID_UNITS:
             val_err_msg = ('invalid value for parameter "%s": "%s", '
                            'Valid units for this parameter '
-                           'are %s' % (param_name, value, ', '.join(VALID_UNITS)))
+                           'are %s' % (param_name, value, ', '.join(ValueInt.VALID_UNITS)))
             self.module.fail_json(msg=val_err_msg)
 
         return (int_part, unit_part)
 
-    def __to_int(value):
+    def __to_int(self, value):
         try:
             return int(value)
         except Exception:
             val_err_msg = "Value %s cannot be converted to int" % value
-            self.module_fail_json(msg=val_err_msg)
+            self.module.fail_json(msg=val_err_msg)
+
+
+class Value():
+
+    # Add support for vartypes:
+    # enum
+    # string
+    # bool
+    # integer
+    # real
+    # To get a list of supported vartypes for settings in PostgreSQL
+    # run "SELECT DISTINCT vartype FROM pg_settings;"
+
+    class_mapping = {
+        "integer": ValueInt,
+    }
+
+    def build(module, param_name, value, unit, vartype):
+        return Value.class_mapping[vartype](module, param_name, value, unit)
 
 
 class PgParam():
+
     def __init__(self, module, cursor, name):
         self.module = module
         self.cursor = cursor
         self.name = name
-        #self.init_value = Value(self.__get_attrs())
-        self.init_attrs = self.__get_attrs()
+        # self.init_value = Value(self.__get_attrs())
+        self.init_attrs = self.__get_attrs()[0]
+        self.init_value = Value.build(self.module, self.name, self.init_attrs["setting"], self.init_attrs["unit"], self.init_attrs["vartype"])
 
     def __get_attrs(self):
         query = ("SELECT setting, unit, context, vartype, enumvals, "
@@ -247,7 +268,7 @@ class PgParam():
             msg = "Cannot execute SQL '%s': %s" % (query, to_native(e))
             self.module.fail_json(msg=msg)
             self.cursor.close()
-        return False
+        return None
 
 
 # ===========================================
@@ -300,6 +321,8 @@ def main():
         changed=changed,
         # DEBUG below
         attrs=pg_param.init_attrs,
+        value_class_value=pg_param.init_value.value,
+        value_class_unit=pg_param.init_value.unit,
     )
 
 
