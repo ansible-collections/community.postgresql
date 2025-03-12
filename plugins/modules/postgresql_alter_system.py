@@ -228,23 +228,21 @@ class ValueInt():
             self.module.fail_json(msg=val_err_msg)
 
 
-class Value():
+# Add support for vartypes:
+# To get a list of supported vartypes for settings in PostgreSQL
+# run "SELECT DISTINCT vartype FROM pg_settings;"
+# enum
+# string
+# bool
+# integer
+# real
+VARTYPE_CLASS_MAP = {
+    "integer": ValueInt,
+}
 
-    # Add support for vartypes:
-    # enum
-    # string
-    # bool
-    # integer
-    # real
-    # To get a list of supported vartypes for settings in PostgreSQL
-    # run "SELECT DISTINCT vartype FROM pg_settings;"
 
-    class_mapping = {
-        "integer": ValueInt,
-    }
-
-    def build(module, param_name, value, unit, vartype):
-        return Value.class_mapping[vartype](module, param_name, value, unit)
+def build_value_class(module, param_name, value, unit, vartype):
+    return VARTYPE_CLASS_MAP[vartype](module, param_name, value, unit)
 
 
 class PgParam():
@@ -255,7 +253,10 @@ class PgParam():
         self.name = name
         # self.init_value = Value(self.__get_attrs())
         self.init_attrs = self.__get_attrs()[0]
-        self.init_value = Value.build(self.module, self.name, self.init_attrs["setting"], self.init_attrs["unit"], self.init_attrs["vartype"])
+        self.init_value = build_value_class(self.module, self.name,
+                                            self.init_attrs["setting"],
+                                            self.init_attrs["unit"],
+                                            self.init_attrs["vartype"])
 
     def __get_attrs(self):
         query = ("SELECT setting, unit, context, vartype, enumvals, "
