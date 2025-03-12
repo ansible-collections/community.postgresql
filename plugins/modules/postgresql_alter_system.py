@@ -174,11 +174,18 @@ class ValueInt():
 
     VALID_UNITS = {"B", "kB", "MB", "GB", "TB"}
 
+    UNIT_TO_BYTES_BITWISE_SHIFT = {
+        "kB": 10,
+        "MB": 20,
+        "GB": 30,
+        "TB": 40,
+    }
+
     def __init__(self, module, param_name, value, unit):
         self.module = module
         self.unit = unit
         self.value, self.unit = self.__set(param_name, value)
-        self.value_in_bytes = None  # Fix this
+        self.value_in_bytes = self.value << ValueInt.UNIT_TO_BYTES_BITWISE_SHIFT[unit]
 
     def __set(self, param_name, value):
         return self.__validate(param_name, value)
@@ -323,6 +330,7 @@ def main():
         attrs=pg_param.init_attrs,
         value_class_value=pg_param.init_value.value,
         value_class_unit=pg_param.init_value.unit,
+        value_class_value_in_bytes=pg_param.init_value.value_in_bytes,
     )
 
 
