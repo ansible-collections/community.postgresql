@@ -186,7 +186,8 @@ class ValueInt():
         self.module = module
         self.unit = unit
         self.value, self.unit = self.__set(param_name, value)
-        self.normalized = self.value << ValueInt.UNIT_TO_BYTES_BITWISE_SHIFT[unit]
+        # self.normalized = self.value << ValueInt.UNIT_TO_BYTES_BITWISE_SHIFT[unit]
+        self.normalized = self.value << ValueInt.UNIT_TO_BYTES_BITWISE_SHIFT[self.unit]
 
     def __set(self, param_name, value):
         return self.__validate(param_name, value)
