@@ -692,6 +692,20 @@ releases:
     - 778-pg-hba-improvements.yml
     - 802-unquoted-config-values.yml
     release_date: '2025-03-04'
+  3.12.0:
+    changes:
+      minor_changes:
+      - postgresql_publication - added ``rowfilters`` parameter that adds support
+        for row filtering on PG publications (https://github.com/ansible-collections/community.postgresql/pull/813)
+      release_summary: 'This is a minor release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 3.12.0.yml
+    - 813-postgresql_publication-rowfilter.yml
+    release_date: '2025-03-13'
   3.2.0:
     changes:
       bugfixes:

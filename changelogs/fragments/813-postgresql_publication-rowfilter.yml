@@ -1,2 +1,0 @@
-minor_changes:
-  - "postgresql_publication - added ``rowfilters`` parameter that adds support for row filtering on PG publications (https://github.com/ansible-collections/community.postgresql/pull/813)"

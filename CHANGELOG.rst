@@ -4,6 +4,21 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v3.12.0
+=======
+
+Release Summary
+---------------
+
+This is a minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- postgresql_publication - added ``rowfilters`` parameter that adds support for row filtering on PG publications (https://github.com/ansible-collections/community.postgresql/pull/813)
+
 v3.11.0
 =======
 
