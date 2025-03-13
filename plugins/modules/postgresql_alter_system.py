@@ -186,7 +186,7 @@ class ValueInt():
         self.module = module
         self.unit = unit
         self.value, self.unit = self.__set(param_name, value)
-        self.value_in_bytes = self.value << ValueInt.UNIT_TO_BYTES_BITWISE_SHIFT[unit]
+        self.normalized = self.value << ValueInt.UNIT_TO_BYTES_BITWISE_SHIFT[unit]
 
     def __set(self, param_name, value):
         return self.__validate(param_name, value)
@@ -257,6 +257,23 @@ class PgParam():
                                             self.init_attrs["setting"],
                                             self.init_attrs["unit"],
                                             self.init_attrs["vartype"])
+        self.desired_value = None  # TODO remove this after debugging
+
+    def set(self, value):
+        # TODO remove "self" from desired_value after debugging
+        self.desired_value = build_value_class(self.module, self.name,
+                                               value,
+                                               self.init_attrs["unit"],
+                                               self.init_attrs["vartype"])
+
+        if self.desired_value.normalized != self.init_value.normalized:
+            if not self.module.check_mode:
+                # TODO: Do the work here
+                pass
+
+            return True
+
+        return False
 
     def __get_attrs(self):
         query = ("SELECT setting, unit, context, vartype, enumvals, "
@@ -320,6 +337,7 @@ def main():
     changed = False
 
     pg_param = PgParam(module, cursor, param)
+    changed = pg_param.set(value)
 
     # Disconnect
     cursor.close()
@@ -331,7 +349,10 @@ def main():
         attrs=pg_param.init_attrs,
         value_class_value=pg_param.init_value.value,
         value_class_unit=pg_param.init_value.unit,
-        value_class_value_in_bytes=pg_param.init_value.value_in_bytes,
+        value_class_normalized=pg_param.init_value.normalized,
+        desir_class_value=pg_param.desired_value.value,
+        desir_class_unit=pg_param.desired_value.unit,
+        desir_class_normalized=pg_param.desired_value.normalized
     )
 
 

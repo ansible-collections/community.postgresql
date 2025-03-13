@@ -17,7 +17,7 @@
       login_db: postgres
 
   block:
-  - name: 
+  - name: Set value same as default (4096kB) but in a different unit
     <<: *task_parameters
     postgresql_alter_system:
       <<: *pg_parameters
@@ -28,3 +28,28 @@
     assert:
       that:
       - result is not changed
+
+  - name: Set a different value
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 2048
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set a different value using units
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 8MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
