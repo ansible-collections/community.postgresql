@@ -27,9 +27,7 @@ options:
     description:
     - Parameter value to set.
     - Specify the value in appropriate units!
-      Check out the C(unit) and C(vartype) columns of the C(pg_settings) table
-      for your setting. For example, for C(work_mem) pass C(1024), NOT C(1M),
-      because the vartype is integer and unit is kB.
+    - For memory-related parameters of type integer, it is C(kB), C(MB), C(GB), and C(TB).
     - Use C(defalut) to remove a parameter string from postgresql.auto.conf
       by running C(ALTER SYSTEM SET param = DEFAULT); always returns changed=true.
     - Use C(reset) to restore the parameter to its initial state (boot_val)
