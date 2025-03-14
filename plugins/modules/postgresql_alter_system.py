@@ -35,12 +35,6 @@ options:
     type: str
     required: true
 
-  pg_reload_conf:
-    description:
-    - Whether to run C(SELECT pg_reload_conf()) after altering the system.
-    type: bool
-    default: true
-
   session_role:
     description:
     - Switch to session_role after connecting. The specified session_role must
@@ -98,7 +92,6 @@ EXAMPLES = r'''
   community.postgresql.postgresql_alter_system:
     param: work_mem
     value: _RESET
-    pg_reload_conf: true
 
 - name: Set work_mem as DEFAULT
   community.postgresql.postgresql_alter_system:
@@ -307,7 +300,6 @@ def main():
         param=dict(type='str', required=True),
         login_db=dict(type='str'),
         value=dict(type='str', required=True),
-        pg_reload_conf=dict(type='bool', default=True),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
     )
@@ -318,7 +310,6 @@ def main():
 
     param = module.params['param']
     value = module.params['value']
-    pg_reload_conf = module.params['pg_reload_conf']
     session_role = module.params['session_role']
     trust_input = module.params['trust_input']
 
