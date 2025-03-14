@@ -53,3 +53,17 @@
       that:
       - result is changed
 
+  - name: Set a value with invalid unit
+    <<: *task_parameters
+    ignore_errors: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 8M
+
+  - name: Check the result
+    assert:
+      that:
+      - result is failed
+      - result.msg is search("invalid value for parameter")
+

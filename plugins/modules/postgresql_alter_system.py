@@ -151,20 +151,9 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 
 executed_queries = []
 
-# class Value():
-#     def __init__(self, attrs):
-#         self.vartype = attrs["vartype"]
-#         self.setting = attrs["setting"]
-#         self.unit = attrs["unit"]
-#         self.context = attrs["context"]
-#         self.boot_val = attrs["boot_val"]
-#         self.enumvals = attrs["enumvals"]
-#         self.reset_val = attrs["reset_val"]
-#         self.pending_restart = attrs["pending_restart"]
 
-
-class ValueInt():
-    # If you pass anything else for int,
+class ValueMem():
+    # If you pass anything else for memory-related param,
     # Postgres will show that only the following
     # units are acceptable
     VALID_UNITS = {"B", "kB", "MB", "GB", "TB"}
@@ -180,16 +169,14 @@ class ValueInt():
         "TB": 40,
     }
 
-    def __init__(self, module, param_name, value, unit):
+    def __init__(self, module, param_name, value, default_unit):
         self.module = module
-        self.unit = unit
-        self.value, self.unit = self.__set(param_name, value)
-        # self.normalized = self.value << ValueInt.UNIT_TO_BYTES_BITWISE_SHIFT[unit]
-        self.normalized = self.value << ValueInt.UNIT_TO_BYTES_BITWISE_SHIFT[self.unit]
+        self.default_unit = default_unit
+        self.num_value, self.passed_unit = self.__set(param_name, value)
+        self.normalized = self.num_value << ValueMem.UNIT_TO_BYTES_BITWISE_SHIFT[self.passed_unit]
 
     def __set(self, param_name, value):
         return self.__validate(param_name, value)
-        # TODO: convert it to the default units here too
 
     def __validate(self, param_name, value):
         int_part = None
@@ -202,7 +189,7 @@ class ValueInt():
 
         # When the value is like 1024B
         elif len(value) > 1 and value[-1].isalpha():
-            int_part = self.__to_int(value[:-2])
+            int_part = self.__to_int(value[:-1])
             unit_part = value[-1]
 
         # When it doesn't contain a unit part
@@ -210,12 +197,12 @@ class ValueInt():
         # parameter in pg_settings
         else:
             int_part = self.__to_int(value)
-            unit_part = self.unit
+            unit_part = self.default_unit
 
-        if unit_part not in ValueInt.VALID_UNITS:
+        if unit_part not in ValueMem.VALID_UNITS:
             val_err_msg = ('invalid value for parameter "%s": "%s", '
                            'Valid units for this parameter '
-                           'are %s' % (param_name, value, ', '.join(ValueInt.VALID_UNITS)))
+                           'are %s' % (param_name, value, ', '.join(ValueMem.VALID_UNITS)))
             self.module.fail_json(msg=val_err_msg)
 
         return (int_part, unit_part)
@@ -228,20 +215,15 @@ class ValueInt():
             self.module.fail_json(msg=val_err_msg)
 
 
-# This dict maps vartypes to appropriate classes.
-# TODO: Add support for all vartypes (enum, string, bool, integer, real)
-# To get a list of supported vartypes for settings in PostgreSQL
-# run "SELECT DISTINCT vartype FROM pg_settings;"
-VARTYPE_CLASS_MAP = {
-    "integer": ValueInt,
-}
+# Run "SELECT DISTINCT unit FROM pg_settings;"
+# and extract memory-related ones
+MEM_PARAM_UNITS = {"B", "kB", "MB"}
 
 
-def build_value_class(module, param_name, value, unit, vartype):
-    # This function is a wrapper around
-    # the VARTYPE_CLASS_MAP dict for readability.
-    # The dict maps vartypes to appropriate classes.
-    return VARTYPE_CLASS_MAP[vartype](module, param_name, value, unit)
+def build_value_class(module, param_name, value, unit, vartype=None):
+    tmp = vartype  # Will probably get handy later
+    if unit in MEM_PARAM_UNITS:
+        return ValueMem(module, param_name, value, unit)
 
 
 class PgParam():
@@ -268,7 +250,9 @@ class PgParam():
         if self.desired_value.normalized != self.init_value.normalized:
             if not self.module.check_mode:
                 # TODO: Do the work here
-                pass
+                # TODO: the following query works on PG Ver >= 14
+                query = "ALTER SYSTEM SET %s = '%s'" % (self.name, value)
+                self.__exec_set_sql(query)
 
             return True
 
@@ -293,6 +277,13 @@ class PgParam():
             self.module.fail_json(msg=msg)
             self.cursor.close()
         return None
+
+    def __exec_set_sql(self, query):
+        try:
+            executed_queries.append(query)
+            self.cursor.execute(query)
+        except Exception as e:
+            self.module.fail_json(msg="Cannot set %s: %s" % (self.name, to_native(e)))
 
 
 # ===========================================
@@ -344,13 +335,14 @@ def main():
 
     module.exit_json(
         changed=changed,
+        executed_queries=executed_queries,
         # DEBUG below
         attrs=pg_param.init_attrs,
-        value_class_value=pg_param.init_value.value,
-        value_class_unit=pg_param.init_value.unit,
+        value_class_value=pg_param.init_value.num_value,
+        value_class_unit=pg_param.init_value.passed_unit,
         value_class_normalized=pg_param.init_value.normalized,
-        desir_class_value=pg_param.desired_value.value,
-        desir_class_unit=pg_param.desired_value.unit,
+        desir_class_value=pg_param.desired_value.num_value,
+        desir_class_unit=pg_param.desired_value.passed_unit,
         desir_class_normalized=pg_param.desired_value.normalized
     )
 
