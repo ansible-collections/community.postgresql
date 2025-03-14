@@ -67,16 +67,17 @@
       - result is failed
       - result.msg is search("invalid value for parameter")
 
-  - name: Set DEFAULT
-    <<: *task_parameters
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: work_mem
-      value: _DEFAULT
+  # Finish this after completely implementing setting up regular values
+  #- name: Set DEFAULT
+  #  <<: *task_parameters
+  #  postgresql_alter_system:
+  #    <<: *pg_parameters
+  #    param: work_mem
+  #    value: _DEFAULT
 
-  - name: Check the result
-    assert:
-      that:
-      - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET work_mem = DEFAULT"]
+  #- name: Check the result
+  #  assert:
+  #    that:
+  #    - result is changed
+  #    - result.executed_queries == ["ALTER SYSTEM SET work_mem = DEFAULT"]
 

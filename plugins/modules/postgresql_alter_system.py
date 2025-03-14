@@ -342,12 +342,16 @@ def main():
     # from postgresql.auto.conf by running
     # "ALTER SYSTEM SET param = DEFAULT;"
     # we run it and always report changed=true
+    # TODO Implement it after finishing
+    # setting up a regular value first
     if value == "_DEFAULT":
         changed = pg_param.set_to_default()
 
     # Whe we need to reset the value by running
     # "ALTER SYSTEM RESET param;".
     # TODO Read more about it
+    # TODO Implement it after finishing
+    # setting up a regular value first
     elif value == "_RESET":
         # TODO implement
         pass
