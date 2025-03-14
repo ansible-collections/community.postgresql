@@ -266,8 +266,9 @@ class PgParam():
         query = ("SELECT setting, unit, context, vartype, enumvals, "
                  "boot_val, reset_val, pending_restart "
                  "FROM pg_settings where name = %s")
+        executed_queries.append(query % self.name)
         res = self.__exec_sql(query, (self.name,))
-        # DEBUG
+        executed_queries.append(res[0])  # TODO remove this DEBUG
         return res[0]
 
     def __exec_sql(self, query, params=()):
