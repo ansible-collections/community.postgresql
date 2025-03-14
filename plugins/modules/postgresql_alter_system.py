@@ -288,6 +288,10 @@ class PgParam():
         except Exception as e:
             self.module.fail_json(msg="Cannot set %s: %s" % (self.name, to_native(e)))
 
+        try:
+            self.cursor.execute("SELECT pg_reload_conf()")
+        except Exception as e:
+            self.module.fail_json(msg="Cannot run 'SELECT pg_reload_conf()': %s" % to_native(e))
 
 # ===========================================
 # Module execution.
