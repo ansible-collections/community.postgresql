@@ -364,7 +364,10 @@ def main():
         changed = pg_param.set(value)
 
     # Fetch info again to get diff
-    latest_attrs = pg_param.get_attrs()
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)  # TODO remove this debug
+    cursor = db_connection.cursor(**pg_cursor_args)  # TODO remove this debug
+    pg_param_new = PgParam(module, cursor, param)
+    latest_attrs = pg_param_new.get_attrs()
 
     # TODO changed = pg_params.attr != latest_attrs or changed
 
