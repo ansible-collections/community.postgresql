@@ -363,13 +363,18 @@ def main():
     else:
         changed = pg_param.set(value)
 
-    # Fetch info again to get diff
-    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)  # TODO remove this debug
-    cursor = db_connection.cursor(**pg_cursor_args)  # TODO remove this debug
-    pg_param_new = PgParam(module, cursor, param)
-    latest_attrs = pg_param_new.get_attrs()
+    # Fetch info again to get diff.
+    # It doesn't see the changes w/o reconnect
+    cursor.close()
+    db_connection.close()
+    db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
+    cursor = db_connection.cursor(**pg_cursor_args)
+    # Instantiate another object to get the latest attrs
+    pg_param_after = PgParam(module, cursor, param)
 
-    # TODO changed = pg_params.attr != latest_attrs or changed
+    # Make sure if there any difference between
+    # the attrs in the diff, report changed
+    changed = pg_param.attrs != pg_param_after.attrs or changed
 
     # Disconnect
     cursor.close()
@@ -378,7 +383,7 @@ def main():
     # Populate diff
     diff = {
         "before": pg_param.attrs,
-        "after": latest_attrs,
+        "after": pg_param_after.attrs,
     }
 
     module.exit_json(
