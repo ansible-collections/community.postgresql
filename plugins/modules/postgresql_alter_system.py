@@ -226,11 +226,11 @@ class PgParam():
         self.module = module
         self.cursor = cursor
         self.name = name
-        self.init_attrs = self.__get_attrs()[0]
+        self.attrs = self.__get_attrs()[0]
         self.init_value = build_value_class(self.module, self.name,
-                                            self.init_attrs["setting"],
-                                            self.init_attrs["unit"],
-                                            self.init_attrs["vartype"])
+                                            self.attrs["setting"],
+                                            self.attrs["unit"],
+                                            self.attrs["vartype"])
         self.desired_value = None  # TODO remove this after debugging
 
     def set(self, value):
@@ -238,8 +238,8 @@ class PgParam():
         # TODO remove "self" from desired_value after debugging
         self.desired_value = build_value_class(self.module, self.name,
                                                value,
-                                               self.init_attrs["unit"],
-                                               self.init_attrs["vartype"])
+                                               self.attrs["unit"],
+                                               self.attrs["vartype"])
 
         if self.desired_value.normalized != self.init_value.normalized:
             if not self.module.check_mode:
@@ -257,6 +257,7 @@ class PgParam():
         # is alway removal of the line from postgresql.auto.conf
         # this will always run the command to ensure the removal
         # and report changed=true
+        # TODO finish this after completing setting up a regular value.
         query = "ALTER SYSTEM SET %s = DEFAULT" % self.name
         self.__exec_set_sql(query)
         return True
@@ -357,21 +358,30 @@ def main():
     else:
         changed = pg_param.set(value)
 
+    # Fetch info again to get diff
+    pg_param_latest = PgParam(module, cursor, param)
+
     # Disconnect
     cursor.close()
     db_connection.close()
 
+    # Populate diff
+    diff = {
+        "before": pg_param.attrs,
+        "after": pg_param_latest.attrs,
+    }
+
     module.exit_json(
         changed=changed,
         executed_queries=executed_queries,
+        diff=diff,
         # DEBUG below
-        attrs=pg_param.init_attrs,
         value_class_value=pg_param.init_value.num_value,
         value_class_unit=pg_param.init_value.passed_unit,
         value_class_normalized=pg_param.init_value.normalized,
         desir_class_value=pg_param.desired_value.num_value,
         desir_class_unit=pg_param.desired_value.passed_unit,
-        desir_class_normalized=pg_param.desired_value.normalized
+        desir_class_normalized=pg_param.desired_value.normalized,
     )
 
 
