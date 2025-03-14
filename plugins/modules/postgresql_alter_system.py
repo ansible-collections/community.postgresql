@@ -226,7 +226,7 @@ class PgParam():
         self.module = module
         self.cursor = cursor
         self.name = name
-        self.attrs = self.__get_attrs()[0]
+        self.attrs = self.get_attrs()
         self.init_value = build_value_class(self.module, self.name,
                                             self.attrs["setting"],
                                             self.attrs["unit"],
@@ -262,13 +262,13 @@ class PgParam():
         self.__exec_set_sql(query)
         return True
 
-    def __get_attrs(self):
+    def get_attrs(self):
         query = ("SELECT setting, unit, context, vartype, enumvals, "
                  "boot_val, reset_val, pending_restart "
                  "FROM pg_settings where name = %s")
         res = self.__exec_sql(query, (self.name,))
         # DEBUG
-        return res
+        return res[0]
 
     def __exec_sql(self, query, params=()):
         try:
@@ -290,7 +290,9 @@ class PgParam():
             self.module.fail_json(msg="Cannot set %s: %s" % (self.name, to_native(e)))
 
         try:
-            self.cursor.execute("SELECT pg_reload_conf()")
+            query = "SELECT pg_reload_conf()"
+            executed_queries.append(query)
+            self.cursor.execute(query)
         except Exception as e:
             self.module.fail_json(msg="Cannot run 'SELECT pg_reload_conf()': %s" % to_native(e))
 
@@ -330,8 +332,10 @@ def main():
 
     # TODO consider using DIFF to return before-after
 
+    # We assume nothing has changed by default
     changed = False
 
+    # Instanciate the object
     pg_param = PgParam(module, cursor, param)
 
     # When we need to remove the corresponding line
@@ -359,7 +363,9 @@ def main():
         changed = pg_param.set(value)
 
     # Fetch info again to get diff
-    pg_param_latest = PgParam(module, cursor, param)
+    latest_attrs = pg_param.get_attrs()
+
+    # TODO changed = pg_params.attr != latest_attrs or changed
 
     # Disconnect
     cursor.close()
@@ -368,7 +374,7 @@ def main():
     # Populate diff
     diff = {
         "before": pg_param.attrs,
-        "after": pg_param_latest.attrs,
+        "after": latest_attrs,
     }
 
     module.exit_json(
