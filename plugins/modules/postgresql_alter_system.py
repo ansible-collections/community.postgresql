@@ -28,10 +28,10 @@ options:
     - Parameter value to set.
     - Specify the value in appropriate units!
     - For memory-related parameters of type integer, it is C(kB), C(MB), C(GB), and C(TB).
-    - Use C(defalut) to remove a parameter string from postgresql.auto.conf
-      by running C(ALTER SYSTEM SET param = DEFAULT); always returns changed=true.
-    - Use C(reset) to restore the parameter to its initial state (boot_val)
-      by running C(ALTER SYSTEM RESET param); always returns changed=true.
+    - Use C(_DEFAULT) to remove a parameter string from postgresql.auto.conf
+      by running C(ALTER SYSTEM SET param = DEFAULT); always returns I(changed=true).
+    - Use C(_RESET) to restore the parameter to its initial state (boot_val)
+      by running C(ALTER SYSTEM RESET param); always returns I(changed=true).
     type: str
     required: true
 
@@ -97,13 +97,13 @@ EXAMPLES = r'''
 - name: Reset work_mem
   community.postgresql.postgresql_alter_system:
     param: work_mem
-    value: reset
+    value: _RESET
     pg_reload_conf: true
 
 - name: Set work_mem as DEFAULT
   community.postgresql.postgresql_alter_system:
     param: work_mem
-    value: default
+    value: _DEFAULT
 
 - name: Set TimeZone parameter (careful, case sensitive)
   community.postgresql.postgresql_alter_system:
@@ -217,6 +217,7 @@ class ValueMem():
 
 # Run "SELECT DISTINCT unit FROM pg_settings;"
 # and extract memory-related ones
+# TODO handle that 8kB-pages case later
 MEM_PARAM_UNITS = {"B", "kB", "MB"}
 
 
@@ -232,7 +233,6 @@ class PgParam():
         self.module = module
         self.cursor = cursor
         self.name = name
-        # self.init_value = Value(self.__get_attrs())
         self.init_attrs = self.__get_attrs()[0]
         self.init_value = build_value_class(self.module, self.name,
                                             self.init_attrs["setting"],
@@ -241,6 +241,7 @@ class PgParam():
         self.desired_value = None  # TODO remove this after debugging
 
     def set(self, value):
+        # TODO handle _RESET here
         # TODO remove "self" from desired_value after debugging
         self.desired_value = build_value_class(self.module, self.name,
                                                value,
@@ -257,6 +258,15 @@ class PgParam():
             return True
 
         return False
+
+    def set_to_default(self):
+        # Because the result of running "ALTER SYSTEM SET param = DEFAULT;"
+        # is alway removal of the line from postgresql.auto.conf
+        # this will always run the command to ensure the removal
+        # and report changed=true
+        query = "ALTER SYSTEM SET %s = DEFAULT" % self.name
+        self.__exec_set_sql(query)
+        return True
 
     def __get_attrs(self):
         query = ("SELECT setting, unit, context, vartype, enumvals, "
@@ -327,7 +337,26 @@ def main():
     changed = False
 
     pg_param = PgParam(module, cursor, param)
-    changed = pg_param.set(value)
+
+    # When we need to remove the corresponding line
+    # from postgresql.auto.conf by running
+    # "ALTER SYSTEM SET param = DEFAULT;"
+    # we run it and always report changed=true
+    if value == "_DEFAULT":
+        changed = pg_param.set_to_default()
+
+    # Whe we need to reset the value by running
+    # "ALTER SYSTEM RESET param;".
+    # TODO Read more about it
+    elif value == "_RESET":
+        # TODO implement
+        pass
+
+    # This is the default case when we need to run
+    # "ALTER SYSTEM SET param = 'value';",
+    # i.e., it's not the above cases
+    else:
+        changed = pg_param.set(value)
 
     # Disconnect
     cursor.close()
