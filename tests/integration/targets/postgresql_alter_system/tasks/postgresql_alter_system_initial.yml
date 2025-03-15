@@ -86,7 +86,7 @@
     postgresql_alter_system:
       <<: *pg_parameters
       param: block_size
-      value: 1M
+      value: 1MB
 
   - name: Check the result
     assert:

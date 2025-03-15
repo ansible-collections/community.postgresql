@@ -105,29 +105,57 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-pg_settings_entry:
-  description: Key-value pairs representing some columns and values for the parameter.
+diff:
+  description:
+  - A dictionary the C(before) and C(after) keys.
+  - Each key contains a dictionary of key-value pairs
+    representing some columns and values for the parameter
+    obtained from the pg_settings relation.
   returned: success
   type: dict
   sample: {
-    'name': 'work_mem',
-    'setting': 4096,
-    'unit': 'kB',
-    'context': 'user',
-    'vartype': 'integer',
-    'min_val': 64,
-    'max_val': 2147483647,
-    'boot_val': 4096,
-    'reset_val': 4096,
-    'pending_restart': false
+    'before': {
+        'name': 'work_mem',
+        'setting': 4096,
+        'unit': 'kB',
+        'context': 'user',
+        'vartype': 'integer',
+        'min_val': 64,
+        'max_val': 2147483647,
+        'boot_val': 4096,
+        'reset_val': 4096,
+        'pending_restart': false
+    },
+    'after': {
+        'name': 'work_mem',
+        'setting': 8192,
+        'unit': 'kB',
+        'context': 'user',
+        'vartype': 'integer',
+        'min_val': 64,
+        'max_val': 2147483647,
+        'boot_val': 4096,
+        'reset_val': 4096,
+        'pending_restart': false,
+    }
   }
+
 executed_queries:
   description:
-  - List of executed DML queries.
+  - List of executed queries except SELECTs.
   returned: success
   type: list
   elements: str
   sample: ["ALTER SYSTEM SET shared_preload_libraries = ''"]
+
+restart_required:
+  description:
+  - Indicates if restart of PostgreSQL is required or not.
+  - Can be also determined from
+    the diff["after"]["pending_restart"] return value.
+  returned: success
+  type: bool
+  sample: true
 '''
 
 from abc import ABC, abstractmethod
