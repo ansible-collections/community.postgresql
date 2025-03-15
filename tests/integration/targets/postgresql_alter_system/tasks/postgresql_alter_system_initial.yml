@@ -67,6 +67,33 @@
       - result is failed
       - result.msg is search("invalid value for parameter")
 
+  - name: Set param of postmaster context
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: huge_page_size
+      value: 2MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.restart_required == True
+
+  - name: Set param of internal context, must fail
+    <<: *task_parameters
+    ignore_errors: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: block_size
+      value: 1M
+
+  - name: Check the result
+    assert:
+      that:
+      - result is failed
+      - result.msg is search("cannot be changed")
+
   # Finish this after completely implementing setting up regular values
   #- name: Set DEFAULT
   #  <<: *task_parameters

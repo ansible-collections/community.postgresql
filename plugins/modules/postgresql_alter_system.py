@@ -234,6 +234,9 @@ def build_value_class(module, param_name, value, unit, vartype=None):
     tmp = vartype  # Will probably get handy later
     if unit in MEM_PARAM_UNITS:
         return ValueMem(module, param_name, value, unit)
+    else:
+        # TODO change it to a specific case
+        return ValueMem(module, param_name, value, unit)
 
 
 class PgParam():
@@ -306,15 +309,12 @@ class PgParam():
         except Exception as e:
             self.module.fail_json(msg="Cannot set %s: %s" % (self.name, to_native(e)))
 
-        # Makes sense to reload the configuration only
-        # if the context of the parameter is NOT postmaster
-        if self.attrs["context"] != "postmaster":
-            try:
-                query = "SELECT pg_reload_conf()"
-                executed_queries.append(query)
-                self.cursor.execute(query)
-            except Exception as e:
-                self.module.fail_json(msg="Cannot run 'SELECT pg_reload_conf()': %s" % to_native(e))
+        try:
+            query = "SELECT pg_reload_conf()"
+            executed_queries.append(query)
+            self.cursor.execute(query)
+        except Exception as e:
+            self.module.fail_json(msg="Cannot run 'SELECT pg_reload_conf()': %s" % to_native(e))
 
 
 def check_param_context(module, param_name, context):
@@ -426,6 +426,7 @@ def main():
         changed=changed,
         executed_queries=executed_queries,
         diff=diff,
+        restart_required=pg_param_after.attrs["pending_restart"],
         # DEBUG below
         value_class_value=pg_param.init_value.num_value,
         value_class_unit=pg_param.init_value.passed_unit,
