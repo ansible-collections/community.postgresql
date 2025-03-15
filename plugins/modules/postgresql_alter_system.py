@@ -130,6 +130,8 @@ executed_queries:
   sample: ["ALTER SYSTEM SET shared_preload_libraries = ''"]
 '''
 
+from abc import ABC, abstractmethod
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
@@ -145,7 +147,21 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 executed_queries = []
 
 
-class ValueMem():
+class Value(ABC):
+    # TODO write comprehensive dos
+    # TODO Write an algorithms of how to add new value type support
+    # This anstract class is a blueprint for "real" classes
+    # that represent values of certain types.
+    # This makes practical sense as we want the classes
+    # have same set of parameters to instanciate them
+    # in the same manner.
+
+    @abstractmethod
+    def __init__(self, module, param_name, value, default_unit):
+        pass
+
+
+class ValueMem(Value):
     # If you pass anything else for memory-related param,
     # Postgres will show that only the following
     # units are acceptable
