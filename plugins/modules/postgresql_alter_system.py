@@ -306,12 +306,27 @@ class PgParam():
         except Exception as e:
             self.module.fail_json(msg="Cannot set %s: %s" % (self.name, to_native(e)))
 
-        try:
-            query = "SELECT pg_reload_conf()"
-            executed_queries.append(query)
-            self.cursor.execute(query)
-        except Exception as e:
-            self.module.fail_json(msg="Cannot run 'SELECT pg_reload_conf()': %s" % to_native(e))
+        # Makes sense to reload the configuration only
+        # if the context of the parameter is NOT postmaster
+        if self.attrs["context"] != "postmaster":
+            try:
+                query = "SELECT pg_reload_conf()"
+                executed_queries.append(query)
+                self.cursor.execute(query)
+            except Exception as e:
+                self.module.fail_json(msg="Cannot run 'SELECT pg_reload_conf()': %s" % to_native(e))
+
+
+def check_param_context(module, param_name, context):
+    if context == "internal":
+        msg = ("%s cannot be changed (internal context). "
+               "See https://www.postgresql.org/docs/current/"
+               "runtime-config-preset.html" % param_name)
+        module.fail_json(msg=msg)
+
+    elif context == "postmaster":
+        module.warn("Restart of PostgreSQL is required for setting %s" % param_name)
+
 
 # ===========================================
 # Module execution.
@@ -354,6 +369,11 @@ def main():
 
     # Instanciate the object
     pg_param = PgParam(module, cursor, param)
+
+    # For some type of context it's impossible
+    # to change settings with ALTER SYSTEM and
+    # for some service restart is required
+    check_param_context(module, pg_param.name, pg_param.attrs["context"])
 
     # When we need to remove the corresponding line
     # from postgresql.auto.conf by running
