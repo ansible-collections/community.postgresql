@@ -32,6 +32,7 @@ options:
       by running C(ALTER SYSTEM SET param = DEFAULT); always returns I(changed=true).
     - Use C(_RESET) to restore the parameter to its initial state (boot_val)
       by running C(ALTER SYSTEM RESET param); always returns I(changed=true).
+    - For boolean parameters, pass the C("on") or C("off") string.
     type: str
     required: true
 
@@ -189,6 +190,23 @@ class Value(ABC):
         pass
 
 
+class ValueBool(Value):
+    VALID_UNITS = {'on', 'off'}
+
+    def __init__(self, module, param_name, value, default_unit):
+        self.module = module
+        self.default_unit = None  # TODO Evaluate later if you need it
+        self.__validate(param_name, value)
+        self.normalized = value
+
+    def __validate(self, param_name, value):
+        if value not in ValueBool.VALID_UNITS:
+            val_err_msg = ('invalid value for parameter "%s": "%s", '
+                           'Valid units for this parameter '
+                           'are %s' % (param_name, value, ', '.join(ValueBool.VALID_UNITS)))
+            self.module.fail_json(msg=val_err_msg)
+
+
 class ValueMem(Value):
     # If you pass anything else for memory-related param,
     # Postgres will show that only the following
@@ -208,7 +226,7 @@ class ValueMem(Value):
 
     def __init__(self, module, param_name, value, default_unit):
         self.module = module
-        self.default_unit = default_unit
+        self.default_unit = default_unit  # TODO evaluate later if you need it
         self.num_value, self.passed_unit = self.__set(param_name, value)
         self.normalized = self.num_value << ValueMem.UNIT_TO_BYTES_BITWISE_SHIFT[self.passed_unit]
 
@@ -258,13 +276,16 @@ class ValueMem(Value):
 MEM_PARAM_UNITS = {"B", "kB", "MB"}
 
 
-def build_value_class(module, param_name, value, unit, vartype=None):
+def build_value_class(module, param_name, value, unit, vartype):
     tmp = vartype  # Will probably get handy later
-    if unit in MEM_PARAM_UNITS:
-        return ValueMem(module, param_name, value, unit)
-    else:
-        # TODO change it to a specific case
-        return ValueMem(module, param_name, value, unit)
+    if vartype == 'integer':
+        if unit in MEM_PARAM_UNITS:
+            return ValueMem(module, param_name, value, unit)
+        else:
+            # TODO change it to a specific case
+            return ValueMem(module, param_name, value, unit)
+    elif vartype == 'bool':
+        return ValueBool(module, param_name, value, unit)
 
 
 class PgParam():
