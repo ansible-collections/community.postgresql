@@ -273,7 +273,13 @@ class PgParam():
         self.module = module
         self.cursor = cursor
         self.name = name
+
         self.attrs = self.get_attrs()
+        # For some type of context it's impossible
+        # to change settings with ALTER SYSTEM and
+        # for some service restart is required
+        self.__check_param_context(self.attrs["context"])
+
         self.init_value = build_value_class(self.module, self.name,
                                             self.attrs["setting"],
                                             self.attrs["unit"],
@@ -318,6 +324,16 @@ class PgParam():
         executed_queries.append(res[0])  # TODO remove this DEBUG
         return res[0]
 
+    def __check_param_context(self, context):
+        if context == "internal":
+            msg = ("%s cannot be changed (internal context). "
+                   "See https://www.postgresql.org/docs/current/"
+                   "runtime-config-preset.html" % self.name)
+            self.module.fail_json(msg=msg)
+
+        elif context == "postmaster":
+            self.module.warn("Restart of PostgreSQL is required for setting %s" % self.name)
+
     def __exec_sql(self, query, params=()):
         try:
             self.cursor.execute(query, params)
@@ -345,21 +361,9 @@ class PgParam():
             self.module.fail_json(msg="Cannot run 'SELECT pg_reload_conf()': %s" % to_native(e))
 
 
-def check_param_context(module, param_name, context):
-    if context == "internal":
-        msg = ("%s cannot be changed (internal context). "
-               "See https://www.postgresql.org/docs/current/"
-               "runtime-config-preset.html" % param_name)
-        module.fail_json(msg=msg)
-
-    elif context == "postmaster":
-        module.warn("Restart of PostgreSQL is required for setting %s" % param_name)
-
-
 # ===========================================
 # Module execution.
 #
-
 
 def main():
     argument_spec = postgres_common_argument_spec()
@@ -397,11 +401,6 @@ def main():
 
     # Instanciate the object
     pg_param = PgParam(module, cursor, param)
-
-    # For some type of context it's impossible
-    # to change settings with ALTER SYSTEM and
-    # for some service restart is required
-    check_param_context(module, pg_param.name, pg_param.attrs["context"])
 
     # When we need to remove the corresponding line
     # from postgresql.auto.conf by running
