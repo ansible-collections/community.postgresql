@@ -106,20 +106,6 @@
       that:
       - result is changed
 
-  - name: Set a value with invalid unit
-    <<: *task_parameters
-    ignore_errors: true
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: autovacuum
-      value: FALSE
-
-  - name: Check the result
-    assert:
-      that:
-      - result is failed
-      - result.msg is search("invalid value for parameter")
-
   # Finish this after completely implementing setting up regular values
   #- name: Set DEFAULT
   #  <<: *task_parameters

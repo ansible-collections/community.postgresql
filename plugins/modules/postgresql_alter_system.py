@@ -191,20 +191,22 @@ class Value(ABC):
 
 
 class ValueBool(Value):
-    VALID_UNITS = {'on', 'off'}
 
     def __init__(self, module, param_name, value, default_unit):
         self.module = module
         self.default_unit = None  # TODO Evaluate later if you need it
-        self.__validate(param_name, value)
-        self.normalized = value
+        self.normalized = self.__normalize(value)
 
-    def __validate(self, param_name, value):
-        if value not in ValueBool.VALID_UNITS:
-            val_err_msg = ('invalid value for parameter "%s": "%s", '
-                           'Valid units for this parameter '
-                           'are %s' % (param_name, value, ', '.join(ValueBool.VALID_UNITS)))
-            self.module.fail_json(msg=val_err_msg)
+    def __normalize(self, value):
+        # No idea why Ansible converts on/off passed as string
+        # to "True" and "False". However, there are represented
+        # as "on" and "off" in pg_settings.
+        if value == "True":
+            return "on"
+        elif value == "False":
+            return "off"
+        else:
+            return value
 
 
 class ValueMem(Value):
@@ -476,11 +478,11 @@ def main():
         diff=diff,
         restart_required=pg_param_after.attrs["pending_restart"],
         # DEBUG below
-        value_class_value=pg_param.init_value.num_value,
-        value_class_unit=pg_param.init_value.passed_unit,
+        # value_class_value=pg_param.init_value.num_value,
+        # value_class_unit=pg_param.init_value.passed_unit,
         value_class_normalized=pg_param.init_value.normalized,
-        desir_class_value=pg_param.desired_value.num_value,
-        desir_class_unit=pg_param.desired_value.passed_unit,
+        # desir_class_value=pg_param.desired_value.num_value,
+        # desir_class_unit=pg_param.desired_value.passed_unit,
         desir_class_normalized=pg_param.desired_value.normalized,
     )
 
