@@ -219,6 +219,17 @@ class ValueInt(Value):
         self.normalized = value
 
 
+class ValueString(Value):
+    # SELECT * FROM pg_settings WHERE vartype = 'string'
+
+    def __init__(self, module, param_name, value, default_unit):
+        self.module = module
+        self.default_unit = None  # TODO Evaluate later if you need it
+        # It typically doesn't need normalization,
+        # so accept it as is
+        self.normalized = value
+
+
 class ValueReal(Value):
     # To handle values of the "real" vartype:
     # SELECT * FROM pg_settings WHERE vartype = 'real'
@@ -319,6 +330,9 @@ def build_value_class(module, param_name, value, unit, vartype):
 
     elif vartype == 'real':
         return ValueReal(module, param_name, value, unit)
+
+    elif vartype == 'string':
+        return ValueString(module, param_name, value, unit)
 
 
 class PgParam():

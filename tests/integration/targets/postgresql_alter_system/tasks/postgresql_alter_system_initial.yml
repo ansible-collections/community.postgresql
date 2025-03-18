@@ -154,6 +154,30 @@
       that:
       - result is not changed
 
+  - name: Set value of type string
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: Europe/Berlin
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set value of type real again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: Europe/Berlin
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
   # Finish this after completely implementing setting up regular values
   #- name: Set DEFAULT
   #  <<: *task_parameters
