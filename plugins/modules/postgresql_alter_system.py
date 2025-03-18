@@ -210,11 +210,30 @@ class ValueBool(Value):
 
 
 class ValueInt(Value):
+    # To handle values of the "integer" type with no unit
+    # SELECT * FROM pg_settings WHERE vartype = 'integer' and unit IS NULL
 
     def __init__(self, module, param_name, value, default_unit):
         self.module = module
         self.default_unit = None  # TODO Evaluate later if you need it
         self.normalized = value
+
+
+class ValueReal(Value):
+    # To handle values of the "real" vartype:
+    # SELECT * FROM pg_settings WHERE vartype = 'real'
+
+    def __init__(self, module, param_name, value, default_unit):
+        self.module = module
+        self.default_unit = None  # TODO Evaluate later if you need it
+        self.normalized = self.__normalize(value)
+
+    def __normalize(self, value):
+        # Drop the unit part as there's only "ms" or nothing
+        if len(value) > 2 and value[-2:].isalpha():
+            return value[:-2]
+
+        return value
 
 
 class ValueMem(Value):
@@ -297,6 +316,9 @@ def build_value_class(module, param_name, value, unit, vartype):
 
     elif vartype == 'bool':
         return ValueBool(module, param_name, value, unit)
+
+    elif vartype == 'real':
+        return ValueReal(module, param_name, value, unit)
 
 
 class PgParam():
