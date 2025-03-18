@@ -106,6 +106,18 @@
       that:
       - result is changed
 
+  - name: Set value with no unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: autovacuum_analyze_threshold
+      value: 60
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
   # Finish this after completely implementing setting up regular values
   #- name: Set DEFAULT
   #  <<: *task_parameters

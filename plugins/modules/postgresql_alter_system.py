@@ -209,6 +209,14 @@ class ValueBool(Value):
             return value
 
 
+class ValueInt(Value):
+
+    def __init__(self, module, param_name, value, default_unit):
+        self.module = module
+        self.default_unit = None  # TODO Evaluate later if you need it
+        self.normalized = value
+
+
 class ValueMem(Value):
     # If you pass anything else for memory-related param,
     # Postgres will show that only the following
@@ -285,7 +293,8 @@ def build_value_class(module, param_name, value, unit, vartype):
             return ValueMem(module, param_name, value, unit)
         else:
             # TODO change it to a specific case
-            return ValueMem(module, param_name, value, unit)
+            return ValueInt(module, param_name, value, unit)
+
     elif vartype == 'bool':
         return ValueBool(module, param_name, value, unit)
 
