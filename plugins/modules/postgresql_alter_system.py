@@ -25,13 +25,12 @@ options:
 
   value:
     description:
+    # Use appropriate format macros.
     - Parameter value to set.
     - Specify the value in appropriate units!
     - For memory-related parameters of type integer, it is C(kB), C(MB), C(GB), and C(TB).
-    - Use C(_DEFAULT) to remove a parameter string from postgresql.auto.conf
-      by running C(ALTER SYSTEM SET param = DEFAULT); always returns I(changed=true).
-    - Use C(_RESET) to restore the parameter to its initial state (boot_val)
-      by running C(ALTER SYSTEM RESET param); always returns I(changed=true).
+    - Use C(_RESET) to run the C(ALTER SYSTEM RESET param) which will remove
+      a corresponding entry from C(postgresql.auto.conf). Always returns C(changed=True).
     - For boolean parameters, pass the C("on") or C("off") string.
     type: str
     required: true
@@ -93,11 +92,6 @@ EXAMPLES = r'''
   community.postgresql.postgresql_alter_system:
     param: work_mem
     value: _RESET
-
-- name: Set work_mem as DEFAULT
-  community.postgresql.postgresql_alter_system:
-    param: work_mem
-    value: _DEFAULT
 
 - name: Set TimeZone parameter (careful, case sensitive)
   community.postgresql.postgresql_alter_system:
@@ -230,6 +224,17 @@ class ValueString(Value):
         self.normalized = value
 
 
+class ValueEnum(Value):
+    # SELECT * FROM pg_settings WHERE vartype = 'enum'
+
+    def __init__(self, module, param_name, value, default_unit):
+        self.module = module
+        self.default_unit = None  # TODO Evaluate later if you need it
+        # It typically doesn't need normalization,
+        # so accept it as is
+        self.normalized = value
+
+
 class ValueReal(Value):
     # To handle values of the "real" vartype:
     # SELECT * FROM pg_settings WHERE vartype = 'real'
@@ -334,6 +339,9 @@ def build_value_class(module, param_name, value, unit, vartype):
     elif vartype == 'string':
         return ValueString(module, param_name, value, unit)
 
+    elif vartype == 'enum':
+        return ValueEnum(module, param_name, value, unit)
+
 
 class PgParam():
 
@@ -373,13 +381,18 @@ class PgParam():
 
         return False
 
-    def set_to_default(self):
-        # Because the result of running "ALTER SYSTEM SET param = DEFAULT;"
-        # is alway removal of the line from postgresql.auto.conf
+    def reset(self):
+        # As the value is "_RESET", i.e. a string, and
+        # the module always return changed=true, we just instanciate
+        # the desired value as if it would be a value of string type
+        self.desired_value = ValueString(self.module, self.name,
+                                         "_RESET",
+                                         self.attrs["unit"])
+        # Because the result of running "ALTER SYSTEM RESET param;"
+        # is alway a removal of the line from postgresql.auto.conf
         # this will always run the command to ensure the removal
         # and report changed=true
-        # TODO finish this after completing setting up a regular value.
-        query = "ALTER SYSTEM SET %s = DEFAULT" % self.name
+        query = "ALTER SYSTEM RESET %s" % self.name
         self.__exec_set_sql(query)
         return True
 
@@ -470,23 +483,14 @@ def main():
     # Instanciate the object
     pg_param = PgParam(module, cursor, param)
 
-    # When we need to remove the corresponding line
-    # from postgresql.auto.conf by running
-    # "ALTER SYSTEM SET param = DEFAULT;"
-    # we run it and always report changed=true
-    # TODO Implement it after finishing
-    # setting up a regular value first
-    if value == "_DEFAULT":
-        changed = pg_param.set_to_default()
-
     # Whe we need to reset the value by running
     # "ALTER SYSTEM RESET param;".
     # TODO Read more about it
     # TODO Implement it after finishing
     # setting up a regular value first
-    elif value == "_RESET":
+    if value == "_RESET":
         # TODO implement
-        pass
+        changed = pg_param.reset()
 
     # This is the default case when we need to run
     # "ALTER SYSTEM SET param = 'value';",

@@ -178,6 +178,18 @@
       that:
       - result is not changed
 
+  - name: Reset a parameter
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: _RESET
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
   # Finish this after completely implementing setting up regular values
   #- name: Set DEFAULT
   #  <<: *task_parameters
