@@ -232,7 +232,20 @@ class ValueEnum(Value):
         self.default_unit = None  # TODO Evaluate later if you need it
         # It typically doesn't need normalization,
         # so accept it as is
-        self.normalized = value
+        self.normalized = self.__normalize(value)
+
+    def __normalize(self, value):
+        # TODO move this to a function that you'll share between
+        # this class and ValueBool
+        # No idea why Ansible converts on/off passed as string
+        # to "True" and "False". However, there are represented
+        # as "on" and "off" in pg_settings.
+        if value == "True":
+            return "on"
+        elif value == "False":
+            return "off"
+        else:
+            return value
 
 
 class ValueReal(Value):
