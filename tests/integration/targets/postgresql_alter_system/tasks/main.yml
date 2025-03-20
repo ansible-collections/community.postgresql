@@ -5,13 +5,26 @@
 
 # Initial CI tests of postgresql_alter_system module
 
+# Check if this version limitation is still relevant
 - name: Run on PostgreSQL 9.6 or higher
   block:
 
-  - name: Initial tests, should be split
-    include_tasks: postgresql_alter_system_initial.yml
-
   - name: Test resetting feature
     include_tasks: test_resetting.yml
+
+  - name: Test params of integer type
+    include_tasks: test_integers.yml
+
+  - name: Test params of enum type
+    include_tasks: test_enums.yml
+
+  - name: Test params of type real
+    include_tasks: test_reals.yml
+
+  - name: Test params of string type
+    include_tasks: test_strings.yml
+
+  - name: Test params of boolean type
+    include_tasks: test_bools.yml
 
   when: postgres_version_resp.stdout is version('9.6', '>=')

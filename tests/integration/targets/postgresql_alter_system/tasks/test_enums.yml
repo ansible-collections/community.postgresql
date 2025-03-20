@@ -1,0 +1,53 @@
+# Test code for the postgresql_set module
+# Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  # TODO Cover check mode
+  # TODO Check what it returns extensively
+  # TODO Cover a few params
+
+  - name: Set value of type enum
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: recovery_prefetch
+      value: off
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set value of type enum again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: recovery_prefetch
+      value: off
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
+  - name: Set the original value
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: recovery_prefetch
+      value: try
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed

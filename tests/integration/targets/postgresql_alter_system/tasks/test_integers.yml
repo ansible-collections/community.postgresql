@@ -12,6 +12,9 @@
       login_db: postgres
 
   block:
+  # TODO Cover check mode
+  # TODO Check what it returns extensively
+  # TODO Cover a few params
   - name: Set value same as default (4096kB) but in a different unit
     <<: *task_parameters
     postgresql_alter_system:
@@ -89,18 +92,6 @@
       - result is failed
       - result.msg is search("cannot be changed")
 
-  - name: Set a bool param
-    <<: *task_parameters
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: autovacuum
-      value: off
-
-  - name: Check the result
-    assert:
-      that:
-      - result is changed
-
   - name: Set value with no unit
     <<: *task_parameters
     postgresql_alter_system:
@@ -119,54 +110,6 @@
       <<: *pg_parameters
       param: autovacuum_analyze_threshold
       value: 60
-
-  - name: Check the result
-    assert:
-      that:
-      - result is not changed
-
-  - name: Set value of type real
-    <<: *task_parameters
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: autovacuum_analyze_scale_factor
-      value: 1
-
-  - name: Check the result
-    assert:
-      that:
-      - result is changed
-
-  - name: Set value of type real again
-    <<: *task_parameters
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: autovacuum_analyze_scale_factor
-      value: 1
-
-  - name: Check the result
-    assert:
-      that:
-      - result is not changed
-
-  - name: Set value of type string
-    <<: *task_parameters
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: log_timezone
-      value: Europe/Berlin
-
-  - name: Check the result
-    assert:
-      that:
-      - result is changed
-
-  - name: Set value of type real again
-    <<: *task_parameters
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: log_timezone
-      value: Europe/Berlin
 
   - name: Check the result
     assert:
