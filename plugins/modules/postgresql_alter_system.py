@@ -170,6 +170,17 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 executed_queries = []
 
 
+def check_problematic_params(module, param, value):
+    # Due to a bug in PostgreSQL
+    if param == 'shared_preload_libraries' and value == '':
+        msg = ("Due to a PostgreSQL bug in resetting shared_preload_libraries "
+               "with ALTER SYSTEM SET, setting it as an empty string "
+               "is not supported by the module to avoid crashes. "
+               "Use `value: _RESET` instead. "
+               "If you think the bug has been fixed, please let us know.")
+        module.fail_json(msg=msg)
+
+
 class Value(ABC):
     # TODO write comprehensive dos
     # TODO Write an algorithms of how to add new value type support
@@ -477,6 +488,11 @@ def main():
     value = module.params['value']
     session_role = module.params['session_role']
     trust_input = module.params['trust_input']
+
+    # There's at least one param that doesn't
+    # work well with ALTER SYSTEM SET.
+    # Add more to this function if you see any
+    check_problematic_params(module, param, value)
 
     if not trust_input:
         # Check input for potentially dangerous elements:

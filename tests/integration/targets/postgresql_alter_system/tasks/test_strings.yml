@@ -16,6 +16,20 @@
   # TODO Check what it returns extensively
   # TODO Cover a few params
 
+  - name: shared_preload_libraries with this value must fail
+    <<: *task_parameters
+    ignore_errors: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: shared_preload_libraries
+      value: ''
+
+  - name: Check the result
+    assert:
+      that:
+      - result is failed
+      - result.msg is search("is not supported by the module to avoid crashe")
+
   - name: Set value of type string
     <<: *task_parameters
     postgresql_alter_system:
