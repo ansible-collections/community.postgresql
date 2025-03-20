@@ -4,8 +4,14 @@
 ####################################################################
 
 # Initial CI tests of postgresql_alter_system module
-- include_tasks: postgresql_alter_system_initial.yml
-  when: postgres_version_resp.stdout is version('9.6', '>=')
 
-# - include_tasks: options_coverage.yml
-#   when: postgres_version_resp.stdout is version('9.6', '>=')
+- name: Run on PostgreSQL 9.6 or higher
+  block:
+
+  - name: Initial tests, should be split
+    include_tasks: postgresql_alter_system_initial.yml
+
+  - name: Test resetting feature
+    include_tasks: test_resetting.yml
+
+  when: postgres_version_resp.stdout is version('9.6', '>=')

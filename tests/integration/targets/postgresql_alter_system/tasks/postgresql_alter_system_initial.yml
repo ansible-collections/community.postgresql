@@ -1,11 +1,6 @@
 # Test code for the postgresql_set module
-# Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-#
-# Notice: assertions are different for Ubuntu 16.04 and FreeBSD because they don't work
-# correctly for these tests. There are some stranges exactly in Shippable CI.
-# However I checked it manually for all points (including Ubuntu 16.05 and FreeBSD)
-# and it worked as expected.
 
 - vars:
     task_parameters: &task_parameters
@@ -177,30 +172,3 @@
     assert:
       that:
       - result is not changed
-
-  - name: Reset a parameter
-    <<: *task_parameters
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: log_timezone
-      value: _RESET
-
-  - name: Check the result
-    assert:
-      that:
-      - result is changed
-
-  # Finish this after completely implementing setting up regular values
-  #- name: Set DEFAULT
-  #  <<: *task_parameters
-  #  postgresql_alter_system:
-  #    <<: *pg_parameters
-  #    param: work_mem
-  #    value: _DEFAULT
-
-  #- name: Check the result
-  #  assert:
-  #    that:
-  #    - result is changed
-  #    - result.executed_queries == ["ALTER SYSTEM SET work_mem = DEFAULT"]
-
