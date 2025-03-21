@@ -250,20 +250,14 @@ class Value(ABC):
 class ValueBool(Value):
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
+        # We do not use all the parameters in every class
+        # like default_unit, etc., but we need them to instanciate
+        # classes in a standard manner
         self.module = module
-        self.default_unit = None  # TODO Evaluate later if you need it
         self.normalized = self.__normalize(value)
 
     def __normalize(self, value):
-        # No idea why Ansible converts on/off passed as string
-        # to "True" and "False". However, there are represented
-        # as "on" and "off" in pg_settings.
-        if value == "True":
-            return "on"
-        elif value == "False":
-            return "off"
-        else:
-            return value
+        return normalize_bool_val(value)
 
 
 class ValueInt(Value):
@@ -271,8 +265,10 @@ class ValueInt(Value):
     # SELECT * FROM pg_settings WHERE vartype = 'integer' and unit IS NULL
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
+        # We do not use all the parameters in every class
+        # like default_unit, etc., but we need them to instanciate
+        # classes in a standard manner
         self.module = module
-        self.default_unit = None  # TODO Evaluate later if you need it
         self.normalized = value
 
 
@@ -280,14 +276,17 @@ class ValueString(Value):
     # SELECT * FROM pg_settings WHERE vartype = 'string'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver):
+        # We do not use all the parameters in every class
+        # like default_unit, etc., but we need them to instanciate
+        # classes in a standard manner
         self.module = module
-        self.default_unit = None  # TODO Evaluate later if you need it
         # It typically doesn't need normalization,
         # so accept it as is
         self.normalized = self.__normalize(pg_ver, param_name, value)
 
     def __normalize(self, pg_ver, param_name, value):
-        # Check parameter is GUC_LIST_QUOTE (done once as depend only on server version)
+        # Check parameter is GUC_LIST_QUOTE (done once as depend only on server version).
+        # These functions were copied here from the postgresql_set module
         is_guc_list_quote = param_is_guc_list_quote(pg_ver, param_name)
         if is_guc_list_quote:
             return param_guc_list_unquote(value)
@@ -299,24 +298,28 @@ class ValueEnum(Value):
     # SELECT * FROM pg_settings WHERE vartype = 'enum'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
+        # We do not use all the parameters in every class
+        # like default_unit, etc., but we need them to instanciate
+        # classes in a standard manner
         self.module = module
-        self.default_unit = None  # TODO Evaluate later if you need it
         # It typically doesn't need normalization,
         # so accept it as is
         self.normalized = self.__normalize(value)
 
     def __normalize(self, value):
-        # TODO move this to a function that you'll share between
-        # this class and ValueBool
-        # No idea why Ansible converts on/off passed as string
-        # to "True" and "False". However, there are represented
-        # as "on" and "off" in pg_settings.
-        if value == "True":
-            return "on"
-        elif value == "False":
-            return "off"
-        else:
-            return value
+        return normalize_bool_val(value)
+
+
+def normalize_bool_val(value):
+    # No idea why Ansible converts on/off passed as string
+    # to "True" and "False". However, there are represented
+    # as "on" and "off" in pg_settings.
+    if value == "True":
+        return "on"
+    elif value == "False":
+        return "off"
+    else:
+        return value
 
 
 class ValueReal(Value):
@@ -324,8 +327,10 @@ class ValueReal(Value):
     # SELECT * FROM pg_settings WHERE vartype = 'real'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
+        # We do not use all the parameters in every class
+        # like default_unit, etc., but we need them to instanciate
+        # classes in a standard manner
         self.module = module
-        self.default_unit = None  # TODO Evaluate later if you need it
         self.normalized = self.__normalize(value)
 
     def __normalize(self, value):
@@ -355,7 +360,7 @@ class ValueMem(Value):
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         self.module = module
-        self.default_unit = default_unit  # TODO evaluate later if you need it
+        self.default_unit = default_unit
         self.num_value, self.passed_unit = self.__set(param_name, value)
         self.normalized = self.num_value << ValueMem.UNIT_TO_BYTES_BITWISE_SHIFT[self.passed_unit]
 
@@ -406,12 +411,11 @@ MEM_PARAM_UNITS = {"B", "kB", "MB"}
 
 
 def build_value_class(module, param_name, value, unit, vartype, pg_ver):
-    tmp = vartype  # Will probably get handy later
+    # Choose a proper Value class based on vartype and return
     if vartype == 'integer':
         if unit in MEM_PARAM_UNITS:
             return ValueMem(module, param_name, value, unit)
         else:
-            # TODO change it to a specific case
             return ValueInt(module, param_name, value, unit)
 
     elif vartype == 'bool':
@@ -446,11 +450,12 @@ class PgParam():
                                             self.attrs["unit"],
                                             self.attrs["vartype"],
                                             self.pg_ver)
-        self.desired_value = None  # TODO remove this after debugging
+        # Exposing this field can help while debugging.
+        # You can put object-of-this-class.desired_value.ATTR
+        # in the module.exit_json() method to see what's there
+        self.desired_value = None
 
     def set(self, value):
-        # TODO handle _RESET here
-        # TODO remove "self" from desired_value after debugging
         self.desired_value = build_value_class(self.module, self.name,
                                                value,
                                                self.attrs["unit"],
@@ -487,7 +492,9 @@ class PgParam():
                  "FROM pg_settings where name = %s")
         executed_queries.append(query % self.name)
         res = self.__exec_sql(query, (self.name,))
-        executed_queries.append(res[0])  # TODO remove this DEBUG
+        # You can uncomment the line below while debugging
+        # to see what DB actually returns for the parameter
+        # executed_queries.append(res[0])
         return res[0]
 
     def __construct_alter_system_query(self, value):
@@ -608,11 +615,8 @@ def main():
 
     # Whe we need to reset the value by running
     # "ALTER SYSTEM RESET param;".
-    # TODO Read more about it
-    # TODO Implement it after finishing
     # setting up a regular value first
     if value == "_RESET":
-        # TODO implement
         changed = pg_param.reset()
 
     # This is the default case when we need to run
