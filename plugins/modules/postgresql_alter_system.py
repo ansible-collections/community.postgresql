@@ -163,11 +163,63 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     connect_to_db,
     ensure_required_libs,
     get_conn_params,
+    get_server_version,
     pg_cursor_args,
     postgres_common_argument_spec,
 )
 
 executed_queries = []
+
+# As of today, PostgreSQL 13 is the oldest
+# officially supported version. Let's start from here
+PG_SUPPORTED_VER = 130000
+
+# GUC_LIST_QUOTE parameters list for each version where they changed (from PG_REQ_VER).
+# It is a tuple of tuples as we need to iterate it in order.
+# TODO it was copied here from postgresql_set. After merge, it should be
+# moved to a lib and shared between the modules
+PARAMETERS_GUC_LIST_QUOTE = (
+    (140000, (
+        'local_preload_libraries',
+        'search_path',
+        'session_preload_libraries',
+        'shared_preload_libraries',
+        'temp_tablespaces',
+        'unix_socket_directories'
+    )),
+    (90400, (
+        'local_preload_libraries',
+        'search_path',
+        'session_preload_libraries',
+        'shared_preload_libraries',
+        'temp_tablespaces'
+    )),
+)
+
+
+# TODO it was copied here from postgresql_set. After merge, it should be
+# moved to a lib and shared between the modules
+def param_is_guc_list_quote(server_version, name):
+    for guc_list_quote_ver, guc_list_quote_params in PARAMETERS_GUC_LIST_QUOTE:
+        if server_version >= guc_list_quote_ver:
+            return name in guc_list_quote_params
+    return False
+
+
+# TODO it was copied here from postgresql_set. After merge, it should be
+# moved to a lib and shared between the modules
+def param_guc_list_unquote(value):
+    # Unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
+    # Assume the parameter is GUC_LIST_QUOTE (check in param_is_guc_list_quote function)
+    return ', '.join([v.strip('" ') for v in value.split(',')])
+
+
+def check_pg_version(module, pg_ver):
+    if pg_ver < PG_SUPPORTED_VER:
+        msg = ("PostgreSQL version %s is supported, but %s is used. "
+               "Before filing a bug report, please run your task "
+               "on a supported version of PostgreSQL.")
+        module.warn(msg)
 
 
 def check_problematic_params(module, param, value):
@@ -191,13 +243,13 @@ class Value(ABC):
     # in the same manner.
 
     @abstractmethod
-    def __init__(self, module, param_name, value, default_unit):
+    def __init__(self, module, param_name, value, default_unit, pg_ver):
         pass
 
 
 class ValueBool(Value):
 
-    def __init__(self, module, param_name, value, default_unit):
+    def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         self.module = module
         self.default_unit = None  # TODO Evaluate later if you need it
         self.normalized = self.__normalize(value)
@@ -218,7 +270,7 @@ class ValueInt(Value):
     # To handle values of the "integer" type with no unit
     # SELECT * FROM pg_settings WHERE vartype = 'integer' and unit IS NULL
 
-    def __init__(self, module, param_name, value, default_unit):
+    def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         self.module = module
         self.default_unit = None  # TODO Evaluate later if you need it
         self.normalized = value
@@ -227,18 +279,26 @@ class ValueInt(Value):
 class ValueString(Value):
     # SELECT * FROM pg_settings WHERE vartype = 'string'
 
-    def __init__(self, module, param_name, value, default_unit):
+    def __init__(self, module, param_name, value, default_unit, pg_ver):
         self.module = module
         self.default_unit = None  # TODO Evaluate later if you need it
         # It typically doesn't need normalization,
         # so accept it as is
-        self.normalized = value
+        self.normalized = self.__normalize(pg_ver, param_name, value)
+
+    def __normalize(self, pg_ver, param_name, value):
+        # Check parameter is GUC_LIST_QUOTE (done once as depend only on server version)
+        is_guc_list_quote = param_is_guc_list_quote(pg_ver, param_name)
+        if is_guc_list_quote:
+            return param_guc_list_unquote(value)
+
+        return value
 
 
 class ValueEnum(Value):
     # SELECT * FROM pg_settings WHERE vartype = 'enum'
 
-    def __init__(self, module, param_name, value, default_unit):
+    def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         self.module = module
         self.default_unit = None  # TODO Evaluate later if you need it
         # It typically doesn't need normalization,
@@ -263,7 +323,7 @@ class ValueReal(Value):
     # To handle values of the "real" vartype:
     # SELECT * FROM pg_settings WHERE vartype = 'real'
 
-    def __init__(self, module, param_name, value, default_unit):
+    def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         self.module = module
         self.default_unit = None  # TODO Evaluate later if you need it
         self.normalized = self.__normalize(value)
@@ -293,7 +353,7 @@ class ValueMem(Value):
         "TB": 40,
     }
 
-    def __init__(self, module, param_name, value, default_unit):
+    def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         self.module = module
         self.default_unit = default_unit  # TODO evaluate later if you need it
         self.num_value, self.passed_unit = self.__set(param_name, value)
@@ -345,7 +405,7 @@ class ValueMem(Value):
 MEM_PARAM_UNITS = {"B", "kB", "MB"}
 
 
-def build_value_class(module, param_name, value, unit, vartype):
+def build_value_class(module, param_name, value, unit, vartype, pg_ver):
     tmp = vartype  # Will probably get handy later
     if vartype == 'integer':
         if unit in MEM_PARAM_UNITS:
@@ -361,7 +421,7 @@ def build_value_class(module, param_name, value, unit, vartype):
         return ValueReal(module, param_name, value, unit)
 
     elif vartype == 'string':
-        return ValueString(module, param_name, value, unit)
+        return ValueString(module, param_name, value, unit, pg_ver)
 
     elif vartype == 'enum':
         return ValueEnum(module, param_name, value, unit)
@@ -369,10 +429,11 @@ def build_value_class(module, param_name, value, unit, vartype):
 
 class PgParam():
 
-    def __init__(self, module, cursor, name):
+    def __init__(self, module, cursor, name, pg_ver):
         self.module = module
         self.cursor = cursor
         self.name = name
+        self.pg_ver = pg_ver
 
         self.attrs = self.get_attrs()
         # For some type of context it's impossible
@@ -383,7 +444,8 @@ class PgParam():
         self.init_value = build_value_class(self.module, self.name,
                                             self.attrs["setting"],
                                             self.attrs["unit"],
-                                            self.attrs["vartype"])
+                                            self.attrs["vartype"],
+                                            self.pg_ver)
         self.desired_value = None  # TODO remove this after debugging
 
     def set(self, value):
@@ -392,13 +454,15 @@ class PgParam():
         self.desired_value = build_value_class(self.module, self.name,
                                                value,
                                                self.attrs["unit"],
-                                               self.attrs["vartype"])
+                                               self.attrs["vartype"],
+                                               self.pg_ver)
 
         if self.desired_value.normalized != self.init_value.normalized:
             if not self.module.check_mode:
                 # TODO: Do the work here
                 # TODO: the following query works on PG Ver >= 14
-                query = "ALTER SYSTEM SET %s = '%s'" % (self.name, value)
+                # query = "ALTER SYSTEM SET %s = '%s'" % (self.name, value)
+                query = "ALTER SYSTEM SET %s = %s" % (self.name, value)
                 self.__exec_set_sql(query)
 
             return True
@@ -411,7 +475,8 @@ class PgParam():
         # the desired value as if it would be a value of string type
         self.desired_value = ValueString(self.module, self.name,
                                          "_RESET",
-                                         self.attrs["unit"])
+                                         self.attrs["unit"],
+                                         self.pg_ver)
         # Because the result of running "ALTER SYSTEM RESET param;"
         # is alway a removal of the line from postgresql.auto.conf
         # this will always run the command to ensure the removal
@@ -495,22 +560,24 @@ def main():
     check_problematic_params(module, param, value)
 
     if not trust_input:
-        # Check input for potentially dangerous elements:
+        # Check input for potentially dangerous elements
         check_input(module, param, value, session_role)
 
-    # Ensure psycopg libraries are available before connecting to DB:
+    # Ensure psycopg libraries are available before connecting to DB
     ensure_required_libs(module)
     conn_params = get_conn_params(module, module.params, warn_db_default=False)
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     cursor = db_connection.cursor(**pg_cursor_args)
 
-    # TODO consider using DIFF to return before-after
+    # Get and check server version
+    pg_ver = get_server_version(db_connection)
+    check_pg_version(module, pg_ver)
 
     # We assume nothing has changed by default
     changed = False
 
     # Instanciate the object
-    pg_param = PgParam(module, cursor, param)
+    pg_param = PgParam(module, cursor, param, pg_ver)
 
     # Whe we need to reset the value by running
     # "ALTER SYSTEM RESET param;".
@@ -534,7 +601,7 @@ def main():
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=True)
     cursor = db_connection.cursor(**pg_cursor_args)
     # Instantiate another object to get the latest attrs
-    pg_param_after = PgParam(module, cursor, param)
+    pg_param_after = PgParam(module, cursor, param, pg_ver)
 
     # Make sure if there any difference between
     # the attrs in the diff, report changed
