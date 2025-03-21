@@ -461,8 +461,10 @@ class PgParam():
             if not self.module.check_mode:
                 # TODO: Do the work here
                 # TODO: the following query works on PG Ver >= 14
-                # query = "ALTER SYSTEM SET %s = '%s'" % (self.name, value)
-                query = "ALTER SYSTEM SET %s = %s" % (self.name, value)
+                if self.pg_ver >= 14000:
+                    query = "ALTER SYSTEM SET %s = '%s'" % (self.name, value)
+                else:
+                    query = "ALTER SYSTEM SET %s = %s" % (self.name, value)
                 self.__exec_set_sql(query)
 
             return True
