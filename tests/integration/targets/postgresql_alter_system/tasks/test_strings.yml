@@ -146,7 +146,7 @@
     <<: *task_parameters
     postgresql_alter_system:
       <<: *pg_parameters
-      param: shared_preload_libraries
+      param: search_path
       value: '"$user", public, extensions'
 
   - name: Check the result
@@ -154,7 +154,7 @@
       that:
       - result is changed
 
-  - name: Check nothing has changed
+  - name: Check it has changed
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -163,13 +163,13 @@
   - name: Check the output
     assert:
       that:
-      - result.query_result[0]["setting"] == "\"$user\", public, extensions"
+      - result.query_result[0]["setting"] == '"$user", public, extensions'
 
   - name: Set search_path again
     <<: *task_parameters
     postgresql_alter_system:
       <<: *pg_parameters
-      param: shared_preload_libraries
+      param: search_path
       value: '"$user", public, extensions'
 
   - name: Check the result
