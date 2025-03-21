@@ -351,6 +351,7 @@ class ValueMem(Value):
     # This looks a bit better and maybe
     # even works more efficiently than
     # Bytes = MB * 1024 * 1024
+    # TODO Handle situations when the unit in pg_settings is 8kB
     UNIT_TO_BYTES_BITWISE_SHIFT = {
         "kB": 10,
         "MB": 20,
@@ -404,10 +405,12 @@ class ValueMem(Value):
             self.module.fail_json(msg=val_err_msg)
 
 
+# TODO also hanle (but not here) values of min, s, and ms units
+
 # Run "SELECT DISTINCT unit FROM pg_settings;"
 # and extract memory-related ones
 # TODO handle that 8kB-pages case later
-MEM_PARAM_UNITS = {"B", "kB", "MB"}
+MEM_PARAM_UNITS = {"B", "kB", "8kB", "MB"}
 
 
 def build_value_class(module, param_name, value, unit, vartype, pg_ver):
