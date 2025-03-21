@@ -16,6 +16,30 @@
   # TODO Check what it returns extensively
   # TODO Cover a few params
 
+  - name: Set value of type enum in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: recovery_prefetch
+      value: off
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Check nothing has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_settings WHERE name = 'recovery_prefetch'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "try"
+
   - name: Set value of type enum
     <<: *task_parameters
     postgresql_alter_system:
@@ -27,6 +51,17 @@
     assert:
       that:
       - result is changed
+
+  - name: Check it has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_settings WHERE name = 'recovery_prefetch'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "off"
 
   - name: Set value of type enum again
     <<: *task_parameters
