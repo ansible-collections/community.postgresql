@@ -459,39 +459,8 @@ class PgParam():
 
         if self.desired_value.normalized != self.init_value.normalized:
             if not self.module.check_mode:
-
-                if isinstance(value, str) and ',' in value and \
-                        not self.name.endswith(('_command', '_prefix')) and \
-                        not (self.pg_ver < 140000 and self.name == 'unix_socket_directories'):
-                    # Issue https://github.com/ansible-collections/community.postgresql/issues/78
-                    # Change value from 'one, two, three' -> "'one','two','three'"
-                    # PR https://github.com/ansible-collections/community.postgresql/pull/400
-                    # Parameter names ends with '_command' or '_prefix'
-                    # can contains commas but they are not lists
-                    # PR https://github.com/ansible-collections/community.postgresql/pull/521
-                    # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and
-                    # GUC_LIST_QUOTE options so it is a single value parameter
-                    # value = ','.join(["'" + elem.strip() + "'" for elem in value.split(',')])
-
-                    tmp = []
-                    for elem in value.split(','):
-                        if elem.strip()[0] == '"':
-                            # In case like search_path value "$user"
-                            # just append it w/o any modufications
-                            tmp.append(elem.strip())
-                        else:
-                            tmp.append("'" + elem.strip() + "'")
-
-                    query = "ALTER SYSTEM SET %s = %s" % (self.name, ','.join(tmp))
-
-                elif self.pg_ver >= 140000:
-                    query = "ALTER SYSTEM SET %s = '%s'" % (self.name, value)
-
-                else:
-                    query = "ALTER SYSTEM SET %s = %s" % (self.name, value)
-
+                query = self.__construct_alter_system_query(value)
                 self.__exec_set_sql(query)
-
             return True
 
         return False
@@ -520,6 +489,37 @@ class PgParam():
         res = self.__exec_sql(query, (self.name,))
         executed_queries.append(res[0])  # TODO remove this DEBUG
         return res[0]
+
+    def __construct_alter_system_query(self, value):
+        if isinstance(value, str) and ',' in value and \
+                not self.name.endswith(('_command', '_prefix')) and \
+                not (self.pg_ver < 140000 and self.name == 'unix_socket_directories'):
+            # Issue https://github.com/ansible-collections/community.postgresql/issues/78
+            # Change value from 'one, two, three' -> "'one','two','three'"
+            # PR https://github.com/ansible-collections/community.postgresql/pull/400
+            # Parameter names ends with '_command' or '_prefix'
+            # can contains commas but they are not lists
+            # PR https://github.com/ansible-collections/community.postgresql/pull/521
+            # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and
+            # GUC_LIST_QUOTE options so it is a single value parameter
+            tmp = []
+            for elem in value.split(','):
+                if elem.strip()[0] == '"':
+                    # In case like search_path value "$user"
+                    # just append it w/o any modufications
+                    tmp.append(elem.strip())
+                else:
+                    tmp.append("'" + elem.strip() + "'")
+
+            query = "ALTER SYSTEM SET %s = %s" % (self.name, ','.join(tmp))
+
+        elif self.pg_ver >= 140000:
+            query = "ALTER SYSTEM SET %s = '%s'" % (self.name, value)
+
+        else:
+            query = "ALTER SYSTEM SET %s = %s" % (self.name, value)
+
+        return query
 
     def __check_param_context(self, context):
         if context == "internal":
