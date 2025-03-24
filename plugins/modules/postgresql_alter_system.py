@@ -363,7 +363,15 @@ class ValueMem(Value):
         self.module = module
         self.default_unit = default_unit
         self.num_value, self.passed_unit = self.__set(param_name, value)
-        self.normalized = self.num_value << ValueMem.UNIT_TO_BYTES_BITWISE_SHIFT[self.passed_unit]
+        if self.passed_unit == "8kB":
+            # This is a special case when the unit in pg_settings is "8kB".
+            # Users can still pass such values as "10MB", etc.
+            # The only issue seems to appear when users don't specify values
+            # of 8kB default value explicitly, i.e., when they pass just "100".
+            # In this case the self.__validate method will assign its default unit of 8kB
+            self.normalized = (self.num_value << ValueMem.UNIT_TO_BYTES_BITWISE_SHIFT["kB"]) * 8
+        else:
+            self.normalized = self.num_value << ValueMem.UNIT_TO_BYTES_BITWISE_SHIFT[self.passed_unit]
 
     def __set(self, param_name, value):
         return self.__validate(param_name, value)
@@ -389,7 +397,7 @@ class ValueMem(Value):
             int_part = self.__to_int(value)
             unit_part = self.default_unit
 
-        if unit_part not in ValueMem.VALID_UNITS:
+        if unit_part not in ValueMem.VALID_UNITS and unit_part != "8kB":
             val_err_msg = ('invalid value for parameter "%s": "%s", '
                            'Valid units for this parameter '
                            'are %s' % (param_name, value, ', '.join(ValueMem.VALID_UNITS)))
@@ -409,28 +417,27 @@ class ValueMem(Value):
 
 # Run "SELECT DISTINCT unit FROM pg_settings;"
 # and extract memory-related ones
-# TODO handle that 8kB-pages case later
 MEM_PARAM_UNITS = {"B", "kB", "8kB", "MB"}
 
 
 def build_value_class(module, param_name, value, unit, vartype, pg_ver):
     # Choose a proper Value class based on vartype and return
-    if vartype == 'integer':
+    if vartype == "integer":
         if unit in MEM_PARAM_UNITS:
             return ValueMem(module, param_name, value, unit)
         else:
             return ValueInt(module, param_name, value, unit)
 
-    elif vartype == 'bool':
+    elif vartype == "bool":
         return ValueBool(module, param_name, value, unit)
 
-    elif vartype == 'real':
+    elif vartype == "real":
         return ValueReal(module, param_name, value, unit)
 
-    elif vartype == 'string':
+    elif vartype == "string":
         return ValueString(module, param_name, value, unit, pg_ver)
 
-    elif vartype == 'enum':
+    elif vartype == "enum":
         return ValueEnum(module, param_name, value, unit)
 
 

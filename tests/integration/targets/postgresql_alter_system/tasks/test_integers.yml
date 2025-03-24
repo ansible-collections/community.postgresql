@@ -116,3 +116,52 @@
     assert:
       that:
       - result is not changed
+
+
+  - name: Set 8kB unit parameter w/o specifying units
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: backend_flush_after
+      value: 10
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set 8kB unit parameter w/o specifying units again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: backend_flush_after
+      value: 10
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
+  - name: Set 8kB unit parameter in other unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: backend_flush_after
+      value: 1MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set 8kB unit parameter in other unit again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: backend_flush_after
+      value: 1MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
