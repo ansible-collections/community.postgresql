@@ -341,6 +341,78 @@ class ValueReal(Value):
         return value
 
 
+class ValueTime(Value):
+    VALID_UNITS = {"us", "ms", "s", "min", "h", "d"}
+
+    def __init__(self, module, param_name, value, default_unit, pg_ver=None):
+        # We do not use all the parameters in every class
+        # like default_unit, etc., but we need them to instanciate
+        # classes in a standard manner
+        self.module = module
+        self.default_unit = default_unit
+        self.num_value, self.passed_unit = self.__set(param_name, value)
+        self.normalized = self.__normalize(self.num_value, self.passed_unit)
+
+    def __normalize(self, num_value, passed_unit):
+        value_in_microsecs = None
+        # Let's convert num_value to the smallest unit,
+        # i.e. to "us" which means microseconds
+        if num_value == -1:
+            # When disabled, some params have -1 as value
+            value_in_microsecs = num_value
+        elif passed_unit == "us":
+            value_in_microsecs = num_value
+        elif passed_unit == "ms":
+            value_in_microsecs = num_value * 1000
+        elif passed_unit == "s":
+            value_in_microsecs = num_value * 1_000_000
+        elif passed_unit == "min":
+            value_in_microsecs = num_value * 60 * 1_000_000
+        elif passed_unit == "h":
+            value_in_microsecs = num_value * 60 * 60 * 1_000_000
+        elif passed_unit == "d":
+            value_in_microsecs = num_value * 24 * 60 * 60 * 1_000_000
+
+        return value_in_microsecs
+
+    def __set(self, param_name, value):
+        return self.__validate(param_name, value)
+
+    def __validate(self, param_name, value):
+        int_part = None
+        unit_part = None
+
+        # When the value is like 1min
+        if len(value) > 3 and value[-3:].isalpha():
+            int_part = to_int(self.module, value[:-3])
+            unit_part = value[-3:]
+
+        # When the value is like 1ms
+        elif len(value) > 2 and value[-2:].isalpha():
+            int_part = to_int(self.module, value[:-2])
+            unit_part = value[-2:]
+
+        # When the value is like 1s
+        elif len(value) > 1 and value[-1].isalpha():
+            int_part = to_int(self.module, value[:-1])
+            unit_part = value[-1]
+
+        # When it doesn't contain a unit part
+        # we set it as the unit defined for this
+        # parameter in pg_settings
+        else:
+            int_part = to_int(self.module, value)
+            unit_part = self.default_unit
+
+        if unit_part not in ValueTime.VALID_UNITS:
+            val_err_msg = ('invalid value for parameter "%s": "%s", '
+                           'Valid units for this parameter '
+                           'are %s' % (param_name, value, ', '.join(ValueTime.VALID_UNITS)))
+            self.module.fail_json(msg=val_err_msg)
+
+        return (int_part, unit_part)
+
+
 class ValueMem(Value):
     # If you pass anything else for memory-related param,
     # Postgres will show that only the following
@@ -382,19 +454,19 @@ class ValueMem(Value):
 
         # When the value is like 1024MB
         if len(value) > 2 and value[-2:].isalpha():
-            int_part = int(value[:-2])
+            int_part = to_int(self.module, value[:-2])
             unit_part = value[-2:]
 
         # When the value is like 1024B
         elif len(value) > 1 and value[-1].isalpha():
-            int_part = self.__to_int(value[:-1])
+            int_part = to_int(self.module, value[:-1])
             unit_part = value[-1]
 
         # When it doesn't contain a unit part
         # we set it as the unit defined for this
         # parameter in pg_settings
         else:
-            int_part = self.__to_int(value)
+            int_part = to_int(self.module, value)
             unit_part = self.default_unit
 
         if unit_part not in ValueMem.VALID_UNITS and unit_part != "8kB":
@@ -405,12 +477,13 @@ class ValueMem(Value):
 
         return (int_part, unit_part)
 
-    def __to_int(self, value):
-        try:
-            return int(value)
-        except Exception:
-            val_err_msg = "Value %s cannot be converted to int" % value
-            self.module.fail_json(msg=val_err_msg)
+
+def to_int(module, value):
+    try:
+        return int(value)
+    except Exception:
+        val_err_msg = "Value %s cannot be converted to int" % value
+        module.fail_json(msg=val_err_msg)
 
 
 # TODO also hanle (but not here) values of min, s, and ms units
@@ -420,9 +493,18 @@ class ValueMem(Value):
 MEM_PARAM_UNITS = {"B", "kB", "8kB", "MB"}
 
 
+# Run "SELECT DISTINCT unit FROM pg_settings;"
+# and extract time-related ones
+TIME_PARAM_UNITS = {"min", "s", "ms"}
+
+
 def build_value_class(module, param_name, value, unit, vartype, pg_ver):
-    # Choose a proper Value class based on vartype and return
-    if vartype == "integer":
+    # Choose a proper Value class based on vartype and/or unit,
+    # instanciate it and return the object
+    if unit in TIME_PARAM_UNITS:
+        return ValueTime(module, param_name, value, unit)
+
+    elif vartype == "integer":
         if unit in MEM_PARAM_UNITS:
             return ValueMem(module, param_name, value, unit)
         else:

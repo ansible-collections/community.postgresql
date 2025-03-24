@@ -165,3 +165,86 @@
     assert:
       that:
       - result is not changed
+
+  # TODO You should probably move testing for time parameters
+  # to a separate file
+  # TODO Test negative values
+  # TODO Test values of type "real"
+  - name: Make sure the next tested param is set as 0 now
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 0
+
+  - name: Set time unit parameter w/o specifying the unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set time unit parameter w/o specifying the unit again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
+  - name: Set time unit parameter specifying the unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1min
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set time unit parameter specifying the unit again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1min
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
+  - name: Set time unit parameter specifying the unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1h
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set time unit parameter specifying the unit again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1h
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
