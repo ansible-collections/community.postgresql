@@ -29,9 +29,9 @@ options:
     - Parameter value to set.
     - Specify the value in appropriate units!
     - For memory-related parameters of type integer, it is C(kB), C(MB), C(GB), and C(TB).
-    - Use C(_RESET) to run the C(ALTER SYSTEM RESET param) which will remove
+    - Use V(_RESET) to run the C(ALTER SYSTEM RESET param) which will remove
       a corresponding entry from C(postgresql.auto.conf). Always returns C(changed=True).
-    - For boolean parameters, pass the C("on") or C("off") string.
+    - For boolean parameters, pass the V("on") or V("off") string.
     type: str
     required: true
 
@@ -50,8 +50,8 @@ options:
 
   trust_input:
     description:
-    - If C(false), check whether values of parameters are potentially dangerous.
-    - It makes sense to use C(false) only when SQL injections are possible.
+    - If V(false), check whether values of parameters are potentially dangerous.
+    - It makes sense to use V(false) only when SQL injections are possible.
     type: bool
     default: true
 
