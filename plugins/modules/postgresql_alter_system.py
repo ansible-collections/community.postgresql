@@ -16,6 +16,8 @@ description:
   - Allows to change a PostgreSQL server configuration parameter.
   - The module uses ALTER SYSTEM command and applies changes by reload server configuration.
 
+version_added: '3.13.0'
+
 options:
   param:
     description:
@@ -25,7 +27,6 @@ options:
 
   value:
     description:
-    # Use appropriate format macros.
     - Parameter value to set.
     - Specify the value in appropriate units!
     - For memory-related parameters of type integer, it is C(kB), C(MB), C(GB), and C(TB).
@@ -40,7 +41,7 @@ options:
     - Switch to session_role after connecting. The specified session_role must
       be a role that the current login_user is a member of.
     - Permissions checking for SQL commands is carried out as though
-      the session_role were the one that had logged in originally.
+      the O(session_role) were the one that had logged in originally.
     type: str
 
   login_db:
@@ -234,20 +235,28 @@ def check_problematic_params(module, param, value):
 
 
 class Value(ABC):
-    # TODO write comprehensive dos
-    # TODO Write an algorithms of how to add new value type support
     # This anstract class is a blueprint for "real" classes
     # that represent values of certain types.
     # This makes practical sense as we want the classes
     # have same set of parameters to instanciate them
     # in the same manner.
+    # If you need to handle parameters of a new type
+    # or if you need to handle some combination of vartype
+    # and unit differently (like we do it with ValueMem or ValueTime),
+    # create another class using this class as parent.
 
+    # To understand why we use this,
+    # take a look how the child classes are instanciated
+    # in the build_value_class function.
     @abstractmethod
     def __init__(self, module, param_name, value, default_unit, pg_ver):
         pass
 
 
 class ValueBool(Value):
+    """Represents a parameter of type bool."""
+
+    # SELECT * FROM pg_settings WHERE vartype = 'bool'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
@@ -261,6 +270,10 @@ class ValueBool(Value):
 
 
 class ValueInt(Value):
+    """Represents a parameter of type integer.
+    Memory- and time-related parameters are handled by dedicated classes.
+    """
+
     # To handle values of the "integer" type with no unit
     # SELECT * FROM pg_settings WHERE vartype = 'integer' and unit IS NULL
 
@@ -273,6 +286,8 @@ class ValueInt(Value):
 
 
 class ValueString(Value):
+    """Represents a parameter of type string."""
+
     # SELECT * FROM pg_settings WHERE vartype = 'string'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver):
@@ -295,6 +310,8 @@ class ValueString(Value):
 
 
 class ValueEnum(Value):
+    """Represents a parameter of type enum."""
+
     # SELECT * FROM pg_settings WHERE vartype = 'enum'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
@@ -323,6 +340,8 @@ def normalize_bool_val(value):
 
 
 class ValueReal(Value):
+    """Represents a parameter of type real."""
+
     # To handle values of the "real" vartype:
     # SELECT * FROM pg_settings WHERE vartype = 'real'
 
@@ -342,6 +361,8 @@ class ValueReal(Value):
 
 
 class ValueTime(Value):
+    """Represents a time-related parameter."""
+
     VALID_UNITS = {"us", "ms", "s", "min", "h", "d"}
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
@@ -414,6 +435,7 @@ class ValueTime(Value):
 
 
 class ValueMem(Value):
+    """Represents a memory-related parameter."""
     # If you pass anything else for memory-related param,
     # Postgres will show that only the following
     # units are acceptable
@@ -422,8 +444,7 @@ class ValueMem(Value):
     # Bytes = MB << 20, etc.
     # This looks a bit better and maybe
     # even works more efficiently than
-    # Bytes = MB * 1024 * 1024
-    # TODO Handle situations when the unit in pg_settings is 8kB
+    # say Bytes = MB * 1024 * 1024
     UNIT_TO_BYTES_BITWISE_SHIFT = {
         "kB": 10,
         "MB": 20,
@@ -479,14 +500,15 @@ class ValueMem(Value):
 
 
 def to_int(module, value):
+    """Tries to convert the value to int and
+    fail gracefully when unseccess.
+    """
     try:
         return int(value)
     except Exception:
         val_err_msg = "Value %s cannot be converted to int" % value
         module.fail_json(msg=val_err_msg)
 
-
-# TODO also hanle (but not here) values of min, s, and ms units
 
 # Run "SELECT DISTINCT unit FROM pg_settings;"
 # and extract memory-related ones
@@ -524,7 +546,28 @@ def build_value_class(module, param_name, value, unit, vartype, pg_ver):
 
 
 class PgParam():
+    """Represents a postgresql parameter.
 
+    Provides attributes and method for operating
+    on a corresponding parameter in the database
+    like setting or resetting its value.
+
+    If you're interested in adding other operations,
+    add them in this class as methods.
+
+    To represent values of particular types we use
+    corresponding classes. For example for booleans
+    we use ValueBool and for strings ValueString.
+    The build_value_class function returns a proper
+    class object based on the vartype column value
+    for a particular parameter.
+    To get types, run in your PG client
+    SELECT DISTINCT vartype FROM pg_settings;
+
+    We can't predict what our users pass, so we need
+    some kind of normalization of the values that we
+    do in the value classes (not for every kind of parameter).
+    """
     def __init__(self, module, cursor, name, pg_ver):
         self.module = module
         self.cursor = cursor
@@ -537,14 +580,15 @@ class PgParam():
         # for some service restart is required
         self.__check_param_context(self.attrs["context"])
 
+        # Return a proper value class based on vartype and unit
+        # from a pg_settings entry for a specific parameter
         self.init_value = build_value_class(self.module, self.name,
                                             self.attrs["setting"],
                                             self.attrs["unit"],
                                             self.attrs["vartype"],
                                             self.pg_ver)
-        # Exposing this field can help while debugging.
-        # You can put object-of-this-class.desired_value.ATTR
-        # in the module.exit_json() method to see what's there
+        # Same object will be instanciated to compare
+        # the desired and the current values
         self.desired_value = None
 
     def set(self, value):
@@ -554,6 +598,8 @@ class PgParam():
                                                self.attrs["vartype"],
                                                self.pg_ver)
 
+        # Compare normalized values of the desired and the current
+        # values to decide whether we need to do any real job
         if self.desired_value.normalized != self.init_value.normalized:
             if not self.module.check_mode:
                 query = self.__construct_alter_system_query(value)
@@ -631,6 +677,7 @@ class PgParam():
             self.module.warn("Restart of PostgreSQL is required for setting %s" % self.name)
 
     def __exec_sql(self, query, params=()):
+        """Execute a query that is supposed to return something."""
         try:
             self.cursor.execute(query, params)
             res = self.cursor.fetchall()
@@ -643,6 +690,7 @@ class PgParam():
         return None
 
     def __exec_set_sql(self, query):
+        """Execute ALTER SYSTEM kind of queries."""
         try:
             executed_queries.append(query)
             self.cursor.execute(query)
@@ -745,7 +793,7 @@ def main():
         executed_queries=executed_queries,
         diff=diff,
         restart_required=pg_param_after.attrs["pending_restart"],
-        # DEBUG below
+        # DEBUG below. Uncomment it while debugging if needed
         # value_class_value=pg_param.init_value.num_value,
         # value_class_unit=pg_param.init_value.passed_unit,
         value_class_normalized=pg_param.init_value.normalized,
