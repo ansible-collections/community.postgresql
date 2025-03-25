@@ -245,9 +245,8 @@ class Value(ABC):
     # and unit differently (like we do it with ValueMem or ValueTime),
     # create another class using this class as parent.
 
-    # To understand why we use this,
-    # take a look how the child classes are instanciated
-    # in the build_value_class function.
+    # To understand why we use this, take a look at how
+    # the child classes are instanciated in a similar manner
     @abstractmethod
     def __init__(self, module, param_name, value, default_unit, pg_ver):
         pass
@@ -255,7 +254,6 @@ class Value(ABC):
 
 class ValueBool(Value):
     """Represents a parameter of type bool."""
-
     # SELECT * FROM pg_settings WHERE vartype = 'bool'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
@@ -273,8 +271,6 @@ class ValueInt(Value):
     """Represents a parameter of type integer.
     Memory- and time-related parameters are handled by dedicated classes.
     """
-
-    # To handle values of the "integer" type with no unit
     # SELECT * FROM pg_settings WHERE vartype = 'integer' and unit IS NULL
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
@@ -287,7 +283,6 @@ class ValueInt(Value):
 
 class ValueString(Value):
     """Represents a parameter of type string."""
-
     # SELECT * FROM pg_settings WHERE vartype = 'string'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver):
@@ -311,7 +306,6 @@ class ValueString(Value):
 
 class ValueEnum(Value):
     """Represents a parameter of type enum."""
-
     # SELECT * FROM pg_settings WHERE vartype = 'enum'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
@@ -341,8 +335,6 @@ def normalize_bool_val(value):
 
 class ValueReal(Value):
     """Represents a parameter of type real."""
-
-    # To handle values of the "real" vartype:
     # SELECT * FROM pg_settings WHERE vartype = 'real'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
@@ -521,8 +513,9 @@ TIME_PARAM_UNITS = {"min", "s", "ms"}
 
 
 def build_value_class(module, param_name, value, unit, vartype, pg_ver):
-    # Choose a proper Value class based on vartype and/or unit,
-    # instanciate it and return the object
+    """ Choose a proper Value class based on vartype and/or unit,
+    instanciate it and return the object.
+    """
     if unit in TIME_PARAM_UNITS:
         return ValueTime(module, param_name, value, unit)
 
