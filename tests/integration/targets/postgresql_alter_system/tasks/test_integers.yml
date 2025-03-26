@@ -577,7 +577,7 @@
   - name: Check the output
     assert:
       that:
-      - result.query_result[0]["setting"] == "128"
+      - result.query_result[0]["setting"] == "1024"
 
   - name: Set a parameter negative by default back as negative
     <<: *task_parameters
