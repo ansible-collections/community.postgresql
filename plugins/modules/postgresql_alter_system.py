@@ -516,12 +516,20 @@ def build_value_class(module, param_name, value, unit, vartype, pg_ver):
     """ Choose a proper Value class based on vartype and/or unit,
     instanciate it and return the object.
     """
-    if unit in TIME_PARAM_UNITS:
+    if value == "-1":
+        # In this case, it means that the setting is disabled
+        # and we don't need to do any sophisticated normalization
+        return ValueInt(module, param_name, value, unit)
+
+    elif unit in TIME_PARAM_UNITS:
+        # It can be of type integer or real, that's why
+        # we don't have them under vartype == "integer"
         return ValueTime(module, param_name, value, unit)
 
     elif vartype == "integer":
         if unit in MEM_PARAM_UNITS:
             return ValueMem(module, param_name, value, unit)
+
         else:
             return ValueInt(module, param_name, value, unit)
 

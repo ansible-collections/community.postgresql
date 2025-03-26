@@ -248,3 +248,52 @@
     assert:
       that:
       - result is not changed
+
+  - name: Set a parameter negative by default
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_temp_files
+      value: -1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
+  - name: Set a parameter negative by default
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_temp_files
+      value: 1MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set a parameter negative by default back as negative
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_temp_files
+      value: -1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set a parameter negative by default again in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_temp_files
+      value: -1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
