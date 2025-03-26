@@ -548,6 +548,11 @@ def build_value_class(module, param_name, value, unit, vartype, pg_ver):
         return ValueEnum(module, param_name, value, unit)
 
 
+# TODO convert returned values to appropriate types
+def convert_ret_values():
+    pass
+
+
 class PgParam():
     """Represents a postgresql parameter.
 
