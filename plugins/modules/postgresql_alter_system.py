@@ -794,13 +794,13 @@ def main():
         executed_queries=executed_queries,
         diff=diff,
         restart_required=pg_param_after.attrs["pending_restart"],
-        # DEBUG below. Uncomment it while debugging if needed
-        # value_class_value=pg_param.init_value.num_value,
-        # value_class_unit=pg_param.init_value.passed_unit,
-        value_class_normalized=pg_param.init_value.normalized,
-        # desir_class_value=pg_param.desired_value.num_value,
-        # desir_class_unit=pg_param.desired_value.passed_unit,
-        desir_class_normalized=pg_param.desired_value.normalized,
+        # FOR DEBUGGING uncomment the lines below if needed
+        # debug["value_class_value"]=pg_param.init_value.num_value,
+        # debug["value_class_unit"]=pg_param.init_value.passed_unit,
+        # debug["value_class_normalized"]=pg_param.init_value.normalized,
+        # debug["desir_class_value"]=pg_param.desired_value.num_value,
+        # debug["desir_class_unit"]=pg_param.desired_value.passed_unit,
+        # debug["desir_class_normalized"]=pg_param.desired_value.normalized,
     )
 
 

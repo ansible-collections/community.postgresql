@@ -16,6 +16,19 @@
   # TODO Check what it returns extensively
   # TODO Cover a few params
   # TODO Cover params with 8kB unit
+  - name: Set value same as default (4096kB) but in a different unit in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 4MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
   - name: Set value same as default (4096kB) but in a different unit
     <<: *task_parameters
     postgresql_alter_system:
@@ -27,6 +40,19 @@
     assert:
       that:
       - result is not changed
+
+  - name: Set a different value in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 2048
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
 
   - name: Set a different value
     <<: *task_parameters
@@ -166,16 +192,26 @@
       that:
       - result is not changed
 
-  # TODO You should probably move testing for time parameters
-  # to a separate file
-  # TODO Test negative values
-  # TODO Test values of type "real"
+  # Test parameters with time units
   - name: Make sure the next tested param is set as 0 now
     <<: *task_parameters
     postgresql_alter_system:
       <<: *pg_parameters
       param: archive_timeout
       value: 0
+
+  - name: Set time unit parameter w/o specifying the unit in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
 
   - name: Set time unit parameter w/o specifying the unit
     <<: *task_parameters
@@ -201,6 +237,19 @@
       that:
       - result is not changed
 
+  - name: Set time unit parameter specifying the unit in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1min
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
   - name: Set time unit parameter specifying the unit
     <<: *task_parameters
     postgresql_alter_system:
@@ -212,6 +261,19 @@
     assert:
       that:
       - result is changed
+
+  - name: Set time unit parameter specifying the unit again in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1min
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
 
   - name: Set time unit parameter specifying the unit again
     <<: *task_parameters
@@ -249,6 +311,7 @@
       that:
       - result is not changed
 
+# Test settings with default negative values
   - name: Set a parameter negative by default
     <<: *task_parameters
     postgresql_alter_system:
