@@ -13,9 +13,8 @@
 
   block:
   # TODO Cover check mode
+  # TODO Check the actual state of the setting in DB
   # TODO Check what it returns extensively
-  # TODO Cover a few params
-  # TODO Cover params with 8kB unit
   - name: Set value same as default (4096kB) but in a different unit in check_mode
     <<: *task_parameters
     check_mode: true
@@ -28,6 +27,7 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
 
   - name: Set value same as default (4096kB) but in a different unit
     <<: *task_parameters
@@ -40,6 +40,7 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
 
   - name: Set a different value in check_mode
     <<: *task_parameters
@@ -53,6 +54,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET work_mem = '2048'", "SELECT pg_reload_conf()"]
 
   - name: Set a different value
     <<: *task_parameters
@@ -65,6 +67,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET work_mem = '2048'", "SELECT pg_reload_conf()"]
 
   - name: Set a different value using units
     <<: *task_parameters
@@ -104,6 +107,7 @@
       that:
       - result is changed
       - result.restart_required == True
+      - result.executed_queries == ["ALTER SYSTEM SET huge_page_size = '2MB'", "SELECT pg_reload_conf()"]
 
   - name: Set param of internal context, must fail
     <<: *task_parameters
@@ -130,6 +134,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum_analyze_threshold = '60'", "SELECT pg_reload_conf()"]
 
   - name: Set same value with no unit again
     <<: *task_parameters
@@ -142,7 +147,7 @@
     assert:
       that:
       - result is not changed
-
+      - result.executed_queries == []
 
   - name: Set 8kB unit parameter w/o specifying units
     <<: *task_parameters
@@ -155,6 +160,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET backend_flush_after = '10'", "SELECT pg_reload_conf()"]
 
   - name: Set 8kB unit parameter w/o specifying units again
     <<: *task_parameters
@@ -167,6 +173,7 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
 
   - name: Set 8kB unit parameter in other unit
     <<: *task_parameters
@@ -179,6 +186,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET backend_flush_after = '1MB'", "SELECT pg_reload_conf()"]
 
   - name: Set 8kB unit parameter in other unit again
     <<: *task_parameters
@@ -191,6 +199,7 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
 
   # Test parameters with time units
   - name: Make sure the next tested param is set as 0 now
@@ -212,6 +221,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1'", "SELECT pg_reload_conf()"]
 
   - name: Set time unit parameter w/o specifying the unit
     <<: *task_parameters
@@ -224,6 +234,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1'", "SELECT pg_reload_conf()"]
 
   - name: Set time unit parameter w/o specifying the unit again
     <<: *task_parameters
@@ -236,6 +247,7 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
 
   - name: Set time unit parameter specifying the unit in check_mode
     <<: *task_parameters
@@ -249,6 +261,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1min'", "SELECT pg_reload_conf()"]
 
   - name: Set time unit parameter specifying the unit
     <<: *task_parameters
@@ -261,6 +274,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1min'", "SELECT pg_reload_conf()"]
 
   - name: Set time unit parameter specifying the unit again in check_mode
     <<: *task_parameters
@@ -274,6 +288,7 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
 
   - name: Set time unit parameter specifying the unit again
     <<: *task_parameters
@@ -286,6 +301,7 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
 
   - name: Set time unit parameter specifying the unit
     <<: *task_parameters
@@ -298,6 +314,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1h'", "SELECT pg_reload_conf()"]
 
   - name: Set time unit parameter specifying the unit again
     <<: *task_parameters
@@ -310,8 +327,9 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
 
-# Test settings with default negative values
+  # Test settings with default negative values
   - name: Set a parameter negative by default
     <<: *task_parameters
     postgresql_alter_system:
@@ -323,6 +341,7 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
 
   - name: Set a parameter negative by default
     <<: *task_parameters
@@ -335,6 +354,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET log_temp_files = '1MB'", "SELECT pg_reload_conf()"]
 
   - name: Set a parameter negative by default back as negative
     <<: *task_parameters
@@ -347,6 +367,7 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET log_temp_files = '-1'", "SELECT pg_reload_conf()"]
 
   - name: Set a parameter negative by default again in check_mode
     <<: *task_parameters
@@ -360,3 +381,4 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []

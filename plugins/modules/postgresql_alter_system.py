@@ -139,6 +139,8 @@ diff:
 executed_queries:
   description:
   - List of executed queries except SELECTs.
+  - In the check mode, returns a query that
+    would be supposed to get executed in the real mode.
   returned: success
   type: list
   elements: str
@@ -147,7 +149,7 @@ executed_queries:
 restart_required:
   description:
   - Indicates if restart of PostgreSQL is required or not.
-  - Can be also determined from
+  - Added here for convenience. Can be also determined from
     the diff["after"]["pending_restart"] return value.
   returned: success
   type: bool
@@ -602,9 +604,8 @@ class PgParam():
         # Compare normalized values of the desired and the current
         # values to decide whether we need to do any real job
         if self.desired_value.normalized != self.init_value.normalized:
-            if not self.module.check_mode:
-                query = self.__construct_alter_system_query(value)
-                self.__exec_set_sql(query)
+            query = self.__construct_alter_system_query(value)
+            self.__exec_set_sql(query)
             return True
 
         return False
@@ -622,6 +623,7 @@ class PgParam():
         # this will always run the command to ensure the removal
         # and report changed=true
         query = "ALTER SYSTEM RESET %s" % self.name
+        executed_queries.append(query)
         self.__exec_set_sql(query)
         return True
 
@@ -629,7 +631,6 @@ class PgParam():
         query = ("SELECT setting, unit, context, vartype, enumvals, "
                  "boot_val, reset_val, pending_restart "
                  "FROM pg_settings where name = %s")
-        executed_queries.append(query % self.name)
         res = self.__exec_sql(query, (self.name,))
         # You can uncomment the line below while debugging
         # to see what DB actually returns for the parameter
@@ -694,14 +695,16 @@ class PgParam():
         """Execute ALTER SYSTEM kind of queries."""
         try:
             executed_queries.append(query)
-            self.cursor.execute(query)
+            if not self.module.check_mode:
+                self.cursor.execute(query)
         except Exception as e:
             self.module.fail_json(msg="Cannot set %s: %s" % (self.name, to_native(e)))
 
         try:
             query = "SELECT pg_reload_conf()"
             executed_queries.append(query)
-            self.cursor.execute(query)
+            if not self.module.check_mode:
+                self.cursor.execute(query)
         except Exception as e:
             self.module.fail_json(msg="Cannot run 'SELECT pg_reload_conf()': %s" % to_native(e))
 
