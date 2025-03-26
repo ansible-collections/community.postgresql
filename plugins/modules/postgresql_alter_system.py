@@ -119,7 +119,6 @@ diff:
         'min_val': 64,
         'max_val': 2147483647,
         'boot_val': 4096,
-        'reset_val': 4096,
         'pending_restart': false
     },
     'after': {
@@ -131,7 +130,6 @@ diff:
         'min_val': 64,
         'max_val': 2147483647,
         'boot_val': 4096,
-        'reset_val': 4096,
         'pending_restart': false,
     }
   }
@@ -548,9 +546,31 @@ def build_value_class(module, param_name, value, unit, vartype, pg_ver):
         return ValueEnum(module, param_name, value, unit)
 
 
-# TODO convert returned values to appropriate types
-def convert_ret_values():
-    pass
+def is_float(s):
+    """Check if the string s contains float."""
+    try:
+        # Attempt to convert the string to a float
+        num = float(s)
+        # Check if the number is not an integer (has a decimal part)
+        return '.' in s and num != int(num)
+    except ValueError:
+        # If it cannot be converted to a float, it's not a valid float
+        return False
+
+
+def convert_ret_vals(attrs):
+    """Converts some ret values to numeric types."""
+    if attrs["vartype"] not in ("integer", "real"):
+        return attrs
+
+    func = float if is_float(attrs["setting"]) else int
+
+    attrs["setting"] = func(attrs["setting"])
+    attrs["boot_val"] = func(attrs["boot_val"])
+    attrs["min_val"] = func(attrs["min_val"])
+    attrs["max_val"] = func(attrs["max_val"])
+
+    return attrs
 
 
 class PgParam():
@@ -628,13 +648,12 @@ class PgParam():
         # this will always run the command to ensure the removal
         # and report changed=true
         query = "ALTER SYSTEM RESET %s" % self.name
-        executed_queries.append(query)
         self.__exec_set_sql(query)
         return True
 
     def get_attrs(self):
         query = ("SELECT setting, unit, context, vartype, enumvals, "
-                 "boot_val, reset_val, pending_restart "
+                 "boot_val, min_val, max_val, pending_restart "
                  "FROM pg_settings where name = %s")
         res = self.__exec_sql(query, (self.name,))
         # You can uncomment the line below while debugging
@@ -793,8 +812,11 @@ def main():
 
     # Populate diff
     diff = {
-        "before": pg_param.attrs,
-        "after": pg_param_after.attrs,
+        # TODO Should you have attrs that cannot be changed
+        # like context, etc. as a part of another field,
+        # maybe attrs or something outside the diff?
+        "before": convert_ret_vals(pg_param.attrs),
+        "after": convert_ret_vals(pg_param_after.attrs),
     }
 
     module.exit_json(
