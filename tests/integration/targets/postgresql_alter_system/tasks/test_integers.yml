@@ -162,7 +162,7 @@
       - result["diff"]["after"]["context"] == "user"
       - result["diff"]["after"]["enumvals"] == None
       - result["diff"]["after"]["pending_restart"] == False
-      - result["diff"]["after"]["reset_val"] == "4096"
+      - result["diff"]["after"]["reset_val"] == "2048"
       - result["diff"]["after"]["setting"] == "2048"
       - result["diff"]["after"]["unit"] == "kB"
       - result["diff"]["after"]["vartype"] == "integer"
