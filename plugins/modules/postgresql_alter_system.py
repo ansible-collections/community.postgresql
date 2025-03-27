@@ -566,25 +566,11 @@ def convert_ret_vals(attrs):
     # The issue here is that a value can look like
     # integer in one column, but like float in another,
     # so let's check them all separately
-    if is_float(attrs["setting"]):
-        attrs["setting"] = float(attrs["setting"])
-    else:
-        attrs["setting"] = int(attrs["setting"])
-
-    if is_float(attrs["boot_val"]):
-        attrs["boot_val"] = float(attrs["boot_val"])
-    else:
-        attrs["boot_val"] = int(attrs["boot_val"])
-
-    if is_float(attrs["min_val"]):
-        attrs["min_val"] = float(attrs["min_val"])
-    else:
-        attrs["min_val"] = int(attrs["min_val"])
-
-    if is_float(attrs["max_val"]):
-        attrs["max_val"] = float(attrs["max_val"])
-    else:
-        attrs["max_val"] = int(attrs["max_val"])
+    for elem in ("setting", "boot_val", "min_val", "max_val"):
+        if is_float(attrs[elem]):
+            attrs[elem] = float(attrs[elem])
+        else:
+            attrs[elem] = int(attrs[elem])
 
     return attrs
 
