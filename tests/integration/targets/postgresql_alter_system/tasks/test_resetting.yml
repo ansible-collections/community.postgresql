@@ -39,6 +39,30 @@
       - result["attrs"]["min_val"] == None
       - result["attrs"]["max_val"] == None
       - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "Europe/Berlin"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] != "Europe/Berlin"
+
+  - name: Reset the parameter again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: _RESET
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM RESET log_timezone", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "GMT"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
       - result["diff"]["before"]["setting"] != "Europe/Berlin"
       - result["diff"]["after"]["pending_restart"] == False
       - result["diff"]["after"]["setting"] != "Europe/Berlin"

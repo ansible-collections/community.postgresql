@@ -28,12 +28,18 @@
     assert:
       that:
       - result is changed
-
-  - name: Check nothing has changed
-    <<: *task_parameters
-    postgresql_query:
-      <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'recovery_prefetch'"
+      - result.executed_queries == ["ALTER SYSTEM SET recovery_prefetch = 'False'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "try"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "enum"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "try"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "try"
 
   - name: Check the output
     assert:
@@ -51,6 +57,19 @@
     assert:
       that:
       - result is changed
+      - result.restart_required == False
+      - result.executed_queries == ["ALTER SYSTEM SET recovery_prefetch = 'False'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "try"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "enum"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "try"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "off"
 
   - name: Check it has changed
     <<: *task_parameters
@@ -74,6 +93,19 @@
     assert:
       that:
       - result is not changed
+      - result.restart_required == False
+      - result.executed_queries == []
+      - result["attrs"]["boot_val"] == "try"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "enum"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "off"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "off"
 
   - name: Set the original value
     <<: *task_parameters
