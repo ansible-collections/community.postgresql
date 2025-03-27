@@ -234,7 +234,7 @@ def check_problematic_params(module, param, value):
 
 
 class Value(ABC):
-    # This anstract class is a blueprint for "real" classes
+    # This abstract class is a blueprint for "real" classes
     # that represent values of certain types.
     # This makes practical sense as we want the classes
     # have same set of parameters to instanciate them
@@ -492,7 +492,7 @@ class ValueMem(Value):
 
 def to_int(module, value):
     """Tries to convert the value to int and
-    fail gracefully when unseccess.
+    fail gracefully when unsuccess.
     """
     try:
         return int(value)
@@ -645,7 +645,7 @@ class PgParam():
                                          self.attrs["unit"],
                                          self.pg_ver)
         # Because the result of running "ALTER SYSTEM RESET param;"
-        # is alway a removal of the line from postgresql.auto.conf
+        # is always a removal of the line from postgresql.auto.conf
         # this will always run the command to ensure the removal
         # and report changed=true
         query = "ALTER SYSTEM RESET %s" % self.name
@@ -678,7 +678,7 @@ class PgParam():
             for elem in value.split(','):
                 if elem.strip()[0] == '"':
                     # In case like search_path value "$user"
-                    # just append it w/o any modufications
+                    # just append it w/o any modifications
                     tmp.append(elem.strip())
                 else:
                     tmp.append("'" + elem.strip() + "'")

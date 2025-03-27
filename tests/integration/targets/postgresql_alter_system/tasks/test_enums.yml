@@ -31,7 +31,7 @@
       - result.executed_queries == ["ALTER SYSTEM SET recovery_prefetch = 'False'", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == "try"
       - result["attrs"]["context"] == "sighup"
-      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["enumvals"] == ["on", "off", "try"]
       - result["attrs"]["unit"] == None
       - result["attrs"]["vartype"] == "enum"
       - result["attrs"]["min_val"] == None
@@ -61,7 +61,7 @@
       - result.executed_queries == ["ALTER SYSTEM SET recovery_prefetch = 'False'", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == "try"
       - result["attrs"]["context"] == "sighup"
-      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["enumvals"] == ["on", "off", "try"]
       - result["attrs"]["unit"] == None
       - result["attrs"]["vartype"] == "enum"
       - result["attrs"]["min_val"] == None
@@ -97,7 +97,7 @@
       - result.executed_queries == []
       - result["attrs"]["boot_val"] == "try"
       - result["attrs"]["context"] == "sighup"
-      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["enumvals"] == ["on", "off", "try"]
       - result["attrs"]["unit"] == None
       - result["attrs"]["vartype"] == "enum"
       - result["attrs"]["min_val"] == None
