@@ -28,6 +28,18 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum = 'False'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "on"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "bool"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "on"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "on"
 
   - name: Check nothing has changed
     <<: *task_parameters
@@ -51,6 +63,19 @@
     assert:
       that:
       - result is changed
+      - result.restart_required == False
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum = 'False'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "on"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "bool"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "on"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "off"
 
   - name: Check it has changed
     <<: *task_parameters
@@ -74,3 +99,16 @@
     assert:
       that:
       - result is not changed
+      - result.restart_required == False
+      - result.executed_queries == []
+      - result["attrs"]["boot_val"] == "on"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "bool"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "off"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "off"
