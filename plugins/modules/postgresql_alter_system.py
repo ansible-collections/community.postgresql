@@ -377,13 +377,13 @@ class ValueTime(Value):
         elif passed_unit == "ms":
             value_in_microsecs = num_value * 1000
         elif passed_unit == "s":
-            value_in_microsecs = num_value * 1_000_000
+            value_in_microsecs = num_value * 1000000
         elif passed_unit == "min":
-            value_in_microsecs = num_value * 60 * 1_000_000
+            value_in_microsecs = num_value * 60 * 1000000
         elif passed_unit == "h":
-            value_in_microsecs = num_value * 60 * 60 * 1_000_000
+            value_in_microsecs = num_value * 60 * 60 * 1000000
         elif passed_unit == "d":
-            value_in_microsecs = num_value * 24 * 60 * 60 * 1_000_000
+            value_in_microsecs = num_value * 24 * 60 * 60 * 1000000
 
         return value_in_microsecs
 
