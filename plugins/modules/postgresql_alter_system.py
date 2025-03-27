@@ -237,7 +237,7 @@ class Value(ABC):
     # This abstract class is a blueprint for "real" classes
     # that represent values of certain types.
     # This makes practical sense as we want the classes
-    # have same set of parameters to instanciate them
+    # have same set of parameters to instantiate them
     # in the same manner.
     # If you need to handle parameters of a new type
     # or if you need to handle some combination of vartype
@@ -245,7 +245,7 @@ class Value(ABC):
     # create another class using this class as parent.
 
     # To understand why we use this, take a look at how
-    # the child classes are instanciated in a similar manner
+    # the child classes are instantiated in a similar manner
     @abstractmethod
     def __init__(self, module, param_name, value, default_unit, pg_ver):
         pass
@@ -257,7 +257,7 @@ class ValueBool(Value):
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
-        # like default_unit, etc., but we need them to instanciate
+        # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
         self.module = module
         self.normalized = self.__normalize(value)
@@ -274,7 +274,7 @@ class ValueInt(Value):
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
-        # like default_unit, etc., but we need them to instanciate
+        # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
         self.module = module
         self.normalized = value
@@ -286,7 +286,7 @@ class ValueString(Value):
 
     def __init__(self, module, param_name, value, default_unit, pg_ver):
         # We do not use all the parameters in every class
-        # like default_unit, etc., but we need them to instanciate
+        # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
         self.module = module
         # It typically doesn't need normalization,
@@ -309,7 +309,7 @@ class ValueEnum(Value):
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
-        # like default_unit, etc., but we need them to instanciate
+        # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
         self.module = module
         # It typically doesn't need normalization,
@@ -338,7 +338,7 @@ class ValueReal(Value):
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
-        # like default_unit, etc., but we need them to instanciate
+        # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
         self.module = module
         self.normalized = self.__normalize(value)
@@ -358,7 +358,7 @@ class ValueTime(Value):
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
-        # like default_unit, etc., but we need them to instanciate
+        # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
         self.module = module
         self.default_unit = default_unit
@@ -492,7 +492,7 @@ class ValueMem(Value):
 
 def to_int(module, value):
     """Tries to convert the value to int and
-    fail gracefully when unsuccess.
+    fail gracefully when no success.
     """
     try:
         return int(value)
@@ -513,7 +513,7 @@ TIME_PARAM_UNITS = {"min", "s", "ms"}
 
 def build_value_class(module, param_name, value, unit, vartype, pg_ver):
     """ Choose a proper Value class based on vartype and/or unit,
-    instanciate it and return the object.
+    instantiate it and return the object.
     """
     if value == "-1":
         # In this case, it means that the setting is disabled
@@ -616,7 +616,7 @@ class PgParam():
                                             self.attrs["unit"],
                                             self.attrs["vartype"],
                                             self.pg_ver)
-        # Same object will be instanciated to compare
+        # Same object will be instantiated to compare
         # the desired and the current values
         self.desired_value = None
 
@@ -638,7 +638,7 @@ class PgParam():
 
     def reset(self):
         # As the value is "_RESET", i.e. a string, and
-        # the module always return changed=true, we just instanciate
+        # the module always return changed=true, we just instantiate
         # the desired value as if it would be a value of string type
         self.desired_value = ValueString(self.module, self.name,
                                          "_RESET",
@@ -810,10 +810,10 @@ def main():
     # We assume nothing has changed by default
     changed = False
 
-    # Instanciate the object
+    # Instantiate the object
     pg_param = PgParam(module, cursor, param, pg_ver)
 
-    # Whe we need to reset the value by running
+    # When we need to reset the value by running
     # "ALTER SYSTEM RESET param;".
     # setting up a regular value first
     if value == "_RESET":
