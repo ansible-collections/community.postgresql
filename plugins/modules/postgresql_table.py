@@ -300,7 +300,7 @@ class Table(object):
         query = ("SELECT t.tableowner, t.tablespace, c.reloptions "
                  "FROM pg_tables AS t "
                  "INNER JOIN pg_class AS c ON  c.relname = t.tablename "
-                 "INNER JOIN pg_namespace AS n ON c.relnamespace = n.oid "
+                 "INNER JOIN pg_namespace AS n ON t.schemaname = n.nspname AND c.relnamespace = n.oid "
                  "WHERE t.tablename = %(tblname)s "
                  "AND n.nspname = %(schema)s")
         res = exec_sql(self, query, query_params={'tblname': tblname, 'schema': schema},
