@@ -12,10 +12,6 @@
       login_db: postgres
 
   block:
-  # TODO Cover check mode
-  # TODO Check what it returns extensively
-  # TODO Cover a few params
-
   - name: Set value of type real in check_mode
     <<: *task_parameters
     check_mode: true

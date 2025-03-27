@@ -12,10 +12,6 @@
       login_db: postgres
 
   block:
-  # TODO Cover check mode
-  # TODO Check what it returns extensively
-  # TODO Cover a few params
-
   - name: shared_preload_libraries with this value must fail
     <<: *task_parameters
     ignore_errors: true

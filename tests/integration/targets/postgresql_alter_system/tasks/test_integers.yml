@@ -12,9 +12,6 @@
       login_db: postgres
 
   block:
-  # TODO Cover check mode
-  # TODO Check the actual state of the setting in DB
-  # TODO Check what it returns extensively
   - name: Set value same as default (4096kB) but in a different unit in check_mode
     <<: *task_parameters
     check_mode: true
