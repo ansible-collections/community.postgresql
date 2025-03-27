@@ -1,4 +1,4 @@
-# Test code for the postgresql_set module
+# Test code for the postgresql_alter_system module
 # Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
