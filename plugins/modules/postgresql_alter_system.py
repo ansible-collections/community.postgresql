@@ -155,8 +155,6 @@ restart_required:
   sample: true
 '''
 
-from abc import ABC, abstractmethod
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
@@ -232,8 +230,13 @@ def check_problematic_params(module, param, value):
                "If you think the bug has been fixed, please let us know.")
         module.fail_json(msg=msg)
 
-
-class Value(ABC):
+# Andersson007 originally used ABC, but it turned out that
+# Python 2.7 does not support it. As of 2025-03-27 it's still
+# supported by Ansible on target hosts until ~mid May, 2025,
+# so we, as a certified collection must support it as well.
+# TODO revisit this after May, 2025 to uncomment and use
+# as a parent class in all the Value* classes.
+# class Value(ABC):
     # This abstract class is a blueprint for "real" classes
     # that represent values of certain types.
     # This makes practical sense as we want the classes
@@ -246,12 +249,12 @@ class Value(ABC):
 
     # To understand why we use this, take a look at how
     # the child classes are instantiated in a similar manner
-    @abstractmethod
-    def __init__(self, module, param_name, value, default_unit, pg_ver):
-        pass
+#    @abstractmethod
+#    def __init__(self, module, param_name, value, default_unit, pg_ver):
+#        pass
 
 
-class ValueBool(Value):
+class ValueBool():
     """Represents a parameter of type bool."""
     # SELECT * FROM pg_settings WHERE vartype = 'bool'
 
@@ -266,7 +269,7 @@ class ValueBool(Value):
         return normalize_bool_val(value)
 
 
-class ValueInt(Value):
+class ValueInt():
     """Represents a parameter of type integer.
     Memory- and time-related parameters are handled by dedicated classes.
     """
@@ -280,7 +283,7 @@ class ValueInt(Value):
         self.normalized = value
 
 
-class ValueString(Value):
+class ValueString():
     """Represents a parameter of type string."""
     # SELECT * FROM pg_settings WHERE vartype = 'string'
 
@@ -303,7 +306,7 @@ class ValueString(Value):
         return value
 
 
-class ValueEnum(Value):
+class ValueEnum():
     """Represents a parameter of type enum."""
     # SELECT * FROM pg_settings WHERE vartype = 'enum'
 
@@ -332,7 +335,7 @@ def normalize_bool_val(value):
         return value
 
 
-class ValueReal(Value):
+class ValueReal():
     """Represents a parameter of type real."""
     # SELECT * FROM pg_settings WHERE vartype = 'real'
 
@@ -351,7 +354,7 @@ class ValueReal(Value):
         return value
 
 
-class ValueTime(Value):
+class ValueTime():
     """Represents a time-related parameter."""
 
     VALID_UNITS = {"us", "ms", "s", "min", "h", "d"}
@@ -425,7 +428,7 @@ class ValueTime(Value):
         return (int_part, unit_part)
 
 
-class ValueMem(Value):
+class ValueMem():
     """Represents a memory-related parameter."""
     # If you pass anything else for memory-related param,
     # Postgres will show that only the following
