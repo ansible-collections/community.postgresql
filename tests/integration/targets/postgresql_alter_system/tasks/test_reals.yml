@@ -28,6 +28,19 @@
     assert:
       that:
       - result is changed
+      - result.restart_required == False
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum_analyze_scale_factor = '1'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == 0.1
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "real"
+      - result["attrs"]["min_val"] == 0
+      - result["attrs"]["max_val"] == 100
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == 0.1
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == 0.1
 
   - name: Check nothing has changed
     <<: *task_parameters
@@ -51,6 +64,18 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum_analyze_scale_factor = '1'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == 0.1
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "real"
+      - result["attrs"]["min_val"] == 0
+      - result["attrs"]["max_val"] == 100
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == 0.1
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == 1
 
   - name: Check it has changed
     <<: *task_parameters
@@ -74,3 +99,15 @@
     assert:
       that:
       - result is not changed
+      - result.executed_queries == []
+      - result["attrs"]["boot_val"] == 0.1
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "real"
+      - result["attrs"]["min_val"] == 0
+      - result["attrs"]["max_val"] == 100
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == 1
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == 1
