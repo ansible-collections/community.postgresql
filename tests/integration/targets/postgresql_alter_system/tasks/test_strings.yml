@@ -42,6 +42,18 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET log_timezone = 'Europe/Berlin'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "GMT"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] != "Europe/Berlin"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] != "Europe/Berlin"
 
   - name: Check nothing has changed
     <<: *task_parameters
@@ -65,6 +77,18 @@
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET log_timezone = 'Europe/Berlin'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "GMT"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] != "Europe/Berlin"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "Europe/Berlin"
 
   - name: Check it has changed
     <<: *task_parameters
@@ -100,6 +124,18 @@
     assert:
       that:
       - result is changed
+      - result.restart_required == True
+      - result["attrs"]["boot_val"] == ""
+      - result["attrs"]["context"] == "postmaster"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] != "pg_stat_statements, pgcrypto"
+      - result["diff"]["after"]["pending_restart"] == True
+      - result["diff"]["after"]["setting"] != "pg_stat_statements, pgcrypto"
 
   # https://github.com/ansible-collections/community.postgresql/issues/78
   - name: Test param with comma containing values but no quotes
@@ -123,13 +159,25 @@
     check_mode: true
     postgresql_alter_system:
       <<: *pg_parameters
-      param: shared_preload_libraries
+      param: search_path
       value: '"$user", public, extensions'
 
   - name: Check the result
     assert:
       that:
       - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET search_path = \"$user\",'public','extensions'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == '"$user", public'
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == '"$user", public'
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == '"$user", public'
 
   - name: Check nothing has changed
     <<: *task_parameters
@@ -153,6 +201,17 @@
     assert:
       that:
       - result is changed
+      - result["attrs"]["boot_val"] == '"$user", public'
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == '"$user", public'
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == '"$user", public, extensions'
 
   - name: Check it has changed
     <<: *task_parameters

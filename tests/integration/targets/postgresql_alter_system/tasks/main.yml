@@ -5,8 +5,8 @@
 
 # Initial CI tests of postgresql_alter_system module
 
-# Check if this version limitation is still relevant
-- name: Run on PostgreSQL 9.6 or higher
+# PostgreSQL 14 is declared as supported by the module
+- name: Run on PostgreSQL 14 or higher
   block:
 
   - name: Test resetting feature
@@ -27,4 +27,4 @@
   - name: Test params of boolean type
     include_tasks: test_bools.yml
 
-  when: postgres_version_resp.stdout is version('9.6', '>=')
+  when: postgres_version_resp.stdout is version('14', '>=')

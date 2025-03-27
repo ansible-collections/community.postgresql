@@ -13,6 +13,7 @@ DOCUMENTATION = r'''
 module: postgresql_alter_system
 short_description: Change a PostgreSQL server configuration parameter
 description:
+  - Supports C(PostgreSQL 14) or later.
   - Allows to change a PostgreSQL server configuration parameter.
   - The module uses ALTER SYSTEM command and applies changes by reload server configuration.
 
@@ -171,9 +172,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 
 executed_queries = []
 
-# As of today, PostgreSQL 13 is the oldest
-# officially supported version. Let's start from here
-PG_SUPPORTED_VER = 130000
+PG_SUPPORTED_VER = 140000
 
 # GUC_LIST_QUOTE parameters list for each version where they changed (from PG_REQ_VER).
 # It is a tuple of tuples as we need to iterate it in order.
