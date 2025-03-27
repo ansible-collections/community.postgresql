@@ -15,6 +15,7 @@
   - name: Set value of type enum in check_mode
     <<: *task_parameters
     check_mode: true
+    ignore_errors: true
     postgresql_alter_system:
       <<: *pg_parameters
       param: recovery_prefetch

@@ -663,6 +663,9 @@ class PgParam():
         # You can uncomment the line below while debugging
         # to see what DB actually returns for the parameter
         # executed_queries.append(res[0])
+        if not res:
+            self.module.fail_json(msg="Parameter %s does not exist" % self.name)
+
         return res[0]
 
     def __construct_alter_system_query(self, value):

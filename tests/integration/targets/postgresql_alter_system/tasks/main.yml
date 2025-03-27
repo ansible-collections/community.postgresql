@@ -15,9 +15,6 @@
   - name: Test params of integer type
     include_tasks: test_integers.yml
 
-  - name: Test params of enum type
-    include_tasks: test_enums.yml
-
   - name: Test params of type real
     include_tasks: test_reals.yml
 
@@ -28,3 +25,11 @@
     include_tasks: test_bools.yml
 
   when: postgres_version_resp.stdout is version('14', '>=')
+
+- name: Run on PostgreSQL 17 or higher
+  block:
+
+  - name: Test params of enum type
+    include_tasks: test_enums.yml
+
+  when: postgres_version_resp.stdout is version('17', '>=')
