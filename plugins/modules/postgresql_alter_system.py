@@ -101,35 +101,35 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+attrs:
+  description:
+  - Parameter attributes from C(pg_settings)
+    that do not change.
+  returned: success
+  type: dict
+  sample: {
+    'unit': 'kB',
+    'context': 'user',
+    'vartype': 'integer',
+    'min_val': 64,
+    'max_val': 2147483647,
+    'boot_val': 4096,
+  }
 diff:
   description:
   - A dictionary the C(before) and C(after) keys.
   - Each key contains a dictionary of key-value pairs
-    representing some columns and values for the parameter
+    representing changeable columns and values for the parameter
     obtained from the pg_settings relation.
   returned: success
   type: dict
   sample: {
     'before': {
-        'name': 'work_mem',
         'setting': 4096,
-        'unit': 'kB',
-        'context': 'user',
-        'vartype': 'integer',
-        'min_val': 64,
-        'max_val': 2147483647,
-        'boot_val': 4096,
         'pending_restart': false
     },
     'after': {
-        'name': 'work_mem',
         'setting': 8192,
-        'unit': 'kB',
-        'context': 'user',
-        'vartype': 'integer',
-        'min_val': 64,
-        'max_val': 2147483647,
-        'boot_val': 4096,
         'pending_restart': false,
     }
   }
@@ -563,12 +563,28 @@ def convert_ret_vals(attrs):
     if attrs["vartype"] not in ("integer", "real"):
         return attrs
 
-    func = float if is_float(attrs["setting"]) else int
+    # The issue here is that a value can look like
+    # integer in one column, but like float in another,
+    # so let's check them all separately
+    if is_float(attrs["setting"]):
+        attrs["setting"] = float(attrs["setting"])
+    else:
+        attrs["setting"] = int(attrs["setting"])
 
-    attrs["setting"] = func(attrs["setting"])
-    attrs["boot_val"] = func(attrs["boot_val"])
-    attrs["min_val"] = func(attrs["min_val"])
-    attrs["max_val"] = func(attrs["max_val"])
+    if is_float(attrs["boot_val"]):
+        attrs["boot_val"] = float(attrs["boot_val"])
+    else:
+        attrs["boot_val"] = int(attrs["boot_val"])
+
+    if is_float(attrs["min_val"]):
+        attrs["min_val"] = float(attrs["min_val"])
+    else:
+        attrs["min_val"] = int(attrs["min_val"])
+
+    if is_float(attrs["max_val"]):
+        attrs["max_val"] = float(attrs["max_val"])
+    else:
+        attrs["max_val"] = int(attrs["max_val"])
 
     return attrs
 
@@ -733,9 +749,40 @@ class PgParam():
             self.module.fail_json(msg="Cannot run 'SELECT pg_reload_conf()': %s" % to_native(e))
 
 
+def build_ret_attrs(param_attrs):
+    """Extracts and returns immutable attributes
+    that we return to users as the attrs return value.
+    """
+    return {
+        "context": param_attrs["context"],
+        "boot_val": param_attrs["boot_val"],
+        "enumvals": param_attrs["enumvals"],
+        "unit": param_attrs["unit"],
+        "vartype": param_attrs["vartype"],
+        "min_val": param_attrs["min_val"],
+        "max_val": param_attrs["max_val"],
+    }
+
+
+def build_ret_diff(param_attrs_before, param_attrs_after):
+    """Extracts and returns mutable attributes
+    that we return to users as the diff return value.
+    """
+    return {
+        "before": {
+            "setting": param_attrs_before["setting"],
+            "pending_restart": param_attrs_before["pending_restart"],
+        },
+        "after": {
+            "setting": param_attrs_after["setting"],
+            "pending_restart": param_attrs_after["pending_restart"],
+        }
+    }
+
 # ===========================================
 # Module execution.
 #
+
 
 def main():
     argument_spec = postgres_common_argument_spec()
@@ -810,16 +857,16 @@ def main():
     cursor.close()
     db_connection.close()
 
-    # Populate diff
-    diff = {
-        # TODO Should you have attrs that cannot be changed
-        # like context, etc. as a part of another field,
-        # maybe attrs or something outside the diff?
-        "before": convert_ret_vals(pg_param.attrs),
-        "after": convert_ret_vals(pg_param_after.attrs),
-    }
+    # Convert ret values, then populate attrs and diff
+    pg_param.attrs = convert_ret_vals(pg_param.attrs)
+    pg_param_after.attrs = convert_ret_vals(pg_param_after.attrs)
+    # Attributes are immutable (in the context of this module at least),
+    # so we put them separately, not as a part of diff
+    attrs = build_ret_attrs(pg_param.attrs)
+    diff = build_ret_diff(pg_param.attrs, pg_param_after.attrs)
 
     module.exit_json(
+        attrs=attrs,
         changed=changed,
         executed_queries=executed_queries,
         diff=diff,

@@ -29,24 +29,17 @@
       - result.restart_required == False
       - result is not changed
       - result.executed_queries == []
-      - result["diff"]["before"]["boot_val"] == 4096
-      - result["diff"]["before"]["context"] == "user"
-      - result["diff"]["before"]["enumvals"] == None
+      - result["attrs"]["boot_val"] == 4096
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == "kB"
+      - result["attrs"]["vartype"] == "integer"
+      - result["attrs"]["min_val"] == 64
+      - result["attrs"]["max_val"] == 2147483647
       - result["diff"]["before"]["pending_restart"] == False
       - result["diff"]["before"]["setting"] == 4096
-      - result["diff"]["before"]["unit"] == "kB"
-      - result["diff"]["before"]["vartype"] == "integer"
-      - result["diff"]["before"]["min_val"] == 64
-      - result["diff"]["before"]["max_val"] == 2147483647
-      - result["diff"]["after"]["boot_val"] == 4096
-      - result["diff"]["after"]["context"] == "user"
-      - result["diff"]["after"]["enumvals"] == None
       - result["diff"]["after"]["pending_restart"] == False
       - result["diff"]["after"]["setting"] == 4096
-      - result["diff"]["after"]["unit"] == "kB"
-      - result["diff"]["after"]["vartype"] == "integer"
-      - result["diff"]["after"]["min_val"] == 64
-      - result["diff"]["after"]["max_val"] == 2147483647
 
   - name: Check in DB
     <<: *task_parameters
@@ -71,24 +64,17 @@
       that:
       - result is not changed
       - result.executed_queries == []
-      - result["diff"]["before"]["boot_val"] == 4096
-      - result["diff"]["before"]["context"] == "user"
-      - result["diff"]["before"]["enumvals"] == None
+      - result["attrs"]["boot_val"] == 4096
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == "kB"
+      - result["attrs"]["vartype"] == "integer"
+      - result["attrs"]["min_val"] == 64
+      - result["attrs"]["max_val"] == 2147483647
       - result["diff"]["before"]["pending_restart"] == False
       - result["diff"]["before"]["setting"] == 4096
-      - result["diff"]["before"]["unit"] == "kB"
-      - result["diff"]["before"]["vartype"] == "integer"
-      - result["diff"]["before"]["min_val"] == 64
-      - result["diff"]["before"]["max_val"] == 2147483647
-      - result["diff"]["after"]["boot_val"] == 4096
-      - result["diff"]["after"]["context"] == "user"
-      - result["diff"]["after"]["enumvals"] == None
       - result["diff"]["after"]["pending_restart"] == False
       - result["diff"]["after"]["setting"] == 4096
-      - result["diff"]["after"]["unit"] == "kB"
-      - result["diff"]["after"]["vartype"] == "integer"
-      - result["diff"]["after"]["min_val"] == 64
-      - result["diff"]["after"]["max_val"] == 2147483647
 
   - name: Check in DB
     <<: *task_parameters
@@ -114,24 +100,17 @@
       that:
       - result is changed
       - result.executed_queries == ["ALTER SYSTEM SET work_mem = '2048'", "SELECT pg_reload_conf()"]
-      - result["diff"]["before"]["boot_val"] == 4096
-      - result["diff"]["before"]["context"] == "user"
-      - result["diff"]["before"]["enumvals"] == None
+      - result["attrs"]["boot_val"] == 4096
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == "kB"
+      - result["attrs"]["vartype"] == "integer"
+      - result["attrs"]["min_val"] == 64
+      - result["attrs"]["max_val"] == 2147483647
       - result["diff"]["before"]["pending_restart"] == False
-      - result["diff"]["before"]["min_val"] == 64
-      - result["diff"]["before"]["max_val"] == 2147483647
       - result["diff"]["before"]["setting"] == 4096
-      - result["diff"]["before"]["unit"] == "kB"
-      - result["diff"]["before"]["vartype"] == "integer"
-      - result["diff"]["after"]["boot_val"] == 4096
-      - result["diff"]["after"]["context"] == "user"
-      - result["diff"]["after"]["enumvals"] == None
       - result["diff"]["after"]["pending_restart"] == False
-      - result["diff"]["after"]["min_val"] == 64
-      - result["diff"]["after"]["max_val"] == 2147483647
       - result["diff"]["after"]["setting"] == 4096
-      - result["diff"]["after"]["unit"] == "kB"
-      - result["diff"]["after"]["vartype"] == "integer"
 
   - name: Check in DB
     <<: *task_parameters
@@ -156,20 +135,17 @@
       that:
       - result is changed
       - result.executed_queries == ["ALTER SYSTEM SET work_mem = '2048'", "SELECT pg_reload_conf()"]
-      - result["diff"]["before"]["boot_val"] == 4096
-      - result["diff"]["before"]["context"] == "user"
-      - result["diff"]["before"]["enumvals"] == None
+      - result["attrs"]["boot_val"] == 4096
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == "kB"
+      - result["attrs"]["vartype"] == "integer"
+      - result["attrs"]["min_val"] == 64
+      - result["attrs"]["max_val"] == 2147483647
       - result["diff"]["before"]["pending_restart"] == False
       - result["diff"]["before"]["setting"] == 4096
-      - result["diff"]["before"]["unit"] == "kB"
-      - result["diff"]["before"]["vartype"] == "integer"
-      - result["diff"]["after"]["boot_val"] == 4096
-      - result["diff"]["after"]["context"] == "user"
-      - result["diff"]["after"]["enumvals"] == None
       - result["diff"]["after"]["pending_restart"] == False
-      - result["diff"]["after"]["setting"] == 2048
-      - result["diff"]["after"]["unit"] == "kB"
-      - result["diff"]["after"]["vartype"] == "integer"
+      - result["diff"]["after"]["setting"] == 2048  # <- the difference
 
   - name: Check in DB
     <<: *task_parameters
