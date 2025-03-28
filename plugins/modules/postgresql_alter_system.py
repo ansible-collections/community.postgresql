@@ -70,8 +70,8 @@ seealso:
 - name: PostgreSQL server configuration
   description: General information about PostgreSQL server configuration.
   link: https://www.postgresql.org/docs/current/runtime-config.html
-- name: PostgreSQL view pg_settings reference
-  description: Complete reference of the pg_settings view documentation.
+- name: PostgreSQL view pg_catalog.pg_settings reference
+  description: Complete reference of the pg_catalog.pg_settings view documentation.
   link: https://www.postgresql.org/docs/current/view-pg-settings.html
 - name: PostgreSQL ALTER SYSTEM command reference
   description: Complete reference of the ALTER SYSTEM command documentation.
@@ -104,7 +104,7 @@ EXAMPLES = r'''
 RETURN = r'''
 attrs:
   description:
-  - Parameter attributes from C(pg_settings)
+  - Parameter attributes from C(pg_catalog.pg_settings)
     that do not change.
   returned: success
   type: dict
@@ -121,7 +121,7 @@ diff:
   - A dictionary the C(before) and C(after) keys.
   - Each key contains a dictionary of key-value pairs
     representing changeable columns and values for the parameter
-    obtained from the pg_settings relation.
+    obtained from the pg_catalog.pg_settings relation.
   returned: success
   type: dict
   sample: {
@@ -256,7 +256,7 @@ def check_problematic_params(module, param, value):
 
 class ValueBool():
     """Represents a parameter of type bool."""
-    # SELECT * FROM pg_settings WHERE vartype = 'bool'
+    # SELECT * FROM pg_catalog.pg_settings WHERE vartype = 'bool'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
@@ -273,7 +273,7 @@ class ValueInt():
     """Represents a parameter of type integer.
     Memory- and time-related parameters are handled by dedicated classes.
     """
-    # SELECT * FROM pg_settings WHERE vartype = 'integer' and unit IS NULL
+    # SELECT * FROM pg_catalog.pg_settings WHERE vartype = 'integer' and unit IS NULL
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
@@ -285,7 +285,7 @@ class ValueInt():
 
 class ValueString():
     """Represents a parameter of type string."""
-    # SELECT * FROM pg_settings WHERE vartype = 'string'
+    # SELECT * FROM pg_catalog.pg_settings WHERE vartype = 'string'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver):
         # We do not use all the parameters in every class
@@ -308,7 +308,7 @@ class ValueString():
 
 class ValueEnum():
     """Represents a parameter of type enum."""
-    # SELECT * FROM pg_settings WHERE vartype = 'enum'
+    # SELECT * FROM pg_catalog.pg_settings WHERE vartype = 'enum'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
@@ -326,7 +326,7 @@ class ValueEnum():
 def normalize_bool_val(value):
     # No idea why Ansible converts on/off passed as string
     # to "True" and "False". However, there are represented
-    # as "on" and "off" in pg_settings.
+    # as "on" and "off" in pg_catalog.pg_settings.
     if value == "True":
         return "on"
     elif value == "False":
@@ -337,7 +337,7 @@ def normalize_bool_val(value):
 
 class ValueReal():
     """Represents a parameter of type real."""
-    # SELECT * FROM pg_settings WHERE vartype = 'real'
+    # SELECT * FROM pg_catalog.pg_settings WHERE vartype = 'real'
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
@@ -414,7 +414,7 @@ class ValueTime():
 
         # When it doesn't contain a unit part
         # we set it as the unit defined for this
-        # parameter in pg_settings
+        # parameter in pg_catalog.pg_settings
         else:
             int_part = to_int(self.module, value)
             unit_part = self.default_unit
@@ -451,7 +451,7 @@ class ValueMem():
         self.default_unit = default_unit
         self.num_value, self.passed_unit = self.__set(param_name, value)
         if self.passed_unit == "8kB":
-            # This is a special case when the unit in pg_settings is "8kB".
+            # This is a special case when the unit in pg_catalog.pg_settings is "8kB".
             # Users can still pass such values as "10MB", etc.
             # The only issue seems to appear when users don't specify values
             # of 8kB default value explicitly, i.e., when they pass just "100".
@@ -479,7 +479,7 @@ class ValueMem():
 
         # When it doesn't contain a unit part
         # we set it as the unit defined for this
-        # parameter in pg_settings
+        # parameter in pg_catalog.pg_settings
         else:
             int_part = to_int(self.module, value)
             unit_part = self.default_unit
@@ -504,12 +504,12 @@ def to_int(module, value):
         module.fail_json(msg=val_err_msg)
 
 
-# Run "SELECT DISTINCT unit FROM pg_settings;"
+# Run "SELECT DISTINCT unit FROM pg_catalog.pg_settings;"
 # and extract memory-related ones
 MEM_PARAM_UNITS = {"B", "kB", "8kB", "MB"}
 
 
-# Run "SELECT DISTINCT unit FROM pg_settings;"
+# Run "SELECT DISTINCT unit FROM pg_catalog.pg_settings;"
 # and extract time-related ones
 TIME_PARAM_UNITS = {"min", "s", "ms"}
 
@@ -594,7 +594,7 @@ class PgParam():
     class object based on the vartype column value
     for a particular parameter.
     To get types, run in your PG client
-    SELECT DISTINCT vartype FROM pg_settings;
+    SELECT DISTINCT vartype FROM pg_catalog.pg_settings;
 
     We can't predict what our users pass, so we need
     some kind of normalization of the values that we
@@ -613,7 +613,7 @@ class PgParam():
         self.__check_param_context(self.attrs["context"])
 
         # Return a proper value class based on vartype and unit
-        # from a pg_settings entry for a specific parameter
+        # from a pg_catalog.pg_settings entry for a specific parameter
         self.init_value = build_value_class(self.module, self.name,
                                             self.attrs["setting"],
                                             self.attrs["unit"],
@@ -658,7 +658,7 @@ class PgParam():
     def get_attrs(self):
         query = ("SELECT setting, unit, context, vartype, enumvals, "
                  "boot_val, min_val, max_val, pending_restart "
-                 "FROM pg_settings where name = %s")
+                 "FROM pg_catalog.pg_settings where name = %s")
         res = self.__exec_sql(query, (self.name,))
         # You can uncomment the line below while debugging
         # to see what DB actually returns for the parameter
