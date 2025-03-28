@@ -172,10 +172,9 @@ executed_queries = []
 
 PG_SUPPORTED_VER = 140000
 
+# It was copied here from postgresql_set.
 # GUC_LIST_QUOTE parameters list for each version where they changed (from PG_REQ_VER).
 # It is a tuple of tuples as we need to iterate it in order.
-# TODO it was copied here from postgresql_set. After merge, it should be
-# moved to a lib and shared between the modules
 PARAMETERS_GUC_LIST_QUOTE = (
     (140000, (
         'local_preload_libraries',
@@ -195,8 +194,7 @@ PARAMETERS_GUC_LIST_QUOTE = (
 )
 
 
-# TODO it was copied here from postgresql_set. After merge, it should be
-# moved to a lib and shared between the modules
+# It was copied here from postgresql_set.
 def param_is_guc_list_quote(server_version, name):
     for guc_list_quote_ver, guc_list_quote_params in PARAMETERS_GUC_LIST_QUOTE:
         if server_version >= guc_list_quote_ver:
@@ -204,8 +202,7 @@ def param_is_guc_list_quote(server_version, name):
     return False
 
 
-# TODO it was copied here from postgresql_set. After merge, it should be
-# moved to a lib and shared between the modules
+# It was copied here from postgresql_set.
 def param_guc_list_unquote(value):
     # Unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
     # Assume the parameter is GUC_LIST_QUOTE (check in param_is_guc_list_quote function)
