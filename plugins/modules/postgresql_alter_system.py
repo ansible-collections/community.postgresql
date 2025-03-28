@@ -873,7 +873,7 @@ def main():
         to_return["note"] = "Restart of PostgreSQL is required for this setting."
 
     module.exit_json(
-        **to_return,
+        **to_return
     )
 
 
