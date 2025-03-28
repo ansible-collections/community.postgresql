@@ -121,6 +121,7 @@
       that:
       - result is changed
       - result.restart_required == True
+      - result["note"] is search("Restart of PostgreSQL is required for this setting.")
       - result["attrs"]["boot_val"] == ""
       - result["attrs"]["context"] == "postmaster"
       - result["attrs"]["enumvals"] == None
