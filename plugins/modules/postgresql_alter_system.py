@@ -856,29 +856,27 @@ def main():
     attrs = build_ret_attrs(pg_param.attrs)
     diff = build_ret_diff(pg_param.attrs, pg_param_after.attrs)
 
-    # Some arbitrary messages to return.
-    # Can be used for debugging
-    messages = {}
-    if diff["after"]["pending_restart"]:
-        # We are going to unpack messages to the exit_json() as a return value;
-        # if it's empty, nothing will be added
-        messages = {"note": "Restart of PostgreSQL is required for this setting."}
-
-    module.exit_json(
-        **messages,
+    to_return = dict(
         attrs=attrs,
         changed=changed,
         executed_queries=executed_queries,
         diff=diff,
         restart_required=diff["after"]["pending_restart"],
         # FOR DEBUGGING you can return the information below if needed.
-        # You could use the messages dict above to add them.
+        # If yes, create an empty dict called debug first
         # debug["value_class_value"]=pg_param.init_value.num_value,
         # debug["value_class_unit"]=pg_param.init_value.passed_unit,
         # debug["value_class_normalized"]=pg_param.init_value.normalized,
         # debug["desir_class_value"]=pg_param.desired_value.num_value,
         # debug["desir_class_unit"]=pg_param.desired_value.passed_unit,
         # debug["desir_class_normalized"]=pg_param.desired_value.normalized,
+    )
+
+    if diff["after"]["pending_restart"]:
+        to_return["note"] = "Restart of PostgreSQL is required for this setting."
+
+    module.exit_json(
+        **to_return,
     )
 
 
