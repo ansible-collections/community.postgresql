@@ -55,7 +55,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'log_timezone'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_timezone'"
 
   - name: Check the output
     assert:
@@ -90,7 +90,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'log_timezone'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_timezone'"
 
   - name: Check the output
     assert:
@@ -179,7 +179,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'search_path'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'search_path'"
 
   - name: Check the output
     assert:
@@ -213,7 +213,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'search_path'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'search_path'"
 
   - name: Check the output
     assert:

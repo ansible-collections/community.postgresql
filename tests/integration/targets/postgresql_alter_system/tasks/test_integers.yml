@@ -42,7 +42,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'work_mem'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
 
   - name: Check the output
     assert:
@@ -77,7 +77,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'work_mem'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
 
   - name: Check the output
     assert:
@@ -113,7 +113,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'work_mem'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
 
   - name: Check the output
     assert:
@@ -148,7 +148,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'work_mem'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
 
   - name: Check the output
     assert:
@@ -171,7 +171,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'work_mem'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
 
   - name: Check the output
     assert:
@@ -237,7 +237,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'autovacuum_analyze_threshold'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'autovacuum_analyze_threshold'"
 
   - name: Check the output
     assert:
@@ -274,7 +274,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'backend_flush_after'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'backend_flush_after'"
 
   - name: Check the output
     assert:
@@ -311,7 +311,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'backend_flush_after'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'backend_flush_after'"
 
   - name: Check the output
     assert:
@@ -357,7 +357,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'archive_timeout'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
 
   - name: Check the output
     assert:
@@ -381,7 +381,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'archive_timeout'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
 
   - name: Check the output
     assert:
@@ -419,7 +419,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'archive_timeout'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
 
   - name: Check the output
     assert:
@@ -443,7 +443,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'archive_timeout'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
 
   - name: Check the output
     assert:
@@ -494,7 +494,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'archive_timeout'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
 
   - name: Check the output
     assert:
@@ -545,7 +545,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'log_temp_files'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_temp_files'"
 
   - name: Check the output
     assert:
@@ -569,7 +569,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'log_temp_files'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_temp_files'"
 
   - name: Check the output
     assert:

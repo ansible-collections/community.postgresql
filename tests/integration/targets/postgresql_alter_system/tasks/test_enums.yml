@@ -42,7 +42,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'recovery_prefetch'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'recovery_prefetch'"
 
   - name: Check the output
     assert:
@@ -78,7 +78,7 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_settings WHERE name = 'recovery_prefetch'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'recovery_prefetch'"
 
   - name: Check the output
     assert:
