@@ -16,6 +16,7 @@ description:
   - Supports C(PostgreSQL 14) or later.
   - Allows to change a PostgreSQL server configuration parameter.
   - The module uses ALTER SYSTEM command and applies changes by reload server configuration.
+  - Some parameters require PostgreSQL to restart. See the RV(restart_required) return value.
 
 version_added: '3.13.0'
 
@@ -853,7 +854,7 @@ def main():
     attrs = build_ret_attrs(pg_param.attrs)
     diff = build_ret_diff(pg_param.attrs, pg_param_after.attrs)
 
-    to_return = dict(
+    module.exit_json(
         attrs=attrs,
         changed=changed,
         executed_queries=executed_queries,
@@ -867,13 +868,6 @@ def main():
         # debug["desir_class_value"]=pg_param.desired_value.num_value,
         # debug["desir_class_unit"]=pg_param.desired_value.passed_unit,
         # debug["desir_class_normalized"]=pg_param.desired_value.normalized,
-    )
-
-    if diff["after"]["pending_restart"]:
-        to_return["note"] = "Restart of PostgreSQL is required for this setting."
-
-    module.exit_json(
-        **to_return
     )
 
 
