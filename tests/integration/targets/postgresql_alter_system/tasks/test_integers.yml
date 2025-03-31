@@ -1,0 +1,591 @@
+# Test code for the postgresql_alter_system module
+# Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: Set value same as default (4096kB) but in a different unit in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 4MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result.restart_required == False
+      - result is not changed
+      - result.executed_queries == []
+      - result["attrs"]["boot_val"] == 4096
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == "kB"
+      - result["attrs"]["vartype"] == "integer"
+      - result["attrs"]["min_val"] == 64
+      - result["attrs"]["max_val"] == 2147483647
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == 4096
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == 4096
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "4096"
+
+  - name: Set value same as default (4096kB) but in a different unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 4MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+      - result["attrs"]["boot_val"] == 4096
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == "kB"
+      - result["attrs"]["vartype"] == "integer"
+      - result["attrs"]["min_val"] == 64
+      - result["attrs"]["max_val"] == 2147483647
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == 4096
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == 4096
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "4096"
+
+  - name: Set a different value in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 2048
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET work_mem = '2048'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == 4096
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == "kB"
+      - result["attrs"]["vartype"] == "integer"
+      - result["attrs"]["min_val"] == 64
+      - result["attrs"]["max_val"] == 2147483647
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == 4096
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == 4096
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "4096"
+
+  - name: Set a different value
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 2048
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET work_mem = '2048'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == 4096
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == "kB"
+      - result["attrs"]["vartype"] == "integer"
+      - result["attrs"]["min_val"] == 64
+      - result["attrs"]["max_val"] == 2147483647
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == 4096
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == 2048  # <- the difference
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "2048"
+
+  - name: Set a different value using units
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 8MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'work_mem'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "8192"
+
+  - name: Set a value with invalid unit
+    <<: *task_parameters
+    ignore_errors: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 8M
+
+  - name: Check the result
+    assert:
+      that:
+      - result is failed
+      - result.msg is search("invalid value for parameter")
+
+  - name: Set param of postmaster context
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: huge_page_size
+      value: 2MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.restart_required == True
+      - result.executed_queries == ["ALTER SYSTEM SET huge_page_size = '2MB'", "SELECT pg_reload_conf()"]
+
+  - name: Set param of internal context, must fail
+    <<: *task_parameters
+    ignore_errors: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: block_size
+      value: 1MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is failed
+      - result.msg is search("cannot be changed")
+
+  - name: Set value with no unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: autovacuum_analyze_threshold
+      value: 60
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum_analyze_threshold = '60'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'autovacuum_analyze_threshold'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "60"
+
+  - name: Set same value with no unit again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: autovacuum_analyze_threshold
+      value: 60
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  - name: Set 8kB unit parameter w/o specifying units
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: backend_flush_after
+      value: 10
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET backend_flush_after = '10'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'backend_flush_after'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "10"
+
+  - name: Set 8kB unit parameter w/o specifying units again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: backend_flush_after
+      value: 10
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  - name: Set 8kB unit parameter in other unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: backend_flush_after
+      value: 1MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET backend_flush_after = '1MB'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'backend_flush_after'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "128"
+
+  - name: Set 8kB unit parameter in other unit again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: backend_flush_after
+      value: 1MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  # Test parameters with time units
+  - name: Make sure the next tested param is set as 0 now
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 0
+
+  - name: Set time unit parameter w/o specifying the unit in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "0"
+
+  - name: Set time unit parameter w/o specifying the unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "1"
+
+  - name: Set time unit parameter w/o specifying the unit again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  - name: Set time unit parameter specifying the unit in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1min
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1min'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "1"
+
+  - name: Set time unit parameter specifying the unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1min
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1min'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "60"
+
+  - name: Set time unit parameter specifying the unit again in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1min
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  - name: Set time unit parameter specifying the unit again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1min
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  - name: Set time unit parameter specifying the unit
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1h
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1h'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'archive_timeout'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "3600"
+
+  - name: Set time unit parameter specifying the unit again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_timeout
+      value: 1h
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  # Test settings with default negative values
+  - name: Set a parameter negative by default
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_temp_files
+      value: -1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  - name: Set a parameter negative by default
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_temp_files
+      value: 1MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET log_temp_files = '1MB'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_temp_files'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "1024"
+
+  - name: Set a parameter negative by default back as negative
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_temp_files
+      value: -1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET log_temp_files = '-1'", "SELECT pg_reload_conf()"]
+
+  - name: Check in DB
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_temp_files'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "-1"
+
+  - name: Set a parameter negative by default again in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_temp_files
+      value: -1
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []

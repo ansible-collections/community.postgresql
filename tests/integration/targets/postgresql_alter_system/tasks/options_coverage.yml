@@ -1,0 +1,121 @@
+# Test code for the postgresql_set module
+# Copyright: (c) 2021, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: Define a test setting map
+    set_fact:
+      setting_map:
+        allow_system_table_mods: on
+        archive_command: /bin/true
+        archive_timeout: 10min
+        autovacuum_work_mem: '-1'
+        backend_flush_after: 0
+        autovacuum_vacuum_scale_factor: 0.5
+        client_encoding: UTF-8
+        bgwriter_delay: 400
+        maintenance_work_mem: 32mb
+        effective_cache_size: 1024kB
+        shared_buffers: 1GB
+        wal_level: replica
+        log_statement: mod
+        track_functions: none
+        shared_preload_libraries: 'pg_stat_statements, pgcrypto'
+        log_line_prefix: 'db=%d,user=%u,app=%a,client=%h '
+        unix_socket_directories: '/var/run/postgresql, /var/run/postgresql2'
+
+  - name: Ensure all unix_socket_directories directories exist
+    file:
+      state: directory
+      path: "{{ item }}"
+      owner: "{{ pg_user }}"
+      group: "{{ pg_user }}"
+      mode: '0777'
+    become: true
+    with_list: "{{ setting_map['unix_socket_directories'].split(',') | map('trim') | list }}"
+
+  # Check mode:
+  - name: Set settings in check mode
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: '{{ item.key }}'
+      value: '{{ item.value }}'
+    check_mode: true
+    with_dict: '{{ setting_map }}'
+
+  # Actual mode:
+  - name: Set settings in actual mode
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: '{{ item.key }}'
+      value: '{{ item.value }}'
+    with_dict: '{{ setting_map }}'
+
+  # https://github.com/ansible-collections/community.postgresql/issues/78
+  - name: Test param with comma containing values but no quotes
+    <<: *task_parameters
+    shell: "grep shared_preload_libraries {{ pg_auto_conf }}"
+    register: result
+
+  - assert:
+      that:
+      - result.stdout == "shared_preload_libraries = 'pg_stat_statements, pgcrypto'"
+
+  # https://github.com/ansible-collections/community.postgresql/pull/521
+  # unix_socket_directories is a GUC_LIST_QUOTE parameter only from PostgreSQL 14
+  - name: Test param with comma containing values and quotes
+    <<: *task_parameters
+    shell: "grep unix_socket_directories {{ pg_auto_conf }}"
+    register: result
+
+  - assert:
+      that:
+      - result.stdout == "unix_socket_directories = '/var/run/postgresql, /var/run/postgresql2'"
+    when: postgres_version_resp.stdout is version('14', '<')
+
+  - assert:
+      that:
+      - result.stdout == "unix_socket_directories = '\"/var/run/postgresql\", \"/var/run/postgresql2\"'"
+    when: postgres_version_resp.stdout is version('14', '>=')
+
+  # https://github.com/ansible-collections/community.postgresql/pull/400
+  - name: Test single-value param with commas and spaces in value
+    <<: *task_parameters
+    shell: "grep log_line_prefix {{ pg_auto_conf }}"
+    register: result
+
+  - assert:
+      that:
+      - result.stdout == "log_line_prefix = 'db=%d,user=%u,app=%a,client=%h '"
+
+  # Restart PostgreSQL:
+  - name: Restart PostgreSQL
+    become: true
+    service:
+      name: "{{ postgresql_service }}"
+      state: restarted
+
+  # Idempotence:
+  - name: Set settings in actual mode again after restart for idempotence
+    <<: *task_parameters
+    postgresql_set:
+      <<: *pg_parameters
+      name: '{{ item.key }}'
+      value: '{{ item.value }}'
+    register: test_idempotence
+    with_dict: '{{ setting_map }}'
+
+  - name: Check idempotence after restart
+    assert:
+      that: not item.changed
+    with_items: '{{ test_idempotence.results }}'

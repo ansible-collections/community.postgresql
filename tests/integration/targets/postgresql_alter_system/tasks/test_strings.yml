@@ -1,0 +1,233 @@
+# Test code for the postgresql_alter_system module
+# Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: shared_preload_libraries with this value must fail
+    <<: *task_parameters
+    ignore_errors: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: shared_preload_libraries
+      value: ''
+
+  - name: Check the result
+    assert:
+      that:
+      - result is failed
+      - result.msg is search("is not supported by the module to avoid crashe")
+
+  - name: Set value of type string in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: Europe/Berlin
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET log_timezone = 'Europe/Berlin'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "GMT"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] != "Europe/Berlin"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] != "Europe/Berlin"
+
+  - name: Check nothing has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_timezone'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] != "Europe/Berlin"
+
+  - name: Set value of type string
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: Europe/Berlin
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET log_timezone = 'Europe/Berlin'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "GMT"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] != "Europe/Berlin"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "Europe/Berlin"
+
+  - name: Check it has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_timezone'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "Europe/Berlin"
+
+  - name: Set same value again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: Europe/Berlin
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
+  - name: Set shared_preload_libraries
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: shared_preload_libraries
+      value: 'pg_stat_statements, pgcrypto'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.restart_required == True
+      - result["attrs"]["boot_val"] == ""
+      - result["attrs"]["context"] == "postmaster"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] != "pg_stat_statements, pgcrypto"
+      - result["diff"]["after"]["pending_restart"] == True
+      - result["diff"]["after"]["setting"] != "pg_stat_statements, pgcrypto"
+
+  # https://github.com/ansible-collections/community.postgresql/issues/78
+  - name: Test param with comma containing values but no quotes
+    <<: *task_parameters
+    shell: "grep shared_preload_libraries {{ pg_auto_conf }}"
+    register: result
+
+  - assert:
+      that:
+      - result.stdout == "shared_preload_libraries = 'pg_stat_statements, pgcrypto'"
+
+  - name: Reset shared_preload_libraries
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: shared_preload_libraries
+      value: _RESET
+
+  - name: Set search_path in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: search_path
+      value: '"$user", public, extensions'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET search_path = \"$user\",'public','extensions'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == '"$user", public'
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == '"$user", public'
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == '"$user", public'
+
+  - name: Check nothing has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'search_path'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "\"$user\", public"
+
+  - name: Set search_path
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: search_path
+      value: '"$user", public, extensions'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result["attrs"]["boot_val"] == '"$user", public'
+      - result["attrs"]["context"] == "user"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == '"$user", public'
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == '"$user", public, extensions'
+
+  - name: Check it has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'search_path'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == '"$user", public, extensions'
+
+  - name: Set search_path again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: search_path
+      value: '"$user", public, extensions'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed

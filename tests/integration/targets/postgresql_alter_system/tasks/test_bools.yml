@@ -1,0 +1,110 @@
+# Test code for the postgresql_alter_system module
+# Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: Set a bool param in check_mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: autovacuum
+      value: off
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum = 'False'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "on"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "bool"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "on"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "on"
+
+  - name: Check nothing has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'autovacuum'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "on"
+
+  - name: Set a bool param
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: autovacuum
+      value: off
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.restart_required == False
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum = 'False'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "on"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "bool"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "on"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "off"
+
+  - name: Check it has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'autovacuum'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "off"
+
+  - name: Set a bool param again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: autovacuum
+      value: off
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.restart_required == False
+      - result.executed_queries == []
+      - result["attrs"]["boot_val"] == "on"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "bool"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "off"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "off"

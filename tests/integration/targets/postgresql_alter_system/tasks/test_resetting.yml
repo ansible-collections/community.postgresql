@@ -1,0 +1,68 @@
+# Test code for the postgresql_alter_system module
+# Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: Make sure the value differs from its default
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: Europe/Berlin
+
+  - name: Reset the parameter
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: _RESET
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM RESET log_timezone", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "GMT"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "Europe/Berlin"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] != "Europe/Berlin"
+
+  - name: Reset the parameter again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_timezone
+      value: _RESET
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM RESET log_timezone", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "GMT"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == None
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "string"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] != "Europe/Berlin"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] != "Europe/Berlin"

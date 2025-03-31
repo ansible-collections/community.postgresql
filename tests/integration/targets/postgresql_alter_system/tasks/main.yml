@@ -1,0 +1,35 @@
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+# Initial CI tests of postgresql_alter_system module
+
+# PostgreSQL 14 is declared as supported by the module
+- name: Run on PostgreSQL 14 or higher
+  block:
+
+  - name: Test resetting feature
+    include_tasks: test_resetting.yml
+
+  - name: Test params of integer type
+    include_tasks: test_integers.yml
+
+  - name: Test params of type real
+    include_tasks: test_reals.yml
+
+  - name: Test params of string type
+    include_tasks: test_strings.yml
+
+  - name: Test params of boolean type
+    include_tasks: test_bools.yml
+
+  when: postgres_version_resp.stdout is version('14', '>=')
+
+- name: Run on PostgreSQL 17 or higher
+  block:
+
+  - name: Test params of enum type
+    include_tasks: test_enums.yml
+
+  when: postgres_version_resp.stdout is version('17', '>=')

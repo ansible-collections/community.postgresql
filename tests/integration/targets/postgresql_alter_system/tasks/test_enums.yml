@@ -1,0 +1,123 @@
+# Test code for the postgresql_alter_system module
+# Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: Set value of type enum in check_mode
+    <<: *task_parameters
+    check_mode: true
+    ignore_errors: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: recovery_prefetch
+      value: off
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET recovery_prefetch = 'False'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "try"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == ["off", "on", "try"]
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "enum"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "try"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "try"
+
+  - name: Check it has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'recovery_prefetch'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "try"
+
+  - name: Set value of type enum
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: recovery_prefetch
+      value: off
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.restart_required == False
+      - result.executed_queries == ["ALTER SYSTEM SET recovery_prefetch = 'False'", "SELECT pg_reload_conf()"]
+      - result["attrs"]["boot_val"] == "try"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == ["off", "on", "try"]
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "enum"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "try"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "off"
+
+  - name: Check it has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'recovery_prefetch'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "off"
+
+  - name: Set value of type enum again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: recovery_prefetch
+      value: off
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.restart_required == False
+      - result.executed_queries == []
+      - result["attrs"]["boot_val"] == "try"
+      - result["attrs"]["context"] == "sighup"
+      - result["attrs"]["enumvals"] == ["off", "on", "try"]
+      - result["attrs"]["unit"] == None
+      - result["attrs"]["vartype"] == "enum"
+      - result["attrs"]["min_val"] == None
+      - result["attrs"]["max_val"] == None
+      - result["diff"]["before"]["pending_restart"] == False
+      - result["diff"]["before"]["setting"] == "off"
+      - result["diff"]["after"]["pending_restart"] == False
+      - result["diff"]["after"]["setting"] == "off"
+
+  - name: Set the original value
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: recovery_prefetch
+      value: try
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
