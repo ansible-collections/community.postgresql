@@ -260,7 +260,6 @@ class ValueBool():
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
-        self.module = module
         self.normalized = self.__normalize(value)
 
     def __normalize(self, value):
@@ -277,7 +276,6 @@ class ValueInt():
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
-        self.module = module
         self.normalized = value
 
 
@@ -288,8 +286,8 @@ class ValueString():
     def __init__(self, module, param_name, value, default_unit, pg_ver):
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
-        # classes in a standard manner
-        self.module = module
+        # classes in a standard manner.
+
         # It typically doesn't need normalization,
         # so accept it as is
         self.normalized = self.__normalize(pg_ver, param_name, value)
@@ -311,8 +309,8 @@ class ValueEnum():
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
-        # classes in a standard manner
-        self.module = module
+        # classes in a standard manner.
+
         # It typically doesn't need normalization,
         # so accept it as is
         self.normalized = self.__normalize(value)
@@ -341,7 +339,6 @@ class ValueReal():
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
-        self.module = module
         self.normalized = self.__normalize(value)
 
     def __normalize(self, value):
@@ -703,9 +700,6 @@ class PgParam():
                    "See https://www.postgresql.org/docs/current/"
                    "runtime-config-preset.html" % self.name)
             self.module.fail_json(msg=msg)
-
-        elif context == "postmaster":
-            self.module.warn("Restart of PostgreSQL is required for setting %s" % self.name)
 
     def __exec_sql(self, query, params=()):
         """Execute a query that is supposed to return something."""
