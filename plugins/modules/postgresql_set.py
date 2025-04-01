@@ -13,9 +13,9 @@ DOCUMENTATION = r'''
 module: postgresql_set
 short_description: Change a PostgreSQL server configuration parameter
 description:
-   - IMPORTANT: If your PostgreSQL server version is 14 or later,
+   - "IMPORTANT: If your PostgreSQL server version is 14 or later,
      use the M(postgresql_alter_system) module instead as it will
-     replace this module in future.
+     replace this module in future."
    - Allows to change a PostgreSQL server configuration parameter.
    - The module uses ALTER SYSTEM command and applies changes by reload server configuration.
    - ALTER SYSTEM is used for changing server configuration parameters across the entire database cluster.
