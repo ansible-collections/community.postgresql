@@ -14,7 +14,7 @@ module: postgresql_set
 short_description: Change a PostgreSQL server configuration parameter
 description:
    - "IMPORTANT: If your PostgreSQL server version is 14 or later,
-     use the M(postgresql_alter_system) module instead as it will
+     use the M(community.postgresql.postgresql_alter_system) module instead as it will
      replace this module in future."
    - Allows to change a PostgreSQL server configuration parameter.
    - The module uses ALTER SYSTEM command and applies changes by reload server configuration.
@@ -67,7 +67,7 @@ options:
 
 notes:
 - Supported version of PostgreSQL is 9.4 and later.
-  For PostgreSQL version 14 or later, the M(postgresql_alter_system) module is recommended.
+  For PostgreSQL version 14 or later, the M(community.postgresql.postgresql_alter_system) module is recommended.
 - Pay attention, change setting with 'postmaster' context can return changed is true
   when actually nothing changes because the same value may be presented in
   several different form, for example, 1024MB, 1GB, etc. However in pg_settings
