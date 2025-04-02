@@ -543,13 +543,16 @@ def build_value_class(module, param_name, value, unit, vartype, pg_ver):
         return ValueEnum(module, param_name, value, unit)
 
 
-def is_float(s):
+def str_contains_float(s):
     """Check if the string s contains float."""
     try:
         # Attempt to convert the string to a float
         num = float(s)
+
         # Check if the number is not an integer (has a decimal part)
+        # We don't expect s to be anything but a string
         return '.' in s and num != int(num)
+
     except ValueError:
         # If it cannot be converted to a float, it's not a valid float
         return False
@@ -564,7 +567,7 @@ def convert_ret_vals(attrs):
     # integer in one column, but like float in another,
     # so let's check them all separately
     for elem in ("setting", "boot_val", "min_val", "max_val"):
-        if is_float(attrs[elem]):
+        if str_contains_float(attrs[elem]):
             attrs[elem] = float(attrs[elem])
         else:
             attrs[elem] = int(attrs[elem])
@@ -845,11 +848,11 @@ def main():
     pg_param_after.attrs = convert_ret_vals(pg_param_after.attrs)
     # Attributes are immutable (in the context of this module at least),
     # so we put them separately, not as a part of diff
-    attrs = build_ret_attrs(pg_param.attrs)
+    immut_attrs = build_ret_attrs(pg_param.attrs)
     diff = build_ret_diff(pg_param.attrs, pg_param_after.attrs)
 
     module.exit_json(
-        attrs=attrs,
+        attrs=immut_attrs,
         changed=changed,
         executed_queries=executed_queries,
         diff=diff,
