@@ -548,8 +548,11 @@ def is_float(s):
     try:
         # Attempt to convert the string to a float
         num = float(s)
+
         # Check if the number is not an integer (has a decimal part)
+        # We don't expect s to be anything but a string
         return '.' in s and num != int(num)
+
     except ValueError:
         # If it cannot be converted to a float, it's not a valid float
         return False

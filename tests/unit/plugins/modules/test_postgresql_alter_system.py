@@ -8,6 +8,7 @@ __metaclass__ = type
 import pytest
 
 from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_system import (
+    is_float,
     to_int,
 )
 
@@ -48,3 +49,16 @@ def test_to_int(m_ansible_module, _input, expected):
 def test_to_int_fail(m_ansible_module, _input, err_msg):
     to_int(m_ansible_module, _input)
     assert m_ansible_module.err_msg == err_msg
+
+
+@pytest.mark.parametrize('_input,expected', [
+    ('1', False),
+    ('100', False),
+    ('blah', False),
+    ('0.1', True),
+    ('1.1', True),
+    ('0.0000001', True),
+]
+)
+def test_is_float(_input, expected):
+    assert is_float(_input) == expected
