@@ -848,11 +848,11 @@ def main():
     pg_param_after.attrs = convert_ret_vals(pg_param_after.attrs)
     # Attributes are immutable (in the context of this module at least),
     # so we put them separately, not as a part of diff
-    attrs = build_ret_attrs(pg_param.attrs)
+    immut_attrs = build_ret_attrs(pg_param.attrs)
     diff = build_ret_diff(pg_param.attrs, pg_param_after.attrs)
 
     module.exit_json(
-        attrs=attrs,
+        attrs=immut_attrs,
         changed=changed,
         executed_queries=executed_queries,
         diff=diff,

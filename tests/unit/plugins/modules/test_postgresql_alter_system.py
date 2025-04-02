@@ -8,6 +8,7 @@ __metaclass__ = type
 import pytest
 
 from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_system import (
+    convert_ret_vals,
     str_contains_float,
     to_int,
 )
@@ -60,5 +61,108 @@ def test_to_int_fail(m_ansible_module, _input, err_msg):
     ('0.0000001', True),
 ]
 )
-def test_is_str_float(_input, expected):
+def test_str_contains_float(_input, expected):
     assert str_contains_float(_input) == expected
+
+
+@pytest.mark.parametrize('_input,expected', [
+    (
+        {
+            "boot_val": "try",
+            "setting": "try",
+            "context": "sighup",
+            "enumvals": [
+                "off",
+                "on",
+                "try"
+            ],
+            "max_val": None,
+            "min_val": None,
+            "unit": None,
+            "vartype": "enum"
+        },
+        {
+            "boot_val": "try",
+            "setting": "try",
+            "context": "sighup",
+            "enumvals": [
+                "off",
+                "on",
+                "try"
+            ],
+            "max_val": None,
+            "min_val": None,
+            "unit": None,
+            "vartype": "enum"
+        },
+    ),
+    (
+        {
+            "boot_val": "test",
+            "setting": "test",
+            "context": "sighup",
+            "enumvals": None,
+            "max_val": None,
+            "min_val": None,
+            "unit": None,
+            "vartype": "string"
+        },
+        {
+            "boot_val": "test",
+            "setting": "test",
+            "context": "sighup",
+            "enumvals": None,
+            "max_val": None,
+            "min_val": None,
+            "unit": None,
+            "vartype": "string"
+        },
+    ),
+    (
+        {
+            "boot_val": "0",
+            "setting": "1",
+            "context": "sighup",
+            "enumvals": None,
+            "max_val": "100",
+            "min_val": "0",
+            "unit": None,
+            "vartype": "integer"
+        },
+        {
+            "boot_val": 0,
+            "setting": 1,
+            "context": "sighup",
+            "enumvals": None,
+            "max_val": 100,
+            "min_val": 0,
+            "unit": None,
+            "vartype": "integer"
+        },
+    ),
+    (
+        {
+            "boot_val": "0.1",
+            "setting": "0.1",
+            "context": "sighup",
+            "enumvals": None,
+            "max_val": "1",
+            "min_val": "0",
+            "unit": None,
+            "vartype": "real"
+        },
+        {
+            "boot_val": 0.1,
+            "setting": 0.1,
+            "context": "sighup",
+            "enumvals": None,
+            "max_val": 1,
+            "min_val": 0,
+            "unit": None,
+            "vartype": "real"
+        },
+    ),
+]
+)
+def test_convert_ret_vals(_input, expected):
+    assert convert_ret_vals(_input) == expected
