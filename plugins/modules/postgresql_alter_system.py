@@ -543,7 +543,7 @@ def build_value_class(module, param_name, value, unit, vartype, pg_ver):
         return ValueEnum(module, param_name, value, unit)
 
 
-def is_float(s):
+def str_contains_float(s):
     """Check if the string s contains float."""
     try:
         # Attempt to convert the string to a float
@@ -567,7 +567,7 @@ def convert_ret_vals(attrs):
     # integer in one column, but like float in another,
     # so let's check them all separately
     for elem in ("setting", "boot_val", "min_val", "max_val"):
-        if is_float(attrs[elem]):
+        if str_contains_float(attrs[elem]):
             attrs[elem] = float(attrs[elem])
         else:
             attrs[elem] = int(attrs[elem])

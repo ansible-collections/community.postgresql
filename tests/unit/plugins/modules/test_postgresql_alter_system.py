@@ -8,7 +8,7 @@ __metaclass__ = type
 import pytest
 
 from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_system import (
-    is_float,
+    str_contains_float,
     to_int,
 )
 
@@ -60,5 +60,5 @@ def test_to_int_fail(m_ansible_module, _input, err_msg):
     ('0.0000001', True),
 ]
 )
-def test_is_float(_input, expected):
-    assert is_float(_input) == expected
+def test_is_str_float(_input, expected):
+    assert str_contains_float(_input) == expected
