@@ -9,6 +9,7 @@ import pytest
 
 from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_system import (
     check_pg_version,
+    check_problematic_params,
     convert_ret_vals,
     str_contains_float,
     to_int,
@@ -179,3 +180,18 @@ def test_convert_ret_vals(_input, expected):
 def test_check_pg_version(m_ansible_module, _input, warn_msg):
     check_pg_version(m_ansible_module, _input)
     assert m_ansible_module.warn_msg == warn_msg
+
+
+@pytest.mark.parametrize('param_input,value_input,err_msg', [
+    ('work_mem', '1024', None),
+    ('shared_preload_libraries', 'pg_stat_statements', None),
+    ('shared_preload_libraries', '', 'Due to a PostgreSQL bug in resetting shared_preload_libraries '
+                                     'with ALTER SYSTEM SET, setting it as an empty string '
+                                     'is not supported by the module to avoid crashes. '
+                                     'Use `value: _RESET` instead. '
+                                     'If you think the bug has been fixed, please let us know.'),
+]
+)
+def test_check_problematic_params(m_ansible_module, param_input, value_input, err_msg):
+    check_problematic_params(m_ansible_module, param_input, value_input)
+    assert m_ansible_module.err_msg == err_msg
