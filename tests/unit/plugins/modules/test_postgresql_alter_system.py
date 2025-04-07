@@ -11,6 +11,7 @@ from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_s
     check_pg_version,
     check_problematic_params,
     convert_ret_vals,
+    normalize_bool_val,
     str_contains_float,
     to_int,
 )
@@ -195,3 +196,13 @@ def test_check_pg_version(m_ansible_module, _input, warn_msg):
 def test_check_problematic_params(m_ansible_module, param_input, value_input, err_msg):
     check_problematic_params(m_ansible_module, param_input, value_input)
     assert m_ansible_module.err_msg == err_msg
+
+
+@pytest.mark.parametrize('_input,expected', [
+    ('blah', 'blah'),
+    ('True', 'on'),
+    ('False', 'off'),
+]
+)
+def test_normalize_bool_val(_input, expected):
+    assert normalize_bool_val(_input) == expected
