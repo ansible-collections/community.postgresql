@@ -435,6 +435,7 @@ class ValueMem():
     # even works more efficiently than
     # say Bytes = MB * 1024 * 1024
     UNIT_TO_BYTES_BITWISE_SHIFT = {
+        "B": 0,
         "kB": 10,
         "MB": 20,
         "GB": 30,

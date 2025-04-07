@@ -8,12 +8,20 @@ __metaclass__ = type
 import pytest
 
 from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_system import (
+    build_value_class,
     check_pg_version,
     check_problematic_params,
     convert_ret_vals,
     normalize_bool_val,
     str_contains_float,
     to_int,
+    ValueBool,
+    ValueEnum,
+    ValueInt,
+    ValueMem,
+    ValueReal,
+    ValueString,
+    ValueTime,
 )
 
 
@@ -206,3 +214,25 @@ def test_check_problematic_params(m_ansible_module, param_input, value_input, er
 )
 def test_normalize_bool_val(_input, expected):
     assert normalize_bool_val(_input) == expected
+
+
+@pytest.mark.parametrize('param_name,value,unit,vartype,pg_ver,expected_class_type', [
+    ('negative_param', '-1', None, 'real', None, ValueInt),
+    ('negative_param', '-1', None, 'integer', None, ValueInt),
+    ('time_param', '1', 'min', 'integer', None, ValueTime),
+    ('time_param', '1', 's', 'real', None, ValueTime),
+    ('time_param', '1', 'ms', 'whatever', None, ValueTime),
+    ('int_param', '1', 'B', 'integer', None, ValueMem),
+    ('int_param', '1', 'kB', 'integer', None, ValueMem),
+    ('int_param', '1', '8kB', 'integer', None, ValueMem),
+    ('int_param', '1', 'MB', 'integer', None, ValueMem),
+    ('int_param', '1', None, 'integer', None, ValueInt),
+    ('bool_param', 'on', None, 'bool', None, ValueBool),
+    ('real_param', '1', None, 'real', None, ValueReal),
+    ('string_param', 'value', None, 'string', 140000, ValueString),
+    ('enum_param', 'value', None, 'enum', None, ValueEnum),
+]
+)
+def test_build_value_class(m_ansible_module, param_name, value, unit, vartype, pg_ver, expected_class_type):
+    obj = build_value_class(m_ansible_module, param_name, value, unit, vartype, pg_ver)
+    assert isinstance(obj, expected_class_type)
