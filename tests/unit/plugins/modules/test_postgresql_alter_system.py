@@ -8,6 +8,7 @@ __metaclass__ = type
 import pytest
 
 from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_system import (
+    check_pg_version,
     convert_ret_vals,
     str_contains_float,
     to_int,
@@ -166,3 +167,15 @@ def test_str_contains_float(_input, expected):
 )
 def test_convert_ret_vals(_input, expected):
     assert convert_ret_vals(_input) == expected
+
+
+@pytest.mark.parametrize('_input,warn_msg', [
+    (130000, 'PostgreSQL version 140000 is supported, but 130000 is used. '
+             'Before filing a bug report, please run your task on a supported version of PostgreSQL.'),
+    (140000, None),
+    (150000, None),
+]
+)
+def test_check_pg_version(m_ansible_module, _input, warn_msg):
+    check_pg_version(m_ansible_module, _input)
+    assert m_ansible_module.warn_msg == warn_msg

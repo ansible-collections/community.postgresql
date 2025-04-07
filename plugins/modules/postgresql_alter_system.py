@@ -214,7 +214,7 @@ def check_pg_version(module, pg_ver):
     if pg_ver < PG_SUPPORTED_VER:
         msg = ("PostgreSQL version %s is supported, but %s is used. "
                "Before filing a bug report, please run your task "
-               "on a supported version of PostgreSQL.")
+               "on a supported version of PostgreSQL." % (PG_SUPPORTED_VER, pg_ver))
         module.warn(msg)
 
 
