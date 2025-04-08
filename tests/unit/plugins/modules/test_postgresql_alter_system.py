@@ -248,3 +248,13 @@ def test_build_value_class(m_ansible_module, param_name, value, unit, vartype, p
 def test_value_bool(m_ansible_module, param_name, value, expected_normalized):
     obj = ValueBool(m_ansible_module, param_name, value, None)
     assert obj.normalized == expected_normalized
+
+
+@pytest.mark.parametrize('param_name,value,expected_normalized', [
+    ('param', '1', 1),
+    ('param', '-1', -1),
+]
+)
+def test_value_int(m_ansible_module, param_name, value, expected_normalized):
+    obj = ValueInt(m_ansible_module, param_name, value, None)
+    assert obj.normalized == expected_normalized

@@ -276,7 +276,7 @@ class ValueInt():
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
-        self.normalized = value
+        self.normalized = to_int(module, value)
 
 
 class ValueString():
