@@ -258,3 +258,30 @@ def test_value_bool(m_ansible_module, param_name, value, expected_normalized):
 def test_value_int(m_ansible_module, param_name, value, expected_normalized):
     obj = ValueInt(m_ansible_module, param_name, value, None)
     assert obj.normalized == expected_normalized
+
+
+@pytest.mark.parametrize('param_name,value,expected_normalized', [
+    ('local_preload_libraries', 'value1', 'value1'),
+    ('local_preload_libraries', 'value1,value2,value3', 'value1, value2, value3'),
+    ('local_preload_libraries', '"value1", "value2", "value3"', 'value1, value2, value3'),
+    ('search_path', 'value1', 'value1'),
+    ('search_path', 'value1,value2,value3', 'value1, value2, value3'),
+    ('search_path', '"value1", "value2", "value3"', 'value1, value2, value3'),
+    ('session_preload_libraries', 'value1', 'value1'),
+    ('session_preload_libraries', 'value1,value2,value3', 'value1, value2, value3'),
+    ('session_preload_libraries', '"value1", "value2", "value3"', 'value1, value2, value3'),
+    ('shared_preload_libraries', 'value1', 'value1'),
+    ('shared_preload_libraries', 'value1,value2,value3', 'value1, value2, value3'),
+    ('shared_preload_libraries', '"value1", "value2", "value3"', 'value1, value2, value3'),
+    ('temp_tablespaces', 'value1', 'value1'),
+    ('temp_tablespaces', 'value1,value2,value3', 'value1, value2, value3'),
+    ('temp_tablespaces', '"value1", "value2", "value3"', 'value1, value2, value3'),
+    ('unix_socket_directories', 'value1', 'value1'),
+    ('unix_socket_directories', 'value1,value2,value3', 'value1, value2, value3'),
+    ('unix_socket_directories', '"value1", "value2", "value3"', 'value1, value2, value3'),
+    ('param', 'value', 'value'),
+]
+)
+def test_value_string(m_ansible_module, param_name, value, expected_normalized):
+    obj = ValueString(m_ansible_module, param_name, value, None, 140000)
+    assert obj.normalized == expected_normalized
