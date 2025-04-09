@@ -295,6 +295,21 @@ def test_value_mem(m_ansible_module, value, default_unit, expected_normalized):
     assert obj.normalized == expected_normalized
 
 
+@pytest.mark.parametrize('value', [
+    ('B'),
+    ('1PB'),
+    ('blah'),
+]
+)
+def test_value_mem_fail(m_ansible_module, value):
+    try:
+        obj = ValueMem(m_ansible_module, 'param', value, 'does not matter', None)
+    except Exception:
+        pass
+
+    assert 'invalid value for parameter' in m_ansible_module.err_msg
+
+
 @pytest.mark.parametrize('param_name,value,expected_normalized', [
     ('local_preload_libraries', 'value1', 'value1'),
     ('local_preload_libraries', 'value1,value2,value3', 'value1, value2, value3'),
