@@ -273,6 +273,28 @@ def test_value_real(m_ansible_module, value, expected_normalized):
     assert obj.normalized == expected_normalized
 
 
+# Whatever you pass, the function always returns a normalized value in bytes
+@pytest.mark.parametrize('value,default_unit,expected_normalized', [
+    ('1024', 'B', 1024),
+    ('1024B', 'B', 1024),
+    ('1kB', 'B', 1024),
+    ('1', 'kB', 1024),
+    ('1', '8kB', 8192),
+    ('1', 'MB', 1048576),
+    ('1MB', 'MB', 1048576),
+    ('1024MB', 'MB', 1073741824),
+    ('1MB', 'B', 1048576),
+    ('1MB', 'kB', 1048576),
+    ('1MB', '8kB', 1048576),
+    ('1GB', 'B', 1073741824),
+    ('1TB', 'MB', 1099511627776),
+]
+)
+def test_value_mem(m_ansible_module, value, default_unit, expected_normalized):
+    obj = ValueMem(m_ansible_module, 'param', value, default_unit, None)
+    assert obj.normalized == expected_normalized
+
+
 @pytest.mark.parametrize('param_name,value,expected_normalized', [
     ('local_preload_libraries', 'value1', 'value1'),
     ('local_preload_libraries', 'value1,value2,value3', 'value1, value2, value3'),
