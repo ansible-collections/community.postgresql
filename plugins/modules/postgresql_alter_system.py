@@ -339,14 +339,15 @@ class ValueReal():
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
+        self.module = module
         self.normalized = self.__normalize(value)
 
     def __normalize(self, value):
         # Drop the unit part as there's only "ms" or nothing
         if len(value) > 2 and value[-2:].isalpha():
-            return value[:-2]
+            value = value[:-2]
 
-        return value
+        return float(value) if str_contains_float(value) else to_int(self.module, value)
 
 
 class ValueTime():

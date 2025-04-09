@@ -238,25 +238,38 @@ def test_build_value_class(m_ansible_module, param_name, value, unit, vartype, p
     assert isinstance(obj, expected_class_type)
 
 
-@pytest.mark.parametrize('param_name,value,expected_normalized', [
-    ('param', 'on', 'on'),
-    ('param', 'off', 'off'),
-    ('param', 'True', 'on'),
-    ('param', 'False', 'off'),
+@pytest.mark.parametrize('value,expected_normalized', [
+    ('on', 'on'),
+    ('off', 'off'),
+    ('True', 'on'),
+    ('False', 'off'),
 ]
 )
-def test_value_bool(m_ansible_module, param_name, value, expected_normalized):
-    obj = ValueBool(m_ansible_module, param_name, value, None)
+def test_value_bool(m_ansible_module, value, expected_normalized):
+    obj = ValueBool(m_ansible_module, "param", value, None)
     assert obj.normalized == expected_normalized
 
 
-@pytest.mark.parametrize('param_name,value,expected_normalized', [
-    ('param', '1', 1),
-    ('param', '-1', -1),
+@pytest.mark.parametrize('value,expected_normalized', [
+    ('1', 1),
+    ('-1', -1),
 ]
 )
-def test_value_int(m_ansible_module, param_name, value, expected_normalized):
-    obj = ValueInt(m_ansible_module, param_name, value, None)
+def test_value_int(m_ansible_module, value, expected_normalized):
+    obj = ValueInt(m_ansible_module, 'param', value, None)
+    assert obj.normalized == expected_normalized
+
+
+@pytest.mark.parametrize('value,expected_normalized', [
+    ('-1', -1),
+    ('2ms', 2),
+    ('20ms', 20),
+    ('0.025', 0.025),
+    ('1', 1),
+]
+)
+def test_value_real(m_ansible_module, value, expected_normalized):
+    obj = ValueReal(m_ansible_module, 'param', value, None)
     assert obj.normalized == expected_normalized
 
 
