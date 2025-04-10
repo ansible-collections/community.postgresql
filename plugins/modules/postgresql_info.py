@@ -595,6 +595,7 @@ class PgClusterInfo(object):
         self.module = module
         self.db_obj = db_conn_obj
         self.cursor = db_conn_obj.connect()
+        self.default_db = self.__get_current_db()
         self.pg_info = {
             "version": {},
             "in_recovery": None,
@@ -1058,6 +1059,8 @@ class PgClusterInfo(object):
                 db_dict[datname]['subscriptions'] = subscr_info.get(datname, {})
 
         self.pg_info["databases"] = db_dict
+        # Reconnect to the default DB after gathering info in other DBs
+        self.cursor = self.db_obj.reconnect(self.default_db)
 
     def __get_pretty_val(self, setting):
         """Get setting's value represented by SHOW command."""
@@ -1074,6 +1077,13 @@ class PgClusterInfo(object):
             self.module.fail_json(msg="Cannot execute SQL '%s': %s" % (query, to_native(e)))
             self.cursor.close()
         return False
+
+    def __get_current_db(self):
+        """Get current DB"""
+        # The context is to get the user's default database.
+        # Should be executed right after logging in
+        # https://github.com/ansible-collections/community.postgresql/issues/794
+        return self.__exec_sql('SELECT current_database() AS db')[0]['db']
 
 # ===========================================
 # Module execution.
