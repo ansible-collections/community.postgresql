@@ -231,3 +231,23 @@
     assert:
       that:
       - result is not changed
+
+  ################################################
+  # Bugfix 67377, copied from postgresql_set tests
+  - name: Test archive_command with mb
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_command
+      value: 'test ! -f /mnt/postgres/mb/%f && cp %p /mnt/postgres/mb/%f'
+
+  - name: Check the result
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT reset_val FROM pg_settings WHERE name = 'archive_command'
+
+  - assert:
+      that:
+      - result.query_result[0]["reset_val"] == "test ! -f /mnt/postgres/mb/%f && cp %p /mnt/postgres/mb/%f"
+  # End bugfix 67377
