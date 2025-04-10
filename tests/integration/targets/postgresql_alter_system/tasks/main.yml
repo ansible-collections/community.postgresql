@@ -24,6 +24,9 @@
   - name: Test params of boolean type
     include_tasks: test_bools.yml
 
+  - name: Copied from postgresql_set to ensure some compatibility
+    include_tasks: options_coverage.yml
+
   when: postgres_version_resp.stdout is version('14', '>=')
 
 - name: Run on PostgreSQL 17 or higher

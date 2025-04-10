@@ -1,0 +1,110 @@
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+# This file was copied here from the postgresql_set test target
+# and modified to use postgresql_alter_system instead
+# to some tricky options.
+# Typically you need a file like test_bool.yml, etc.
+
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+    setting_map:
+      shared_preload_libraries: 'pg_stat_statements, pgcrypto'
+      log_line_prefix: 'db=%d,user=%u,app=%a,client=%h '
+      unix_socket_directories: '/var/run/postgresql, /var/run/postgresql2'
+
+  block:
+
+  - name: Ensure all unix_socket_directories directories exist
+    file:
+      state: directory
+      path: "{{ item }}"
+      owner: "{{ pg_user }}"
+      group: "{{ pg_user }}"
+      mode: '0777'
+    become: true
+    with_list: "{{ setting_map['unix_socket_directories'].split(',') | map('trim') | list }}"
+
+  # Check mode:
+  - name: Set settings in check mode
+    <<: *task_parameters
+    check_mode: true
+    loop: '{{ setting_map | dict2items }}'
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value }}'
+
+  # Actual mode:
+  - name: Set settings in actual mode
+    <<: *task_parameters
+    loop: '{{ setting_map | dict2items }}'
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value }}'
+
+  # https://github.com/ansible-collections/community.postgresql/issues/78
+  - name: Test param with comma containing values but no quotes
+    <<: *task_parameters
+    shell: "grep shared_preload_libraries {{ pg_auto_conf }}"
+    register: result
+
+  - assert:
+      that:
+      - result.stdout == "shared_preload_libraries = 'pg_stat_statements, pgcrypto'"
+
+  # https://github.com/ansible-collections/community.postgresql/pull/521
+  # unix_socket_directories is a GUC_LIST_QUOTE parameter only from PostgreSQL 14
+  - name: Test param with comma containing values and quotes
+    <<: *task_parameters
+    shell: "grep unix_socket_directories {{ pg_auto_conf }}"
+    register: result
+
+  - assert:
+      that:
+      - result.stdout == "unix_socket_directories = '/var/run/postgresql, /var/run/postgresql2'"
+    when: postgres_version_resp.stdout is version('14', '<')
+
+  - assert:
+      that:
+      - result.stdout == "unix_socket_directories = '\"/var/run/postgresql\", \"/var/run/postgresql2\"'"
+    when: postgres_version_resp.stdout is version('14', '>=')
+
+  # https://github.com/ansible-collections/community.postgresql/pull/400
+  - name: Test single-value param with commas and spaces in value
+    <<: *task_parameters
+    shell: "grep log_line_prefix {{ pg_auto_conf }}"
+    register: result
+
+  - assert:
+      that:
+      - result.stdout == "log_line_prefix = 'db=%d,user=%u,app=%a,client=%h '"
+
+  # Restart PostgreSQL:
+  - name: Restart PostgreSQL
+    become: true
+    service:
+      name: "{{ postgresql_service }}"
+      state: restarted
+
+  # Idempotence:
+  - name: Set settings in actual mode again after restart for idempotence
+    <<: *task_parameters
+    register: test_idempotence
+    loop: '{{ setting_map | dict2items }}'
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value }}'
+
+  - name: Check idempotence after restart
+    with_items: '{{ test_idempotence.results }}'
+    assert:
+      that: not item.changed
