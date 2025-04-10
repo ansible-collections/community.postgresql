@@ -273,7 +273,7 @@ def test_value_real(m_ansible_module, value, expected_normalized):
     assert obj.normalized == expected_normalized
 
 
-# Whatever you pass, the function always returns a normalized value in bytes
+# Whatever you pass, the class always returns a normalized value in bytes
 @pytest.mark.parametrize('value,default_unit,expected_normalized', [
     ('1024', 'B', 1024),
     ('1024B', 'B', 1024),
@@ -295,6 +295,35 @@ def test_value_mem(m_ansible_module, value, default_unit, expected_normalized):
     assert obj.normalized == expected_normalized
 
 
+# Whatever you pass, the class always returns a normalized value in microseconds
+@pytest.mark.parametrize('value,default_unit,expected_normalized', [
+    ('1', 'us', 1),
+    ('1us', 'us', 1),
+    ('1', 'ms', 1000),
+    ('1ms', 'ms', 1000),
+    ('1s', 'ms', 1000000),
+    ('1min', 'ms', 60000000),
+    ('1h', 'ms', 3600000000),
+    ('1d', 'ms', 86400000000),
+    ('1', 's', 1000000),
+    ('1ms', 's', 1000),
+    ('1s', 's', 1000000),
+    ('1min', 's', 60000000),
+    ('1h', 's', 3600000000),
+    ('1d', 's', 86400000000),
+    ('1', 'min', 60000000),
+    ('1min', 'min', 60000000),
+    ('1ms', 'min', 1000),
+    ('1s', 'min', 1000000),
+    ('1h', 'min', 3600000000),
+    ('1d', 'min', 86400000000),
+]
+)
+def test_value_time(m_ansible_module, value, default_unit, expected_normalized):
+    obj = ValueTime(m_ansible_module, 'param', value, default_unit, None)
+    assert obj.normalized == expected_normalized
+
+
 @pytest.mark.parametrize('value', [
     ('B'),
     ('1PB'),
@@ -302,9 +331,30 @@ def test_value_mem(m_ansible_module, value, default_unit, expected_normalized):
 ]
 )
 def test_value_mem_fail(m_ansible_module, value):
+    obj = None
     try:
         obj = ValueMem(m_ansible_module, 'param', value, 'does not matter', None)
     except Exception:
+        if obj:  # To use it somehow to avoid tox errors in CI
+            pass
+        pass
+
+    assert 'invalid value for parameter' in m_ansible_module.err_msg
+
+
+@pytest.mark.parametrize('value', [
+    ('B'),
+    ('1PB'),
+    ('blah'),
+]
+)
+def test_value_time_fail(m_ansible_module, value):
+    obj = None
+    try:
+        obj = ValueTime(m_ansible_module, 'param', value, 'does not matter', None)
+    except Exception:
+        if obj:  # To use it somehow to avoid tox error in CI
+            pass
         pass
 
     assert 'invalid value for parameter' in m_ansible_module.err_msg
