@@ -5,7 +5,7 @@
 
 # Initial CI tests of postgresql_alter_system module
 
-# PostgreSQL 14 is declared as supported by the module
+# PostgreSQL 14+ is declared as supported by the module
 - name: Run on PostgreSQL 14 or higher
   block:
 
