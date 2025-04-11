@@ -1,3 +1,0 @@
----
-bugfixes:
-  - postgresql_table - consider schema name when checking for table (https://github.com/ansible-collections/community.postgresql/issues/817).  Table names are only unique within a schema. This allows using the same table name in multiple schemas.
