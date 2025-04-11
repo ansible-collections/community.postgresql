@@ -1073,7 +1073,7 @@ def main():
 
     # param "objs": default, required depends on param "type"
     if p.type == 'database':
-        p.objs = p.objs or p.database
+        p.objs = p.objs or p.login_db
     elif not p.objs:
         module.fail_json(msg='Argument "objs" is required '
                              'for type "%s".' % p.type)
