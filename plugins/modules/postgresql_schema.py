@@ -22,14 +22,14 @@ options:
     type: str
     aliases:
     - schema
-  database:
+  login_db:
     description:
     - Name of the database to connect to and add or remove the schema.
     type: str
     default: postgres
     aliases:
     - db
-    - login_db
+    - database
   owner:
     description:
     - Name of the role to set as owner of the schema.
@@ -95,7 +95,7 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 - name: Create a new schema with name acme in test database
   community.postgresql.postgresql_schema:
-    db: test
+    login_db: test
     name: acme
     comment: 'My test schema'
 
@@ -240,7 +240,19 @@ def main():
     argument_spec.update(
         schema=dict(type="str", required=True, aliases=['name']),
         owner=dict(type="str", default=""),
-        database=dict(type="str", default="postgres", aliases=["db", "login_db"]),
+        login_db=dict(type='str', aliases=['db', 'database'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            },
+            {
+                'name': 'database',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
+        state=dict(default='present', choices=['present', 'absent']),
         cascade_drop=dict(type="bool", default=False),
         state=dict(type="str", default="present", choices=["absent", "present"]),
         session_role=dict(type="str"),

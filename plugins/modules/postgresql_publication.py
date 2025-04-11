@@ -22,11 +22,11 @@ options:
     - Name of the publication to add, update, or remove.
     required: true
     type: str
-  db:
+  login_db:
     description:
     - Name of the database to connect to and where
       the publication state will be changed.
-    aliases: [ login_db ]
+    aliases: [ db ]
     type: str
   columns:
     description:
@@ -134,7 +134,7 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 - name: Create a new publication with name "acme" targeting all tables in database "test"
   community.postgresql.postgresql_publication:
-    db: test
+    login_db: test
     name: acme
     comment: Made by Ansible
 
@@ -178,13 +178,13 @@ EXAMPLES = r'''
 
 - name: Create a new publication "acme" for tables in schema "myschema"
   community.postgresql.postgresql_publication:
-    db: test
+    login_db: test
     name: acme
     tables_in_schema: myschema
 
 - name: Remove all schemas from "acme" publication
   community.postgresql.postgresql_publication:
-    db: test
+    login_db: test
     name: acme
     tables_in_schema: []
 
@@ -209,7 +209,7 @@ EXAMPLES = r'''
 
 - name: Remove publication "acme" if exists in database "test"
   community.postgresql.postgresql_publication:
-    db: test
+    login_db: test
     name: acme
     state: absent
 '''
@@ -989,7 +989,13 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         name=dict(required=True),
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         state=dict(type='str', default='present', choices=['absent', 'present']),
         tables=dict(type='list', elements='str'),
         parameters=dict(type='dict'),

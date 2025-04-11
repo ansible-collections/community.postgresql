@@ -22,13 +22,13 @@ options:
     type: str
     aliases:
     - ext
-  db:
+  login_db:
     description:
     - Name of the database to add or remove the extension to/from.
     required: true
     type: str
     aliases:
-    - login_db
+    - db
   schema:
     description:
     - Name of the schema to add the extension to.
@@ -132,20 +132,20 @@ EXAMPLES = r'''
 - name: Adds postgis extension to the database acme in the schema foo
   community.postgresql.postgresql_ext:
     name: postgis
-    db: acme
+    login_db: acme
     schema: foo
     comment: Test extension
 
 - name: Removes postgis extension to the database acme
   community.postgresql.postgresql_ext:
     name: postgis
-    db: acme
+    login_db: acme
     state: absent
 
 - name: Adds earthdistance extension to the database template1 cascade
   community.postgresql.postgresql_ext:
     name: earthdistance
-    db: template1
+    login_db: template1
     cascade: true
 
 # In the example below, if earthdistance extension is installed,
@@ -153,19 +153,19 @@ EXAMPLES = r'''
 - name: Removes cube extension from the database acme cascade
   community.postgresql.postgresql_ext:
     name: cube
-    db: acme
+    login_db: acme
     cascade: true
     state: absent
 
 - name: Create extension foo of version 1.2 or update it to that version if it's already created and a valid update path exists
   community.postgresql.postgresql_ext:
-    db: acme
+    login_db: acme
     name: foo
     version: 1.2
 
 - name: Create the latest available version of extension foo. If already installed, update it to the latest version
   community.postgresql.postgresql_ext:
-    db: acme
+    login_db: acme
     name: foo
     version: latest
 '''
@@ -393,7 +393,13 @@ def ext_valid_update_path(cursor, ext, current_version, version):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        db=dict(type="str", required=True, aliases=["login_db"]),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         ext=dict(type="str", required=True, aliases=["name"]),
         schema=dict(type="str"),
         state=dict(type="str", default="present", choices=["absent", "present"]),

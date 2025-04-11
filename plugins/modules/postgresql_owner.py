@@ -60,12 +60,12 @@ options:
     - Mutually exclusive with I(obj_name) and I(obj_type).
     default: true
     type: bool
-  db:
+  login_db:
     description:
     - Name of database to connect to.
     type: str
     aliases:
-    - login_db
+    - db
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -117,41 +117,41 @@ EXAMPLES = r'''
 
 - name: The same as above by playbook
   community.postgresql.postgresql_owner:
-    db: bar
+    login_db: bar
     new_owner: alice
     obj_name: myfunc
     obj_type: function
 
 - name: Set owner as bob for table acme in database bar
   community.postgresql.postgresql_owner:
-    db: bar
+    login_db: bar
     new_owner: bob
     obj_name: acme
     obj_type: table
 
 - name: Set owner as alice for view test_view in database bar
   community.postgresql.postgresql_owner:
-    db: bar
+    login_db: bar
     new_owner: alice
     obj_name: test_view
     obj_type: view
 
 - name: Set owner as bob for tablespace ssd in database foo
   community.postgresql.postgresql_owner:
-    db: foo
+    login_db: foo
     new_owner: bob
     obj_name: ssd
     obj_type: tablespace
 
 - name: Reassign all databases owned by bob to alice and all objects in database bar owned by bob to alice
   community.postgresql.postgresql_owner:
-    db: bar
+    login_db: bar
     new_owner: alice
     reassign_owned_by: bob
 
 - name: Reassign all databases owned by bob or bill to alice and all objects in database bar owned by bob or bill to alice
   community.postgresql.postgresql_owner:
-    db: bar
+    login_db: bar
     new_owner: alice
     reassign_owned_by:
     - bob
@@ -673,7 +673,13 @@ def main():
         obj_type=dict(type='str', aliases=['type'], choices=VALID_OBJ_TYPES),
         reassign_owned_by=dict(type='list', elements='str'),
         fail_on_role=dict(type='bool', default=True),
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
     )

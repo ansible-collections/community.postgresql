@@ -123,14 +123,14 @@ options:
     - Permissions checking for SQL commands is carried out as though
       the I(session_role) were the one that had logged in originally.
     type: str
-  db:
+  login_db:
     description:
     - Name of database to connect to and run queries against.
     type: str
     default: ''
     aliases:
     - database
-    - login_db
+    - db
   trust_input:
     description:
     - If C(false), check whether values of parameters I(sequence), I(schema), I(rename_to),
@@ -487,7 +487,19 @@ def main():
         rename_to=dict(type='str'),
         owner=dict(type='str'),
         newschema=dict(type='str'),
-        db=dict(type='str', default='', aliases=['login_db', 'database']),
+        login_db=dict(type='str', aliases=['db', 'database'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            },
+            {
+                'name': 'database',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
+        state=dict(default='present', choices=['present', 'absent']),
         session_role=dict(type='str'),
         trust_input=dict(type="bool", default=True),
     )

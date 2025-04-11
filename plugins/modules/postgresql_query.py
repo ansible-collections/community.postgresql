@@ -41,12 +41,12 @@ options:
     - Permissions checking for SQL commands is carried out as though
       the session_role were the one that had logged in originally.
     type: str
-  db:
+  login_db:
     description:
     - Name of database to connect to and run queries against.
     type: str
     aliases:
-    - login_db
+    - db
   autocommit:
     description:
     - Execute in autocommit mode when the query can't be run inside a transaction block
@@ -96,20 +96,20 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 - name: Simple select query to acme db
   community.postgresql.postgresql_query:
-    db: acme
+    login_db: acme
     query: SELECT version()
 
 # The result of each query will be stored in query_all_results return value
 - name: Run several queries against acme db
   community.postgresql.postgresql_query:
-    db: acme
+    login_db: acme
     query:
     - SELECT version()
     - SELECT id FROM accounts
 
 - name: Select query to db acme with positional arguments and non-default credentials
   community.postgresql.postgresql_query:
-    db: acme
+    login_db: acme
     login_user: django
     login_password: mysecretpass
     query: SELECT * FROM acme WHERE id = %s AND story = %s
@@ -119,7 +119,7 @@ EXAMPLES = r'''
 
 - name: Select query to test_db with named_args
   community.postgresql.postgresql_query:
-    db: test_db
+    login_db: test_db
     query: SELECT * FROM test WHERE id = %(id_val)s AND story = %(story_val)s
     named_args:
       id_val: 1
@@ -127,7 +127,7 @@ EXAMPLES = r'''
 
 - name: Insert query to test_table in db test_db
   community.postgresql.postgresql_query:
-    db: test_db
+    login_db: test_db
     query: INSERT INTO test_table (id, story) VALUES (2, 'my_long_story')
 
 - name: Use connect_params to add any additional connection parameters that libpg supports
@@ -138,12 +138,12 @@ EXAMPLES = r'''
     login_host: "host1,host2"
     login_user: "test"
     login_password: "test1234"
-    db: 'test'
+    login_db: "test"
     query: 'insert into test (test) values (now())'
 
 - name: Example of using autocommit parameter
   community.postgresql.postgresql_query:
-    db: test_db
+    login_db: test_db
     query: VACUUM
     autocommit: true
 
@@ -319,7 +319,13 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         query=dict(type='raw'),
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         positional_args=dict(type='list', elements='raw'),
         named_args=dict(type='dict'),
         session_role=dict(type='str'),

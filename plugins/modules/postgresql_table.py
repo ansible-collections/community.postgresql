@@ -74,13 +74,13 @@ options:
       Mutually exclusive with I(rename) and I(truncate).
     type: list
     elements: str
-  db:
+  login_db:
     description:
     - Name of database to connect and where the table will be created.
     type: str
     default: ''
     aliases:
-    - login_db
+    - db
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -141,14 +141,14 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 - name: Create tbl2 in the acme database with the DDL like tbl1 with testuser as an owner
   community.postgresql.postgresql_table:
-    db: acme
+    login_db: acme
     name: tbl2
     like: tbl1
     owner: testuser
 
 - name: Create tbl2 in the acme database and tablespace ssd with the DDL like tbl1 including comments and indexes
   community.postgresql.postgresql_table:
-    db: acme
+    login_db: acme
     table: tbl2
     like: tbl1
     including: comments, indexes
@@ -476,7 +476,13 @@ def main():
     argument_spec.update(
         table=dict(type='str', required=True, aliases=['name']),
         state=dict(type='str', default='present', choices=['absent', 'present']),
-        db=dict(type='str', default='', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         tablespace=dict(type='str'),
         owner=dict(type='str'),
         unlogged=dict(type='bool', default=False),
