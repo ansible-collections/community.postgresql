@@ -5,7 +5,7 @@
 
 # Initial CI tests of postgresql_alter_system module
 
-# PostgreSQL 14 is declared as supported by the module
+# PostgreSQL 14+ is declared as supported by the module
 - name: Run on PostgreSQL 14 or higher
   block:
 
@@ -23,6 +23,9 @@
 
   - name: Test params of boolean type
     include_tasks: test_bools.yml
+
+  - name: Copied from postgresql_set to ensure some compatibility
+    include_tasks: options_coverage.yml
 
   when: postgres_version_resp.stdout is version('14', '>=')
 

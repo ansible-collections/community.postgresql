@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# Copyright: (c) Andrei Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -214,7 +214,7 @@ def check_pg_version(module, pg_ver):
     if pg_ver < PG_SUPPORTED_VER:
         msg = ("PostgreSQL version %s is supported, but %s is used. "
                "Before filing a bug report, please run your task "
-               "on a supported version of PostgreSQL.")
+               "on a supported version of PostgreSQL." % (PG_SUPPORTED_VER, pg_ver))
         module.warn(msg)
 
 
@@ -276,7 +276,7 @@ class ValueInt():
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
-        self.normalized = value
+        self.normalized = to_int(module, value)
 
 
 class ValueString():
@@ -339,14 +339,15 @@ class ValueReal():
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
+        self.module = module
         self.normalized = self.__normalize(value)
 
     def __normalize(self, value):
         # Drop the unit part as there's only "ms" or nothing
         if len(value) > 2 and value[-2:].isalpha():
-            return value[:-2]
+            value = value[:-2]
 
-        return value
+        return float(value) if str_contains_float(value) else to_int(self.module, value)
 
 
 class ValueTime():
@@ -435,6 +436,7 @@ class ValueMem():
     # even works more efficiently than
     # say Bytes = MB * 1024 * 1024
     UNIT_TO_BYTES_BITWISE_SHIFT = {
+        "B": 0,
         "kB": 10,
         "MB": 20,
         "GB": 30,
@@ -543,13 +545,16 @@ def build_value_class(module, param_name, value, unit, vartype, pg_ver):
         return ValueEnum(module, param_name, value, unit)
 
 
-def is_float(s):
+def str_contains_float(s):
     """Check if the string s contains float."""
     try:
         # Attempt to convert the string to a float
         num = float(s)
+
         # Check if the number is not an integer (has a decimal part)
+        # We don't expect s to be anything but a string
         return '.' in s and num != int(num)
+
     except ValueError:
         # If it cannot be converted to a float, it's not a valid float
         return False
@@ -564,7 +569,7 @@ def convert_ret_vals(attrs):
     # integer in one column, but like float in another,
     # so let's check them all separately
     for elem in ("setting", "boot_val", "min_val", "max_val"):
-        if is_float(attrs[elem]):
+        if str_contains_float(attrs[elem]):
             attrs[elem] = float(attrs[elem])
         else:
             attrs[elem] = int(attrs[elem])
@@ -845,11 +850,11 @@ def main():
     pg_param_after.attrs = convert_ret_vals(pg_param_after.attrs)
     # Attributes are immutable (in the context of this module at least),
     # so we put them separately, not as a part of diff
-    attrs = build_ret_attrs(pg_param.attrs)
+    immut_attrs = build_ret_attrs(pg_param.attrs)
     diff = build_ret_diff(pg_param.attrs, pg_param_after.attrs)
 
     module.exit_json(
-        attrs=attrs,
+        attrs=immut_attrs,
         changed=changed,
         executed_queries=executed_queries,
         diff=diff,

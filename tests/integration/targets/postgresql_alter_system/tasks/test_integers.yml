@@ -1,6 +1,7 @@
-# Test code for the postgresql_alter_system module
-# Copyright: (c) 2025, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
 
 - vars:
     task_parameters: &task_parameters

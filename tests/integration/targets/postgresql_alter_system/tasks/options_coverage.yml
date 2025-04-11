@@ -1,6 +1,11 @@
-# Test code for the postgresql_set module
-# Copyright: (c) 2021, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+# This file was copied here from the postgresql_set test target
+# and modified to use postgresql_alter_system instead
+# to some tricky options.
+# Typically you need a file like test_bool.yml, etc.
 
 - vars:
     task_parameters: &task_parameters
@@ -9,28 +14,12 @@
     pg_parameters: &pg_parameters
       login_user: '{{ pg_user }}'
       login_db: postgres
+    setting_map:
+      shared_preload_libraries: 'pg_stat_statements, pgcrypto'
+      log_line_prefix: 'db=%d,user=%u,app=%a,client=%h '
+      unix_socket_directories: '/var/run/postgresql, /var/run/postgresql2'
 
   block:
-  - name: Define a test setting map
-    set_fact:
-      setting_map:
-        allow_system_table_mods: on
-        archive_command: /bin/true
-        archive_timeout: 10min
-        autovacuum_work_mem: '-1'
-        backend_flush_after: 0
-        autovacuum_vacuum_scale_factor: 0.5
-        client_encoding: UTF-8
-        bgwriter_delay: 400
-        maintenance_work_mem: 32mb
-        effective_cache_size: 1024kB
-        shared_buffers: 1GB
-        wal_level: replica
-        log_statement: mod
-        track_functions: none
-        shared_preload_libraries: 'pg_stat_statements, pgcrypto'
-        log_line_prefix: 'db=%d,user=%u,app=%a,client=%h '
-        unix_socket_directories: '/var/run/postgresql, /var/run/postgresql2'
 
   - name: Ensure all unix_socket_directories directories exist
     file:
@@ -45,21 +34,21 @@
   # Check mode:
   - name: Set settings in check mode
     <<: *task_parameters
-    postgresql_set:
-      <<: *pg_parameters
-      name: '{{ item.key }}'
-      value: '{{ item.value }}'
     check_mode: true
-    with_dict: '{{ setting_map }}'
+    loop: '{{ setting_map | dict2items }}'
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value }}'
 
   # Actual mode:
   - name: Set settings in actual mode
     <<: *task_parameters
-    postgresql_set:
+    loop: '{{ setting_map | dict2items }}'
+    postgresql_alter_system:
       <<: *pg_parameters
-      name: '{{ item.key }}'
+      param: '{{ item.key }}'
       value: '{{ item.value }}'
-    with_dict: '{{ setting_map }}'
 
   # https://github.com/ansible-collections/community.postgresql/issues/78
   - name: Test param with comma containing values but no quotes
@@ -108,14 +97,14 @@
   # Idempotence:
   - name: Set settings in actual mode again after restart for idempotence
     <<: *task_parameters
-    postgresql_set:
-      <<: *pg_parameters
-      name: '{{ item.key }}'
-      value: '{{ item.value }}'
     register: test_idempotence
-    with_dict: '{{ setting_map }}'
+    loop: '{{ setting_map | dict2items }}'
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value }}'
 
   - name: Check idempotence after restart
+    with_items: '{{ test_idempotence.results }}'
     assert:
       that: not item.changed
-    with_items: '{{ test_idempotence.results }}'
