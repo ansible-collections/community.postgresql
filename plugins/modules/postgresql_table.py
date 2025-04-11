@@ -107,6 +107,8 @@ notes:
   named postgres.
 - PostgreSQL allows to create columnless table, so columns param is optional.
 - Unlogged tables are available from PostgreSQL server version 9.1.
+- If the table already exists and columns are specified they will be ignored.
+  Columns can not be altered on an existing table.
 
 attributes:
   check_mode:
