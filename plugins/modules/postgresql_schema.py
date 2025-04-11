@@ -240,7 +240,7 @@ def main():
     argument_spec.update(
         schema=dict(type="str", required=True, aliases=['name']),
         owner=dict(type="str", default=""),
-        login_db=dict(type='str', aliases=['db', 'database'], deprecated_aliases=[
+        login_db=dict(type='str', default='postgres', aliases=['db', 'database'], deprecated_aliases=[
             {
                 'name': 'db',
                 'version': '5.0.0',

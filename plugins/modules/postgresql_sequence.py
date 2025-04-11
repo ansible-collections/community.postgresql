@@ -487,7 +487,7 @@ def main():
         rename_to=dict(type='str'),
         owner=dict(type='str'),
         newschema=dict(type='str'),
-        login_db=dict(type='str', aliases=['db', 'database'], deprecated_aliases=[
+        login_db=dict(type='str', default='', aliases=['db', 'database'], deprecated_aliases=[
             {
                 'name': 'db',
                 'version': '5.0.0',
