@@ -990,7 +990,7 @@ class QueryBuilder(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        login_db=dict(type='str', aliases=['db', 'database'], deprecated_aliases=[
+        login_db=dict(type='str', required=True, aliases=['db', 'database'], deprecated_aliases=[
             {
                 'name': 'db',
                 'version': '5.0.0',

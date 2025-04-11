@@ -641,7 +641,7 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         name=dict(type='str', required=True),
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+        login_db=dict(type='str', required=True, aliases=['db'], deprecated_aliases=[
             {
                 'name': 'db',
                 'version': '5.0.0',

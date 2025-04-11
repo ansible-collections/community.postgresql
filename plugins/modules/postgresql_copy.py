@@ -346,7 +346,7 @@ def main():
                 'version': '5.0.0',
                 'collection_name': 'community.postgresql',
             }],
-        )
+        ),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
     )

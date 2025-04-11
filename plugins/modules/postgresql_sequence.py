@@ -499,7 +499,6 @@ def main():
                 'collection_name': 'community.postgresql',
             }],
         ),
-        state=dict(default='present', choices=['present', 'absent']),
         session_role=dict(type='str'),
         trust_input=dict(type="bool", default=True),
     )

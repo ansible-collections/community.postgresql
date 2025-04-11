@@ -476,7 +476,7 @@ def main():
     argument_spec.update(
         table=dict(type='str', required=True, aliases=['name']),
         state=dict(type='str', default='present', choices=['absent', 'present']),
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+        login_db=dict(type='str', default='', aliases=['db'], deprecated_aliases=[
             {
                 'name': 'db',
                 'version': '5.0.0',

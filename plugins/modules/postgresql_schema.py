@@ -252,7 +252,6 @@ def main():
                 'collection_name': 'community.postgresql',
             }],
         ),
-        state=dict(default='present', choices=['present', 'absent']),
         cascade_drop=dict(type="bool", default=False),
         state=dict(type="str", default="present", choices=["absent", "present"]),
         session_role=dict(type="str"),

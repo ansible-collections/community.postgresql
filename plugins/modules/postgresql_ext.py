@@ -393,7 +393,7 @@ def ext_valid_update_path(cursor, ext, current_version, version):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+        login_db=dict(type='str', aliases=['db'], required=True, deprecated_aliases=[
             {
                 'name': 'db',
                 'version': '5.0.0',
