@@ -4,6 +4,26 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v3.13.0
+=======
+
+Release Summary
+---------------
+
+This is a minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Bugfixes
+--------
+
+- postgresql_table - consider schema name when checking for table (https://github.com/ansible-collections/community.postgresql/issues/817).  Table names are only unique within a schema. This allows using the same table name in multiple schemas.
+
+New Modules
+-----------
+
+- postgresql_alter_system - Change a PostgreSQL server configuration parameter
+
 v3.12.0
 =======
 
