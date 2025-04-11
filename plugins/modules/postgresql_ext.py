@@ -551,7 +551,7 @@ def main():
     db_connection.close()
     module.exit_json(
         changed=changed,
-        db=module.params["db"],
+        db=module.params["login_db"],
         ext=ext,
         prev_version=out_prev_version,
         version=out_version,
