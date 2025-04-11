@@ -64,12 +64,12 @@ options:
     - Permissions checking for SQL commands is carried out as though
       the session_role were the one that had logged in originally.
     type: str
-  db:
+  login_db:
     description:
     - Name of database to connect to and run queries against.
     type: str
     aliases:
-    - login_db
+    - db
   trust_input:
     description:
     - If C(false), check whether values of parameters I(tablespace), I(location), I(owner),
@@ -419,7 +419,13 @@ def main():
         owner=dict(type='str'),
         set=dict(type='dict'),
         rename_to=dict(type='str'),
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         comment=dict(type='str', default=None),

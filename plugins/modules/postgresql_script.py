@@ -52,12 +52,12 @@ options:
     - Permissions checking for SQL commands is carried out as though
       the C(session_role) were the one that had logged in originally.
     type: str
-  db:
+  login_db:
     description:
     - Name of database to connect to and run queries against.
     type: str
     aliases:
-    - login_db
+    - db
   encoding:
     description:
     - Set the client encoding for the current session (e.g. C(UTF-8)).
@@ -103,7 +103,7 @@ EXAMPLES = r'''
 # '%s' will be substituted with 1
 - name: Run query from SQL script using UTF-8 client encoding for session and positional args
   community.postgresql.postgresql_script:
-    db: test_db
+    login_db: test_db
     path: /var/lib/pgsql/test.sql
     positional_args:
       - 1
@@ -114,7 +114,7 @@ EXAMPLES = r'''
 # %-values will be substituted with 1 and 'test'
 - name: Select query to test_db with named_args
   community.postgresql.postgresql_script:
-    db: test_db
+    login_db: test_db
     path: /var/lib/pgsql/test.sql
     named_args:
       id_val: 1
@@ -248,7 +248,13 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         path=dict(type='path'),
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         positional_args=dict(type='list', elements='raw'),
         named_args=dict(type='dict'),
         session_role=dict(type='str'),
