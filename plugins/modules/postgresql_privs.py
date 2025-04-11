@@ -487,7 +487,7 @@ class Connection(object):
     """Wrapper around a psycopg connection with some convenience methods"""
 
     def __init__(self, params, module):
-        self.database = params.database
+        self.database = params.login_db
         self.module = module
 
         # Ensure psycopg libraries are available before connecting to DB:
