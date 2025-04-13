@@ -54,6 +54,8 @@ options:
     type: dict
   rename_to:
     description:
+    - DEPRECATED. This option will be removed in version 5.0.0.
+      To rename a tablespace, use the M(community.postgresql.postgresql_query) module.
     - New name of the tablespace.
     - The new name cannot begin with pg_, as such names are reserved for system tablespaces.
     type: str
@@ -137,11 +139,6 @@ EXAMPLES = r'''
     name: bar
     set:
       random_page_cost: reset
-
-- name: Rename the tablespace from bar to pcie_ssd
-  community.postgresql.postgresql_tablespace:
-    name: bar
-    rename_to: pcie_ssd
 
 - name: Drop tablespace called bloat
   community.postgresql.postgresql_tablespace:
@@ -418,7 +415,8 @@ def main():
         location=dict(type='path', aliases=['path']),
         owner=dict(type='str'),
         set=dict(type='dict'),
-        rename_to=dict(type='str'),
+        rename_to=dict(type='str', removed_in_version='5.0.0',
+                       removed_from_collection='community.postgresql'),
         db=dict(type='str', aliases=['login_db']),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
