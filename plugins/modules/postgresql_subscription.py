@@ -664,7 +664,7 @@ def main():
     )
 
     # Parameters handling:
-    db = module.params['db']
+    db = module.params['login_db']
     name = module.params['name']
     state = module.params['state']
     publications = module.params['publications']
