@@ -77,6 +77,7 @@ options:
   login_db:
     description:
     - Name of database to connect and where the table will be created.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     default: ''
     aliases:

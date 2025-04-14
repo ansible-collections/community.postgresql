@@ -25,6 +25,7 @@ options:
   login_db:
     description:
     - Name of the database to connect to and add or remove the schema.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     default: postgres
     aliases:

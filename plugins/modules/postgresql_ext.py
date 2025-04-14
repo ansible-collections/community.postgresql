@@ -25,6 +25,7 @@ options:
   login_db:
     description:
     - Name of the database to add or remove the extension to/from.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     required: true
     type: str
     aliases:

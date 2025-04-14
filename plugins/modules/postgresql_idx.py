@@ -26,6 +26,7 @@ options:
   login_db:
     description:
     - Name of database to connect to and where the index will be created/dropped.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     aliases:
     - db

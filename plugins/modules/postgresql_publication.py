@@ -26,6 +26,7 @@ options:
     description:
     - Name of the database to connect to and where
       the publication state will be changed.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     aliases: [ db ]
     type: str
   columns:

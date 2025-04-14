@@ -18,6 +18,7 @@ options:
   login_db:
     description:
     - Name of a database to connect to.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     aliases:
     - db
