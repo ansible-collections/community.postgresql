@@ -97,7 +97,8 @@ options:
     default: false
   rename_to:
     description:
-    - DEPRECATED. This option will be removed in version 5.0.0.
+    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)).
+      This option will be removed in version 5.0.0.
       To rename a sequence, use the M(community.postgresql.postgresql_query) module.
     - The new name for the I(sequence).
     - Works only for existing sequences.

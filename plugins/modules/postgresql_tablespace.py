@@ -54,7 +54,8 @@ options:
     type: dict
   rename_to:
     description:
-    - DEPRECATED. This option will be removed in version 5.0.0.
+    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)).
+      This option will be removed in version 5.0.0.
       To rename a tablespace, use the M(community.postgresql.postgresql_query) module.
     - New name of the tablespace.
     - The new name cannot begin with pg_, as such names are reserved for system tablespaces.

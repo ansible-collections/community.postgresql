@@ -87,7 +87,8 @@ options:
       For the directory format which is supported since collection version 1.4.0.
     - "Restore program is selected by target file format: C(.tar), C(.pgc), and C(.dir) are handled by pg_restore, other with pgsql."
     - "."
-    - DEPRECATED. C(rename) is used to rename the database C(name) to C(target).
+    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)).
+      C(rename) is used to rename the database C(name) to C(target).
       To rename a database, use the M(community.postgresql.postgresql_query) module.
     type: str
     choices: [ absent, dump, present, rename, restore ]
