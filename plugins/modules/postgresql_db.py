@@ -87,13 +87,9 @@ options:
       For the directory format which is supported since collection version 1.4.0.
     - "Restore program is selected by target file format: C(.tar), C(.pgc), and C(.dir) are handled by pg_restore, other with pgsql."
     - "."
-    - C(rename) is used to rename the database C(name) to C(target).
-    - If the database C(name) exists, it will be renamed to C(target).
-    - If the database C(name) does not exist and the C(target) database exists,
-      the module will report that nothing has changed.
-    - If both the databases exist as well as when they have the same value, an error will be raised.
-    - When I(state=rename), in addition to the C(name) option, the module requires the C(target) option. Other options are ignored.
-      Supported since collection version 1.4.0.
+    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)).
+      C(rename) is used to rename the database C(name) to C(target).
+      To rename a database, use the M(community.postgresql.postgresql_query) module.
     type: str
     choices: [ absent, dump, present, rename, restore ]
     default: present
@@ -266,17 +262,6 @@ EXAMPLES = r'''
   community.postgresql.postgresql_db:
     name: foo
     tablespace: bar
-
-# Rename the database foo to bar.
-# If the database foo exists, it will be renamed to bar.
-# If the database foo does not exist and the bar database exists,
-# the module will report that nothing has changed.
-# If both the databases exist, an error will be raised.
-- name: Rename the database foo to bar
-  community.postgresql.postgresql_db:
-    name: foo
-    state: rename
-    target: bar
 '''
 
 RETURN = r'''
@@ -778,6 +763,9 @@ def main():
     comment = module.params['comment']
 
     if state == 'rename':
+        module.warn('The rename choice of the state option is deprecated and will be removed '
+                    'in version 5.0.0. Use the community.postgresql.postgresql_query module instead.')
+
         if not target:
             module.fail_json(msg='The "target" option must be defined when the "rename" option is used.')
 

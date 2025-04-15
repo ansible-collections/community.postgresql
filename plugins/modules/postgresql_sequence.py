@@ -97,6 +97,9 @@ options:
     default: false
   rename_to:
     description:
+    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)).
+      This option will be removed in version 5.0.0.
+      To rename a sequence, use the M(community.postgresql.postgresql_query) module.
     - The new name for the I(sequence).
     - Works only for existing sequences.
     type: str
@@ -202,11 +205,6 @@ EXAMPLES = r'''
   community.postgresql.postgresql_sequence:
     name: foobar
     owner: foobar
-
-- name: Rename an existing sequence named foo to bar
-  community.postgresql.postgresql_sequence:
-    name: foo
-    rename_to: bar
 
 - name: Change the schema of an existing sequence to foobar
   community.postgresql.postgresql_sequence:
@@ -484,7 +482,8 @@ def main():
         cycle=dict(type='bool', default=False),
         schema=dict(type='str', default='public'),
         cascade=dict(type='bool', default=False),
-        rename_to=dict(type='str'),
+        rename_to=dict(type='str', removed_in_version='5.0.0',
+                       removed_from_collection='community.postgresql'),
         owner=dict(type='str'),
         newschema=dict(type='str'),
         db=dict(type='str', default='', aliases=['login_db', 'database']),
