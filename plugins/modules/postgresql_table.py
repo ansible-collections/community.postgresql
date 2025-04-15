@@ -13,7 +13,7 @@ DOCUMENTATION = r'''
 module: postgresql_table
 short_description: Create, drop, or modify a PostgreSQL table
 description:
-- Allows to create, drop, rename, truncate a table, or change some table attributes.
+- Allows to create, drop, truncate a table, or change some table attributes.
 options:
   table:
     description:
@@ -59,6 +59,8 @@ options:
     elements: str
   rename:
     description:
+    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)). This option will be removed in version 5.0.0.
+      To rename a table, use the M(community.postgresql.postgresql_query) module.
     - New table name. Mutually exclusive with I(tablespace), I(owner),
       I(unlogged), I(like), I(including), I(columns), I(truncate), and I(storage_params).
     type: str
@@ -108,6 +110,8 @@ notes:
   named postgres.
 - PostgreSQL allows to create columnless table, so columns param is optional.
 - Unlogged tables are available from PostgreSQL server version 9.1.
+- If the table already exists and columns are specified they will be ignored.
+  Columns can not be altered on an existing table.
 
 attributes:
   check_mode:
@@ -172,16 +176,6 @@ EXAMPLES = r'''
     name: acme.useless_data
     columns: waste_id int
     unlogged: true
-
-- name: Rename table foo to bar
-  community.postgresql.postgresql_table:
-    table: foo
-    rename: bar
-
-- name: Rename table foo from schema acme to bar
-  community.postgresql.postgresql_table:
-    name: acme.foo
-    rename: bar
 
 - name: Set owner to someuser
   community.postgresql.postgresql_table:
@@ -489,7 +483,8 @@ def main():
         unlogged=dict(type='bool', default=False),
         like=dict(type='str'),
         including=dict(type='str'),
-        rename=dict(type='str'),
+        rename=dict(type='str', removed_in_version='5.0.0',
+                    removed_from_collection='community.postgresql'),
         truncate=dict(type='bool', default=False),
         columns=dict(type='list', elements='str'),
         storage_params=dict(type='list', elements='str'),
