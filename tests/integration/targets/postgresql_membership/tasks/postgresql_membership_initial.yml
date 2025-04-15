@@ -43,7 +43,7 @@
     - result is changed
     - result.groups == ["{{ test_group1 }}"]
     - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\""]
-    - result.granted.{{ test_group1 }} == ["{{ test_user1 }}"]
+    - result.granted["{{ test_group1 }}"] == ["{{ test_user1 }}"]
     - result.state == "present"
     - result.target_roles == ["{{ test_user1 }}"]
 
@@ -67,7 +67,7 @@
     - result is not changed
     - result.groups == ["{{ test_group1 }}"]
     - result.queries == []
-    - result.revoked.{{ test_group1 }} == []
+    - result.revoked["{{ test_group1 }}"] == []
     - result.state == "absent"
     - result.target_roles == ["{{ test_user1 }}"]
 ### End of test check_mode
@@ -90,7 +90,7 @@
     - result is changed
     - result.groups == ["{{ test_group1 }}"]
     - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\""]
-    - result.granted.{{ test_group1 }} == ["{{ test_user1 }}"]
+    - result.granted["{{ test_group1 }}"] == ["{{ test_user1 }}"]
     - result.state == "present"
     - result.target_roles == ["{{ test_user1 }}"]
 
@@ -112,7 +112,7 @@
     - result is not changed
     - result.groups == ["{{ test_group1 }}"]
     - result.queries == []
-    - result.granted.{{ test_group1 }} == []
+    - result.granted["{{ test_group1 }}"] == []
     - result.state == "present"
     - result.target_roles == ["{{ test_user1 }}"]
 
@@ -134,7 +134,7 @@
     - result is changed
     - result.groups == ["{{ test_group1 }}"]
     - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\""]
-    - result.revoked.{{ test_group1 }} == ["{{ test_user1 }}"]
+    - result.revoked["{{ test_group1 }}"] == ["{{ test_user1 }}"]
     - result.state == "absent"
     - result.target_roles == ["{{ test_user1 }}"]
 
@@ -156,7 +156,7 @@
     - result is not changed
     - result.groups == ["{{ test_group1 }}"]
     - result.queries == []
-    - result.revoked.{{ test_group1 }} == []
+    - result.revoked["{{ test_group1 }}"] == []
     - result.state == "absent"
     - result.target_roles == ["{{ test_user1 }}"]
 
@@ -182,8 +182,8 @@
     - result is changed
     - result.groups == ["{{ test_group1 }}", "{{ test_group2 }}"]
     - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group1 }}\" TO \"{{ test_user2 }}\"", "GRANT \"{{ test_group2 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group2 }}\" TO \"{{ test_user2 }}\""]
-    - result.granted.{{ test_group1 }} == ["{{ test_user1 }}", "{{ test_user2 }}"]
-    - result.granted.{{ test_group2 }} == ["{{ test_user1 }}", "{{ test_user2 }}"]
+    - result.granted["{{ test_group1 }}"] == ["{{ test_user1 }}", "{{ test_user2 }}"]
+    - result.granted["{{ test_group2 }}"] == ["{{ test_user1 }}", "{{ test_user2 }}"]
     - result.state == "present"
     - result.target_roles == ["{{ test_user1 }}", "{{ test_user2 }}"]
 
@@ -209,8 +209,8 @@
     - result is not changed
     - result.groups == ["{{ test_group1 }}", "{{ test_group2 }}"]
     - result.queries == []
-    - result.granted.{{ test_group1 }} == []
-    - result.granted.{{ test_group2 }} == []
+    - result.granted["{{ test_group1 }}"] == []
+    - result.granted["{{ test_group2 }}"] == []
     - result.state == "present"
     - result.target_roles == ["{{ test_user1 }}", "{{ test_user2 }}"]
 
@@ -232,7 +232,7 @@
     - result is changed
     - result.groups == ["{{ test_group1 }}"]
     - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\""]
-    - result.revoked.{{ test_group1 }} == ["{{ test_user1 }}"]
+    - result.revoked["{{ test_group1 }}"] == ["{{ test_user1 }}"]
     - result.state == "absent"
     - result.target_roles == ["{{ test_user1 }}"]
 
@@ -259,8 +259,8 @@
     - result is changed
     - result.groups == ["{{ test_group1 }}", "{{ test_group2 }}"]
     - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\""]
-    - result.granted.{{ test_group1 }} == ["{{ test_user1 }}"]
-    - result.granted.{{ test_group2 }} == []
+    - result.granted["{{ test_group1 }}"] == ["{{ test_user1 }}"]
+    - result.granted["{{ test_group2 }}"] == []
     - result.state == "present"
     - result.target_roles == ["{{ test_user1 }}", "{{ test_user2 }}"]
 
@@ -406,7 +406,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group2 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group3 }}\" FROM \"{{ test_user1 }}\""],
+    - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group2 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group3 }}\" FROM \"{{ test_user1 }}\""]
     - result.revoked["group.with.dots"] == ["{{ test_user1 }}"]
     - result.revoked["group1"] == ["{{ test_user1 }}"]
     - result.revoked["group2"] == ["{{ test_user1 }}"]
