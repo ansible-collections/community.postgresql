@@ -23,12 +23,13 @@ options:
     required: true
     aliases:
     - name
-  db:
+  login_db:
     description:
     - Name of database to connect to and where the index will be created/dropped.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     aliases:
-    - login_db
+    - db
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -154,14 +155,14 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 - name: Create btree index if not exists test_idx concurrently covering columns id and name of table products
   community.postgresql.postgresql_idx:
-    db: acme
+    login_db: acme
     table: products
     columns: id,name
     name: test_idx
 
 - name: Create btree index test_idx concurrently with tablespace called ssd and storage parameter
   community.postgresql.postgresql_idx:
-    db: acme
+    login_db: acme
     table: products
     columns:
     - id
@@ -173,7 +174,7 @@ EXAMPLES = r'''
 
 - name: Create gist index test_gist_idx concurrently on column geo_data of table map
   community.postgresql.postgresql_idx:
-    db: somedb
+    login_db: somedb
     table: map
     idxtype: gist
     columns: geo_data
@@ -190,13 +191,13 @@ EXAMPLES = r'''
 
 - name: Drop btree test_idx concurrently
   community.postgresql.postgresql_idx:
-    db: mydb
+    login_db: mydb
     idxname: test_idx
     state: absent
 
 - name: Drop test_idx cascade
   community.postgresql.postgresql_idx:
-    db: mydb
+    login_db: mydb
     idxname: test_idx
     state: absent
     cascade: true
@@ -204,7 +205,7 @@ EXAMPLES = r'''
 
 - name: Create btree index test_idx concurrently on columns id,comment where column id > 1
   community.postgresql.postgresql_idx:
-    db: mydb
+    login_db: mydb
     table: test
     columns: id,comment
     idxname: test_idx
@@ -212,7 +213,7 @@ EXAMPLES = r'''
 
 - name: Create unique btree index if not exists test_unique_idx on column name of table products
   community.postgresql.postgresql_idx:
-    db: acme
+    login_db: acme
     table: products
     columns: name
     name: test_unique_idx
@@ -456,7 +457,13 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         idxname=dict(type='str', required=True, aliases=['name']),
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         state=dict(type='str', default='present', choices=['absent', 'present']),
         concurrent=dict(type='bool', default=True),
         unique=dict(type='bool', default=False),

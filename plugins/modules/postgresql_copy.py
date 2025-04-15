@@ -58,11 +58,12 @@ options:
     - Options of COPY command.
     - See the full list of available options U(https://www.postgresql.org/docs/current/sql-copy.html).
     type: dict
-  db:
+  login_db:
     description:
     - Name of database to connect to.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
-    aliases: [ login_db ]
+    aliases: [ db ]
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -340,7 +341,13 @@ def main():
         columns=dict(type='list', elements='str', aliases=['column']),
         options=dict(type='dict'),
         program=dict(type='bool', default=False),
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
     )

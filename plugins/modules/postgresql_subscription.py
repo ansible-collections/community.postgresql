@@ -23,11 +23,12 @@ options:
     - Name of the subscription to add, update, or remove.
     type: str
     required: true
-  db:
+  login_db:
     description:
     - Name of the database to connect to and where
       the subscription state will be changed.
-    aliases: [ login_db ]
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
+    aliases: [ db ]
     type: str
     required: true
   state:
@@ -134,7 +135,7 @@ EXAMPLES = r'''
     the following connection parameters to connect to the publisher.
     Set the subscription owner as alice.
   community.postgresql.postgresql_subscription:
-    db: mydb
+    login_db: mydb
     name: acme
     state: present
     publications: acme_publication
@@ -149,7 +150,7 @@ EXAMPLES = r'''
 
 - name: Assuming that acme subscription exists, try to change conn parameters
   community.postgresql.postgresql_subscription:
-    db: mydb
+    login_db: mydb
     name: acme
     connparams:
       host: 127.0.0.1
@@ -166,14 +167,14 @@ EXAMPLES = r'''
 
 - name: Drop acme subscription from mydb with dependencies (cascade=true)
   community.postgresql.postgresql_subscription:
-    db: mydb
+    login_db: mydb
     name: acme
     state: absent
     cascade: true
 
 - name: Assuming that acme subscription exists and enabled, disable the subscription
   community.postgresql.postgresql_subscription:
-    db: mydb
+    login_db: mydb
     name: acme
     state: present
     subsparams:
@@ -641,7 +642,13 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         name=dict(type='str', required=True),
-        db=dict(type='str', required=True, aliases=['login_db']),
+        login_db=dict(type='str', required=True, aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         state=dict(type='str', default='present', choices=['absent', 'present', 'refresh']),
         publications=dict(type='list', elements='str'),
         connparams=dict(type='dict'),
@@ -658,7 +665,7 @@ def main():
     )
 
     # Parameters handling:
-    db = module.params['db']
+    db = module.params['login_db']
     name = module.params['name']
     state = module.params['state']
     publications = module.params['publications']

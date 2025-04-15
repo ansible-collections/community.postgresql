@@ -54,12 +54,13 @@ options:
     - It will be ignored with I(slot_type=physical).
     type: str
     default: "test_decoding"
-  db:
+  login_db:
     description:
     - Name of database to connect to.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     aliases:
-    - login_db
+    - db
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -107,7 +108,7 @@ EXAMPLES = r'''
   become_user: postgres
   community.postgresql.postgresql_slot:
     slot_name: physical_one
-    db: ansible
+    login_db: ansible
 
 - name: Remove physical_one slot if exists
   become_user: postgres
@@ -122,7 +123,7 @@ EXAMPLES = r'''
     slot_type: logical
     state: present
     output_plugin: custom_decoder_one
-    db: "acme"
+    login_db: acme
 
 - name: Remove logical_one slot if exists from the cluster running on another host and non-standard port
   community.postgresql.postgresql_slot:
@@ -228,7 +229,13 @@ class PgSlot(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        db=dict(type="str", aliases=["login_db"]),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         name=dict(type="str", required=True, aliases=["slot_name"]),
         slot_type=dict(type="str", default="physical", choices=["logical", "physical"]),
         immediately_reserve=dict(type="bool", default=False),

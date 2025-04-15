@@ -28,12 +28,13 @@ options:
     description:
     - Restrict the output by certain schema.
     type: str
-  db:
+  login_db:
     description:
     - Name of database to connect.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     aliases:
-    - login_db
+    - db
   session_role:
     description:
     - Switch to session_role after connecting. The specified session_role must
@@ -74,16 +75,16 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 - name: Collect information about all supported user objects of the acme database
   community.postgresql.postgresql_user_obj_stat_info:
-    db: acme
+    login_db: acme
 
 - name: Collect information about all supported user objects in the custom schema of the acme database
   community.postgresql.postgresql_user_obj_stat_info:
-    db: acme
+    login_db: acme
     schema: custom
 
 - name: Collect information about user tables and indexes in the acme database
   community.postgresql.postgresql_user_obj_stat_info:
-    db: acme
+    login_db: acme
     filter: tables, indexes
 '''
 
@@ -295,7 +296,13 @@ class PgUserObjStatInfo():
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         filter=dict(type='list', elements='str'),
         session_role=dict(type='str'),
         schema=dict(type='str'),

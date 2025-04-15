@@ -57,12 +57,13 @@ options:
     type: str
     default: present
     choices: [ absent, exact, present ]
-  db:
+  login_db:
     description:
     - Name of database to connect to.
+    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     aliases:
-    - login_db
+    - db
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -188,7 +189,13 @@ def main():
         target_roles=dict(type='list', elements='str', required=True, aliases=['target_role', 'user', 'users']),
         fail_on_role=dict(type='bool', default=True),
         state=dict(type='str', default='present', choices=['absent', 'exact', 'present']),
-        db=dict(type='str', aliases=['login_db']),
+        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
+            {
+                'name': 'db',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
     )
