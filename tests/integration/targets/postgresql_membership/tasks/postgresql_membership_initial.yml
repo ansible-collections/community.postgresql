@@ -14,25 +14,25 @@
     name: "{{ item }}"
   ignore_errors: true
   with_items:
-  - "{{ test_group1 }}"
-  - "{{ test_group2 }}"
-  - "{{ test_group3 }}"
-  - "{{ test_user1 }}"
-  - "{{ test_user2 }}"
+  - "group1"
+  - "group2"
+  - "group.with.dots"
+  - "user1"
+  - "user.with.dots"
 
 ################
 # Do main tests:
 
 ### Test check_mode
-# Grant test_group1 to test_user1 in check_mode:
-- name: postgresql_membership - grant test_group1 to test_user1 in check_mode
+# Grant group1 to user1 in check_mode:
+- name: postgresql_membership - grant group1 to user1 in check_mode
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
-    group: "{{ test_group1 }}"
-    user: "{{ test_user1 }}"
+    group: "group1"
+    user: "user1"
     state: present
   register: result
   ignore_errors: true
@@ -41,22 +41,22 @@
 - assert:
     that:
     - result is changed
-    - result.groups == ["{{ test_group1 }}"]
-    - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\""]
-    - result.granted["{{ test_group1 }}"] == ["{{ test_user1 }}"]
+    - result.groups == ["group1"]
+    - result.queries == ["GRANT \"group1\" TO \"user1\""]
+    - result.granted["group1"] == ["user1"]
     - result.state == "present"
-    - result.target_roles == ["{{ test_user1 }}"]
+    - result.target_roles == ["user1"]
 
-# Try to revoke test_group1 from test_user1 to check that
+# Try to revoke group1 from user1 to check that
 # nothing actually changed in check_mode at the previous step:
-- name: postgresql_membership - try to revoke test_group1 from test_user1 for checking check_mode
+- name: postgresql_membership - try to revoke group1 from user1 for checking check_mode
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
-    group: "{{ test_group1 }}"
-    user: "{{ test_user1 }}"
+    group: "group1"
+    user: "user1"
     state: absent
   register: result
   ignore_errors: true
@@ -65,22 +65,22 @@
 - assert:
     that:
     - result is not changed
-    - result.groups == ["{{ test_group1 }}"]
+    - result.groups == ["group1"]
     - result.queries == []
-    - result.revoked["{{ test_group1 }}"] == []
+    - result.revoked["group1"] == []
     - result.state == "absent"
-    - result.target_roles == ["{{ test_user1 }}"]
+    - result.target_roles == ["user1"]
 ### End of test check_mode
 
-# Grant test_group1 to test_user1:
-- name: postgresql_membership - grant test_group1 to test_user1
+# Grant group1 to user1:
+- name: postgresql_membership - grant group1 to user1
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
-    group: "{{ test_group1 }}"
-    user: "{{ test_user1 }}"
+    group: "group1"
+    user: "user1"
     state: present
   register: result
   ignore_errors: true
@@ -88,21 +88,21 @@
 - assert:
     that:
     - result is changed
-    - result.groups == ["{{ test_group1 }}"]
-    - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\""]
-    - result.granted["{{ test_group1 }}"] == ["{{ test_user1 }}"]
+    - result.groups == ["group1"]
+    - result.queries == ["GRANT \"group1\" TO \"user1\""]
+    - result.granted["group1"] == ["user1"]
     - result.state == "present"
-    - result.target_roles == ["{{ test_user1 }}"]
+    - result.target_roles == ["user1"]
 
-# Grant test_group1 to test_user1 again to check that nothing changes:
-- name: postgresql_membership - grant test_group1 to test_user1 again
+# Grant group1 to user1 again to check that nothing changes:
+- name: postgresql_membership - grant group1 to user1 again
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
-    group: "{{ test_group1 }}"
-    user: "{{ test_user1 }}"
+    group: "group1"
+    user: "user1"
     state: present
   register: result
   ignore_errors: true
@@ -110,21 +110,21 @@
 - assert:
     that:
     - result is not changed
-    - result.groups == ["{{ test_group1 }}"]
+    - result.groups == ["group1"]
     - result.queries == []
-    - result.granted["{{ test_group1 }}"] == []
+    - result.granted["group1"] == []
     - result.state == "present"
-    - result.target_roles == ["{{ test_user1 }}"]
+    - result.target_roles == ["user1"]
 
-# Revoke test_group1 from test_user1:
-- name: postgresql_membership - revoke test_group1 from test_user1
+# Revoke group1 from user1:
+- name: postgresql_membership - revoke group1 from user1
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
-    group: "{{ test_group1 }}"
-    user: "{{ test_user1 }}"
+    group: "group1"
+    user: "user1"
     state: absent
   register: result
   ignore_errors: true
@@ -132,21 +132,21 @@
 - assert:
     that:
     - result is changed
-    - result.groups == ["{{ test_group1 }}"]
-    - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\""]
-    - result.revoked["{{ test_group1 }}"] == ["{{ test_user1 }}"]
+    - result.groups == ["group1"]
+    - result.queries == ["REVOKE \"group1\" FROM \"user1\""]
+    - result.revoked["group1"] == ["user1"]
     - result.state == "absent"
-    - result.target_roles == ["{{ test_user1 }}"]
+    - result.target_roles == ["user1"]
 
-# Revoke test_group1 from test_user1 again to check that nothing changes:
-- name: postgresql_membership - revoke test_group1 from test_user1 again
+# Revoke group1 from user1 again to check that nothing changes:
+- name: postgresql_membership - revoke group1 from user1 again
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
-    group: "{{ test_group1 }}"
-    user: "{{ test_user1 }}"
+    group: "group1"
+    user: "user1"
     state: absent
   register: result
   ignore_errors: true
@@ -154,13 +154,13 @@
 - assert:
     that:
     - result is not changed
-    - result.groups == ["{{ test_group1 }}"]
+    - result.groups == ["group1"]
     - result.queries == []
-    - result.revoked["{{ test_group1 }}"] == []
+    - result.revoked["group1"] == []
     - result.state == "absent"
-    - result.target_roles == ["{{ test_user1 }}"]
+    - result.target_roles == ["user1"]
 
-# Grant test_group1 and test_group2 to test_user1 and test_user2:
+# Grant group1 and group2 to user1 and user.with.dots:
 - name: postgresql_membership - grant two groups to two users
   become_user: "{{ pg_user }}"
   become: true
@@ -168,11 +168,11 @@
     login_user: "{{ pg_user }}"
     db: postgres
     group:
-    - "{{ test_group1 }}"
-    - "{{ test_group2 }}"
+    - "group1"
+    - "group2"
     user:
-    - "{{ test_user1 }}"
-    - "{{ test_user2 }}"
+    - "user1"
+    - "user.with.dots"
     state: present
   register: result
   ignore_errors: true
@@ -180,14 +180,13 @@
 - assert:
     that:
     - result is changed
-    - result.groups == ["{{ test_group1 }}", "{{ test_group2 }}"]
-    - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group1 }}\" TO \"{{ test_user2 }}\"", "GRANT \"{{ test_group2 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group2 }}\" TO \"{{ test_user2 }}\""]
-    - result.granted["{{ test_group1 }}"] == ["{{ test_user1 }}", "{{ test_user2 }}"]
-    - result.granted["{{ test_group2 }}"] == ["{{ test_user1 }}", "{{ test_user2 }}"]
+    - result.groups == ["group1", "group2"]
+    - result.granted["group1"] == ["user1", "user.with.dots"]
+    - result.granted["group2"] == ["user1", "user.with.dots"]
     - result.state == "present"
-    - result.target_roles == ["{{ test_user1 }}", "{{ test_user2 }}"]
+    - result.target_roles == ["user1", "user.with.dots"]
 
-# Grant test_group1 and test_group2 to test_user1 and test_user2 again to check that nothing changes:
+# Grant group1 and group2 to user1 and user.with.dots again to check that nothing changes:
 - name: postgresql_membership - grant two groups to two users again
   become_user: "{{ pg_user }}"
   become: true
@@ -195,11 +194,11 @@
     login_user: "{{ pg_user }}"
     db: postgres
     group:
-    - "{{ test_group1 }}"
-    - "{{ test_group2 }}"
+    - "group1"
+    - "group2"
     user:
-    - "{{ test_user1 }}"
-    - "{{ test_user2 }}"
+    - "user1"
+    - "user.with.dots"
     state: present
   register: result
   ignore_errors: true
@@ -207,22 +206,22 @@
 - assert:
     that:
     - result is not changed
-    - result.groups == ["{{ test_group1 }}", "{{ test_group2 }}"]
+    - result.groups == ["group1", "group2"]
     - result.queries == []
-    - result.granted["{{ test_group1 }}"] == []
-    - result.granted["{{ test_group2 }}"] == []
+    - result.granted["group1"] == []
+    - result.granted["group2"] == []
     - result.state == "present"
-    - result.target_roles == ["{{ test_user1 }}", "{{ test_user2 }}"]
+    - result.target_roles == ["user1", "user.with.dots"]
 
-# Revoke only test_group1 from test_user1:
+# Revoke only group1 from user1:
 - name: postgresql_membership - revoke one group from one user
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
-    group: "{{ test_group1 }}"
-    user: "{{ test_user1 }}"
+    group: "group1"
+    user: "user1"
     state: absent
   register: result
   ignore_errors: true
@@ -230,14 +229,14 @@
 - assert:
     that:
     - result is changed
-    - result.groups == ["{{ test_group1 }}"]
-    - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\""]
-    - result.revoked["{{ test_group1 }}"] == ["{{ test_user1 }}"]
+    - result.groups == ["group1"]
+    - result.queries == ["REVOKE \"group1\" FROM \"user1\""]
+    - result.revoked["group1"] == ["user1"]
     - result.state == "absent"
-    - result.target_roles == ["{{ test_user1 }}"]
+    - result.target_roles == ["user1"]
 
-# Try to grant test_group1 and test_group2 to test_user1 and test_user2 again
-# to check that nothing changes with test_user2:
+# Try to grant group1 and group2 to user1 and user.with.dots again
+# to check that nothing changes with user.with.dots:
 - name: postgresql_membership - grant two groups to two users again
   become_user: "{{ pg_user }}"
   become: true
@@ -245,11 +244,11 @@
     login_user: "{{ pg_user }}"
     db: postgres
     group:
-    - "{{ test_group1 }}"
-    - "{{ test_group2 }}"
+    - "group1"
+    - "group2"
     user:
-    - "{{ test_user1 }}"
-    - "{{ test_user2 }}"
+    - "user1"
+    - "user.with.dots"
     state: present
   register: result
   ignore_errors: true
@@ -257,12 +256,12 @@
 - assert:
     that:
     - result is changed
-    - result.groups == ["{{ test_group1 }}", "{{ test_group2 }}"]
-    - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\""]
-    - result.granted["{{ test_group1 }}"] == ["{{ test_user1 }}"]
-    - result.granted["{{ test_group2 }}"] == []
+    - result.groups == ["group1", "group2"]
+    - result.queries == ["GRANT \"group1\" TO \"user1\""]
+    - result.granted["group1"] == ["user1"]
+    - result.granted["group2"] == []
     - result.state == "present"
-    - result.target_roles == ["{{ test_user1 }}", "{{ test_user2 }}"]
+    - result.target_roles == ["user1", "user.with.dots"]
 
 #####################
 # Check fail_on_role:
@@ -329,22 +328,22 @@
     - result.target_roles == []
     - result.state == 'absent'
 
-# Grant test_group3 with a name containing dots to test_user1.
-- name: postgresql_membership - grant test_group3 with dots to test_user1
+# Grant group.with.dots with a name containing dots to user1.
+- name: postgresql_membership - grant group.with.dots with dots to user1
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
     db: postgres
-    group: "{{ test_group3 }}"
-    user: "{{ test_user1 }}"
+    group: "group.with.dots"
+    user: "user1"
     state: present
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["GRANT \"{{ test_group3 }}\" TO \"{{ test_user1 }}\""]
+    - result.queries == ["GRANT \"group.with.dots\" TO \"user1\""]
 
 #############################
 # Check trust_input parameter
@@ -356,9 +355,9 @@
     login_user: "{{ pg_user }}"
     db: postgres
     group:
-    - "{{ test_group3}}"
-    - "{{ dangerous_name }}"
-    user: "{{ test_user1 }}"
+    - "group.with.dots"
+    - 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
+    user: "user1"
     state: present
     trust_input: false
   register: result
@@ -367,7 +366,7 @@
 - assert:
     that:
     - result is failed
-    - result.msg == 'Passed input \'{{ dangerous_name }}\' is potentially dangerous'
+    - result.msg == 'Passed input \'curious.anonymous"; SELECT * FROM information_schema.tables; --\' is potentially dangerous'
 
 - name: postgresql_membership - try to use dangerous input, trust explicitly
   become_user: "{{ pg_user }}"
@@ -376,9 +375,9 @@
     login_user: "{{ pg_user }}"
     db: postgres
     group:
-    - "{{ test_group3}}"
-    - "{{ dangerous_name }}"
-    user: "{{ test_user1 }}"
+    - "group.with.dots"
+    - 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
+    user: "user1"
     state: present
     trust_input: true
   register: result
@@ -387,7 +386,7 @@
 - assert:
     that:
     - result is failed
-    - result.msg == 'Role {{ dangerous_name }} does not exist'
+    - result.msg == 'Role curious.anonymous"; SELECT * FROM information_schema.tables; -- does not exist'
 
 ########################
 # Tests for match method
@@ -398,7 +397,7 @@
     login_user: "{{ pg_user }}"
     db: postgres
     groups: []
-    user: "{{ test_user1 }}"
+    user: "user1"
     state: exact
   register: result
   check_mode: true
@@ -406,10 +405,9 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group2 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group3 }}\" FROM \"{{ test_user1 }}\""]
-    - result.revoked["group.with.dots"] == ["{{ test_user1 }}"]
-    - result.revoked["group1"] == ["{{ test_user1 }}"]
-    - result.revoked["group2"] == ["{{ test_user1 }}"]
+    - result.revoked["group.with.dots"] == ["user1"]
+    - result.revoked["group1"] == ["user1"]
+    - result.revoked["group2"] == ["user1"]
     - result.granted == {}
 
 
@@ -419,12 +417,12 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user1 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
 - assert:
     that:
-    - result.query_result.0.array == ['{{ test_group1 }}', '{{ test_group2 }}', '{{ test_group3 }}']
+    - result.query_result.0.array == ['group1', 'group2', 'group.with.dots']
 
 - name: Revoke all groups from a role actual mode
   become_user: "{{ pg_user }}"
@@ -433,17 +431,16 @@
     login_user: "{{ pg_user }}"
     db: postgres
     groups: []
-    user: "{{ test_user1 }}"
+    user: "user1"
     state: exact
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group2 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group3 }}\" FROM \"{{ test_user1 }}\""],
-    - result.revoked["group.with.dots"] == ["{{ test_user1 }}"]
-    - result.revoked["group1"] == ["{{ test_user1 }}"]
-    - result.revoked["group2"] == ["{{ test_user1 }}"]
+    - result.revoked["group.with.dots"] == ["user1"]
+    - result.revoked["group1"] == ["user1"]
+    - result.revoked["group2"] == ["user1"]
     - result.granted == {}
 
 
@@ -453,7 +450,7 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user1 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
 - assert:
@@ -467,10 +464,10 @@
     login_user: "{{ pg_user }}"
     db: postgres
     groups:
-    - "{{ test_group1 }}"
-    - "{{ test_group2 }}"
-    - "{{ test_group3 }}"
-    user: "{{ test_user1 }}"
+    - "group1"
+    - "group2"
+    - "group.with.dots"
+    user: "user1"
     state: exact
   register: result
   check_mode: true
@@ -478,10 +475,9 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group2 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group3 }}\" TO \"{{ test_user1 }}\""],
-    - result.granted["group.with.dots"] == ["{{ test_user1 }}"]
-    - result.granted["group1"] == ["{{ test_user1 }}"]
-    - result.granted["group2"] == ["{{ test_user1 }}"]
+    - result.granted["group.with.dots"] == ["user1"]
+    - result.granted["group1"] == ["user1"]
+    - result.granted["group2"] == ["user1"]
     - result.revoked == {}
 
 
@@ -491,7 +487,7 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user1 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
 - assert:
@@ -505,20 +501,19 @@
     login_user: "{{ pg_user }}"
     db: postgres
     groups:
-    - "{{ test_group1 }}"
-    - "{{ test_group2 }}"
-    - "{{ test_group3 }}"
-    user: "{{ test_user1 }}"
+    - "group1"
+    - "group2"
+    - "group.with.dots"
+    user: "user1"
     state: exact
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group2 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group3 }}\" TO \"{{ test_user1 }}\""],
-    - result.granted["group.with.dots"] == ["{{ test_user1 }}"]
-    - result.granted["group1"] == ["{{ test_user1 }}"]
-    - result.granted["group2"] == ["{{ test_user1 }}"]
+    - result.granted["group.with.dots"] == ["user1"]
+    - result.granted["group1"] == ["user1"]
+    - result.granted["group2"] == ["user1"]
     - result.revoked == {}
 
 
@@ -528,12 +523,12 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user1 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
 - assert:
     that:
-    - result.query_result.0.array == ['{{ test_group1 }}', '{{ test_group2 }}', '{{ test_group3 }}']
+    - result.query_result.0.array == ['group1', 'group2', 'group.with.dots']
 
 - name: Change groups 1
   become_user: "{{ pg_user }}"
@@ -542,17 +537,16 @@
     login_user: "{{ pg_user }}"
     db: postgres
     groups:
-    - "{{ test_group1 }}"
-    user: "{{ test_user1 }}"
+    - "group1"
+    user: "user1"
     state: exact
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["REVOKE \"{{ test_group2 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group3 }}\" FROM \"{{ test_user1 }}\""],
-    - result.revoked["group.with.dots"] == ["{{ test_user1 }}"]
-    - result.revoked["group2"] == ["{{ test_user1 }}"]
+    - result.revoked["group.with.dots"] == ["user1"]
+    - result.revoked["group2"] == ["user1"]
     - result.granted == {}
 
 
@@ -562,12 +556,12 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user1 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
 - assert:
     that:
-    - result.query_result.0.array == ['{{ test_group1 }}']
+    - result.query_result.0.array == ['group1']
 
 - name: Change groups 2
   become_user: "{{ pg_user }}"
@@ -576,19 +570,18 @@
     login_user: "{{ pg_user }}"
     db: postgres
     groups:
-    - "{{ test_group2 }}"
-    - "{{ test_group3 }}"
-    user: "{{ test_user1 }}"
+    - "group2"
+    - "group.with.dots"
+    user: "user1"
     state: exact
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\"", "GRANT \"{{ test_group2 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group3 }}\" TO \"{{ test_user1 }}\""],
-    - result.granted["group.with.dots"] == ["{{ test_user1 }}"]
-    - result.granted["group2"] == ["{{ test_user1 }}"]
-    - result.revoked["group1"] == ["{{ test_user1 }}"]
+    - result.granted["group.with.dots"] == ["user1"]
+    - result.granted["group2"] == ["user1"]
+    - result.revoked["group1"] == ["user1"]
 
 - name: Check result of prev task
   become_user: "{{ pg_user }}"
@@ -596,12 +589,12 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user1 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
 - assert:
     that:
-    - result.query_result.0.array == ['{{ test_group2 }}', '{{ test_group3 }}']
+    - result.query_result.0.array == ['group2', 'group.with.dots']
 
 - name: Change groups 2 again
   become_user: "{{ pg_user }}"
@@ -610,16 +603,16 @@
     login_user: "{{ pg_user }}"
     db: postgres
     groups:
-    - "{{ test_group2 }}"
-    - "{{ test_group3 }}"
-    user: "{{ test_user1 }}"
+    - "group2"
+    - "group.with.dots"
+    user: "user1"
     state: exact
   register: result
 
 - assert:
     that:
     - result is not changed
-    - result.queries == [],
+    - result.queries == []
     - result.granted == {}
     - result.revoked == {}
 
@@ -630,12 +623,12 @@
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user1 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
 - assert:
     that:
-    - result.query_result.0.array == ['{{ test_group2 }}', '{{ test_group3 }}']
+    - result.query_result.0.array == ['group2', 'group.with.dots']
 
 - name: Change groups for two users
   become_user: "{{ pg_user }}"
@@ -644,48 +637,47 @@
     login_user: "{{ pg_user }}"
     db: postgres
     groups:
-    - "{{ test_group1 }}"
-    - "{{ test_group2 }}"
-    - "{{ test_group3 }}"
+    - "group1"
+    - "group2"
+    - "group.with.dots"
     users:
-    - "{{ test_user1 }}"
-    - "{{ test_user2 }}"
+    - "user1"
+    - "user.with.dots"
     state: exact
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["GRANT \"{{ test_group1 }}\" TO \"{{ test_user1 }}\"", "GRANT \"{{ test_group3 }}\" TO \"{{ test_user2 }}\""],
-    - result.granted["group1"] == ["{{ test_user1 }}"]
-    - result.granted["group.with.dots"] == ["{{ test_user2 }}"]
+    - result.granted["group1"] == ["user1"]
+    - result.granted["group.with.dots"] == ["user.with.dots"]
     - result.revoked == {}
 
-- name: Check result of prev task for {{ test_user1 }}
+- name: Check result of prev task for user1
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user1 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
 - assert:
     that:
-    - result.query_result.0.array == ['{{ test_group1 }}', '{{ test_group2 }}', '{{ test_group3 }}']
+    - result.query_result.0.array == ['group1', 'group2', 'group.with.dots']
 
-- name: Check result of prev task for {{ test_user2 }}
+- name: Check result of prev task for user.with.dots
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user2 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user.with.dots'"
   register: result
 
 - assert:
     that:
-    - result.query_result.0.array == ['{{ test_group1 }}', '{{ test_group2 }}', '{{ test_group3 }}']
+    - result.query_result.0.array == ['group1', 'group2', 'group.with.dots']
 
 - name: Change groups for two users 2
   become_user: "{{ pg_user }}"
@@ -694,43 +686,42 @@
     login_user: "{{ pg_user }}"
     db: postgres
     groups:
-    - "{{ test_group2 }}"
-    - "{{ test_group3 }}"
+    - "group2"
+    - "group.with.dots"
     users:
-    - "{{ test_user1 }}"
-    - "{{ test_user2 }}"
+    - "user1"
+    - "user.with.dots"
     state: exact
   register: result
 
 - assert:
     that:
     - result is changed
-    - result.queries == ["REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user1 }}\"", "REVOKE \"{{ test_group1 }}\" FROM \"{{ test_user2 }}\""],
-    - result.revoked["group1"] == ["{{ test_user1 }}", "{{ test_user2 }}"]
+    - result.revoked["group1"] == ["user1", "user.with.dots"]
     - result.granted == {}
 
-- name: Check result of prev task for {{ test_user1 }}
+- name: Check result of prev task for user1
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user1 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
 - assert:
     that:
-    - result.query_result.0.array == ['{{ test_group2 }}', '{{ test_group3 }}']
+    - result.query_result.0.array == ['group2', 'group.with.dots']
 
-- name: Check result of prev task for {{ test_user2 }}
+- name: Check result of prev task for user.with.dots
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
     db: postgres
-    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = '{{ test_user2 }}'"
+    query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user.with.dots'"
   register: result
 
 - assert:
     that:
-    - result.query_result.0.array == ['{{ test_group2 }}', '{{ test_group3 }}']
+    - result.query_result.0.array == ['group2', 'group.with.dots']

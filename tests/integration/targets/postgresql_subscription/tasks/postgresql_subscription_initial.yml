@@ -58,7 +58,7 @@
       - result.final_state.slotname == '{{ test_subscription }}'
       - result.final_state.conninfo.dbname == '{{ test_db }}'
       - result.final_state.conninfo.host == '127.0.0.1'
-      - result.final_state.conninfo.port == {{ primary_port }}
+      - result.final_state.conninfo.port == '{{ primary_port }}'
       - result.final_state.conninfo.user == '{{ replication_role }}'
       - result.final_state.conninfo.password == '{{ replication_pass }}'
 
@@ -736,7 +736,7 @@
       - result.name == '{{ test_subscription }}'
       - result.queries == []
       - result.initial_state.conninfo == result.final_state.conninfo
-      - result.final_state.conninfo.connect_timeout == {{ conn_timeout }}
+      - result.final_state.conninfo.connect_timeout == '{{ conn_timeout }}'
 
   ####################
   # Test state refresh

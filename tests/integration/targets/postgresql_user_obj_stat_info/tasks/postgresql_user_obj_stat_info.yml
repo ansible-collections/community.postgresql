@@ -23,7 +23,7 @@
     <<: *task_parameters
     postgresql_schema:
       <<: *pg_parameters
-      name: '{{ test_schema1 }}'
+      name: 'schema1'
 
   - name: Create test tables
     <<: *task_parameters
@@ -33,26 +33,26 @@
       columns:
       - id int
     loop:
-    - '{{ test_table1 }}'
-    - '{{ test_table2 }}'
+    - 'acme1'
+    - 'acme2'
 
   - name: Create test table in another schema
     <<: *task_parameters
     postgresql_table:
       <<: *pg_parameters
-      name: '{{ test_schema1 }}.{{ test_table3 }}'
+      name: 'schema1.acme3'
 
   - name: Create test indexes
     <<: *task_parameters
     postgresql_idx:
       <<: *pg_parameters
       name: '{{ item }}'
-      table: '{{ test_table1 }}'
+      table: 'acme1'
       columns:
       - id
     loop:
-    - '{{ test_idx1 }}'
-    - '{{ test_idx2 }}'
+    - 'idx1'
+    - 'idx2'
 
   - name: Set track_function (restart is required)
     <<: *task_parameters
@@ -83,9 +83,9 @@
       <<: *pg_parameters
       query: 'CREATE FUNCTION {{ item }}() RETURNS boolean AS $$ BEGIN RETURN 1; END; $$ LANGUAGE PLPGSQL'
     loop:
-    - '{{ test_func1 }}'
-    - '{{ test_func2 }}'
-    - '{{ test_schema1 }}.{{ test_func3 }}'
+    - 'func1'
+    - 'func2'
+    - 'schema1.func3'
 
   - name: Touch test functions
     <<: *task_parameters
@@ -93,9 +93,9 @@
       <<: *pg_parameters
       query: 'SELECT {{ item }}()'
     loop:
-    - '{{ test_func1 }}'
-    - '{{ test_func2 }}'
-    - '{{ test_schema1 }}.{{ test_func3 }}'
+    - 'func1'
+    - 'func2'
+    - 'schema1.func3'
 
   #######
   # Tests
@@ -109,14 +109,14 @@
   - assert:
       that:
       - result is not changed
-      - result.tables.public.{{ test_table1 }}.size == 0
-      - result.tables.public.{{ test_table1 }}.size == 0
-      - result.tables.{{ test_schema1 }}.{{ test_table3 }}.size == 0
-      - result.functions.public.{{ test_func1 }}.calls == 1
-      - result.functions.public.{{ test_func2 }}.calls == 1
-      - result.functions.{{ test_schema1 }}.{{ test_func3 }}.calls == 1
-      - result.indexes.public.{{ test_idx1 }}.idx_scan == 0
-      - result.indexes.public.{{ test_idx2 }}.idx_scan == 0
+      - result.tables.public.acme1.size == 0
+      - result.tables.public.acme1.size == 0
+      - result.tables.schema1.acme3.size == 0
+      - result.functions.public.func1.calls == 1
+      - result.functions.public.func2.calls == 1
+      - result.functions.schema1.func3.calls == 1
+      - result.indexes.public.idx1.idx_scan == 0
+      - result.indexes.public.idx2.idx_scan == 0
 
   # 1. With filter
   - name: Collect stats with filter
@@ -128,12 +128,12 @@
   - assert:
       that:
       - result is not changed
-      - result.tables.public.{{ test_table1 }}.size == 0
-      - result.tables.public.{{ test_table1 }}.size == 0
-      - result.tables.{{ test_schema1 }}.{{ test_table3 }}.size == 0
+      - result.tables.public.acme1.size == 0
+      - result.tables.public.acme1.size == 0
+      - result.tables.schema1.acme3.size == 0
       - result.functions == {}
-      - result.indexes.public.{{ test_idx1 }}.idx_scan == 0
-      - result.indexes.public.{{ test_idx2 }}.idx_scan == 0
+      - result.indexes.public.idx1.idx_scan == 0
+      - result.indexes.public.idx2.idx_scan == 0
 
   # 2. With schema
   - name: Collect stats for objects in certain schema
@@ -145,13 +145,13 @@
   - assert:
       that:
       - result is not changed
-      - result.tables.public.{{ test_table1 }}.size == 0
-      - result.tables.public.{{ test_table1 }}.size == 0
-      - result.indexes.public.{{ test_idx1 }}.idx_scan == 0
-      - result.indexes.public.{{ test_idx2 }}.idx_scan == 0
-      - result.functions.public.{{ test_func1 }}.calls == 1
-      - result.functions.public.{{ test_func2 }}.calls == 1
-      - result.tables.{{ test_schema1 }} is not defined
+      - result.tables.public.acme1.size == 0
+      - result.tables.public.acme1.size == 0
+      - result.indexes.public.idx1.idx_scan == 0
+      - result.indexes.public.idx2.idx_scan == 0
+      - result.functions.public.func1.calls == 1
+      - result.functions.public.func2.calls == 1
+      - result.tables.schema1 is not defined
 
 
   # 3. With wrong schema
@@ -188,7 +188,7 @@
     <<: *task_parameters
     postgresql_schema:
       <<: *pg_parameters
-      name: '{{ test_schema1 }}'
+      name: 'schema1'
       state: absent
       cascade_drop: true
 
@@ -199,8 +199,8 @@
       name: '{{ item }}'
       state: absent
     loop:
-    - '{{ test_table1 }}'
-    - '{{ test_table2 }}'
+    - 'acme1'
+    - 'acme2'
 
   - name: Drop test functions
     <<: *task_parameters
@@ -208,7 +208,7 @@
       <<: *pg_parameters
       query: 'DROP FUNCTION {{ item }}()'
     loop:
-    - '{{ test_func1 }}'
-    - '{{ test_func2 }}'
-    - '{{ test_schema1 }}.{{ test_func3 }}'
+    - 'func1'
+    - 'func2'
+    - 'schema1.func3'
     ignore_errors: true
