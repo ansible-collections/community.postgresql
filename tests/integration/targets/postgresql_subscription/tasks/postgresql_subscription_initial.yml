@@ -47,20 +47,20 @@
   - assert:
       that:
       - result is changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.queries == ["CREATE SUBSCRIPTION test CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }}' PUBLICATION {{ test_pub }}", "COMMENT ON SUBSCRIPTION \"test\" IS 'Made by Ansible'"]
       - result.exists == true
       - result.initial_state == {}
-      - result.final_state.owner == '{{ pg_user }}'
+      - result.final_state.owner == pg_user
       - result.final_state.enabled == true
-      - result.final_state.publications == ["{{ test_pub }}"]
+      - result.final_state.publications[0] == test_pub
       - result.final_state.synccommit == true
-      - result.final_state.slotname == '{{ test_subscription }}'
-      - result.final_state.conninfo.dbname == '{{ test_db }}'
+      - result.final_state.slotname == test_subscription
+      - result.final_state.conninfo.dbname == test_db
       - result.final_state.conninfo.host == '127.0.0.1'
-      - result.final_state.conninfo.port == '{{ primary_port }}'
-      - result.final_state.conninfo.user == '{{ replication_role }}'
-      - result.final_state.conninfo.password == '{{ replication_pass }}'
+      - result.final_state.conninfo.port == primary_port
+      - result.final_state.conninfo.user == replication_role
+      - result.final_state.conninfo.password == replication_pass
 
   - name: Check
     <<: *task_parameters
@@ -262,7 +262,7 @@
 
   - assert:
       that:
-      - result.final_state.owner == '{{ test_role1 }}'
+      - result.final_state.owner == test_role1
       - result.queries[1] == 'ALTER SUBSCRIPTION {{ test_subscription }} OWNER TO "{{ test_role1 }}"'
 
   - name: Try to set this owner again
@@ -280,7 +280,7 @@
       that:
       - result is not changed
       - result.initial_state == result.final_state
-      - result.final_state.owner == '{{ test_role1 }}'
+      - result.final_state.owner == test_role1
 
   - name: Check
     <<: *task_parameters
@@ -312,7 +312,7 @@
       that:
       - result is changed
       - result.initial_state == result.final_state
-      - result.final_state.owner == '{{ test_role1 }}'
+      - result.final_state.owner == test_role1
       - result.queries == ['ALTER SUBSCRIPTION {{ test_subscription }} OWNER TO "{{ test_role2 }}"']
 
   - name: Check
@@ -344,7 +344,7 @@
       that:
       - result is changed
       - result.initial_state != result.final_state
-      - result.final_state.owner == '{{ test_role2 }}'
+      - result.final_state.owner == test_role2
       - result.queries == ['ALTER SUBSCRIPTION {{ test_subscription }} OWNER TO "{{ test_role2 }}"']
 
   - name: Check
@@ -473,7 +473,7 @@
   - assert:
       that:
       - result is changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.queries == ["CREATE SUBSCRIPTION test CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }}' PUBLICATION {{ test_pub }} WITH (enabled = false, synchronous_commit = false)"]
       - result.exists == true
       - result.final_state.enabled == false
@@ -507,7 +507,7 @@
   - assert:
       that:
       - result is changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.queries == ["ALTER SUBSCRIPTION {{ test_subscription }} ENABLE", "ALTER SUBSCRIPTION {{ test_subscription }} SET (synchronous_commit = true)"]
       - result.exists == true
       - result.final_state.enabled == true
@@ -541,7 +541,7 @@
   - assert:
       that:
       - result is not changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.queries == []
       - result.exists == true
       - result.final_state == result.initial_state
@@ -601,7 +601,7 @@
   - assert:
       that:
       - result is changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.final_state.publications != result.initial_state.publications
       - result.final_state.publications == ['{{ test_pub }}', '{{ test_pub2 }}']
       - result.queries == ['ALTER SUBSCRIPTION {{ test_subscription }} SET PUBLICATION {{ test_pub }}, {{ test_pub2 }}']
@@ -634,7 +634,7 @@
   - assert:
       that:
       - result is not changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.final_state.publications == result.initial_state.publications
       - result.final_state.publications == ['{{ test_pub }}', '{{ test_pub2 }}']
       - result.queries == []
@@ -676,7 +676,7 @@
   - assert:
       that:
       - result is changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.queries == ["ALTER SUBSCRIPTION {{ test_subscription }} CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }} connect_timeout={{ conn_timeout }}'"]
       - result.initial_state.conninfo == result.final_state.conninfo
 
@@ -699,7 +699,7 @@
   - assert:
       that:
       - result is changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.queries == ["ALTER SUBSCRIPTION {{ test_subscription }} CONNECTION 'host=127.0.0.1 port={{ primary_port }} user={{ replication_role }} password={{ replication_pass }} dbname={{ test_db }} connect_timeout={{ conn_timeout }}'"]
       - result.initial_state.conninfo != result.final_state.conninfo
 
@@ -733,10 +733,10 @@
   - assert:
       that:
       - result is not changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.queries == []
       - result.initial_state.conninfo == result.final_state.conninfo
-      - result.final_state.conninfo.connect_timeout == '{{ conn_timeout }}'
+      - result.final_state.conninfo.connect_timeout == conn_timeout
 
   ####################
   # Test state refresh
@@ -754,7 +754,7 @@
   - assert:
       that:
       - result is changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.queries == ["ALTER SUBSCRIPTION {{ test_subscription }} REFRESH PUBLICATION"]
 
   - name: Refresh
@@ -768,7 +768,7 @@
   - assert:
       that:
       - result is changed
-      - result.name == '{{ test_subscription }}'
+      - result.name == test_subscription
       - result.queries == ["ALTER SUBSCRIPTION {{ test_subscription }} REFRESH PUBLICATION"]
 
   ##########
