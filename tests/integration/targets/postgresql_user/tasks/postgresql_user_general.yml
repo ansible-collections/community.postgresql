@@ -963,7 +963,7 @@
 
   - assert:
       that:
-      - result.msg == 'ERROR:  cannot execute ALTER ROLE in a read-only transaction\n'
+      - "result.msg == 'ERROR:  cannot execute ALTER ROLE in a read-only transaction\n' or result.msg == 'cannot execute ALTER ROLE in a read-only transaction'"
 
   - name: Set database as read-write
     <<: *task_parameters
