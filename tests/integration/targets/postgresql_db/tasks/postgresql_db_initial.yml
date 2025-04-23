@@ -117,8 +117,8 @@
     state: 'present'
     conn_limit: '100'
     encoding: 'LATIN1'
-    lc_collate: "pt_BR{{ locale_latin_suffix }}"
-    lc_ctype: "es_ES{{ locale_latin_suffix }}"
+    lc_collate: 'pt_BR{{ locale_latin_suffix }}'
+    lc_ctype: 'es_ES{{ locale_latin_suffix }}'
     template: 'template0'
     login_user: "{{ pg_user }}"
   register: result
