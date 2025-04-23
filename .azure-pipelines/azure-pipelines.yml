@@ -73,6 +73,18 @@ stages:
             - name: Units
               test: 'devel/units/1'
 
+  - stage: Ansible_2_19
+    displayName: Sanity & Units 2.19
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: '2.19/sanity/1'
+            - name: Units
+              test: '2.19/units/1'
+
   - stage: Ansible_2_18
     displayName: Sanity & Units 2.18
     dependsOn: []
@@ -97,18 +109,6 @@ stages:
             - name: Units
               test: '2.17/units/1'
 
-  - stage: Ansible_2_16
-    displayName: Sanity & Units 2.16
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          targets:
-            - name: Sanity
-              test: '2.16/sanity/1'
-            - name: Units
-              test: '2.16/units/1'
-
 ## Docker
   - stage: Docker_devel
     displayName: Docker devel
@@ -117,6 +117,21 @@ stages:
       - template: templates/matrix.yml
         parameters:
           testFormat: devel/linux/{0}/1
+          targets:
+            - name: Fedora 41
+              test: fedora41
+            - name: Ubuntu 24.04
+              test: ubuntu2404
+            - name: Ubuntu 22.04
+              test: ubuntu2204
+
+  - stage: Docker_2_19
+    displayName: Docker 2.19
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.19/linux/{0}/1
           targets:
             - name: Fedora 41
               test: fedora41
@@ -151,17 +166,6 @@ stages:
             - name: Ubuntu 22.04
               test: ubuntu2204
 
-  - stage: Docker_2_16
-    displayName: Docker 2.16
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.16/linux/{0}/1
-          targets:
-            - name: Ubuntu 22.04
-              test: ubuntu2204
-
   # Newer ansible versions don't work on Fedora 37.
   # Left it here to keep testing against PostgreSQL 14
   # that is still not EOL at the time being.
@@ -190,6 +194,17 @@ stages:
             - name: RHEL 9.5
               test: rhel/9.5
 
+  - stage: Remote_2_19
+    displayName: Remote 2.19
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.19/{0}/1
+          targets:
+            - name: RHEL 9.5
+              test: rhel/9.5
+
   - stage: Remote_2_18
     displayName: Remote devel
     dependsOn: []
@@ -212,6 +227,13 @@ stages:
             - name: RHEL 9.3
               test: rhel/9.3
 
+  # Keep this until the tests work.
+  # It allows us to test against PostgreSQL 10.
+  # PostgreSQL 13 is still supported, but the closest
+  # version we test against is 14.
+  # Keeping testing against 10 and 14 should cover 13.
+  # When these tests stop working and it's hard to fix
+  # or when PostgreSQL 13 gets EOL, remove this target.
   - stage: Remote_2_16
     displayName: Remote 2.16
     dependsOn: []
@@ -229,15 +251,16 @@ stages:
     condition: succeededOrFailed()
     dependsOn:
       - Ansible_devel
+      - Ansible_2_19
       - Ansible_2_18
       - Ansible_2_17
-      - Ansible_2_16
       - Docker_devel
+      - Docker_2_19
       - Docker_2_18
       - Docker_2_17
-      - Docker_2_16
       - Docker_2_15
       - Remote_devel
+      - Remote_2_19
       - Remote_2_18
       - Remote_2_17
       - Remote_2_16
