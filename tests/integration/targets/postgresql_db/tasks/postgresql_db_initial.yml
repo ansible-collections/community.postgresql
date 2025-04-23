@@ -105,6 +105,10 @@
 #
 # Test conn_limit, encoding, collate, ctype, template options
 #
+
+- set_fact:
+    locale_latin_suffix: "{{ (locale_latin_suffix is not none) | ternary(locale_latin_suffix, '') }}"
+
 - name: Create a DB with conn_limit, encoding, collate, ctype and template options
   become_user: "{{ pg_user }}"
   become: true
@@ -113,8 +117,8 @@
     state: 'present'
     conn_limit: '100'
     encoding: 'LATIN1'
-    lc_collate: 'pt_BR{{ locale_latin_suffix }}'
-    lc_ctype: 'es_ES{{ locale_latin_suffix }}'
+    lc_collate: "pt_BR{{ locale_latin_suffix }}"
+    lc_ctype: "es_ES{{ locale_latin_suffix }}"
     template: 'template0'
     login_user: "{{ pg_user }}"
   register: result
