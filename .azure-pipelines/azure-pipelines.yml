@@ -231,7 +231,7 @@ stages:
   # It allows us to test against PostgreSQL 10.
   # PostgreSQL 13 is still supported, but the closest
   # version we test against is 14.
-  # Keeping testing against 10 and 14 should cover 13.
+  # Keeping testing against 10 and 14 covers 13 as well.
   # When these tests stop working and it's hard to fix
   # remove this target and update the documentation.
   - stage: Remote_2_16
