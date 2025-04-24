@@ -227,7 +227,7 @@ stages:
             - name: RHEL 9.3
               test: rhel/9.3
 
-  # Keep this until the tests work.
+  # Keep this as long as the tests work.
   # It allows us to test against PostgreSQL 10.
   # PostgreSQL 13 is still supported, but the closest
   # version we test against is 14.
