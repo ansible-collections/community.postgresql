@@ -233,7 +233,7 @@ stages:
   # version we test against is 14.
   # Keeping testing against 10 and 14 should cover 13.
   # When these tests stop working and it's hard to fix
-  # or when PostgreSQL 13 gets EOL, remove this target.
+  # remove this target and update the documentation.
   - stage: Remote_2_16
     displayName: Remote 2.16
     dependsOn: []
