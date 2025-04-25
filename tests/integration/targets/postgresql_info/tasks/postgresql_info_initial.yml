@@ -110,21 +110,21 @@
       - result.version != {}
       - result.version.raw is search('PostgreSQL')
       - result.in_recovery == false
-      - result.databases.{{ db_default }}.collate
-      - result.databases.{{ db_default }}.languages
-      - result.databases.{{ db_default }}.namespaces
-      - result.databases.{{ db_default }}.extensions
-      - result.databases.{{ test_db }}.subscriptions.{{ test_subscription }}
-      - result.databases.{{ test_db }}.subscriptions.{{ test_subscription2 }}
+      - result.databases[db_default]['collate'] is defined
+      - result.databases[db_default]['languages'] is defined
+      - result.databases[db_default]['namespaces'] is defined
+      - result.databases[db_default]['extensions'] is defined
+      - result.databases[test_db]['subscriptions'][test_subscription] is defined
+      - result.databases[test_db]['subscriptions'][test_subscription2] is defined
 
-      - result.databases.db1.namespaces.db1_schema1
-      - result.databases.db1.namespaces.db1_schema2
-      - result.databases.db2.namespaces.db2_schema1
-      - result.databases.db2.namespaces.db2_schema2
+      - result.databases.db1.namespaces.db1_schema1 is defined
+      - result.databases.db1.namespaces.db1_schema2 is defined
+      - result.databases.db2.namespaces.db2_schema1 is defined
+      - result.databases.db2.namespaces.db2_schema2 is defined
 
-      - result.settings
-      - result.tablespaces
-      - result.roles
+      - result.settings is defined
+      - result.tablespaces is defined
+      - result.roles is defined
 
   - name: Set full server version as X.Y.Z
     set_fact:
@@ -158,7 +158,7 @@
   - assert:
       that:
       - result.version != {}
-      - result.roles
+      - result.roles is defined
       - result.in_recovery == false
       - result.databases == {}
       - result.repl_slots == {}
@@ -176,7 +176,7 @@
   - assert:
       that:
       - result.version != {}
-      - result.roles
+      - result.roles is defined
       - result.databases == {}
       - result.repl_slots == {}
       - result.replications == {}
@@ -192,7 +192,7 @@
 
   - assert:
       that:
-      - result.version
+      - result.version is defined
       - result.roles == {}
 
   - name: postgresql_info - check excluding filter param passed by list
@@ -210,7 +210,7 @@
       - result.version == {}
       - result.in_recovery == None
       - result.roles == {}
-      - result.databases
+      - result.databases is defined
 
   - name: postgresql_info - test return publication info
     <<: *task_parameters
@@ -226,15 +226,15 @@
       that:
       - result.version != {}
       - result.in_recovery == false
-      - result.databases.{{ db_default }}.collate
-      - result.databases.{{ db_default }}.languages
-      - result.databases.{{ db_default }}.namespaces
-      - result.databases.{{ db_default }}.extensions
-      - result.databases.{{ test_db }}.publications.{{ test_pub }}.ownername == '{{ pg_user }}'
-      - result.databases.{{ test_db }}.publications.{{ test_pub2 }}.puballtables == true
-      - result.settings
-      - result.tablespaces
-      - result.roles
+      - result.databases[db_default]['collate'] is defined
+      - result.databases[db_default]['languages'] is defined
+      - result.databases[db_default]['namespaces'] is defined
+      - result.databases[db_default]['extensions'] is defined
+      - result.databases[test_db]['publications'][test_pub]['ownername'] == '{{ pg_user }}'
+      - result.databases[test_db]['publications'][test_pub2]['puballtables'] == true
+      - result.settings is defined
+      - result.tablespaces is defined
+      - result.roles is defined
 
   - name: postgresql_info - test trust_input parameter
     <<: *task_parameters

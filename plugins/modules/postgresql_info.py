@@ -576,7 +576,7 @@ class PgClusterInfo(object):
 
         repl_dict = {}
         for i in res:
-            repl_dict[i["pid"]] = dict(
+            repl_dict[str(i["pid"])] = dict(
                 usename=i["rolname"],
                 app_name=i["application_name"] if i["application_name"] else '',
                 client_addr=i["client_addr"],
