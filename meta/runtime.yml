@@ -7,7 +7,6 @@ action_groups:
     - postgresql_ext
     - postgresql_idx
     - postgresql_info
-    - postgresql_lang
     - postgresql_membership
     - postgresql_owner
     - postgresql_pg_hba
@@ -28,6 +27,6 @@ action_groups:
 plugin_routing:
   modules:
     postgresql_lang:
-      deprecation:
+      tombstone:
         removal_version: 4.0.0
-        warning_text: Use postgresql_ext instead.
+        warning_text: Use community.postgresql.postgresql_ext instead.
