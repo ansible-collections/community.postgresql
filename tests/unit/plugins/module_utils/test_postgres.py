@@ -57,15 +57,13 @@ class TestPostgresCommonArgSpec():
         The return and expected dictionaries must be compared.
         """
         expected_dict = dict(
-            login_user=dict(default='postgres', aliases=['login'],
-                deprecated_aliases=[
-                    {
+            login_user=dict(default='postgres', aliases=['login'], deprecated_aliases=[
+                {
                         'name': 'login',
                         'version': '5.0.0',
                         'collection_name': 'community.postgresql',
-                    }
-                ]
-            ),
+                }
+            ]),
             login_password=dict(default='', no_log=True),
             login_host=dict(default='', aliases=['host'], deprecated_aliases=[
                 {
