@@ -12,6 +12,10 @@ DOCUMENTATION = r'''
 ---
 module: postgresql_set
 short_description: Change a PostgreSQL server configuration parameter
+deprecated:
+  removed_in: "5.0.0"
+  why: It has been replaced with a better-designed module.
+  alternative: Use M(community.postgresql.postgresql_alter_system) instead.
 description:
    - "IMPORTANT: If your PostgreSQL server version is 14 or later,
      use the M(community.postgresql.postgresql_alter_system) module instead as it will
