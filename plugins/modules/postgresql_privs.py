@@ -115,14 +115,6 @@ options:
     type: bool
     aliases:
     - admin_option
-  password:
-    description:
-    - The password to authenticate with.
-    - This option has been B(deprecated) and will be removed in community.postgresql 4.0.0,
-      use the I(login_password) option instead.
-    - Mutually exclusive with I(login_password).
-    type: str
-    default: ''
   trust_input:
     description:
     - If C(false), check whether values of parameters I(roles), I(target_roles), I(session_role),
@@ -1027,11 +1019,6 @@ def main():
         target_roles=dict(required=False),
         grant_option=dict(required=False, type='bool',
                           aliases=['admin_option']),
-        # WARNING: password is deprecated and will  be removed in community.postgresql 4.0.0,
-        # login_password should be used instead
-        password=dict(default='', no_log=True,
-                      removed_in_version='4.0.0',
-                      removed_from_collection='community.postgreql'),
         fail_on_role=dict(type='bool', default=True),
         trust_input=dict(type='bool', default=True),
     )
@@ -1045,15 +1032,6 @@ def main():
 
     # Create type object as namespace for module params
     p = type('Params', (), module.params)
-
-    # WARNING: password is deprecated and will  be removed in community.postgresql 4.0.0,
-    # login_password should be used instead
-    # https://github.com/ansible-collections/community.postgresql/issues/406
-    if p.password:
-        if p.login_password:
-            module.fail_json(msg='Use the "password" or "login_password" option but not both '
-                                 'to pass a password to log in with.')
-        p.login_password = p.password
 
     # param "schema": default, allowed depends on param "type"
     if p.type in ['table', 'sequence', 'function', 'procedure', 'type', 'default_privs']:
