@@ -59,9 +59,9 @@ class TestPostgresCommonArgSpec():
         expected_dict = dict(
             login_user=dict(default='postgres', aliases=['login'], deprecated_aliases=[
                 {
-                        'name': 'login',
-                        'version': '5.0.0',
-                        'collection_name': 'community.postgresql',
+                    'name': 'login',
+                    'version': '5.0.0',
+                    'collection_name': 'community.postgresql',
                 }
             ]),
             login_password=dict(default='', no_log=True),
