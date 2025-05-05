@@ -733,7 +733,7 @@ class PgClusterInfo(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        login_db=dict(type='str')
+        login_db=dict(type='str'),
         filter=dict(type='list', elements='str'),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
