@@ -57,10 +57,28 @@ class TestPostgresCommonArgSpec():
         The return and expected dictionaries must be compared.
         """
         expected_dict = dict(
-            login_user=dict(default='postgres', aliases=['login']),
+            login_user=dict(default='postgres', aliases=['login'], deprecated_aliases=[
+                {
+                    'name': 'login',
+                    'version': '5.0.0',
+                    'collection_name': 'community.postgresql',
+                }
+            ]),
             login_password=dict(default='', no_log=True),
-            login_host=dict(default='', aliases=['host']),
-            login_unix_socket=dict(default='', aliases=['unix_socket']),
+            login_host=dict(default='', aliases=['host'], deprecated_aliases=[
+                {
+                    'name': 'host',
+                    'version': '5.0.0',
+                    'collection_name': 'community.postgresql',
+                }
+            ]),
+            login_unix_socket=dict(default='', aliases=['unix_socket'], deprecated_aliases=[
+                {
+                    'name': 'unix_socket',
+                    'version': '5.0.0',
+                    'collection_name': 'community.postgresql',
+                }
+            ]),
             port=dict(type='int', default=5432, aliases=['login_port']),
             ssl_mode=dict(
                 default='prefer',

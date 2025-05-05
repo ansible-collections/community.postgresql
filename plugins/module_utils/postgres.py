@@ -81,11 +81,29 @@ def postgres_common_argument_spec():
     return dict(
         login_user=dict(
             default='postgres' if not env_vars.get("PGUSER") else env_vars.get("PGUSER"),
-            aliases=['login']
+            aliases=['login'], deprecated_aliases=[
+                {
+                    'name': 'login',
+                    'version': '5.0.0',
+                    'collection_name': 'community.postgresql',
+                }
+            ],
         ),
         login_password=dict(default='', no_log=True),
-        login_host=dict(default='', aliases=['host']),
-        login_unix_socket=dict(default='', aliases=['unix_socket']),
+        login_host=dict(default='', aliases=['host'], deprecated_aliases=[
+            {
+                'name': 'host',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
+        login_unix_socket=dict(default='', aliases=['unix_socket'], deprecated_aliases=[
+            {
+                'name': 'unix_socket',
+                'version': '5.0.0',
+                'collection_name': 'community.postgresql',
+            }],
+        ),
         port=dict(
             type='int',
             default=int(env_vars.get("PGPORT", 5432)),
