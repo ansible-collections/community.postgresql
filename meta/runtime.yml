@@ -30,3 +30,7 @@ plugin_routing:
       tombstone:
         removal_version: 4.0.0
         warning_text: Use community.postgresql.postgresql_ext instead.
+    postgresql_set:
+      deprecation:
+        removal_version: 5.0.0
+        warning_text: Use postgresql_alter_system instead.
