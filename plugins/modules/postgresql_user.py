@@ -918,7 +918,6 @@ def main():
 
     kw = dict(user=user)
     changed = False
-    user_removed = False
 
     if state == "present":
         if user_exists(cursor, user):
