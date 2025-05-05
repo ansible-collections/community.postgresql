@@ -72,7 +72,7 @@
     postgresql_schema:
       login_user: '{{ pg_user }}'
       login_port: '{{ replica_port }}'
-      db:   '{{ item[0] }}'
+      login_db:   '{{ item[0] }}'
       name: "{{ item[1] }}"
     loop:
       - [ "db1", "db1_schema1"]
@@ -216,7 +216,7 @@
     <<: *task_parameters
     postgresql_info:
       login_user: '{{ pg_user }}'
-      db: '{{ db_default }}'
+      login_db: '{{ db_default }}'
       login_port: '{{ primary_port }}'
       trust_input: true
       connect_params:
