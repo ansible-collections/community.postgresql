@@ -116,11 +116,22 @@
       - "result_database.stdout_lines[-1] == '(1 row)'"
       - "db_user2 ~ '=Cc' in result_database.stdout"
 
+- name: Remove user privs
+  postgresql_privs:
+    roles: "{{ db_user2 }}"
+    state: 'absent'
+    privs: "ALL"
+    type: "database"
+    objs: "ansible_db"
+    db: "{{ db_name }}"
+    login_user: "{{ db_user1 }}"
+    login_password: "password"
+    login_host: "localhost"
+
 - name: Remove user
   postgresql_user:
     name: "{{ db_user2 }}"
     state: 'absent'
-    priv: "ALL"
     db: "{{ db_name }}"
     login_user: "{{ db_user1 }}"
     login_password: "password"

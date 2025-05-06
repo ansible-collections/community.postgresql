@@ -1,0 +1,5 @@
+removed_features:
+- postgresql_user - the ``priv`` argument has been removed in ``community.postgresql 4.0.0``. Please use the ``community.postgresql.postgresql_privs`` module to grant/revoke privileges instead (https://github.com/ansible-collections/community.postgresql/issues/493).
+
+minor_changes:
+- postgresql_user - return a PostgreSQL error message when a user cannot be removed.
