@@ -130,7 +130,6 @@ Our AZP CI includes testing with the following docker images / PostgreSQL versio
 - **Basic modules**:
   - [postgresql_db](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_db_module.html)
   - [postgresql_ext](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_ext_module.html)
-  - [postgresql_lang](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_lang_module.html)
   - [postgresql_pg_hba](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_pg_hba_module.html)
   - [postgresql_privs](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_privs_module.html)
   - [postgresql_alter_system](https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_alter_system_module.html) (will replace `postgresql_set`)

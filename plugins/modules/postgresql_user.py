@@ -1123,7 +1123,7 @@ def main():
         login_db=dict(type='str', default="", aliases=['db'], deprecated_aliases=[
             {
                 'name': 'db',
-                'version': '4.0.0',
+                'version': '5.0.0',
                 'collection_name': 'community.postgresql',
             }],
         ),
