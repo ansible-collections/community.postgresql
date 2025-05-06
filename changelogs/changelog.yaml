@@ -1023,3 +1023,42 @@ releases:
     - 3.9.1.yml
     - 779-fix-address.yaml
     release_date: '2024-12-05'
+  4.0.0:
+    changes:
+      deprecated_features:
+      - postgresql modules = the ``login``, ``unix_socket`` and ``host`` aliases are
+        deprecated and will be removed in ``community.postgresql 5.0.0``, use the
+        ``login_user``, ``login_unix_socket`` and ``login_host`` arguments instead.
+      - postgresql_set - the module has been deprecated and will be removed in ``community.postgresql
+        5.0.0``. Please use the ``community.postgresql.postgresql_alter_system`` module
+        instead (https://github.com/ansible-collections/community.postgresql/issues/823).
+      major_changes:
+      - the collection does not test against Python 2 and starts accepting content
+        written in Python 3 since collection version 4.0.0 (https://github.com/ansible-collections/community.postgresql/issues/829).
+      minor_changes:
+      - postgresql_user - return a PostgreSQL error message when a user cannot be
+        removed.
+      release_summary: 'This is a major release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+      removed_features:
+      - postgresql_info - the db alias has been removed in ``community.postgresql
+        4.0.0``. Please use the ``login_db`` option instead (https://github.com/ansible-collections/community.postgresql/issues/801).
+      - postgresql_lang - the module has been removed in ``community.postgresql 4.0.0``.
+        Please use the ``community.postgresql.postgresql_ext`` module instead (https://github.com/ansible-collections/community.postgresql/issues/561).
+      - postgresql_privs - the ``password`` argument has been removed in ``community.postgresql
+        4.0.0``. Use the ``login_password`` argument instead (https://github.com/ansible-collections/community.postgresql/issues/408).
+      - postgresql_user - the ``priv`` argument has been removed in ``community.postgresql
+        4.0.0``. Please use the ``community.postgresql.postgresql_privs`` module to
+        grant/revoke privileges instead (https://github.com/ansible-collections/community.postgresql/issues/493).
+    fragments:
+    - 0-remove_lang.yml
+    - 1-remove_privs.yml
+    - 2-privs.yml
+    - 4-aliases.yml
+    - 4.0.0.yml
+    - 5-python2.yml
+    - 6-set_deprecate.yml
+    release_date: '2025-05-06'
