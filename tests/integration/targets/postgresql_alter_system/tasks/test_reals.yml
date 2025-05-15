@@ -108,3 +108,17 @@
       - result["diff"]["before"]["setting"] == 1
       - result["diff"]["after"]["pending_restart"] == False
       - result["diff"]["after"]["setting"] == 1
+
+  # http://github.com/ansible-collections/community.postgresql/issues/853
+  # it should just pass w/o any error
+  - name: Set value of type real with a max val in scientific notation
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: random_page_cost
+      value: 4
+
+  - name: Check max_val
+    assert:
+      that:
+      - result["attrs"]["max_val"] == "1.79769e+308"
