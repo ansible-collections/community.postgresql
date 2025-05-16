@@ -4,6 +4,21 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v3.14.1
+=======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Bugfixes
+--------
+
+- postgresql_alter_system - fix failure when max_val contains a huge number written in scientific notation (https://github.com/ansible-collections/community.postgresql/issues/853).
+
 v3.14.0
 =======
 
