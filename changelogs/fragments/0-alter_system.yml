@@ -1,2 +1,0 @@
-bugfixes:
-- postgresql_alter_system - fix failure when max_val contains a huge number written in scientific notation (https://github.com/ansible-collections/community.postgresql/issues/853).
