@@ -572,7 +572,16 @@ def convert_ret_vals(attrs):
         if str_contains_float(attrs[elem]):
             attrs[elem] = float(attrs[elem])
         else:
-            attrs[elem] = int(attrs[elem])
+            try:
+                attrs[elem] = int(attrs[elem])
+            except ValueError:
+                # Leave the attrs[elem] as-is, i.e. a string
+                # This can happen when max_value of type real
+                # is huge and written in scientific notation
+                # e.g., 1.79769e+308 (as of 2025-05-14, this is the only one)
+                # and it doesn't make sense to convert it as it'll be really huge
+                # https://github.com/ansible-collections/community.postgresql/issues/853
+                pass
 
     return attrs
 
