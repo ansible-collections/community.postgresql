@@ -288,7 +288,7 @@ def main():
     try:
         if module.check_mode:
             if state == "absent":
-                changed = not schema_exists(cursor, schema)
+                changed = schema_exists(cursor, schema)
             elif state == "present":
                 changed = not schema_matches(cursor, schema, owner, comment)
             module.exit_json(changed=changed, schema=schema)
