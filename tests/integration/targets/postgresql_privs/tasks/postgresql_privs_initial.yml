@@ -221,7 +221,7 @@
 - assert:
     that:
       - result_database.rowcount == 1
-      - result_database.query_result[0]['datacl'] is not search("{{ db_user1 }}=Cc")
+      - result_database.query_result[0]['datacl'] is not search("{{ db_user1 }}")
 
 - name: Grant database privileges
   become_user: "{{ pg_user }}"
