@@ -31,7 +31,7 @@ EXPECTED_DICT = dict(
     user=dict(default='postgres'),
     password=dict(default='test', no_log=True),
     host=dict(default='test'),
-    port=dict(type='int', default=5432),
+    port=dict(type='int', aliases=['port'], default=5432),
     sslmode=dict(
         default='prefer',
         choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
@@ -79,7 +79,13 @@ class TestPostgresCommonArgSpec():
                     'collection_name': 'community.postgresql',
                 }
             ]),
-            port=dict(type='int', default=5432, aliases=['login_port']),
+            login_port=dict(type='int', default=5432, aliases=['port'], deprecated_aliases=[
+                {
+                    'collection_name': 'community.postgresql',
+                    'name': 'port',
+                    'version': '5.0.0'
+                }
+            ]),
             ssl_mode=dict(
                 default='prefer',
                 choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
@@ -92,7 +98,7 @@ class TestPostgresCommonArgSpec():
         assert pg.postgres_common_argument_spec() == expected_dict
 
         # Setting new values for checking environment variables
-        expected_dict['port']['default'] = 5435
+        expected_dict['login_port']['default'] = 5435
         expected_dict['login_user']['default'] = 'test_user'
 
         # Setting environment variables
