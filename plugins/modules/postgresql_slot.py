@@ -129,7 +129,7 @@ EXAMPLES = r'''
   community.postgresql.postgresql_slot:
     name: logical_one
     login_host: mydatabase.example.org
-    port: 5433
+    login_port: 5433
     login_user: ourSuperuser
     login_password: thePassword
     state: absent

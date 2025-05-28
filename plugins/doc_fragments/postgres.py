@@ -35,12 +35,13 @@ options:
     type: str
     default: ''
     aliases: [ unix_socket ]
-  port:
+  login_port:
     description:
       - Database port to connect to.
+      - The C(port) alias is deprecated and will be removed in the next major release. Use C(login_port) instead.
     type: int
     default: 5432
-    aliases: [ login_port ]
+    aliases: [ port ]
   ssl_mode:
     description:
       - Determines whether or with what priority a secure SSL TCP/IP connection will be negotiated with the server.

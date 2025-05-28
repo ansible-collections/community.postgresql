@@ -17,7 +17,7 @@ INPUT_DICT = dict(
     login_password=dict(default='test', no_log=True),
     login_host=dict(default='test'),
     login_unix_socket=dict(default=''),
-    port=dict(type='int', default=5432, aliases=['login_port']),
+    login_port=dict(type='int', default=5432, aliases=['port']),
     ssl_mode=dict(
         default='prefer',
         choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
@@ -31,7 +31,7 @@ EXPECTED_DICT = dict(
     user=dict(default='postgres'),
     password=dict(default='test', no_log=True),
     host=dict(default='test'),
-    port=dict(type='int', default=5432, aliases=['login_port']),
+    port=dict(type='int', default=5432),
     sslmode=dict(
         default='prefer',
         choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
