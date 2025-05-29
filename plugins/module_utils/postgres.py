@@ -104,10 +104,16 @@ def postgres_common_argument_spec():
                 'collection_name': 'community.postgresql',
             }],
         ),
-        port=dict(
+        login_port=dict(
             type='int',
             default=int(env_vars.get("PGPORT", 5432)),
-            aliases=['login_port']
+            aliases=['port'], deprecated_aliases=[
+                {
+                    'name': 'port',
+                    'version': '5.0.0',
+                    'collection_name': 'community.postgresql',
+                }
+            ],
         ),
         ssl_mode=dict(
             default='prefer',
@@ -286,7 +292,7 @@ def get_conn_params(module, params_dict, warn_db_default=True):
         "login_host": "host",
         "login_user": "user",
         "login_password": "password",
-        "port": "port",
+        "login_port": "port",
         "ssl_mode": "sslmode",
         "ca_cert": "sslrootcert",
         "ssl_cert": "sslcert",

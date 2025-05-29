@@ -2,7 +2,6 @@
 # WARNING: These are designed specifically for Ansible tests       #
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
-
 - name: python 2
   set_fact:
     python_suffix: ''
@@ -49,15 +48,14 @@
 
 - name: remove old db config and files (debian)
   file:
-    path: '{{ loop_item }}'
+    path: '{{ item }}'
     state: absent
   ignore_errors: true
   when: ansible_os_family == "Debian"
   loop:
+  - '{{ pg_dir }}'
   - /etc/postgresql
   - /var/lib/postgresql
-  loop_control:
-    loop_var: loop_item
 
 #
 # Prepare Ubuntu for PostgreSQL install
