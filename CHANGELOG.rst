@@ -4,6 +4,21 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v3.14.2
+=======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Bugfixes
+--------
+
+- postgresql_schema - change reported in check_mode was negated. Now it reports a change when removing an existing schema (https://github.com/ansible-collections/community.postgresql/pull/858)
+
 v3.14.1
 =======
 
