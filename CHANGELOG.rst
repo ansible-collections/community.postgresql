@@ -4,6 +4,26 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v4.1.0
+======
+
+Release Summary
+---------------
+
+This is a minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Deprecated Features
+-------------------
+
+- postgresql modules - the ``port`` alias is deprecated and will be removed in ``community.postgresql 5.0.0``, use the ``login_port`` argument instead.
+
+Bugfixes
+--------
+
+- postgresql_schema - change reported in check_mode was negated. Now it reports a change when removing an existing schema (https://github.com/ansible-collections/community.postgresql/pull/858)
+
 v4.0.1
 ======
 

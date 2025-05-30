@@ -1,6 +1,6 @@
 namespace: community
 name: postgresql
-version: 4.0.1
+version: 4.1.0
 readme: README.md
 authors:
   - Ansible PostgreSQL community

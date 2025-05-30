@@ -1076,3 +1076,21 @@ releases:
     - 0-alter_system.yml
     - 4.0.1.yml
     release_date: '2025-05-16'
+  4.1.0:
+    changes:
+      bugfixes:
+      - postgresql_schema - change reported in check_mode was negated. Now it reports
+        a change when removing an existing schema (https://github.com/ansible-collections/community.postgresql/pull/858)
+      deprecated_features:
+      - postgresql modules - the ``port`` alias is deprecated and will be removed
+        in ``community.postgresql 5.0.0``, use the ``login_port`` argument instead.
+      release_summary: 'This is a minor release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 0-port.yml
+    - 4.1.0.yml
+    - 858-negated-change-report.yml
+    release_date: '2025-05-30'
