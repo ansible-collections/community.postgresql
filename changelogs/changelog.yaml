@@ -797,6 +797,20 @@ releases:
     - 0-alter_system.yml
     - 3.14.1.yml
     release_date: '2025-05-16'
+  3.14.2:
+    changes:
+      bugfixes:
+      - postgresql_schema - change reported in check_mode was negated. Now it reports
+        a change when removing an existing schema (https://github.com/ansible-collections/community.postgresql/pull/858)
+      release_summary: 'This is a patch release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 3.14.2.yml
+    - 858-negated-change-report.yml
+    release_date: '2025-05-30'
   3.2.0:
     changes:
       bugfixes:

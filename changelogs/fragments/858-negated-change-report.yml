@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_schema - change reported in check_mode was negated. Now it reports a change when removing an existing schema (https://github.com/ansible-collections/community.postgresql/pull/858)
