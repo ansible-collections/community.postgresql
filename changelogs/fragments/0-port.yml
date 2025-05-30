@@ -1,2 +1,0 @@
-deprecated_features:
-- postgresql modules - the ``port`` alias is deprecated and will be removed in ``community.postgresql 5.0.0``, use the ``login_port`` argument instead.
