@@ -133,8 +133,8 @@ stages:
         parameters:
           testFormat: 2.19/linux/{0}/1
           targets:
-            - name: Fedora 42
-              test: fedora42
+            - name: Fedora 41
+              test: fedora41
             - name: Ubuntu 24.04
               test: ubuntu2404
             - name: Ubuntu 22.04
@@ -204,8 +204,8 @@ stages:
         parameters:
           testFormat: 2.19/{0}/1
           targets:
-            - name: RHEL 9.6
-              test: rhel/9.6
+            - name: RHEL 9.5
+              test: rhel/9.5
 
   - stage: Remote_2_18
     displayName: Remote devel
