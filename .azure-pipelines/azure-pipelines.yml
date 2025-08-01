@@ -244,7 +244,6 @@ stages:
       - Docker_2_19
       - Docker_2_18
       - Docker_2_17
-      - Docker_2_15
       - Remote_devel
       - Remote_2_19
       - Remote_2_18
