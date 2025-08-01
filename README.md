@@ -101,7 +101,6 @@ Even if they are present in our test matrix now, they can be removed at any mome
 ## Tested with ansible-core
 
 Tested with the following `ansible-core` releases:
-- 2.15 (only integration on Fedora 37)
 - 2.16
 - 2.17
 - 2.18
