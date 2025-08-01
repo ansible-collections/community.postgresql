@@ -36,7 +36,7 @@ variables:
 resources:
   containers:
     - container: default
-      image: quay.io/ansible/azure-pipelines-test-container:6.0.0
+      image: quay.io/ansible/azure-pipelines-test-container:7.0.0
 
 pool: Standard
 
@@ -165,22 +165,6 @@ stages:
               test: fedora39
             - name: Ubuntu 22.04
               test: ubuntu2204
-
-  # Newer ansible versions don't work on Fedora 37.
-  # Left it here to keep testing against PostgreSQL 14
-  # that is still not EOL at the time being.
-  # TODO Remove this on 2026-11-12 or
-  # when it just breaks, what'll happen sooner.
-  - stage: Docker_2_15
-    displayName: Docker 2.15
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.15/linux/{0}/1
-          targets:
-            - name: Fedora 37
-              test: fedora37
 
 ## Remote
   - stage: Remote_devel
