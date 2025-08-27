@@ -50,3 +50,6 @@
 
 # Test the comment feature
 - import_tasks: postgresql_db_comment.yml
+
+# Test connection limit zero fix (issue #879)
+- import_tasks: postgresql_db_conn_limit_zero.yml

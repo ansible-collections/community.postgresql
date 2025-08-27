@@ -479,7 +479,7 @@ def db_update(cursor, db, owner, encoding, lc_collate, lc_ctype, icu_locale, loc
     if owner and owner != db_info['owner']:
         changed = set_owner(cursor, db, owner)
 
-    if conn_limit and conn_limit != str(db_info['conn_limit']):
+    if conn_limit != '' and conn_limit != str(db_info['conn_limit']):
         changed = set_conn_limit(cursor, db, conn_limit)
 
     if tablespace and tablespace != db_info['tablespace']:
@@ -513,7 +513,7 @@ def db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_
             return False
         elif owner and owner != db_info['owner']:
             return False
-        elif conn_limit and conn_limit != str(db_info['conn_limit']):
+        elif conn_limit != '' and conn_limit != str(db_info['conn_limit']):
             return False
         elif tablespace and tablespace != db_info['tablespace']:
             return False
