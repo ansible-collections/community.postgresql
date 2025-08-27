@@ -1,0 +1,104 @@
+---
+# Test for connection limit zero fix (issue #879)
+- name: Test connection limit zero - Create DB with conn_limit 0
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_db:
+    name: test_conn_limit_zero
+    state: present
+    conn_limit: "0"
+    login_user: "{{ pg_user }}"
+  register: result
+
+- assert:
+    that:
+      - result is changed
+      - result.executed_commands == ['CREATE DATABASE "test_conn_limit_zero" CONNECTION LIMIT 0']
+
+- name: Test connection limit zero - Verify conn_limit is actually set to 0
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    query: "SELECT datconnlimit AS conn_limit FROM pg_database WHERE datname = 'test_conn_limit_zero'"
+  register: result
+
+- assert:
+    that:
+      - result.rowcount == 1
+      - result.query_result[0]['conn_limit'] == 0
+
+- name: Test connection limit zero - Run the same task again (should not change)
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_db:
+    name: test_conn_limit_zero
+    state: present
+    conn_limit: "0"
+    login_user: "{{ pg_user }}"
+  register: result
+
+- assert:
+    that:
+      - result is not changed
+
+- name: Test connection limit zero - Change conn_limit to 100
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_db:
+    name: test_conn_limit_zero
+    state: present
+    conn_limit: "100"
+    login_user: "{{ pg_user }}"
+  register: result
+
+- assert:
+    that:
+      - result is changed
+      - result.executed_commands == ['ALTER DATABASE "test_conn_limit_zero" CONNECTION LIMIT 100']
+
+- name: Test connection limit zero - Verify conn_limit is changed to 100
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    query: "SELECT datconnlimit AS conn_limit FROM pg_database WHERE datname = 'test_conn_limit_zero'"
+  register: result
+
+- assert:
+    that:
+      - result.rowcount == 1
+      - result.query_result[0]['conn_limit'] == 100
+
+- name: Test connection limit zero - Change conn_limit back to 0
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_db:
+    name: test_conn_limit_zero
+    state: present
+    conn_limit: "0"
+    login_user: "{{ pg_user }}"
+  register: result
+
+- assert:
+    that:
+      - result is changed
+      - result.executed_commands == ['ALTER DATABASE "test_conn_limit_zero" CONNECTION LIMIT 0']
+
+- name: Test connection limit zero - Verify conn_limit is back to 0
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    query: "SELECT datconnlimit AS conn_limit FROM pg_database WHERE datname = 'test_conn_limit_zero'"
+  register: result
+
+- assert:
+    that:
+      - result.rowcount == 1
+      - result.query_result[0]['conn_limit'] == 0
+
+- name: Test connection limit zero - Cleanup test DB
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_db:
+    name: test_conn_limit_zero
+    state: absent
+    login_user: "{{ pg_user }}" 
