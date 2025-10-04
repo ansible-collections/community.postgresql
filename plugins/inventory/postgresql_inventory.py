@@ -82,7 +82,7 @@ query: SELECT hostname, groups FROM servers
 
 from ansible.plugins.inventory import BaseFileInventoryPlugin, Constructable, Cacheable
 from ansible.errors import AnsibleError, AnsibleParserError
-import psycopg2
+import psycopg
 import json
 
 
@@ -146,7 +146,7 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
     def _get_connection(self):
         dsn = self.get_option("dsn")
         if dsn:
-            return psycopg2.connect(dsn)
+            return psycopg.connect(dsn)
 
         db_host = self.get_option("db_host")
         db_port = self.get_option("db_port")
@@ -159,7 +159,7 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
                 "Either 'dsn' or all of 'db_host', 'db_name', 'db_user', 'db_password' must be provided"
             )
 
-        return psycopg2.connect(
+        return psycopg.connect(
             host=db_host,
             port=db_port,
             dbname=db_name,

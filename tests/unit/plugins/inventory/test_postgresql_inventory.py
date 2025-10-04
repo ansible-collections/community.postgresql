@@ -30,7 +30,7 @@ class TestPostgreSQLInventoryPlugin:
     @pytest.fixture
     def mock_connection(self):
         """Mock PostgreSQL connection."""
-        with patch("psycopg2.connect") as mock_conn:
+        with patch("psycopg.connect") as mock_conn:
             mock_cursor = MagicMock()
             mock_conn.return_value.__enter__.return_value.cursor.return_value.__enter__.return_value = (
                 mock_cursor
@@ -65,7 +65,7 @@ class TestPostgreSQLInventoryPlugin:
 
     def test_get_connection_with_dsn(self, inventory_plugin):
         """Test connection establishment with DSN."""
-        with patch("psycopg2.connect") as mock_conn:
+        with patch("psycopg.connect") as mock_conn:
             inventory_plugin.set_options(
                 direct={
                     "plugin": "community.postgresql.postgresql_inventory",
@@ -80,7 +80,7 @@ class TestPostgreSQLInventoryPlugin:
 
     def test_get_connection_with_individual_params(self, inventory_plugin):
         """Test connection establishment with individual parameters."""
-        with patch("psycopg2.connect") as mock_conn:
+        with patch("psycopg.connect") as mock_conn:
             inventory_plugin.set_options(
                 direct={
                     "plugin": "community.postgresql.postgresql_inventory",
