@@ -1,11 +1,14 @@
+# -*- coding: utf-8 -*-
+
+# Copyright: (c) 2025, Aly Ghobashy (@gebz97) <gebz97@proton.me>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
 
 import pytest
 import json
-from unittest.mock import Mock, patch, MagicMock
-import psycopg2
+from unittest.mock import patch, MagicMock
 
-from ansible.plugins.inventory import BaseFileInventoryPlugin
 from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.data import InventoryData
 from ansible.errors import AnsibleError, AnsibleParserError

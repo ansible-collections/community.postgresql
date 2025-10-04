@@ -1,3 +1,9 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright: (c) 2025, Aly Ghobashy (@gebz97) <gebz97@proton.me>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
@@ -9,7 +15,9 @@ import psycopg2
 
 DOCUMENTATION = r"""
 name: postgresql_lookup
+plugin_type: lookup
 short_description: Retrieve data from PostgreSQL database
+author: Aly Ghobashy (@gebz97)
 description:
   - This lookup returns data from a PostgreSQL database.
 options:

@@ -1,16 +1,18 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright: (c) 2025, Aly Ghobashy (@gebz97) <gebz97@proton.me>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
-
-from ansible.plugins.inventory import BaseFileInventoryPlugin, Constructable, Cacheable
-from ansible.errors import AnsibleError, AnsibleParserError
-import psycopg2
-import json
 
 DOCUMENTATION = r"""
 name: postgresql_inventory
 plugin_type: inventory
 short_description: PostgreSQL backed dynamic inventory
+author: Aly Ghobashy (@gebz97)
 description:
     - Fetch inventory hosts from a PostgreSQL database.
 author: your_name
@@ -77,6 +79,11 @@ db_user: myuser
 db_password: mypassword
 query: SELECT hostname, groups FROM servers
 """
+
+from ansible.plugins.inventory import BaseFileInventoryPlugin, Constructable, Cacheable
+from ansible.errors import AnsibleError, AnsibleParserError
+import psycopg2
+import json
 
 
 class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
@@ -207,7 +214,9 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
 
     def _process_inventory_row(self, row):
         if len(row) < 2:
-            raise AnsibleError(f"Invalid row format: expected at least 2 columns, got {len(row)}")
+            raise AnsibleError(
+                f"Invalid row format: expected at least 2 columns, got {len(row)}"
+            )
 
         hostname = row[0]
         groups = row[1] if row[1] is not None else []
