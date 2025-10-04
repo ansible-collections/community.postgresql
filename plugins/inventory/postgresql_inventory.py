@@ -83,15 +83,14 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
     NAME = "community.postgresql.postgresql_inventory"
 
     def __init__(self):
-        super(InventoryModule, self).__init__()
-        # Define the options for this plugin
-        self._options = {
+        super().__init__()
+        self._spec = {
             "plugin": {
                 "required": True,
                 "type": "str",
                 "choices": ["community.postgresql.postgresql_inventory"],
             },
-            "dsn": {"required": False, "type": "str"},
+            "dsn": {"required": False, "type": "str", "default": None},
             "db_host": {"required": False, "type": "str"},
             "db_port": {"required": False, "type": "int", "default": 5432},
             "db_name": {"required": False, "type": "str"},
@@ -100,56 +99,49 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
             "query": {"required": True, "type": "str"},
             "cache": {"required": False, "type": "bool", "default": False},
         }
-
-    def set_options(self, direct=None, **kwargs):
-        # call parent implementation
-        super().set_options(direct=direct, **kwargs)
-
-        # inject direct values into self._options so get_option sees them
-        if direct:
-            for key, value in direct.items():
-                self._options[key] = value
-        # ensure dsn is always present
-        if "dsn" not in self._options:
-            self._options["dsn"] = None
-
-        # also ensure other required options have defaults or None
-        for key, spec in self.get_options().items():
-            if key not in self._options:
-                default = spec.get("default", None)
-                self._options[key] = default
+        # Use a separate spec, do *not* assign _options to spec
+        # _options will hold actual values
+        self._options = {}
+        self._origins = {}
 
     def get_options(self):
-        """Return the options for this plugin."""
-        return self._options
+        return self._spec
 
-    def verify_file(self, path):
-        """Verify if the file is valid for this plugin."""
-        # Check our custom extensions first
-        if not path.endswith(("pg_inv.yml", "pg_inv.yaml")):
-            return False
-        return super().verify_file(path)
+    def set_options(self, direct=None, **kwargs):
+        super().set_options(direct=direct, **kwargs)
+        # populate from direct into _options
+        if direct:
+            for k, v in direct.items():
+                self._options[k] = v
+        # ensure that every key in spec is present in _options
+        for key, spec in self.get_options().items():
+            if key not in self._options:
+                # use default from spec if given, else None
+                self._options[key] = spec.get("default", None)
 
     def parse(self, inventory, loader, path, cache=True):
         super().parse(inventory, loader, path, cache)
         self._read_config_data(path)
+        # After reading config, ensure spec values from config are set
+        # e.g. self.config might be the dict from file
+        try:
+            self.set_options(direct=self.config)
+        except AttributeError:
+            # in tests config may not exist; ignore
+            pass
 
-        self.set_options(direct=self.config)
-        # Set cache based on configuration
+        # now everything via get_option should work
         cache_enabled = self.get_option("cache") or cache
         self.set_option("cache", cache_enabled)
 
-        # Fetch and process main inventory data
         inventory_data = self._fetch_inventory_data()
         self._process_inventory_data(inventory_data)
 
     def _get_connection(self):
-        """Establish database connection using DSN or individual parameters."""
         dsn = self.get_option("dsn")
         if dsn:
             return psycopg2.connect(dsn)
 
-        # Build connection from individual parameters
         db_host = self.get_option("db_host")
         db_port = self.get_option("db_port")
         db_name = self.get_option("db_name")
@@ -168,6 +160,13 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
             user=db_user,
             password=db_password,
         )
+
+    def verify_file(self, path):
+        """Verify if the file is valid for this plugin."""
+        # Check our custom extensions first
+        if not path.endswith(("pg_inv.yml", "pg_inv.yaml")):
+            return False
+        return super().verify_file(path)
 
     def _execute_query(self, query, cache_key=None):
         """Execute a SQL query and return results, with optional caching."""

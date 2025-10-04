@@ -92,9 +92,14 @@ class TestPostgreSQLInventoryPlugin:
         mock_conn, mock_cursor = mock_connection
         mock_cursor.fetchall.return_value = [('host1', ['group1'])]
         
-        inventory_plugin.set_options({
+        inventory_plugin.set_options(direct={
             'plugin': 'community.postgresql.postgresql_inventory',
-            'cache': True
+            'cache': True,
+            'db_host': 'pg.gebz.local',
+            'db_port': 5432,
+            'db_name': 'ansible',
+            'db_user': 'ansible',
+            'db_password': 'ansible'
         })
         
         # First call - should execute query
@@ -111,9 +116,14 @@ class TestPostgreSQLInventoryPlugin:
         mock_conn, mock_cursor = mock_connection
         mock_cursor.fetchall.return_value = [('host1', ['group1'])]
         
-        inventory_plugin.set_options({
+        inventory_plugin.set_options(direct={
             'plugin': 'community.postgresql.postgresql_inventory',
-            'cache': False
+            'cache': False,
+            'db_host': 'pg.gebz.local',
+            'db_port': 5432,
+            'db_name': 'ansible',
+            'db_user': 'ansible',
+            'db_password': 'ansible'
         })
         
         result = inventory_plugin._execute_query('SELECT * FROM hosts')
@@ -257,7 +267,7 @@ class TestPostgreSQLInventoryPlugin:
         
         # Mock config reading
         with patch.object(inventory_plugin, '_read_config_data'):
-            inventory_plugin.set_options({
+            inventory_plugin.set_options(direct={
                 'plugin': 'community.postgresql.postgresql_inventory',
                 'db_host': 'pg.gebz.local',
                 'db_name': 'ansible',
@@ -297,7 +307,7 @@ class TestPostgreSQLInventoryPlugin:
     def test_parse_missing_query(self, inventory_plugin):
         """Test parse method with missing query option."""
         with patch.object(inventory_plugin, '_read_config_data'):
-            inventory_plugin.set_options({
+            inventory_plugin.set_options(direct={
                 'plugin': 'community.postgresql.postgresql_inventory'
                 # Missing required 'query'
             })
