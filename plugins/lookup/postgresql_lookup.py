@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright: (c) 2025, Aly Ghobashy (@gebz97) <gebz97@proton.me>

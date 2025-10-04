@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright: (c) 2025, Aly Ghobashy (@gebz97) <gebz97@proton.me>
@@ -150,12 +149,12 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
             if key not in self._options:
                 self._options[key] = spec.get("default", None)
 
-    def set_option(self, name, value):
+    def set_option(self, option, value):
         # Intercept custom “cache” (and any others that the base config manager might reject)
-        if name == "cache":
+        if option == "cache":
             self._options["cache"] = value
         else:
-            super().set_option(name, value)
+            super().set_option(option, value)
 
     def parse(self, inventory, loader, path, cache=True):
         super().parse(inventory, loader, path, cache)
