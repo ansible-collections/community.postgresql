@@ -10,12 +10,10 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 name: postgresql_inventory
-plugin_type: inventory
 short_description: PostgreSQL backed dynamic inventory
 author: Aly Ghobashy (@gebz97)
 description:
     - Fetch inventory hosts from a PostgreSQL database.
-author: your_name
 options:
     plugin:
         description: Token that ensures this is a source file for the plugin.
@@ -50,7 +48,7 @@ options:
     query:
         description: |
             SQL query returning hostname, groups, ansible_host, and host_vars.
-            Expected columns: 
+            Expected columns:
             - hostname (text): inventory hostname
             - groups (text[] or text): array or comma-separated list of groups
             - ansible_host (text, optional): connection hostname/IP
@@ -70,7 +68,7 @@ plugin: community.postgresql.postgresql_inventory
 dsn: postgresql://user:password@localhost:5432/mydb
 query: SELECT hostname, groups, ansible_host, host_vars FROM inventory
 
-# Example using individual parameters  
+# Example using individual parameters
 plugin: community.postgresql.postgresql_inventory
 db_host: localhost
 db_port: 5432
@@ -82,8 +80,42 @@ query: SELECT hostname, groups FROM servers
 
 from ansible.plugins.inventory import BaseFileInventoryPlugin, Constructable, Cacheable
 from ansible.errors import AnsibleError, AnsibleParserError
-import psycopg
+from ansible_collections.community.postgresql.plugins.module_utils.version import (
+    LooseVersion,
+)
 import json
+
+psycopg = None  # This line is needed for unit tests
+psycopg2 = None  # This line is needed for unit tests
+pg_cursor_args = None  # This line is needed for unit tests
+PSYCOPG_VERSION = LooseVersion("0.0")  # This line is needed for unit tests
+
+try:
+    import psycopg
+    from psycopg import ClientCursor
+    from psycopg.rows import dict_row
+
+    from psycopg.types.datetime import TimestamptzLoader
+
+    # We need Psycopg 3 to be at least 3.1.0 because we need Client-side-binding cursors
+    # When a Linux distribution provides both Psycopg2 and Psycopg 3.0 we will use Psycopg2
+    PSYCOPG_VERSION = LooseVersion(psycopg.__version__)
+    if PSYCOPG_VERSION < LooseVersion("3.1"):
+        raise ImportError
+    HAS_PSYCOPG = True
+    pg_cursor_args = {"row_factory": psycopg.rows.dict_row}
+except ImportError:
+    try:
+        import psycopg2
+
+        psycopg = psycopg2
+        from psycopg2.extras import DictCursor
+
+        PSYCOPG_VERSION = LooseVersion(psycopg2.__version__)
+        HAS_PSYCOPG = True
+        pg_cursor_args = {"cursor_factory": DictCursor}
+    except ImportError:
+        HAS_PSYCOPG = False
 
 
 class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):

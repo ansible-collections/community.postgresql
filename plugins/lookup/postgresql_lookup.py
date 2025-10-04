@@ -8,14 +8,9 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ansible.errors import AnsibleError
-from ansible.plugins.lookup import LookupBase
-from ansible.utils.display import Display
-import psycopg
 
 DOCUMENTATION = r"""
 name: postgresql_lookup
-plugin_type: lookup
 short_description: Retrieve data from PostgreSQL database
 author: Aly Ghobashy (@gebz97)
 description:
@@ -47,6 +42,47 @@ options:
     default: disable
     choices: ['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
 """
+
+
+from ansible.errors import AnsibleError
+from ansible.plugins.lookup import LookupBase
+from ansible.utils.display import Display
+from ansible_collections.community.postgresql.plugins.module_utils.version import (
+    LooseVersion,
+)
+
+psycopg = None  # This line is needed for unit tests
+psycopg2 = None  # This line is needed for unit tests
+pg_cursor_args = None  # This line is needed for unit tests
+PSYCOPG_VERSION = LooseVersion("0.0")  # This line is needed for unit tests
+
+try:
+    import psycopg
+    from psycopg import ClientCursor
+    from psycopg.rows import dict_row
+
+    from psycopg.types.datetime import TimestamptzLoader
+
+    # We need Psycopg 3 to be at least 3.1.0 because we need Client-side-binding cursors
+    # When a Linux distribution provides both Psycopg2 and Psycopg 3.0 we will use Psycopg2
+    PSYCOPG_VERSION = LooseVersion(psycopg.__version__)
+    if PSYCOPG_VERSION < LooseVersion("3.1"):
+        raise ImportError
+    HAS_PSYCOPG = True
+    pg_cursor_args = {"row_factory": psycopg.rows.dict_row}
+except ImportError:
+    try:
+        import psycopg2
+
+        psycopg = psycopg2
+        from psycopg2.extras import DictCursor
+
+        PSYCOPG_VERSION = LooseVersion(psycopg2.__version__)
+        HAS_PSYCOPG = True
+        pg_cursor_args = {"cursor_factory": DictCursor}
+    except ImportError:
+        HAS_PSYCOPG = False
+
 
 display = Display()
 
