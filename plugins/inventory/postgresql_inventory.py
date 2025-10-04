@@ -151,7 +151,7 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
 
     def set_option(self, option, value):
         # Intercept custom “cache” (and any others that the base config manager might reject)
-        if option == "cache":
+        if option == 'cache':
             self._options["cache"] = value
         else:
             super().set_option(option, value)
