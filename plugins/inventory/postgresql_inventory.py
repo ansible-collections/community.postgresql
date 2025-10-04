@@ -99,8 +99,6 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
             "query": {"required": True, "type": "str"},
             "cache": {"required": False, "type": "bool", "default": False},
         }
-        # Use a separate spec, do *not* assign _options to spec
-        # _options will hold actual values
         self._options = {}
         self._origins = {}
 
@@ -109,28 +107,29 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
 
     def set_options(self, direct=None, **kwargs):
         super().set_options(direct=direct, **kwargs)
-        # populate from direct into _options
         if direct:
             for k, v in direct.items():
                 self._options[k] = v
-        # ensure that every key in spec is present in _options
+        # Ensure all spec keys exist in _options
         for key, spec in self.get_options().items():
             if key not in self._options:
-                # use default from spec if given, else None
                 self._options[key] = spec.get("default", None)
+
+    def set_option(self, name, value):
+        # Intercept custom “cache” (and any others that the base config manager might reject)
+        if name == "cache":
+            self._options["cache"] = value
+        else:
+            super().set_option(name, value)
 
     def parse(self, inventory, loader, path, cache=True):
         super().parse(inventory, loader, path, cache)
         self._read_config_data(path)
-        # After reading config, ensure spec values from config are set
-        # e.g. self.config might be the dict from file
         try:
             self.set_options(direct=self.config)
         except AttributeError:
-            # in tests config may not exist; ignore
-            pass
+            pass  # tests may stub _read_config_data without setting .config
 
-        # now everything via get_option should work
         cache_enabled = self.get_option("cache") or cache
         self.set_option("cache", cache_enabled)
 
@@ -162,18 +161,15 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
         )
 
     def verify_file(self, path):
-        """Verify if the file is valid for this plugin."""
-        # Check our custom extensions first
         if not path.endswith(("pg_inv.yml", "pg_inv.yaml")):
             return False
         return super().verify_file(path)
 
     def _execute_query(self, query, cache_key=None):
-        """Execute a SQL query and return results, with optional caching."""
         if cache_key and self.get_option("cache"):
-            cached_data = self._get_cache_data(cache_key)
-            if cached_data is not None:
-                return cached_data
+            cached = self._get_cache_data(cache_key)
+            if cached is not None:
+                return cached
 
         try:
             with self._get_connection() as conn:
@@ -189,166 +185,118 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
             raise AnsibleError(f"Database query failed: {e}")
 
     def _get_cache_data(self, cache_key):
-        """Get data from cache if available."""
         try:
             return self._cache[cache_key]
         except (KeyError, AttributeError):
             return None
 
     def _set_cache_data(self, cache_key, data):
-        """Store data in cache."""
         if not hasattr(self, "_cache"):
             self._cache = {}
         self._cache[cache_key] = data
 
     def _fetch_inventory_data(self):
-        """Fetch main inventory data from database."""
         query = self.get_option("query")
         if not query:
             raise AnsibleParserError("The 'query' option is required")
-
         return self._execute_query(query, "inventory")
 
     def _process_inventory_data(self, inventory_data):
-        """Process the main inventory data and populate hosts/groups."""
         for row in inventory_data:
             self._process_inventory_row(row)
 
     def _process_inventory_row(self, row):
-        """Process a single row from the inventory query.
-
-        Expected row structure:
-        [0] hostname (required)
-        [1] groups (array or comma-separated string)
-        [2] ansible_host (optional)
-        [3] host_vars (JSON, array of strings, or single string - optional)
-        """
         if len(row) < 2:
-            raise AnsibleError(
-                f"Invalid row format: expected at least 2 columns, got {len(row)}"
-            )
+            raise AnsibleError(f"Invalid row format: expected at least 2 columns, got {len(row)}")
 
         hostname = row[0]
         groups = row[1] if row[1] is not None else []
         ansible_host = row[2] if len(row) > 2 and row[2] is not None else None
         host_vars = row[3] if len(row) > 3 and row[3] is not None else None
 
-        # Add host to inventory
         self.inventory.add_host(hostname)
-
-        # Add host to groups
         self._add_host_to_groups(hostname, groups)
 
-        # Set ansible_host if provided
         if ansible_host:
             self.inventory.set_variable(hostname, "ansible_host", ansible_host)
 
-        # Process host variables
         if host_vars is not None:
             self._process_host_vars(hostname, host_vars)
 
     def _add_host_to_groups(self, hostname, groups):
-        """Add a host to the specified groups."""
         if not groups:
             return
 
         if isinstance(groups, str):
-            # Handle comma-separated string
-            groups = [g.strip() for g in groups.split(",") if g.strip()]
+            group_names = [g.strip() for g in groups.split(",") if g.strip()]
         elif isinstance(groups, (list, tuple)):
-            # Handle array types
-            groups = [g for g in groups if g]
+            group_names = []
+            for g in groups:
+                try:
+                    g_str = str(g).strip()
+                except Exception:
+                    continue
+                if g_str:
+                    group_names.append(g_str)
         else:
-            # Try to iterate if it's another iterable type
             try:
-                groups = [g for g in groups if g]
-            except TypeError:
-                groups = []
+                group_names = [str(g).strip() for g in groups]
+            except Exception:
+                group_names = []
 
-        for group_name in groups:
-            if group_name:
-                self.inventory.add_group(group_name)
-                self.inventory.add_host(hostname, group=group_name)
+        for name in group_names:
+            if name:
+                self.inventory.add_group(name)
+                self.inventory.add_host(hostname, group=name)
 
     def _process_host_vars(self, hostname, host_vars):
-        """Process host variables from the query result.
-
-        Supports three formats:
-        1. PostgreSQL JSON (dict or JSON string)
-        2. Array of strings in format ["key=value", "key2=value2"]
-        3. Single string in format "key=value,key2=value2"
-        """
         if not host_vars:
             return
-
         try:
-            # Case 1: PostgreSQL JSON (dict or JSON string)
             if isinstance(host_vars, dict):
-                # Direct dict from PostgreSQL JSON
                 for key, value in host_vars.items():
                     self.inventory.set_variable(hostname, key, value)
-
             elif isinstance(host_vars, str):
-                # Try to parse as JSON first
                 try:
-                    parsed_json = json.loads(host_vars)
-                    if isinstance(parsed_json, dict):
-                        for key, value in parsed_json.items():
+                    parsed = json.loads(host_vars)
+                    if isinstance(parsed, dict):
+                        for key, value in parsed.items():
                             self.inventory.set_variable(hostname, key, value)
                     else:
-                        # If JSON parsing succeeds but result is not a dict, treat as string
                         self._parse_string_host_vars(hostname, host_vars)
                 except json.JSONDecodeError:
-                    # Not JSON, treat as string format
                     self._parse_string_host_vars(hostname, host_vars)
-
-            # Case 2: Array of strings
             elif isinstance(host_vars, (list, tuple)):
                 for item in host_vars:
                     if isinstance(item, str):
                         self._parse_key_value_string(hostname, item)
                     elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                        # Handle [["key", "value"], ["key2", "value2"]] format
                         key, value = item[0], item[1]
                         self.inventory.set_variable(hostname, key, value)
-
             else:
-                # Fallback: convert to string and parse
                 self._parse_string_host_vars(hostname, str(host_vars))
-
         except Exception as e:
             raise AnsibleError(f"Failed to process host_vars for {hostname}: {e}")
 
     def _parse_string_host_vars(self, hostname, host_vars_str):
-        """Parse host variables from a string in key=value format."""
         if not host_vars_str.strip():
             return
-
-        # Try comma-separated first
         if "," in host_vars_str:
             pairs = [p.strip() for p in host_vars_str.split(",") if p.strip()]
         else:
-            # Try space-separated as fallback
             pairs = [p.strip() for p in host_vars_str.split() if p.strip()]
-
         for pair in pairs:
             self._parse_key_value_string(hostname, pair)
 
     def _parse_key_value_string(self, hostname, key_value_str):
-        """Parse a single key=value string and set the variable."""
         if "=" in key_value_str:
             key, value = key_value_str.split("=", 1)
             key = key.strip()
             value = value.strip()
-
-            # Try to convert value to appropriate type
             try:
-                # Try to parse as JSON for complex values
-                parsed_value = json.loads(value)
-                self.inventory.set_variable(hostname, key, parsed_value)
+                parsed = json.loads(value)
+                self.inventory.set_variable(hostname, key, parsed)
             except (json.JSONDecodeError, ValueError):
-                # Keep as string if JSON parsing fails
                 self.inventory.set_variable(hostname, key, value)
         else:
-            # If no '=' found, set as boolean true
             self.inventory.set_variable(hostname, key_value_str.strip(), True)
