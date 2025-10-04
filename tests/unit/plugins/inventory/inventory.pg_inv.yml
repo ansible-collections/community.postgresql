@@ -1,5 +1,5 @@
 plugin: community.postgresql.postgresql_inventory
 
-dsn: "postgresql://ansible:ansible@pg.gebz.local:5432/ansible"
+dsn: "postgresql://ansible:ansible@pg.example.com:5432/ansible"
 
 query: "SELECT name, groups, ansible_host, host_vars_array FROM hosts"

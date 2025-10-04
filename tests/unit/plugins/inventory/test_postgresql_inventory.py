@@ -120,7 +120,7 @@ class TestPostgreSQLInventoryPlugin:
             direct={
                 "plugin": "community.postgresql.postgresql_inventory",
                 "cache": True,
-                "db_host": "pg.gebz.local",
+                "db_host": "pg.example.com",
                 "db_port": 5432,
                 "db_name": "ansible",
                 "db_user": "ansible",
@@ -148,7 +148,7 @@ class TestPostgreSQLInventoryPlugin:
             direct={
                 "plugin": "community.postgresql.postgresql_inventory",
                 "cache": False,
-                "db_host": "pg.gebz.local",
+                "db_host": "pg.example.com",
                 "db_port": 5432,
                 "db_name": "ansible",
                 "db_user": "ansible",
@@ -326,7 +326,7 @@ class TestPostgreSQLInventoryPlugin:
             inventory_plugin.set_options(
                 direct={
                     "plugin": "community.postgresql.postgresql_inventory",
-                    "db_host": "pg.gebz.local",
+                    "db_host": "pg.example.com",
                     "db_name": "ansible",
                     "db_user": "ansible",
                     "db_password": "ansible",
