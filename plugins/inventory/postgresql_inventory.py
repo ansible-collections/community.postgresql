@@ -92,10 +92,6 @@ PSYCOPG_VERSION = LooseVersion("0.0")  # This line is needed for unit tests
 
 try:
     import psycopg
-    from psycopg import ClientCursor
-    from psycopg.rows import dict_row
-
-    from psycopg.types.datetime import TimestamptzLoader
 
     # We need Psycopg 3 to be at least 3.1.0 because we need Client-side-binding cursors
     # When a Linux distribution provides both Psycopg2 and Psycopg 3.0 we will use Psycopg2

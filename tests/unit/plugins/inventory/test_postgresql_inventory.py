@@ -13,7 +13,28 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.data import InventoryData
 from ansible.errors import AnsibleError, AnsibleParserError
 
-from plugins.inventory.postgresql_inventory import InventoryModule
+from plugins.inventory.postgresql_inventory import HAS_PSYCOPG, InventoryModule
+
+# Skip all tests if psycopg is not available
+pytestmark = pytest.mark.skipif(
+    not HAS_PSYCOPG, 
+    reason="psycopg not installed"
+)
+
+# Or mock the module at the module level
+try:
+    import psycopg
+except ImportError:
+    import sys
+    from unittest.mock import MagicMock
+    # Create a mock psycopg module
+    mock_psycopg = MagicMock()
+    mock_psycopg.__version__ = "3.1.0"
+    mock_psycopg.connect = MagicMock()
+    mock_psycopg.rows.dict_row = MagicMock()
+    sys.modules['psycopg'] = mock_psycopg
+    sys.modules['psycopg.rows'] = MagicMock()
+    sys.modules['psycopg.rows'].dict_row = MagicMock()
 
 
 class TestPostgreSQLInventoryPlugin:
