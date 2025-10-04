@@ -4,7 +4,7 @@ __metaclass__ = type
 
 from ansible.plugins.inventory import BaseFileInventoryPlugin, Constructable, Cacheable
 from ansible.errors import AnsibleError, AnsibleParserError
-import psycopg
+import psycopg2
 import json
 
 DOCUMENTATION = r"""
@@ -13,65 +13,128 @@ plugin_type: inventory
 short_description: PostgreSQL backed dynamic inventory
 description:
     - Fetch inventory hosts from a PostgreSQL database.
+author: your_name
 options:
     plugin:
-    description: Always set to C(community.postgresql.postgresql_inventory)
-    required: true
-    type: str
+        description: Token that ensures this is a source file for the plugin.
+        required: true
+        type: str
+        choices: ['community.postgresql.postgresql_inventory']
     dsn:
-    description: PostgreSQL connection string (DSN)
-    required: false
-    type: str
+        description: PostgreSQL connection string (DSN)
+        required: false
+        type: str
     db_host:
-    description: PostgreSQL host
-    required: false
-    type: str
+        description: PostgreSQL host
+        required: false
+        type: str
     db_port:
-    description: PostgreSQL port
-    required: false
-    type: int
-    default: 5432
+        description: PostgreSQL port
+        required: false
+        type: int
+        default: 5432
     db_name:
-    description: PostgreSQL database name
-    required: false
-    type: str
+        description: PostgreSQL database name
+        required: false
+        type: str
     db_user:
-    description: PostgreSQL username
-    required: false
-    type: str
+        description: PostgreSQL username
+        required: false
+        type: str
     db_password:
-    description: PostgreSQL password
-    required: false
-    type: str
+        description: PostgreSQL password
+        required: false
+        type: str
     query:
-    description: |
-        SQL query returning hostname, groups, ansible_host, and host_vars.
-        Expected columns: 
-        - hostname (text): inventory hostname
-        - groups (text[] or text): array or comma-separated list of groups
-        - ansible_host (text, optional): connection hostname/IP
-        - host_vars (json, text[], or text, optional): host variables in JSON, array, or string format
-    required: true
-    type: str
+        description: |
+            SQL query returning hostname, groups, ansible_host, and host_vars.
+            Expected columns: 
+            - hostname (text): inventory hostname
+            - groups (text[] or text): array or comma-separated list of groups
+            - ansible_host (text, optional): connection hostname/IP
+            - host_vars (json, text[], or text, optional): host variables in JSON, array, or string format
+        required: true
+        type: str
     cache:
-    description: Enable caching
-    required: false
-    type: bool
-    default: false
+        description: Enable caching
+        required: false
+        type: bool
+        default: false
+"""
+
+EXAMPLES = r"""
+# Example using DSN
+plugin: community.postgresql.postgresql_inventory
+dsn: postgresql://user:password@localhost:5432/mydb
+query: SELECT hostname, groups, ansible_host, host_vars FROM inventory
+
+# Example using individual parameters  
+plugin: community.postgresql.postgresql_inventory
+db_host: localhost
+db_port: 5432
+db_name: mydb
+db_user: myuser
+db_password: mypassword
+query: SELECT hostname, groups FROM servers
 """
 
 
 class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
     NAME = "community.postgresql.postgresql_inventory"
 
+    def __init__(self):
+        super(InventoryModule, self).__init__()
+        # Define the options for this plugin
+        self._options = {
+            "plugin": {
+                "required": True,
+                "type": "str",
+                "choices": ["community.postgresql.postgresql_inventory"],
+            },
+            "dsn": {"required": False, "type": "str"},
+            "db_host": {"required": False, "type": "str"},
+            "db_port": {"required": False, "type": "int", "default": 5432},
+            "db_name": {"required": False, "type": "str"},
+            "db_user": {"required": False, "type": "str"},
+            "db_password": {"required": False, "type": "str"},
+            "query": {"required": True, "type": "str"},
+            "cache": {"required": False, "type": "bool", "default": False},
+        }
+
+    def set_options(self, direct=None, **kwargs):
+        # call parent implementation
+        super().set_options(direct=direct, **kwargs)
+
+        # inject direct values into self._options so get_option sees them
+        if direct:
+            for key, value in direct.items():
+                self._options[key] = value
+        # ensure dsn is always present
+        if "dsn" not in self._options:
+            self._options["dsn"] = None
+
+        # also ensure other required options have defaults or None
+        for key, spec in self.get_options().items():
+            if key not in self._options:
+                default = spec.get("default", None)
+                self._options[key] = default
+
+    def get_options(self):
+        """Return the options for this plugin."""
+        return self._options
+
     def verify_file(self, path):
-        valid = super().verify_file(path)
-        return valid and path.endswith(("pg_inv.yml", "pg_inv.yaml"))
+        """Verify if the file is valid for this plugin."""
+        # Check our custom extensions first
+        if not path.endswith(("pg_inv.yml", "pg_inv.yaml")):
+            return False
+        return super().verify_file(path)
 
     def parse(self, inventory, loader, path, cache=True):
         super().parse(inventory, loader, path, cache)
         self._read_config_data(path)
 
+        self.set_options(direct=self.config)
         # Set cache based on configuration
         cache_enabled = self.get_option("cache") or cache
         self.set_option("cache", cache_enabled)
@@ -84,7 +147,7 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
         """Establish database connection using DSN or individual parameters."""
         dsn = self.get_option("dsn")
         if dsn:
-            return psycopg.connect(dsn)
+            return psycopg2.connect(dsn)
 
         # Build connection from individual parameters
         db_host = self.get_option("db_host")
@@ -98,7 +161,7 @@ class InventoryModule(BaseFileInventoryPlugin, Constructable, Cacheable):
                 "Either 'dsn' or all of 'db_host', 'db_name', 'db_user', 'db_password' must be provided"
             )
 
-        return psycopg.connect(
+        return psycopg2.connect(
             host=db_host,
             port=db_port,
             dbname=db_name,

@@ -5,7 +5,7 @@ __metaclass__ = type
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 from ansible.utils.display import Display
-import psycopg
+import psycopg2
 
 DOCUMENTATION = r"""
 name: postgresql_lookup
@@ -54,7 +54,7 @@ class LookupModule(LookupBase):
 
         try:
             # Establish database connection using options
-            db_conn = psycopg.connect(
+            db_conn = psycopg2.connect(
                 host=self.get_option("host"),
                 port=self.get_option("port", 5432),
                 dbname=self.get_option("db"),
