@@ -443,8 +443,9 @@ elif HAS_PSYCOPG:
     from psycopg import Error as PsycopgError
 
 VALID_PRIVS = frozenset(('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'CREATE',
-                         'CONNECT', 'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'SET', 'ALTER_SYSTEM'))
-VALID_DEFAULT_OBJS = {'TABLES': ('ALL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'),
+                         'CONNECT', 'TEMPORARY', 'TEMP', 'EXECUTE', 'USAGE', 'ALL', 'SET', 'ALTER_SYSTEM',
+                         'MAINTAIN'))
+VALID_DEFAULT_OBJS = {'TABLES': ('ALL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'),
                       'SEQUENCES': ('ALL', 'SELECT', 'UPDATE', 'USAGE'),
                       'FUNCTIONS': ('ALL', 'EXECUTE'),
                       'TYPES': ('ALL', 'USAGE'),
