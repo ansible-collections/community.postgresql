@@ -1,0 +1,16 @@
+plugins/modules/postgresql_db.py use-argspec-type-path
+plugins/modules/postgresql_db.py validate-modules:use-run-command-not-popen
+plugins/module_utils/version.py pylint:unused-import
+tests/utils/shippable/timing.py shebang
+tests/unit/plugins/module_utils/test_postgres.py pylint:unidiomatic-typecheck
+plugins/module_utils/postgres.py pylint:ansible-bad-import-from
+plugins/module_utils/saslprep.py pylint:ansible-bad-import-from
+plugins/modules/postgresql_copy.py pylint:ansible-bad-import-from
+plugins/modules/postgresql_info.py pylint:ansible-bad-import-from
+plugins/modules/postgresql_publication.py pylint:ansible-bad-import-from
+plugins/modules/postgresql_query.py pylint:ansible-bad-import-from
+plugins/modules/postgresql_script.py pylint:ansible-bad-import-from
+plugins/modules/postgresql_subscription.py pylint:ansible-bad-import-from
+plugins/modules/postgresql_tablespace.py pylint:ansible-bad-import-from
+plugins/modules/postgresql_user.py pylint:ansible-bad-import-from
+plugins/modules/postgresql_user_obj_stat_info.py pylint:ansible-bad-import-from
