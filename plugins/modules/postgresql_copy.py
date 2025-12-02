@@ -181,7 +181,6 @@ dst:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
@@ -296,11 +295,11 @@ class PgCopyData(object):
 
     def __transform_options(self):
         """Transform options dict into a suitable string."""
-        for (key, val) in iteritems(self.module.params['options']):
+        for (key, val) in self.module.params['options'].items():
             if key.upper() in self.opt_need_quotes:
                 self.module.params['options'][key] = "'%s'" % val
 
-        opt = ['%s %s' % (key, val) for (key, val) in iteritems(self.module.params['options'])]
+        opt = ['%s %s' % (key, val) for (key, val) in self.module.params['options'].items()]
         return '(%s)' % ', '.join(opt)
 
     def __check_table(self, table):
@@ -365,7 +364,7 @@ def main():
         # Check input for potentially dangerous elements:
         opt_list = None
         if module.params['options']:
-            opt_list = ['%s %s' % (key, val) for (key, val) in iteritems(module.params['options'])]
+            opt_list = ['%s %s' % (key, val) for (key, val) in module.params['options'].items()]
 
         check_input(module,
                     module.params['copy_to'],

@@ -216,7 +216,6 @@ rowcount:
 
 from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
     check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -339,7 +338,7 @@ def main():
             # Ansible engine does not support decimals.
             # An explicit conversion is required on the module's side
             row = dict(row)
-            for (key, val) in iteritems(row):
+            for (key, val) in row.items():
                 if isinstance(val, TYPES_NEED_TO_CONVERT):
                     row[key] = convert_to_supported(val)
 
