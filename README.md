@@ -113,7 +113,7 @@ Our AZP CI includes testing with the following docker images / PostgreSQL versio
 
 | Docker image | Psycopg version | PostgreSQL version |
 |--------------|-----------------|--------------------|
-| RHEL 8       |           2.7.5 |               10   |
+| RHEL 9       |           2.9.6 |               13   |
 | Fedora 39    |           2.9.6 |               15   |
 | Ubuntu 22.04 |           3.1.9 |               16   |
 | Fedora 40/41 |           2.9.9 |               16   |
