@@ -214,7 +214,6 @@ final_state:
 from copy import deepcopy
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
     check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -247,7 +246,7 @@ def convert_conn_params(conn_dict):
         Connection string.
     """
     conn_list = []
-    for (param, val) in iteritems(conn_dict):
+    for (param, val) in conn_dict.items():
         conn_list.append('%s=%s' % (param, val))
 
     return ' '.join(conn_list)
@@ -263,7 +262,7 @@ def convert_subscr_params(params_dict):
         Parameters string.
     """
     params_list = []
-    for (param, val) in iteritems(params_dict):
+    for (param, val) in params_dict.items():
         if val is False:
             val = 'false'
         elif val is True:
@@ -280,7 +279,7 @@ def cast_connparams(connparams_dict):
     Returns:
         Dictionary
     """
-    for (param, val) in iteritems(connparams_dict):
+    for (param, val) in connparams_dict.items():
         try:
             connparams_dict[param] = int(val)
         except ValueError:
@@ -423,7 +422,7 @@ class PgSubscription():
         if subsparams:
             params_to_update = []
 
-            for (param, value) in iteritems(subsparams):
+            for (param, value) in subsparams.items():
                 if param == 'enabled':
                     if self.attrs['enabled'] and value is False:
                         changed = self.enable(enabled=False, check_mode=check_mode)

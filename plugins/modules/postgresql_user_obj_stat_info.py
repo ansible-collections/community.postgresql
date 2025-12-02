@@ -107,7 +107,6 @@ functions:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
     check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -252,7 +251,7 @@ class PgUserObjStatInfo():
             self.info[info_key][elem[schema_key]][elem[name_key]] = {}
 
             # Add other other attributes to a certain index:
-            for key, val in iteritems(elem):
+            for key, val in elem.items():
                 if key not in (schema_key, name_key):
                     self.info[info_key][elem[schema_key]][elem[name_key]][key] = val
 
