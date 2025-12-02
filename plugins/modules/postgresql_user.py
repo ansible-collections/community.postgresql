@@ -305,7 +305,7 @@ import traceback
 from base64 import b64decode
 from hashlib import md5, sha256
 
-from ansible.module_utils._text import to_bytes, to_native, to_text
+from ansible.module_utils.common.text.converters import to_bytes, to_native, to_text
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils import \
     saslprep
