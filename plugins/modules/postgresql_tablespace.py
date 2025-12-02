@@ -192,7 +192,6 @@ state:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
     check_input
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -455,7 +454,7 @@ def main():
         if not settings:
             settings_list = None
         else:
-            settings_list = ['%s = %s' % (k, v) for k, v in iteritems(settings)]
+            settings_list = ['%s = %s' % (k, v) for k, v in settings.items()]
 
         check_input(module, tablespace, location, owner,
                     rename_to, session_role, settings_list, comment)
