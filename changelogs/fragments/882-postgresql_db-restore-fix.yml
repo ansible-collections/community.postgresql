@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_db - restoring from ``.sql`` files would execute the file twice. The module now avoids using both ``--file`` and stdin redirection simultaneously (https://github.com/ansible-collections/community.postgresql/issues/882). 
