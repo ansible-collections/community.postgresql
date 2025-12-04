@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_privs - support MAINTAIN privilege on tables (added in PostgreSQL 17) (https://github.com/ansible-collections/community.postgresql/pull/888).

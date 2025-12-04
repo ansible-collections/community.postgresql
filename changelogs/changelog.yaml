@@ -1094,3 +1094,27 @@ releases:
     - 4.1.0.yml
     - 858-negated-change-report.yml
     release_date: '2025-05-30'
+  4.2.0:
+    changes:
+      bugfixes:
+      - postgresql_db - Fix connection limit not being set when value is "0" (https://github.com/ansible-collections/community.postgresql/issues/879).
+      - postgresql_db - fixed ``session_role`` parameter that was being ignored for
+        raw connections (https://github.com/ansible-collections/community.postgresql/pull/865)
+      - postgresql_db - restoring from ``.sql`` files would execute the file twice.
+        The module now avoids using both ``--file`` and stdin redirection simultaneously
+        (https://github.com/ansible-collections/community.postgresql/issues/882).
+      minor_changes:
+      - postgresql_privs - support MAINTAIN privilege on tables (added in PostgreSQL
+        17) (https://github.com/ansible-collections/community.postgresql/pull/888).
+      release_summary: 'This is a minor release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 4.2.0.yml
+    - 865-postgresql_db-session_role-fix.yml
+    - 879-fix-conn-limit-zero.yml
+    - 882-postgresql_db-restore-fix.yml
+    - 888-postgresql-priv-maintain.yml
+    release_date: '2025-12-04'

@@ -19,7 +19,6 @@ from os import environ
 
 from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import missing_required_lib
-from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.version import \
     LooseVersion
 
@@ -323,7 +322,7 @@ def get_conn_params(module, params_dict, warn_db_default=True):
                 module.warn('Database name has not been passed, '
                             'used default database to connect to.')
 
-    kw = dict((params_map[k], v) for (k, v) in iteritems(params_dict)
+    kw = dict((params_map[k], v) for (k, v) in params_dict.items()
               if k in params_map and v != '' and v is not None)
 
     # If a login_unix_socket is specified, incorporate it here.
@@ -505,7 +504,7 @@ def convert_elements_to_pg_arrays(obj):
         obj (dict or list): Object with converted elements.
     """
     if isinstance(obj, dict):
-        for (key, elem) in iteritems(obj):
+        for (key, elem) in obj.items():
             if isinstance(elem, list):
                 obj[key] = list_to_pg_array(elem)
 

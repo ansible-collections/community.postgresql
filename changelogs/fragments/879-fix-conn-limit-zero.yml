@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_db - Fix connection limit not being set when value is "0" (https://github.com/ansible-collections/community.postgresql/issues/879). 

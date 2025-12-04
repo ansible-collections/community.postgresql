@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_db - fixed ``session_role`` parameter that was being ignored for raw connections (https://github.com/ansible-collections/community.postgresql/pull/865)
