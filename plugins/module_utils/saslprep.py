@@ -20,11 +20,9 @@ from stringprep import (in_table_a1, in_table_b1, in_table_c3, in_table_c4,
                         in_table_d1, in_table_d2)
 from unicodedata import normalize
 
-from ansible.module_utils.six import text_type
-
 
 def is_unicode_str(string):
-    return True if isinstance(string, text_type) else False
+    return True if isinstance(string, str) else False
 
 
 def mapping_profile(string):
@@ -149,7 +147,7 @@ def saslprep(string):
     # Validate the string is a Unicode string
     # (text_type is the string type if PY3 and unicode otherwise):
     if not is_unicode_str(string):
-        raise TypeError('input must be of type %s, not %s' % (text_type, type(string)))
+        raise TypeError('input must be of type %s, not %s' % (str, type(string)))
 
     # RFC4013: 2.1. Mapping.
     string = mapping_profile(string)
