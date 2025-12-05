@@ -87,7 +87,7 @@
   assert:
     that:
        - result is changed
-       - result.executed_commands[0] is search("/bin/pg_dump")
+       - result.executed_commands[0] is search("/s?bin/pg_dump")
        - result.executed_commands[0] is search("-n schema1")
 
 - name: pg_restore archive on dst_db with session_role
@@ -106,7 +106,7 @@
   assert:
     that:
        - result is changed
-       - result.executed_commands[0] is search("/bin/pg_restore")
+       - result.executed_commands[0] is search("/s?bin/pg_restore")
        - result.executed_commands[0] is search("--role=")
 
 - name: check restored schema1 owner is db_session_role1
@@ -166,7 +166,7 @@
   assert:
     that:
        - result is changed
-       - result.executed_commands[0] is search("/bin/pg_dump")
+       - result.executed_commands[0] is search("/s?bin/pg_dump")
        - result.executed_commands[0] is search("-n schema1")
        - result.executed_commands[0] is search("--role=")
 
