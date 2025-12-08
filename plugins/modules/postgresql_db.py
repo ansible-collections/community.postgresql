@@ -530,6 +530,7 @@ def db_dump(module, target, target_opts="",
             password=None,
             host=None,
             port=None,
+            session_role=None,
             **kw):
 
     flags = login_flags(db, host, port, user, db_prefix=False)
@@ -552,6 +553,9 @@ def db_dump(module, target, target_opts="",
         comp_prog_path = module.get_bin_path('bzip2', True)
     elif os.path.splitext(target)[-1] == '.xz':
         comp_prog_path = module.get_bin_path('xz', True)
+
+    if session_role:
+        flags.append(' --role={0}'.format(shlex_quote(session_role)))
 
     cmd += "".join(flags)
 
@@ -583,11 +587,13 @@ def db_restore(module, target, target_opts="",
                password=None,
                host=None,
                port=None,
+               session_role=None,
                **kw):
 
     flags = login_flags(db, host, port, user)
     comp_prog_path = None
     cmd = module.get_bin_path('psql', True)
+    pg_restore = False
 
     if os.path.splitext(target)[-1] == '.sql':
         flags.append(' --file={0}'.format(target))
@@ -595,14 +601,17 @@ def db_restore(module, target, target_opts="",
     elif os.path.splitext(target)[-1] == '.tar':
         flags.append(' --format=Tar')
         cmd = module.get_bin_path('pg_restore', True)
+        pg_restore = True
 
     elif os.path.splitext(target)[-1] == '.pgc':
         flags.append(' --format=Custom')
         cmd = module.get_bin_path('pg_restore', True)
+        pg_restore = True
 
     elif os.path.splitext(target)[-1] == '.dir':
         flags.append(' --format=Directory')
         cmd = module.get_bin_path('pg_restore', True)
+        pg_restore = True
 
     elif os.path.splitext(target)[-1] == '.gz':
         comp_prog_path = module.get_bin_path('zcat', True)
@@ -612,6 +621,9 @@ def db_restore(module, target, target_opts="",
 
     elif os.path.splitext(target)[-1] == '.xz':
         comp_prog_path = module.get_bin_path('xzcat', True)
+
+    if pg_restore and session_role:
+        flags.append(' --role={0}'.format(shlex_quote(session_role)))
 
     cmd += "".join(flags)
     if target_opts:
@@ -843,9 +855,13 @@ def main():
             method = state == "dump" and db_dump or db_restore
 
             if state == 'dump':
-                rc, stdout, stderr, cmd = method(module, target, target_opts, db, dump_extra_args, **conn_params)
+                rc, stdout, stderr, cmd = method(
+                    module, target, target_opts, db, dump_extra_args, session_role=session_role, **conn_params
+                )
             else:
-                rc, stdout, stderr, cmd = method(module, target, target_opts, db, **conn_params)
+                rc, stdout, stderr, cmd = method(
+                    module, target, target_opts, db, session_role=session_role, **conn_params
+                )
 
             if rc != 0:
                 module.fail_json(msg=stderr, stdout=stdout, rc=rc, cmd=cmd)

@@ -1,0 +1,198 @@
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+
+# ============================================================
+
+- name: create a new role
+  postgresql_user:
+    name: "{{ db_session_role1 }}"
+    state: "present"
+    encrypted: 'true'
+    password: "password"
+    login_user: "{{ pg_user }}"
+    db: postgres
+  become: true
+  become_user: "{{ pg_user }}"
+
+- name: make db_session_role1 an admin for convenience
+  postgresql_membership:
+    group: "{{ pg_user }}"
+    target_roles: "{{ db_session_role1 }}"
+    state: present
+
+# needs to be .pgc to force use of pg_dump/pg_restore binaries
+- set_fact: db_file_name="{{tmp_dir}}/dbdata.pgc"
+
+- name: create test databases with different owners
+  postgresql_db:
+    state: present
+    name: "{{ item.name }}"
+    owner: "{{ item.owner }}"
+    login_user: "{{ pg_user }}"
+  loop:
+    - name: src_db
+      owner: "{{ pg_user }}"
+    - name: dst_db
+      owner: "{{ db_session_role1 }}"
+
+- name: create schema1 in src_db owned by pg_user
+  postgresql_schema:
+    state: present
+    name: schema1
+    login_db: src_db
+    login_user: "{{ pg_user }}"
+
+- name: create employees table in src_db.schema1
+  postgresql_table:
+    name: schema1.employees
+    columns:
+      - id bigserial primary key
+      - name varchar(20)
+    state: present
+    login_db: src_db
+    login_user: "{{ pg_user }}"
+
+- name: populate src_db.schema1.employees
+  postgresql_query:
+    login_db: src_db
+    login_user: "{{ pg_user }}"
+    query: >-
+      INSERT INTO schema1.employees (name)
+      VALUES ('Guybrush Threepwood');
+
+- name: pg_dump src_db.schema1 as pg_user
+  postgresql_db:
+    login_user: "{{ pg_user }}"
+    name: src_db
+    state: dump
+    target: "{{ db_file_name }}"
+    target_opts: "-n schema1"
+  register: result
+  become_user: "{{ pg_user }}"
+  become: true
+
+- name: assert pg_dump usage with -n parameter
+  assert:
+    that:
+       - result is changed
+       - result.executed_commands[0] is search("/s?bin/pg_dump")
+       - result.executed_commands[0] is search("-n schema1")
+
+- name: pg_restore archive on dst_db with session_role
+  postgresql_db:
+    login_user: "{{ pg_user }}"
+    name: dst_db
+    state: restore
+    target: "{{ db_file_name }}"
+    session_role: "{{ db_session_role1 }}"
+    target_opts: "--no-owner"
+  register: result
+  become_user: "{{ pg_user }}"
+  become: true
+
+- name: assert pg_restore usage with role parameter
+  assert:
+    that:
+       - result is changed
+       - result.executed_commands[0] is search("/s?bin/pg_restore")
+       - result.executed_commands[0] is search("--role=")
+
+- name: check restored schema1 owner is db_session_role1
+  postgresql_query:
+    login_db: dst_db
+    login_user: "{{ pg_user }}"
+    query: >-
+      SELECT r.rolname AS owner 
+      FROM pg_namespace ns
+      JOIN pg_roles r ON ns.nspowner = r.oid
+      WHERE ns.nspname = 'schema1';
+  register: result
+
+- assert:
+    that:
+      - result.query_result[0]['owner'] == db_session_role1
+
+- name: check restored schema1.employees owner is db_session_role1
+  postgresql_query:
+    login_db: dst_db
+    login_user: "{{ pg_user }}"
+    query: >-
+      SELECT tableowner as owner
+      FROM pg_tables WHERE tablename = 'employees' and schemaname = 'schema1'
+  register: result
+
+- assert:
+    that:
+      - result.query_result[0]['owner'] == db_session_role1
+
+- name: drop schema1 from dst_db
+  postgresql_schema:
+    state: absent
+    cascade_drop: true
+    name: schema1
+    login_db: dst_db
+    login_user: "{{ pg_user }}"
+
+- name: remove db archive
+  file:
+    name: "{{ db_file_name }}"
+    state: absent
+
+- name: pg_dump src_db.schema1 with session_role
+  postgresql_db:
+    login_user: "{{ pg_user }}"
+    session_role: "{{ db_session_role1 }}"
+    name: src_db
+    state: dump
+    target: "{{ db_file_name }}"
+    target_opts: "-n schema1"
+  register: result
+  become_user: "{{ pg_user }}"
+  become: true
+
+- name: assert pg_dump usage with role parameter
+  assert:
+    that:
+       - result is changed
+       - result.executed_commands[0] is search("/s?bin/pg_dump")
+       - result.executed_commands[0] is search("-n schema1")
+       - result.executed_commands[0] is search("--role=")
+
+- name: verify archive file was created
+  ansible.builtin.stat:
+    path: "{{ db_file_name }}"
+
+# Clean up
+- name: remove test databases
+  postgresql_db:
+    name: "{{ item }}"
+    login_user: "{{ pg_user }}"
+    state: absent
+  loop:
+    - src_db
+    - dst_db
+
+- name: remove db archive
+  file:
+    name: "{{ db_file_name }}"
+    state: absent
+
+- name: remove db_session_role1 user
+  postgresql_user:
+    login_user: "{{ pg_user }}"
+    name: "{{ db_session_role1 }}"
+    state: absent
+  become: true
+  become_user: "{{ pg_user }}"

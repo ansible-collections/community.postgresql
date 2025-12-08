@@ -43,6 +43,8 @@
     file: dbdata.tar
     test_fixture: admin
 
+- import_tasks: state_dump_restore_role.yml
+
 # Simple test to create and then drop with force
 - import_tasks: manage_database.yml
 
