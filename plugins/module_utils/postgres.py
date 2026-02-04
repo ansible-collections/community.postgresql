@@ -21,6 +21,8 @@ from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import missing_required_lib
 from ansible_collections.community.postgresql.plugins.module_utils.version import \
     LooseVersion
+from ansible_collections.community.postgresql.plugins.module_utils.database import \
+    pg_quote_identifier
 
 psycopg = None  # This line is needed for unit tests
 psycopg2 = None  # This line is needed for unit tests
@@ -348,27 +350,36 @@ class PgRole():
         self.memberof = self.__fetch_members()
 
     def __fetch_members(self):
-        query = ("SELECT ARRAY(SELECT b.rolname FROM "
-                 "pg_catalog.pg_auth_members m "
-                 "JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) "
-                 "WHERE m.member = r.oid) "
-                 "FROM pg_catalog.pg_roles r "
-                 "WHERE r.rolname = %(dst_role)s")
+        query = """select p.rolname, m.* -- include option columns if available (postgres >=16)
+                   from pg_catalog.pg_auth_members m
+                   join pg_catalog.pg_roles p on m.roleid=p.oid
+                   join pg_catalog.pg_roles c on m.member=c.oid
+                   where c.rolname = %s;"""
 
-        res = exec_sql(self, query, query_params={'dst_role': self.name},
-                       add_to_executed=False)
-        if res:
-            return res[0]["array"]
-        else:
-            return []
+        rows = exec_sql(self, query, query_params=(self.name,),
+                        add_to_executed=False)
+        result = dict()
+        for row in rows:
+            result[row['rolname']] = dict(
+                ADMIN=row.get('admin_option'),
+                INHERIT=row.get('inherit_option'),
+                SET=row.get('set_option'),
+            )
+        return result
 
 
 class PgMembership(object):
-    def __init__(self, module, cursor, groups, target_roles, fail_on_role=True):
+    def __init__(self, module, cursor, groups, target_roles, fail_on_role=True, options=None):
         self.module = module
         self.cursor = cursor
         self.target_roles = [r.strip() for r in target_roles]
         self.groups = [r.strip() for r in groups]
+        self.options = dict()
+        self.wanted_options = set()
+        self.unwanted_options = set()
+        for option, setting in (options or dict()).items():
+            if setting is not None:
+                self.options[option.upper()] = setting
         self.executed_queries = []
         self.granted = {}
         self.revoked = {}
@@ -377,18 +388,31 @@ class PgMembership(object):
         self.changed = False
         self.__check_roles_exist()
 
+    def __grant(self, group, role):
+        role_obj = PgRole(self.module, self.cursor, role)
+        # If role is in a group now, pass:
+        if group in role_obj.memberof:
+            options_match = True
+            for option, desired_status in self.options.items():
+                if role_obj.memberof[group][option] != desired_status:
+                    options_match = False
+                    break
+            if options_match:
+                return  # no change necessary
+
+        query = 'GRANT %s TO %s' % (pg_quote_identifier(group, 'role'), pg_quote_identifier(role, 'role'))
+        if not self.options:
+            self.changed |= exec_sql(self, query, return_bool=True)
+        for option, wanted in self.options.items():
+            q = '%s WITH %s %s' % (query, option, 'true' if wanted else 'false')
+            self.changed |= exec_sql(self, q, return_bool=True)
+
     def grant(self):
         for group in self.groups:
             self.granted[group] = []
 
             for role in self.target_roles:
-                role_obj = PgRole(self.module, self.cursor, role)
-                # If role is in a group now, pass:
-                if group in role_obj.memberof:
-                    continue
-
-                query = 'GRANT "%s" TO "%s"' % (group, role)
-                self.changed = exec_sql(self, query, return_bool=True)
+                self.__grant(group, role)
 
                 if self.changed:
                     self.granted[group].append(role)
@@ -405,7 +429,7 @@ class PgMembership(object):
                 if group not in role_obj.memberof:
                     continue
 
-                query = 'REVOKE "%s" FROM "%s"' % (group, role)
+                query = 'REVOKE %s FROM %s' % (pg_quote_identifier(group, 'role'), pg_quote_identifier(role, 'role'))
                 self.changed = exec_sql(self, query, return_bool=True)
 
                 if self.changed:
@@ -422,7 +446,7 @@ class PgMembership(object):
             # 1. Get groups that the role is member of but not in self.groups and revoke them
             groups_to_revoke = current_groups - desired_groups
             for group in groups_to_revoke:
-                query = 'REVOKE "%s" FROM "%s"' % (group, role)
+                query = 'REVOKE %s FROM %s' % (pg_quote_identifier(group, 'role'), pg_quote_identifier(role, 'role'))
                 self.changed = exec_sql(self, query, return_bool=True)
                 if group in self.revoked:
                     self.revoked[group].append(role)
@@ -433,8 +457,7 @@ class PgMembership(object):
             # the role is already member of and grant the rest
             groups_to_grant = desired_groups - current_groups
             for group in groups_to_grant:
-                query = 'GRANT "%s" TO "%s"' % (group, role)
-                self.changed = exec_sql(self, query, return_bool=True)
+                self.__grant(group, role)
                 if group in self.granted:
                     self.granted[group].append(role)
                 else:

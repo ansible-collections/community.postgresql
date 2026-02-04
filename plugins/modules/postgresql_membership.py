@@ -46,6 +46,24 @@ options:
       - If C(true), fail when group or target_role doesn't exist. If C(false), just warn and continue.
     default: true
     type: bool
+  admin_option:
+    description:
+      - This flag controls the membership option I(ADMIN). When unset (C(null)), the postgres default is used and existing configuration is preserved.
+      - This flag is ignored when I(state=absent) or the postgres server version is < 16. 
+    default: null
+    type: bool
+  inherit_option:
+    description:
+      - This flag controls the membership option I(INHERIT). When unset (C(null)), the postgres default is used and existing configuration is preserved.
+      - This flag is ignored when I(state=absent) or the postgres server version is < 16. 
+    default: null
+    type: bool
+  set_option:
+    description:
+      - This flag controls the membership option I(SET). When unset (C(null)), the postgres default is used and existing configuration is preserved.
+      - This flag is ignored when I(state=absent) or the postgres server version is < 16. 
+    default: null
+    type: bool
   state:
     description:
     - Membership state.
@@ -177,6 +195,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
     get_conn_params,
     pg_cursor_args,
     postgres_common_argument_spec,
+    get_server_version,
 )
 
 # ===========================================
@@ -189,6 +208,9 @@ def main():
     argument_spec.update(
         groups=dict(type='list', elements='str', required=True, aliases=['group', 'source_role', 'source_roles']),
         target_roles=dict(type='list', elements='str', required=True, aliases=['target_role', 'user', 'users']),
+        admin_option=dict(type='bool', default=None),
+        inherit_option=dict(type='bool', default=None),
+        set_option=dict(type='bool', default=None),
         fail_on_role=dict(type='bool', default=True),
         state=dict(type='str', default='present', choices=['absent', 'exact', 'present']),
         login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
@@ -210,6 +232,11 @@ def main():
     groups = module.params['groups']
     target_roles = module.params['target_roles']
     fail_on_role = module.params['fail_on_role']
+    membership_options = dict(
+        admin=module.params['admin_option'],
+        inherit=module.params['inherit_option'],
+        set=module.params['set_option'],
+    )
     state = module.params['state']
     session_role = module.params['session_role']
     trust_input = module.params['trust_input']
@@ -223,10 +250,12 @@ def main():
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor(**pg_cursor_args)
 
+    if get_server_version(db_connection) < 16000:
+        membership_options = None
+
     ##############
     # Create the object and do main job:
-
-    pg_membership = PgMembership(module, cursor, groups, target_roles, fail_on_role)
+    pg_membership = PgMembership(module, cursor, groups, target_roles, fail_on_role, membership_options)
 
     if state == 'present':
         pg_membership.grant()
