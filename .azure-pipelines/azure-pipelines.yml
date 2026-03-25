@@ -130,8 +130,8 @@ stages:
         parameters:
           testFormat: devel/linux/{0}/1
           targets:
-            - name: Fedora 42
-              test: fedora42
+            - name: Fedora 43
+              test: fedora43
             - name: Ubuntu 24.04
               test: ubuntu2404
             - name: Ubuntu 22.04
@@ -145,8 +145,8 @@ stages:
         parameters:
           testFormat: 2.20/linux/{0}/1
           targets:
-            - name: Fedora 42
-              test: fedora42
+            - name: Fedora 43
+              test: fedora43
             - name: Ubuntu 24.04
               test: ubuntu2404
             - name: Ubuntu 22.04
@@ -160,8 +160,8 @@ stages:
         parameters:
           testFormat: 2.19/linux/{0}/1
           targets:
-            - name: Fedora 41
-              test: fedora41
+            - name: Fedora 43
+              test: fedora43
             - name: Ubuntu 24.04
               test: ubuntu2404
             - name: Ubuntu 22.04
@@ -175,23 +175,11 @@ stages:
         parameters:
           testFormat: 2.18/linux/{0}/1
           targets:
-            - name: Fedora 40
-              test: fedora40
+            - name: Fedora 43
+              test: fedora43
             - name: Ubuntu 22.04
               test: ubuntu2204
 
-  - stage: Docker_2_17
-    displayName: Docker 2.17
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.17/linux/{0}/1
-          targets:
-            - name: Fedora 39
-              test: fedora39
-            - name: Ubuntu 22.04
-              test: ubuntu2204
 
 ## Remote
   - stage: Remote_devel
