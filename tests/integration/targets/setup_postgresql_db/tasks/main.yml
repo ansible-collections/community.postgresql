@@ -76,9 +76,10 @@
       state: 'present'
 
   - name: Import the repository signing key
-    ansible.builtin.apt_key:
-      state: present
+    ansible.builtin.get_url:
       url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+      dest: /etc/apt/trusted.gpg.d/postgresql.asc
+      mode: '0644'
 
   - name: Update the package lists
     apt:
