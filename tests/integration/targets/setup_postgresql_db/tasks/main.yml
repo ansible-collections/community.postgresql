@@ -24,15 +24,22 @@
       paths:
       - '{{ role_path }}/vars'
 
+- name: Install dbus-broker (Fedora)
+  package:
+    name: dbus-broker
+    state: present
+  when:
+    - ansible_service_mgr == 'systemd'
+    - ansible_distribution == 'Fedora'
+    - ansible_distribution_major_version is version('44', '>=')
+
 - name: Make sure the dbus service is enabled under systemd
   shell: systemctl enable dbus || systemctl enable dbus-broker
   ignore_errors: true
   when: ansible_service_mgr == 'systemd' and ansible_distribution == 'Fedora'
 
 - name: Make sure the dbus service is started under systemd
-  systemd:
-    name: dbus
-    state: started
+  shell: systemctl start dbus || systemctl start dbus-broker
   when: ansible_service_mgr == 'systemd' and ansible_distribution == 'Fedora'
 
 - name: stop postgresql service
