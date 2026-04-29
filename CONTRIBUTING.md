@@ -6,15 +6,12 @@ If you have any questions after reading, please contact the community via one or
 
 ## Using AI tools for assistance
 
-TBD: Add a link to the Ansible AI Policy once it's in place.
+We follow the [Ansible Community Policy for AI-Assisted Contributions](https://docs.ansible.com/projects/ansible/devel/community/ai_policy.html). This means that:
+- You MAY use the assistance of AI tools for contributing to this project, as long as you take full responsibility for your contributions.
+- The use of AI tools SHOULD be explicitly disclosed by you when a significant part of the contribution is taken from the AI tool's output without significant changes. Grammar, spelling, and stylistic corrections do not require disclosure.
+- Any autonomous contributions submitted by AI tools MAY be rejected by resource maintainers without prior justification.
 
-When using AI tools to assist with contributing to this project, follow our AI policy:
-
-- You MAY use the assistance of AI tools for contributing to this project, as long as you take full responsibility for your contributions and follow the principles described in this section.
-- The use of AI tools MUST be explicitly disclosed by you when a significant part of the contribution is taken from the AI tool's output without significant changes. Grammar, spelling, and stylistic corrections do not require disclosure.
-- Contributions MUST NOT be submitted by AI agents. Maintainers of this project may reject such contributions for violating this policy.
-
-We recommend using the [AGENTS.md](https://github.com/ansible-collections/community.postgresql/blob/main/AGENTS.md) file and [skills](https://github.com/ansible-collections/community.postgresql/tree/main/.agents/skills) provided in this repository when contributing with AI tools.
+We recommend using the [AGENTS.md](https://github.com/ansible-collections/community.postgresql/blob/main/AGENTS.md) file and [skills](https://github.com/ansible-collections/community.postgresql/tree/main/.agents/skills) provided in this repository when contributing with AI tools' assistance.
 
 ## Reviewing open issue and pull requests
 
