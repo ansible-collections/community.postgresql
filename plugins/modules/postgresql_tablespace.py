@@ -96,6 +96,8 @@ attributes:
       - I(state=absent) and I(state=present) (the second one if the tablespace doesn't exist) do not
         support check mode because the corresponding PostgreSQL DROP and CREATE TABLESPACE commands
         can not be run inside the transaction block.
+  idempotent:
+    support: full
 
 seealso:
 - name: PostgreSQL tablespaces

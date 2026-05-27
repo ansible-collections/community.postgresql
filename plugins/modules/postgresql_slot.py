@@ -83,6 +83,8 @@ notes:
 attributes:
   check_mode:
     support: full
+  idempotent:
+    support: full
 
 seealso:
 - name: PostgreSQL pg_replication_slots view reference

@@ -93,6 +93,8 @@ seealso:
 attributes:
   check_mode:
     support: full
+  idempotent:
+    support: full
 
 author:
 - Andrew Klychkov (@Andersson007)

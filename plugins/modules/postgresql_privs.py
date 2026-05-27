@@ -153,6 +153,8 @@ seealso:
 attributes:
   check_mode:
     support: full
+  idempotent:
+    support: full
 
 extends_documentation_fragment:
 - community.postgresql.postgres

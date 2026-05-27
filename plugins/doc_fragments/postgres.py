@@ -77,7 +77,10 @@ options:
 attributes:
   check_mode:
     description: Can run in check_mode and return changed status prediction without modifying target.
-
+  idempotent:
+    description:
+      - When run twice in a row outside check mode, with the same arguments, the second invocation indicates no change.
+      - This assumes that the system controlled/queried by the module has not changed in a relevant way.
 notes:
 - The default authentication assumes that you are either logging in as or sudo'ing to the C(postgres) account on the host.
 - To avoid "Peer authentication failed for user postgres" error,

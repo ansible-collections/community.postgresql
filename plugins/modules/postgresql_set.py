@@ -85,6 +85,12 @@ notes:
 attributes:
   check_mode:
     support: full
+  idempotent:
+    support: partial
+    details:
+      - The module is not idempotent when O(value=default) — it always executes
+        C(ALTER SYSTEM SET ... = DEFAULT) and reports RV(changed=true), regardless of whether
+        the parameter currently has an override in C(postgresql.auto.conf).
 
 seealso:
 - module: community.postgresql.postgresql_alter_system

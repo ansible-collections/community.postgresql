@@ -87,6 +87,8 @@ seealso:
 attributes:
   check_mode:
     support: none
+  idempotent:
+    support: none
 
 author:
 - Douglas J Hunley (@hunleyd)

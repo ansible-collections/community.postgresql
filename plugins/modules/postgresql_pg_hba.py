@@ -161,6 +161,8 @@ attributes:
   diff_mode:
     support: full
     description: Will return details on what has changed (or possibly needs changing in check_mode), when in diff mode
+  idempotent:
+    support: full
 
 author:
 - Sebastiaan Mannem (@sebasmannem)

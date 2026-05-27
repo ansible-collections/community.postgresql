@@ -58,6 +58,8 @@ notes:
 attributes:
   check_mode:
     support: full
+  idempotent:
+    support: full
 
 seealso:
 - module: community.postgresql.postgresql_info

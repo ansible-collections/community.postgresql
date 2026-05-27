@@ -91,6 +91,11 @@ attributes:
       - If i(check_mode=true) and the source has been passed as SQL, the module
         will execute it and roll the transaction back, but pay attention
         it can affect database performance (e.g., if SQL collects a lot of data).
+  idempotent:
+    support: none
+    details:
+      - The module always executes the C(COPY) command and reports RV(changed=true) on success,
+        without comparing source and destination state.
 
 seealso:
 - name: COPY command reference

@@ -116,6 +116,8 @@ notes:
 attributes:
   check_mode:
     support: full
+  idempotent:
+    support: full
 
 author:
 - Daniel Schep (@dschep)

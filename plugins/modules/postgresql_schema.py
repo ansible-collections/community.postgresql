@@ -84,6 +84,8 @@ seealso:
 attributes:
   check_mode:
     support: full
+  idempotent:
+    support: full
 
 author:
 - Flavien Chantelot (@Dorn-) <contact@flavien.io>
