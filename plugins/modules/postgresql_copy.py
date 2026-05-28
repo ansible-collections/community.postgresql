@@ -94,7 +94,7 @@ attributes:
   idempotent:
     support: none
     details:
-      - The module always executes the C(COPY) command and reports RV(changed=true) on success,
+      - The module always executes the C(COPY) command and reports changed=true on success,
         without comparing source and destination state.
 
 seealso:

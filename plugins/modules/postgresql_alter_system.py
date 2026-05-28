@@ -69,9 +69,9 @@ attributes:
     support: partial
     details:
       - The module is not idempotent when O(value=_RESET) — it always runs C(ALTER SYSTEM RESET)
-        and reports RV(changed=true).
+        and reports changed=true.
       - For all other values, the module compares the desired value against the current
-        setting in C(pg_catalog.pg_settings) and reports RV(changed=false) when they match.
+        setting in C(pg_catalog.pg_settings) and reports changed=false when they match.
 
 seealso:
 - module: community.postgresql.postgresql_info

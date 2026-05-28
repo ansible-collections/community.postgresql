@@ -107,7 +107,7 @@ attributes:
     support: partial
     details:
      - The module is not idempotent when O(reassign_owned_by) is used — it always executes
-        C(REASSIGN OWNED BY) and reports RV(changed=true).
+        C(REASSIGN OWNED BY) and reports changed=true.
 
 author:
 - Andrew Klychkov (@Andersson007)

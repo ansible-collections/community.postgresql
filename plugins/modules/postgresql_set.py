@@ -89,7 +89,7 @@ attributes:
     support: partial
     details:
       - The module is not idempotent when O(value=default) — it always executes
-        C(ALTER SYSTEM SET ... = DEFAULT) and reports RV(changed=true), regardless of whether
+        C(ALTER SYSTEM SET ... = DEFAULT) and reports changed=true, regardless of whether
         the parameter currently has an override in C(postgresql.auto.conf).
 
 seealso:

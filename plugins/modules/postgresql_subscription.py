@@ -112,7 +112,7 @@ attributes:
     support: partial
     details:
       - The module is not idempotent when O(state=refresh) — it always executes
-        C(ALTER SUBSCRIPTION ... REFRESH PUBLICATION) and reports RV(changed=true).
+        C(ALTER SUBSCRIPTION ... REFRESH PUBLICATION) and reports changed=true.
 
 seealso:
 - module: community.postgresql.postgresql_publication

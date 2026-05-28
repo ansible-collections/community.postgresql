@@ -88,9 +88,9 @@ attributes:
     support: none
     details:
       - The module executes arbitrary user-supplied SQL commands and cannot determine whether a given query
-        would modify state. For non-read-only queries, RV(changed) is set based on the PostgreSQL
+        would modify state. For non-read-only queries, state change is set based on the PostgreSQL
         C(statusmessage) heuristic (e.g., C(INSERT)/C(UPDATE)/C(DELETE) with non-zero affected rows
-        report RV(changed=true), regardless of the state which existed before the query execution).
+        report changed=true, regardless of the state which existed before the query execution).
 
 author:
 - Felix Archambault (@archf)

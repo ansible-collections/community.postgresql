@@ -196,7 +196,7 @@ attributes:
     support: partial
     details:
       - On systems where C(pg_authid) is not accessible (such as AWS RDS), the module cannot compare
-        the current and desired password and reports RV(changed=true) on every invocation when a
+        the current and desired password and reports changed=true on every invocation when a
         password is specified.
 
 seealso:

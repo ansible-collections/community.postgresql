@@ -120,7 +120,7 @@ attributes:
     support: partial
     details:
       - The module is not idempotent when O(truncate=true) — it always executes
-        C(TRUNCATE TABLE) and reports RV(changed=true) always creating
+        C(TRUNCATE TABLE) and reports changed=true always creating
         a new table with the same schema and dropping the old table.
 
 seealso:
