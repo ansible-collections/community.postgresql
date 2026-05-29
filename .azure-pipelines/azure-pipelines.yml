@@ -109,18 +109,6 @@ stages:
             - name: Units
               test: '2.18/units/1'
 
-  - stage: Ansible_2_17
-    displayName: Sanity & Units 2.17
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          targets:
-            - name: Sanity
-              test: '2.17/sanity/1'
-            - name: Units
-              test: '2.17/units/1'
-
 ## Docker
   - stage: Docker_devel
     displayName: Docker devel
@@ -132,10 +120,10 @@ stages:
           targets:
             - name: Fedora 44
               test: fedora44
+            - name: Ubuntu 26.04
+              test: ubuntu2204
             - name: Ubuntu 24.04
               test: ubuntu2404
-            - name: Ubuntu 22.04
-              test: ubuntu2204
 
   - stage: Docker_2_20
     displayName: Docker 2.20
