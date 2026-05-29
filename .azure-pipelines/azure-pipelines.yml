@@ -36,7 +36,7 @@ variables:
 resources:
   containers:
     - container: default
-      image: quay.io/ansible/azure-pipelines-test-container:7.0.0
+      image: quay.io/ansible/azure-pipelines-test-container:8.0.0
 
 pool: Standard
 
@@ -109,18 +109,6 @@ stages:
             - name: Units
               test: '2.18/units/1'
 
-  - stage: Ansible_2_17
-    displayName: Sanity & Units 2.17
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          targets:
-            - name: Sanity
-              test: '2.17/sanity/1'
-            - name: Units
-              test: '2.17/units/1'
-
 ## Docker
   - stage: Docker_devel
     displayName: Docker devel
@@ -132,6 +120,8 @@ stages:
           targets:
             - name: Fedora 44
               test: fedora44
+            - name: Ubuntu 26.04
+              test: ubuntu2604
             - name: Ubuntu 24.04
               test: ubuntu2404
 
@@ -177,7 +167,6 @@ stages:
               test: fedora43
             - name: Ubuntu 22.04
               test: ubuntu2204
-
 
 ## Remote
   - stage: Remote_devel
@@ -241,7 +230,6 @@ stages:
       - Docker_2_20
       - Docker_2_19
       - Docker_2_18
-      - Docker_2_17
       - Remote_devel
       - Remote_2_20
       - Remote_2_19
