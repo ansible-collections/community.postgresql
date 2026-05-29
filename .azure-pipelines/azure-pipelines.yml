@@ -121,7 +121,7 @@ stages:
             - name: Fedora 44
               test: fedora44
             - name: Ubuntu 26.04
-              test: ubuntu2204
+              test: ubuntu2604
             - name: Ubuntu 24.04
               test: ubuntu2404
 
