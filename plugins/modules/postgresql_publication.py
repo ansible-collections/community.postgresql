@@ -254,7 +254,6 @@ parameters:
 
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six import iteritems
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input, pg_quote_identifier)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -328,7 +327,7 @@ def transform_rowfilters_keys(rowfilters):
         rowfilters (dict): Changed dict.
     """
     revmap_filters = {}
-    for table, fltr in iteritems(rowfilters):
+    for table, fltr in rowfilters.items():
         fltr = fltr.strip()
         if fltr:
             if fltr[:5].lower() == 'where':
@@ -521,7 +520,7 @@ class PgPublication():
         if params:
             params_list = []
             # Make list ["param = 'value'", ...] from params dict:
-            for (key, val) in iteritems(params):
+            for (key, val) in params.items():
                 params_list.append("%s = '%s'" % (key, val))
 
             # Add the list to query_fragments:
@@ -634,7 +633,7 @@ class PgPublication():
 
         # Update pub parameters:
         if params:
-            for key, val in iteritems(params):
+            for key, val in params.items():
                 if self.attrs['parameters'].get(key):
 
                     # In PostgreSQL 10/11 only 'publish' optional parameter is presented.
@@ -875,7 +874,7 @@ class PgPublication():
             True if successful, False otherwise.
         """
         table_list = []
-        for table, columns in iteritems(columns_map):
+        for table, columns in columns_map.items():
             quoted_cols = pg_quote_column_list(table, columns)
             if table in rowfilters:
                 quoted_cols += (" WHERE %s" % rowfilters[table])
@@ -1035,7 +1034,7 @@ def main():
         if not params:
             params_list = None
         else:
-            params_list = ['%s = %s' % (k, v) for k, v in iteritems(params)]
+            params_list = ['%s = %s' % (k, v) for k, v in params.items()]
 
         check_input(module, name, tables, owner,
                     session_role, params_list, comment)
