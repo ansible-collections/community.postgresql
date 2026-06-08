@@ -210,6 +210,16 @@ EXAMPLES = r'''
     query: INSERT INTO test_table (col1) VALUES (%s)
     positional_args:
     - '{{ my_var }}'
+    
+# SSL/TLS certificate configuration example
+- name: Query database with SSL certificate
+  community.postgresql.postgresql_query:
+    login_db: acme
+    query: SELECT version()
+    ssl_mode: verify-full
+    ssl_root_cert: /etc/ssl/certs/root.crt
+    ssl_cert: /etc/ssl/certs/client.crt
+    ssl_key: /etc/ssl/certs/client.key
 '''
 
 RETURN = r'''
