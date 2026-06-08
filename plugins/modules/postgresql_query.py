@@ -210,7 +210,7 @@ EXAMPLES = r'''
     query: INSERT INTO test_table (col1) VALUES (%s)
     positional_args:
     - '{{ my_var }}'
-    
+
 # SSL/TLS certificate configuration example
 - name: Query database with SSL certificate
   community.postgresql.postgresql_query:
