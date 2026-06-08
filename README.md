@@ -108,6 +108,7 @@ Tested with the following `ansible-core` releases:
 - 2.18
 - 2.19
 - 2.20
+- 2.21
 - current development version
 
 Ansible-core versions before 2.12.0 are not supported.
