@@ -145,12 +145,12 @@ stages:
         parameters:
           testFormat: 2.21/linux/{0}/1
           targets:
-            - name: Fedora 44
-              test: fedora44
-            - name: Ubuntu 26.04
-              test: ubuntu2604
+            - name: Fedora 43
+              test: fedora43
             - name: Ubuntu 24.04
               test: ubuntu2404
+            - name: Ubuntu 22.04
+              test: ubuntu2204
 
   - stage: Docker_2_20
     displayName: Docker 2.20
