@@ -183,6 +183,19 @@ stages:
             - name: RHEL 9.7
               test: rhel/9.7
 
+  - stage: Remote_2_21
+    displayName: Remote 2.21
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.21/{0}/1
+          targets:
+            - name: RHEL 10.1
+              test: rhel/10.1
+            - name: RHEL 9.7
+              test: rhel/9.7
+
   - stage: Remote_2_20
     displayName: Remote 2.20
     dependsOn: []
@@ -232,6 +245,7 @@ stages:
       - Docker_2_19
       - Docker_2_18
       - Remote_devel
+      - Remote_2_21
       - Remote_2_20
       - Remote_2_19
       - Remote_2_18

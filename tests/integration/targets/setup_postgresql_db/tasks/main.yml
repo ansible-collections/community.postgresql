@@ -150,13 +150,26 @@
   when: ansible_os_family == 'Debian'
 
 - block:
-  - name: Install langpacks (RHEL8)
-    yum:
-      name:
-      - glibc-langpack-es
-      - glibc-langpack-pt
-      - glibc-all-langpacks
-      state: present
+  - block:
+    - name: Install langpacks (RHEL >= 8)
+      yum:
+        name:
+        - glibc-langpack-es
+        - glibc-langpack-pt
+        - glibc-all-langpacks
+        state: present
+
+    rescue:
+    - name: Clean DNF cache after langpack install failure
+      command: dnf clean all
+
+    - name: Retry langpack install after cleaning cache
+      yum:
+        name:
+        - glibc-langpack-es
+        - glibc-langpack-pt
+        - glibc-all-langpacks
+        state: present
     when: ansible_distribution_major_version is version('8', '>=')
 
   - name: Check if locales need to be generated (RedHat)
