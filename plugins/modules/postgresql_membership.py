@@ -49,21 +49,24 @@ options:
   admin_option:
     description:
       - This flag controls the membership option I(ADMIN). When unset (C(null)), the postgres default is used and existing configuration is preserved.
-      - This flag is ignored when I(state=absent) or the postgres server version is < 16. 
+      - This flag is ignored when I(state=absent) or the postgres server version is < 16.
     default: null
     type: bool
+    version_added: '4.3.0'
   inherit_option:
     description:
       - This flag controls the membership option I(INHERIT). When unset (C(null)), the postgres default is used and existing configuration is preserved.
-      - This flag is ignored when I(state=absent) or the postgres server version is < 16. 
+      - This flag is ignored when I(state=absent) or the postgres server version is < 16.
     default: null
     type: bool
+    version_added: '4.3.0'
   set_option:
     description:
       - This flag controls the membership option I(SET). When unset (C(null)), the postgres default is used and existing configuration is preserved.
-      - This flag is ignored when I(state=absent) or the postgres server version is < 16. 
+      - This flag is ignored when I(state=absent) or the postgres server version is < 16.
     default: null
     type: bool
+    version_added: '4.3.0'
   state:
     description:
     - Membership state.

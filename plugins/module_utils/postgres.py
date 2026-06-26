@@ -21,8 +21,6 @@ from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import missing_required_lib
 from ansible_collections.community.postgresql.plugins.module_utils.version import \
     LooseVersion
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    pg_quote_identifier
 
 psycopg = None  # This line is needed for unit tests
 psycopg2 = None  # This line is needed for unit tests
@@ -398,23 +396,24 @@ class PgMembership(object):
                     options_match = False
                     break
             if options_match:
-                return  # no change necessary
+                return False  # no change necessary
 
-        query = 'GRANT %s TO %s' % (pg_quote_identifier(group, 'role'), pg_quote_identifier(role, 'role'))
+        query = 'GRANT "%s" TO "%s"' % (group, role)
+        changed = False
         if not self.options:
-            self.changed |= exec_sql(self, query, return_bool=True)
+            changed |= exec_sql(self, query, return_bool=True)
         for option, wanted in self.options.items():
             q = '%s WITH %s %s' % (query, option, 'true' if wanted else 'false')
-            self.changed |= exec_sql(self, q, return_bool=True)
+            changed |= exec_sql(self, q, return_bool=True)
+        self.changed |= changed
+        return changed
 
     def grant(self):
         for group in self.groups:
             self.granted[group] = []
 
             for role in self.target_roles:
-                self.__grant(group, role)
-
-                if self.changed:
+                if self.__grant(group, role):
                     self.granted[group].append(role)
 
         return self.changed
@@ -429,7 +428,7 @@ class PgMembership(object):
                 if group not in role_obj.memberof:
                     continue
 
-                query = 'REVOKE %s FROM %s' % (pg_quote_identifier(group, 'role'), pg_quote_identifier(role, 'role'))
+                query = 'REVOKE "%s" FROM "%s"' % (group, role)
                 self.changed = exec_sql(self, query, return_bool=True)
 
                 if self.changed:
@@ -446,7 +445,7 @@ class PgMembership(object):
             # 1. Get groups that the role is member of but not in self.groups and revoke them
             groups_to_revoke = current_groups - desired_groups
             for group in groups_to_revoke:
-                query = 'REVOKE %s FROM %s' % (pg_quote_identifier(group, 'role'), pg_quote_identifier(role, 'role'))
+                query = 'REVOKE "%s" FROM "%s"' % (group, role)
                 self.changed = exec_sql(self, query, return_bool=True)
                 if group in self.revoked:
                     self.revoked[group].append(role)
