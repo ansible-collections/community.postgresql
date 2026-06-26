@@ -49,21 +49,21 @@ options:
   admin_option:
     description:
       - This flag controls the membership option I(ADMIN). When unset (C(null)), the postgres default is used and existing configuration is preserved.
-      - This flag is ignored when I(state=absent) or the postgres server version is < 16.
+      - Requires PostgreSQL 16 or later. Setting it against an older server makes the module fail. Ignored when I(state=absent).
     default: null
     type: bool
     version_added: '4.3.0'
   inherit_option:
     description:
       - This flag controls the membership option I(INHERIT). When unset (C(null)), the postgres default is used and existing configuration is preserved.
-      - This flag is ignored when I(state=absent) or the postgres server version is < 16.
+      - Requires PostgreSQL 16 or later. Setting it against an older server makes the module fail. Ignored when I(state=absent).
     default: null
     type: bool
     version_added: '4.3.0'
   set_option:
     description:
       - This flag controls the membership option I(SET). When unset (C(null)), the postgres default is used and existing configuration is preserved.
-      - This flag is ignored when I(state=absent) or the postgres server version is < 16.
+      - Requires PostgreSQL 16 or later. Setting it against an older server makes the module fail. Ignored when I(state=absent).
     default: null
     type: bool
     version_added: '4.3.0'
@@ -100,6 +100,15 @@ options:
     type: bool
     default: true
     version_added: '0.2.0'
+notes:
+- Membership existence (I(state) handling without the option parameters) considers
+  the membership regardless of which role granted it, as in earlier versions.
+- When I(admin_option), I(inherit_option) or I(set_option) is used on PostgreSQL 16
+  and later, the module compares against and updates the grant made by the connecting
+  role (or I(session_role) when set). A membership of the same pair granted by another
+  role, such as the C(WITH ADMIN OPTION) grant PostgreSQL creates automatically when a
+  non-superuser creates a role, does not prevent the module from creating its own grant
+  with the requested options.
 seealso:
 - module: community.postgresql.postgresql_user
 - module: community.postgresql.postgresql_privs
@@ -253,7 +262,18 @@ def main():
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor(**pg_cursor_args)
 
-    if get_server_version(db_connection) < 16000:
+    # The admin_option, inherit_option and set_option parameters rely on the
+    # GRANT ... WITH <option> syntax that only exists on PostgreSQL 16+. Fail
+    # explicitly when any of them is set against an older server rather than
+    # emitting an invalid statement. The options have no effect when revoking,
+    # so they are simply ignored for state=absent (as documented).
+    if get_server_version(db_connection) < 160000:
+        if state != 'absent':
+            used_options = [name for name in ('admin_option', 'inherit_option', 'set_option')
+                            if module.params[name] is not None]
+            if used_options:
+                module.fail_json(msg="The %s parameter(s) require PostgreSQL 16 or later"
+                                     % ", ".join(used_options))
         membership_options = None
 
     ##############

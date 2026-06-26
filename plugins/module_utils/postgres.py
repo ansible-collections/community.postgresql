@@ -348,22 +348,22 @@ class PgRole():
         self.memberof = self.__fetch_members()
 
     def __fetch_members(self):
-        query = """select p.rolname, m.* -- include option columns if available (postgres >=16)
-                   from pg_catalog.pg_auth_members m
-                   join pg_catalog.pg_roles p on m.roleid=p.oid
-                   join pg_catalog.pg_roles c on m.member=c.oid
-                   where c.rolname = %s;"""
+        """Return the set of roles self.name is a member of.
+
+        Membership is reported regardless of which role granted it. Membership
+        options are read per-grantor by PgMembership when needed.
+
+        Returns a set of role names (str).
+        """
+        query = """SELECT p.rolname
+                   FROM pg_catalog.pg_auth_members m
+                   JOIN pg_catalog.pg_roles p ON m.roleid = p.oid
+                   JOIN pg_catalog.pg_roles c ON m.member = c.oid
+                   WHERE c.rolname = %s;"""
 
         rows = exec_sql(self, query, query_params=(self.name,),
                         add_to_executed=False)
-        result = dict()
-        for row in rows:
-            result[row['rolname']] = dict(
-                ADMIN=row.get('admin_option'),
-                INHERIT=row.get('inherit_option'),
-                SET=row.get('set_option'),
-            )
-        return result
+        return set(row['rolname'] for row in rows)
 
 
 class PgMembership(object):
@@ -373,8 +373,6 @@ class PgMembership(object):
         self.target_roles = [r.strip() for r in target_roles]
         self.groups = [r.strip() for r in groups]
         self.options = dict()
-        self.wanted_options = set()
-        self.unwanted_options = set()
         for option, setting in (options or dict()).items():
             if setting is not None:
                 self.options[option.upper()] = setting
@@ -387,16 +385,26 @@ class PgMembership(object):
         self.__check_roles_exist()
 
     def __grant(self, group, role):
+        """Grant membership of group to role and apply the wanted options.
+
+        With options (PostgreSQL 16+) only the grant made by the current role is
+        compared and updated, so a membership granted by another role (for
+        example the WITH ADMIN OPTION grant PostgreSQL creates when a
+        non-superuser creates a role) does not hide the need to issue our own
+        grant (see issue #757).
+
+        Args:
+            group (str) -- role whose membership is granted.
+            role (str) -- role that receives the membership.
+
+        Returns True when a change was made (bool).
+        """
         role_obj = PgRole(self.module, self.cursor, role)
-        # If role is in a group now, pass:
         if group in role_obj.memberof:
-            options_match = True
-            for option, desired_status in self.options.items():
-                if role_obj.memberof[group][option] != desired_status:
-                    options_match = False
-                    break
-            if options_match:
-                return False  # no change necessary
+            current = self.__current_grant_options(group, role) if self.options else {}
+            if current is not None and all(current[option] == wanted
+                                           for option, wanted in self.options.items()):
+                return False
 
         query = 'GRANT "%s" TO "%s"' % (group, role)
         changed = False
@@ -407,6 +415,36 @@ class PgMembership(object):
             changed |= exec_sql(self, q, return_bool=True)
         self.changed |= changed
         return changed
+
+    def __current_grant_options(self, group, role):
+        """Return the options of the group-to-role grant made by the current role.
+
+        Only reached on PostgreSQL 16+, where these columns exist and a pair can
+        be granted by several roles independently.
+
+        Args:
+            group (str) -- granted (group) role.
+            role (str) -- member role.
+
+        Returns a dict with ADMIN, INHERIT and SET keys, or None when the
+        current role has not granted this membership.
+        """
+        query = """SELECT m.admin_option, m.inherit_option, m.set_option
+                   FROM pg_catalog.pg_auth_members m
+                   JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
+                   JOIN pg_catalog.pg_roles u ON m.member = u.oid
+                   WHERE g.rolname = %s
+                     AND u.rolname = %s
+                     AND m.grantor = (SELECT oid
+                                      FROM pg_catalog.pg_roles
+                                      WHERE rolname = CURRENT_ROLE);"""
+        rows = exec_sql(self, query, query_params=(group, role),
+                        add_to_executed=False)
+        if not rows:
+            return None
+        return dict(ADMIN=rows[0]['admin_option'],
+                    INHERIT=rows[0]['inherit_option'],
+                    SET=rows[0]['set_option'])
 
     def grant(self):
         for group in self.groups:
@@ -452,15 +490,16 @@ class PgMembership(object):
                 else:
                     self.revoked[group] = [role]
 
-            # 2. Filter out groups that in self.groups and
-            # the role is already member of and grant the rest
-            groups_to_grant = desired_groups - current_groups
-            for group in groups_to_grant:
-                self.__grant(group, role)
-                if group in self.granted:
-                    self.granted[group].append(role)
-                else:
-                    self.granted[group] = [role]
+            # 2. Ensure the role is a member of every desired group with the
+            # wanted options. __grant is idempotent and also reconciles the
+            # options of memberships that already exist, so it runs for all
+            # desired groups, not only the newly added ones.
+            for group in desired_groups:
+                if self.__grant(group, role):
+                    if group in self.granted:
+                        self.granted[group].append(role)
+                    else:
+                        self.granted[group] = [role]
 
         return self.changed
 
