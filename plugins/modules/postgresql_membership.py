@@ -48,7 +48,7 @@ options:
     type: bool
   admin_option:
     description:
-      - This flag controls the membership option I(ADMIN). When unset (C(null)), the postgres default is used and existing configuration is preserved.
+      - This flag controls the membership option C(ADMIN). When unset (C(null)), the postgres default is used and existing configuration is preserved.
       - Requires PostgreSQL 16 or later. Setting it against an older server makes the module fail. Ignored when I(state=absent).
     default: null
     type: bool
