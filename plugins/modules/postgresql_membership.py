@@ -62,7 +62,7 @@ options:
     version_added: '4.3.0'
   set_option:
     description:
-      - This flag controls the membership option I(SET). When unset (C(null)), the postgres default is used and existing configuration is preserved.
+      - This flag controls the membership option C(SET). When unset (C(null)), the postgres default is used and existing configuration is preserved.
       - Requires PostgreSQL 16 or later. Setting it against an older server makes the module fail. Ignored when I(state=absent).
     default: null
     type: bool
