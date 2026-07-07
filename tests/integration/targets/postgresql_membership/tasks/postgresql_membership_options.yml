@@ -123,6 +123,7 @@
 
   - assert:
       that:
+      - opts.query_result | length == 1
       - opts.query_result[0].admin_option == false
       - opts.query_result[0].inherit_option == false
       - opts.query_result[0].set_option == false
@@ -165,23 +166,27 @@
       - result is changed
       - result.granted["opt_group"] == ["opt_user1"]
 
-  - name: postgresql_membership - read back set_option after the change
+  - name: postgresql_membership - read back all options after the change
     become_user: "{{ pg_user }}"
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
       db: postgres
       query: >-
-        SELECT m.set_option
+        SELECT m.admin_option, m.inherit_option, m.set_option
         FROM pg_catalog.pg_auth_members m
         JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
         JOIN pg_catalog.pg_roles u ON m.member = u.oid
         WHERE g.rolname = 'opt_group' AND u.rolname = 'opt_user1'
     register: opts
 
+  # set_option flipped to true; admin_option and inherit_option must stay false.
   - assert:
       that:
+      - opts.query_result | length == 1
       - opts.query_result[0].set_option == true
+      - opts.query_result[0].admin_option == false
+      - opts.query_result[0].inherit_option == false
 
   # Reporting check: grant to a role that is already a member with matching
   # options (no change) together with a brand new role. Only the new role must
@@ -301,23 +306,27 @@
       - result is changed
       - result.granted["opt_group"] == ["opt_user1"]
 
-  - name: postgresql_membership - read back set_option after state=exact
+  - name: postgresql_membership - read back all options after state=exact
     become_user: "{{ pg_user }}"
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
       db: postgres
       query: >-
-        SELECT m.set_option
+        SELECT m.admin_option, m.inherit_option, m.set_option
         FROM pg_catalog.pg_auth_members m
         JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
         JOIN pg_catalog.pg_roles u ON m.member = u.oid
         WHERE g.rolname = 'opt_group' AND u.rolname = 'opt_user1'
     register: opts
 
+  # set_option reconciled to false; admin_option and inherit_option must stay false.
   - assert:
       that:
+      - opts.query_result | length == 1
       - opts.query_result[0].set_option == false
+      - opts.query_result[0].admin_option == false
+      - opts.query_result[0].inherit_option == false
 
   - name: postgresql_membership - state=exact with the same option is idempotent
     become_user: "{{ pg_user }}"
@@ -335,6 +344,76 @@
       that:
       - result is not changed
       - result.granted == {}
+
+  ####################################################################
+  # check_mode: the module must predict whether an option change is  #
+  # needed and report it without writing to the database.            #
+  # opt_user1 currently has set_option=false on opt_group.           #
+  ####################################################################
+
+  # Enabling set_option in check_mode must report a change but leave the
+  # membership untouched (changes run in a transaction that is rolled back).
+  - name: postgresql_membership - enable set_option in check_mode (change needed)
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      group: "opt_group"
+      target_role: "opt_user1"
+      set_option: true
+      state: present
+    register: result
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+      - result.granted["opt_group"] == ["opt_user1"]
+      - result.queries == ['GRANT "opt_group" TO "opt_user1" WITH SET true']
+
+  # Requesting the option value opt_user1 already has must report no change.
+  - name: postgresql_membership - keep set_option in check_mode (no change needed)
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      group: "opt_group"
+      target_role: "opt_user1"
+      set_option: false
+      state: present
+    register: result
+    check_mode: true
+
+  - assert:
+      that:
+      - result is not changed
+      - result.granted["opt_group"] == []
+      - result.queries == []
+
+  # Confirm the change-needed check_mode run above did not actually write:
+  # every option must still hold its pre-check_mode value.
+  - name: postgresql_membership - verify check_mode left all options unchanged
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: >-
+        SELECT m.admin_option, m.inherit_option, m.set_option
+        FROM pg_catalog.pg_auth_members m
+        JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
+        JOIN pg_catalog.pg_roles u ON m.member = u.oid
+        WHERE g.rolname = 'opt_group' AND u.rolname = 'opt_user1'
+    register: opts
+
+  - assert:
+      that:
+      - opts.query_result | length == 1
+      - opts.query_result[0].set_option == false
+      - opts.query_result[0].admin_option == false
+      - opts.query_result[0].inherit_option == false
 
   always:
 

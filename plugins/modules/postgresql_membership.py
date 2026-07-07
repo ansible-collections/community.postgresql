@@ -172,6 +172,15 @@ EXAMPLES = r'''
     - alice
     - bob
     state: exact
+
+- name: Grant read_write to alice with SET and INHERIT but without ADMIN (PostgreSQL 16+)
+  community.postgresql.postgresql_membership:
+    group: read_write
+    target_role: alice
+    admin_option: false
+    inherit_option: true
+    set_option: true
+    state: present
 '''
 
 RETURN = r'''
