@@ -384,7 +384,7 @@ class PgMembership(object):
         self.changed = False
         self.__check_roles_exist()
 
-    def __grant(self, group, role):
+    def __grant(self, group, role, role_obj=None):
         """Grant membership of group to role and apply the wanted options.
 
         With options (PostgreSQL 16+) only the grant made by the current role is
@@ -396,10 +396,12 @@ class PgMembership(object):
         Args:
             group (str) -- role whose membership is granted.
             role (str) -- role that receives the membership.
+            role_obj (PgRole) -- role's already-fetched membership state, to
+                avoid a redundant DB round trip when the caller already has it.
 
         Returns True when a change was made (bool).
         """
-        role_obj = PgRole(self.module, self.cursor, role)
+        role_obj = role_obj or PgRole(self.module, self.cursor, role)
         if group in role_obj.memberof:
             current = self.__current_grant_options(group, role) if self.options else {}
             if current is not None and all(current[option] == wanted
@@ -447,11 +449,12 @@ class PgMembership(object):
                     SET=rows[0]['set_option'])
 
     def grant(self):
+        role_objs = {role: PgRole(self.module, self.cursor, role) for role in self.target_roles}
         for group in self.groups:
             self.granted[group] = []
 
             for role in self.target_roles:
-                if self.__grant(group, role):
+                if self.__grant(group, role, role_objs[role]):
                     self.granted[group].append(role)
 
         return self.changed
@@ -495,7 +498,7 @@ class PgMembership(object):
             # options of memberships that already exist, so it runs for all
             # desired groups, not only the newly added ones.
             for group in desired_groups:
-                if self.__grant(group, role):
+                if self.__grant(group, role, role_obj):
                     if group in self.granted:
                         self.granted[group].append(role)
                     else:
