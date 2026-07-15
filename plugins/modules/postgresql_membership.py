@@ -101,14 +101,18 @@ options:
     default: true
     version_added: '0.2.0'
 notes:
-- Membership existence (I(state) handling without the option parameters) considers
-  the membership regardless of which role granted it, as in earlier versions.
-- When I(admin_option), I(inherit_option) or I(set_option) is used on PostgreSQL 16
-  and later, the module compares against and updates the grant made by the connecting
-  role (or I(session_role) when set). A membership of the same pair granted by another
-  role, such as the C(WITH ADMIN OPTION) grant PostgreSQL creates automatically when a
-  non-superuser creates a role, does not prevent the module from creating its own grant
-  with the requested options.
+- Whether a role is a member of a group is checked regardless of which role granted
+  the membership, as in earlier versions. The membership options, however, are read
+  and written only for the grant made by the connecting role (or by I(session_role)
+  when set), because on PostgreSQL 16 and later the same pair can be granted
+  independently by several roles, each grant carrying its own options, and a role can
+  only change its own grant.
+- A consequence of that scope is that adding I(admin_option), I(inherit_option) or
+  I(set_option) to a task can report C(changed) and issue a C(GRANT) even when the
+  target role is already a member, if the existing membership was granted by another
+  role. This is intended, C(WITH ADMIN OPTION) memberships PostgreSQL creates
+  automatically when a non-superuser creates a role are a common example, so that the
+  connecting role obtains its own grant with the requested options (see issue #757).
 seealso:
 - module: community.postgresql.postgresql_user
 - module: community.postgresql.postgresql_privs

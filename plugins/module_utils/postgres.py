@@ -401,6 +401,15 @@ class PgMembership(object):
 
         Returns True when a change was made (bool).
         """
+        # Two intentionally different scopes meet here. role_obj.memberof is
+        # grantor-blind: it answers "is role a member of group at all", which is
+        # the historical meaning of membership and stays unchanged. The options
+        # comparison below is grantor-scoped (__current_grant_options only reads
+        # the grant made by the current role), because on PostgreSQL 16+ the same
+        # pair can be granted independently by several roles and we may only
+        # update our own grant. When a membership exists but was granted only by
+        # someone else, __current_grant_options returns None and we fall through
+        # to issue our own grant (see issue #757).
         role_obj = role_obj or PgRole(self.module, self.cursor, role)
         if group in role_obj.memberof:
             current = self.__current_grant_options(group, role) if self.options else {}
