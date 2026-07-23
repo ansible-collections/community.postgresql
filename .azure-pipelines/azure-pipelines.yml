@@ -205,10 +205,10 @@ stages:
         parameters:
           testFormat: devel/{0}/1
           targets:
-            - name: RHEL 10.1
-              test: rhel/10.1
-            - name: RHEL 9.7
-              test: rhel/9.7
+            - name: RHEL 10.2
+              test: rhel/10.2
+            - name: RHEL 9.8
+              test: rhel/9.8
 
   - stage: Remote_2_21
     displayName: Remote 2.21
