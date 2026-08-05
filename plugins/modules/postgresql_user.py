@@ -145,9 +145,9 @@ options:
       - Removes any parameter from the user that is not listed here.
       - Parameters that are present in the database but are not included in this list will only be reset, if
         O(reset_unspecified_configuration=true).
-      - Inputs to O(user) as well as keys and values in this parameter are quoted by the module. If you require the
-        user to contain a C("), you need to double it, otherwise the module will fail. C(") and C(') are not allowed in
-        configuration keys and any C(') in the value of a configuration will be escaped by this module.
+      - Inputs to O(user) as well as keys and values in this parameter are quoted by the module by default. If you
+        require the user to contain a C("), you need to double it, otherwise the module will fail. C(") and C(') are
+        not allowed in configuration keys and any C(') in quoted configuration values will be escaped by this module.
         Additionally, parameters and values are checked if O(trust_input) is C(false).
     type: dict
     default: {}
@@ -165,12 +165,26 @@ options:
         and setting this to C(false) leaves these options open to SQL-injections and makes the user responsible for
         properly quoting values.
       - This is required to be C(false) to modify settings like C(search_path), that need to be unquoted.
+      - To disable quoting only for selected parameters, use O(quote_configuration_values_exclude).
       - If this is C(false) you will also need to make sure that strings are properly quoted.
         For example C("'16MB'") for C(work_mem).
       - Set this only to C(false) if you know what you are doing!
     type: bool
     default: true
     version_added: '3.11.0'
+  quote_configuration_values_exclude:
+    description:
+      - List of configuration parameter names whose values are not quoted when O(quote_configuration_values=true).
+      - This is useful for settings such as C(search_path), which require an unquoted value, while keeping automatic
+        quoting for other configuration values.
+      - Values for excluded parameters are inserted into SQL unquoted, so the user is responsible for properly quoting
+        them when needed.
+      - This option has no additional effect when O(quote_configuration_values=false), because all values are already
+        unquoted.
+    type: list
+    elements: str
+    default: []
+    version_added: '4.3.0'
 notes:
 - The module creates a user (role) with login privilege by default.
   Use C(NOLOGIN) I(role_attr_flags) to change this behaviour.
@@ -291,9 +305,11 @@ EXAMPLES = r'''
 - name: Set search_path for user
   community.postgresql.postgresql_user:
     name: postgres_exporter
-    quote_configuration_values: false
+    quote_configuration_values_exclude:
+      - search_path
     configuration:
       search_path: postgres_exporter, pg_catalog, public
+      work_mem: "16MB"
 '''
 
 RETURN = r'''
@@ -792,12 +808,21 @@ def parse_user_configuration(module, configs):
         return {}
 
 
-def user_configuration(cursor, module, user, configuration, reset_unspec_config, quote_values):
+def validate_configuration(module, configuration):
+    """Validate configuration keys that are interpolated into ALTER ROLE statements."""
+    for key in configuration:
+        if '"' in key or '\'' in key:
+            module.fail_json("The key of a configuration may not contain single or double quotes")
+
+
+def user_configuration(cursor, module, user, configuration, reset_unspec_config, quote_values,
+                       quote_values_exclude):
     """Updates the user's configuration parameters if necessary."""
     current_config_query = "SELECT rolconfig FROM pg_roles WHERE rolname = %(user)s;"
     cursor.execute(current_config_query, {"user": user})
     current_config = cursor.fetchone()
     changed = False
+    quote_values_exclude = set(quote_values_exclude)
 
     if current_config is None:
         module.fail_json(msg="Can't find user %(user)s in 'pg_roles'" % {"user": user})
@@ -814,9 +839,9 @@ def user_configuration(cursor, module, user, configuration, reset_unspec_config,
             cursor.execute(query)
             changed = True
         for key, value in config_updates["update"].items():
-            if quote_values:
+            if quote_values and key not in quote_values_exclude:
                 query = ('ALTER ROLE %(user)s SET "%(key)s" TO \'%(value)s\';' %
-                         {"user": _pg_quote_user(user, module), "key": key, "value": value})
+                         {"user": _pg_quote_user(user, module), "key": key, "value": value.replace("'", "''")})
             else:
                 query = ('ALTER ROLE %(user)s SET "%(key)s" TO %(value)s;' %
                          {"user": _pg_quote_user(user, module), "key": key, "value": value})
@@ -872,6 +897,7 @@ def main():
         configuration=dict(type='dict', default={}),
         reset_unspecified_configuration=dict(type='bool', default=False),
         quote_configuration_values=dict(type='bool', default=True),
+        quote_configuration_values_exclude=dict(type='list', elements='str', default=[]),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -895,6 +921,7 @@ def main():
     configuration = module.params['configuration']
     reset_unspec_config = module.params['reset_unspecified_configuration']
     quote_configuration_values = module.params['quote_configuration_values']
+    quote_configuration_values_exclude = module.params['quote_configuration_values_exclude']
 
     trust_input = module.params['trust_input']
     if not trust_input:
@@ -910,12 +937,7 @@ def main():
 
     srv_version = get_server_version(db_connection)
 
-    # sanitize configuration
-    if quote_configuration_values:
-        for key, value in configuration.items():
-            if '"' in key or '\'' in key:
-                module.fail_json("The key of a configuration may not contain single or double quotes")
-            configuration[key] = value.replace("'", "''")
+    validate_configuration(module, configuration)
 
     try:
         role_attr_flags = parse_role_attrs(role_attr_flags, srv_version)
@@ -952,7 +974,7 @@ def main():
 
         # handle user-specific configuration-defaults
         changed = user_configuration(cursor, module, user, configuration, reset_unspec_config,
-                                     quote_configuration_values) or changed
+                                     quote_configuration_values, quote_configuration_values_exclude) or changed
 
     else:
         if user_exists(cursor, user):

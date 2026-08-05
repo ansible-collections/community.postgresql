@@ -12,10 +12,24 @@ import sys
 import pytest
 
 if sys.version_info[0] == 3:
+    from plugins.modules import postgresql_user
     from plugins.modules.postgresql_user import parse_user_configuration, compare_user_configurations, _pg_quote_user
 elif sys.version_info[0] == 2:
+    from ansible_collections.community.postgresql.plugins.modules import postgresql_user
     from ansible_collections.community.postgresql.plugins.modules.postgresql_user import parse_user_configuration, \
         compare_user_configurations, _pg_quote_user
+
+
+class UserConfigurationCursor(object):
+    def __init__(self, rolconfig):
+        self.rolconfig = rolconfig
+        self.queries = []
+
+    def execute(self, query, params=None):
+        self.queries.append((query, params))
+
+    def fetchone(self):
+        return {'rolconfig': self.rolconfig}
 
 
 def test_parse_user_configuration(mocker):
@@ -69,6 +83,50 @@ def test_compare_user_configurations():
     assert output == no_reset_expected
     output = compare_user_configurations(current, {}, False)
     assert output == {"reset": [], "update": {}}
+
+
+def test_user_configuration_quote_values_exclude(mocker):
+    """Tests if selected configuration values can be set without quotes"""
+    module = mocker.MagicMock()
+    cursor = UserConfigurationCursor(None)
+    configuration = {
+        "search_path": "pg_catalog, public",
+        "work_mem": "16MB",
+        "application_name": "some ' value",
+    }
+    postgresql_user.executed_queries[:] = []
+
+    changed = postgresql_user.user_configuration(
+        cursor, module, "someuser", configuration, False, True, ["search_path"])
+
+    assert changed
+    assert cursor.queries[1][0] == 'ALTER ROLE "someuser" SET "search_path" TO pg_catalog, public;'
+    assert cursor.queries[2][0] == 'ALTER ROLE "someuser" SET "work_mem" TO \'16MB\';'
+    assert cursor.queries[3][0] == 'ALTER ROLE "someuser" SET "application_name" TO \'some \'\' value\';'
+
+
+def test_user_configuration_quote_values_exclude_reset_unspecified(mocker):
+    """Tests if mixed quoted and unquoted values stay idempotent when resetting unspecified values"""
+    module = mocker.MagicMock()
+    cursor = UserConfigurationCursor([
+        "search_path=pg_catalog, public",
+        "work_mem=16MB",
+        "application_name=some ' value",
+        "temp_buffers=8MB",
+    ])
+    configuration = {
+        "search_path": "pg_catalog, public",
+        "work_mem": "16MB",
+        "application_name": "some ' value",
+    }
+    postgresql_user.executed_queries[:] = []
+
+    changed = postgresql_user.user_configuration(
+        cursor, module, "someuser", configuration, True, True, ["search_path"])
+
+    assert changed
+    assert len(cursor.queries) == 2
+    assert cursor.queries[1][0] == 'ALTER ROLE "someuser" RESET "temp_buffers";'
 
 
 def test__pg_quote_user(mocker):

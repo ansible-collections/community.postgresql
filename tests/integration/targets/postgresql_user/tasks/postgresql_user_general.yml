@@ -807,6 +807,74 @@
         - result.rowcount == 1
         - result.query_result[0]['rolconfig'] == ["search_path=pg_catalog, public", "work_mem=16MB"]
 
+  - name: Test setting mixed quoted and unquoted configuration values with exclusions
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values_exclude:
+        - search_path
+      configuration:
+        search_path: 'pg_catalog, public'
+        work_mem: "16MB"
+        temp_buffers: "8MB"
+
+  - assert:
+      that:
+        - result.changed
+
+  - name: Test that mixed quoted and unquoted settings are correct
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - (result.query_result[0]['rolconfig'] | sort) == (["search_path=pg_catalog, public", "work_mem=16MB", "temp_buffers=8MB"] | sort)
+
+  - name: Test reset_unspecified_configuration with mixed quoted and unquoted configuration values
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values_exclude:
+        - search_path
+      configuration:
+        search_path: 'pg_catalog, public'
+        work_mem: "16MB"
+      reset_unspecified_configuration: true
+
+  - assert:
+      that:
+        - result.changed
+
+  - name: Test idempotency of mixed quoted and unquoted configuration values with reset_unspecified_configuration
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values_exclude:
+        - search_path
+      configuration:
+        search_path: 'pg_catalog, public'
+        work_mem: "16MB"
+      reset_unspecified_configuration: true
+
+  - assert:
+      that:
+        - not result.changed
+
+  - name: Test that mixed quoted and unquoted settings are still correct
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.rowcount == 1
+        - (result.query_result[0]['rolconfig'] | sort) == (["search_path=pg_catalog, public", "work_mem=16MB"] | sort)
+
   - name: Purge configuration parameters from user
     <<: *task_parameters
     postgresql_user:
