@@ -1,0 +1,100 @@
+# Copyright: (c) 2026, Florian R. Hölzlwimmer (@Hoeze) <git.ich@frhoelzlwimmer.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+####################################################################
+# CREATE DATABASE names the database, owner and template, and      #
+# ALTER DATABASE names the database. All of them were interpolated #
+# raw, so a double quote in any of them produced invalid SQL.      #
+####################################################################
+
+- name: postgresql_db - quoted names
+  block:
+
+  - name: postgresql_db - create a role whose name contains a double quote
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      login_db: postgres
+      name: 'db"owner'
+
+  - name: postgresql_db - create a database with a quoted name and owner
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_db:
+      login_user: "{{ pg_user }}"
+      name: 'q"db'
+      owner: 'db"owner'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: postgresql_db - it exists under the literal name with the literal owner
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      login_db: postgres
+      query: >-
+        SELECT datname, pg_catalog.pg_get_userbyid(datdba) AS owner
+        FROM pg_catalog.pg_database WHERE datname = %s
+      positional_args:
+      - 'q"db'
+    register: result
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].owner == 'db"owner'
+
+  # conn_limit reaches ALTER DATABASE ... CONNECTION LIMIT
+  - name: postgresql_db - change the connection limit of the quoted database
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_db:
+      login_user: "{{ pg_user }}"
+      name: 'q"db'
+      conn_limit: '5'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: postgresql_db - the connection limit landed on the literal name
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      login_db: postgres
+      query: "SELECT datconnlimit FROM pg_catalog.pg_database WHERE datname = %s"
+      positional_args:
+      - 'q"db'
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].datconnlimit == 5
+
+  always:
+
+  - name: postgresql_db - drop the quoted database
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_db:
+      login_user: "{{ pg_user }}"
+      name: 'q"db'
+      state: absent
+    ignore_errors: true
+
+  - name: postgresql_db - drop the quoted owner
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      login_db: postgres
+      name: 'db"owner'
+      state: absent
+    ignore_errors: true

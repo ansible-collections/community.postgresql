@@ -5,3 +5,6 @@
 
 # Initial CI tests of postgresql_idx module
 - import_tasks: postgresql_idx_initial.yml
+
+# Names containing a double quote must be quoted as identifiers:
+- import_tasks: postgresql_idx_quoted_names.yml
