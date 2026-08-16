@@ -16,7 +16,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       name: 'se"qowner'
 
   - name: postgresql_sequence - create the quoted schemas
@@ -24,7 +24,7 @@
     become: true
     postgresql_schema:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       name: "{{ item }}"
     with_items:
     - 'sq"schema'
@@ -35,7 +35,7 @@
     become: true
     postgresql_sequence:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       name: 'se"q'
       schema: 'sq"schema'
     register: result
@@ -49,7 +49,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       query: >-
         SELECT c.relname, n.nspname FROM pg_catalog.pg_class c
         JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
@@ -69,7 +69,7 @@
     become: true
     postgresql_sequence:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       name: 'se"q'
       schema: 'sq"schema'
       owner: 'se"qowner'
@@ -85,7 +85,7 @@
     become: true
     postgresql_sequence:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       name: 'se"q'
       schema: 'sq"schema'
       rename_to: 'se"q2'
@@ -101,7 +101,7 @@
     become: true
     postgresql_sequence:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       name: 'se"q2'
       schema: 'sq"schema'
       newschema: 'sq"other'
@@ -116,7 +116,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       query: >-
         SELECT n.nspname, pg_catalog.pg_get_userbyid(c.relowner) AS owner
         FROM pg_catalog.pg_class c
@@ -139,7 +139,7 @@
     become: true
     postgresql_schema:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       name: "{{ item }}"
       state: absent
       cascade_drop: true
@@ -153,7 +153,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: "{{ db_name }}"
+      db: postgres
       name: 'se"qowner'
       state: absent
     ignore_errors: true
