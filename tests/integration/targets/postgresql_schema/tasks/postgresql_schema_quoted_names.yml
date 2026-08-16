@@ -1,0 +1,134 @@
+# Copyright: (c) 2026, Florian R. Hölzlwimmer (@Hoeze) <git.ich@frhoelzlwimmer.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+####################################################################
+# A name containing a double quote must be quoted as an identifier #
+# rather than interpolated raw. The trust_input tests above only   #
+# check that such a name is rejected when trust_input is false;    #
+# these check what happens when it is trusted and reaches the SQL. #
+####################################################################
+
+- name: postgresql_schema - quoted names
+  block:
+
+  - name: postgresql_schema - create a role whose name contains a double quote
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: "{{ db_name }}"
+      name: 'ow"ner'
+
+  # The owner reaches CREATE SCHEMA ... AUTHORIZATION.
+  - name: postgresql_schema - create a schema owned by that role
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_schema:
+      login_user: "{{ pg_user }}"
+      db: "{{ db_name }}"
+      name: 'sc"hema'
+      owner: 'ow"ner'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: postgresql_schema - the schema exists under the literal name and owner
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: "{{ db_name }}"
+      query: >-
+        SELECT nspname, pg_catalog.pg_get_userbyid(nspowner) AS owner
+        FROM pg_catalog.pg_namespace WHERE nspname = %s
+      positional_args:
+      - 'sc"hema'
+    register: result
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].owner == 'ow"ner'
+
+  # And the owner also reaches ALTER SCHEMA ... OWNER TO.
+  - name: postgresql_schema - hand the schema to another quoted role
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: "{{ db_name }}"
+      name: 'ne"w'
+
+  - name: postgresql_schema - change the owner
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_schema:
+      login_user: "{{ pg_user }}"
+      db: "{{ db_name }}"
+      name: 'sc"hema'
+      owner: 'ne"w'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: postgresql_schema - the owner really changed
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: "{{ db_name }}"
+      query: >-
+        SELECT pg_catalog.pg_get_userbyid(nspowner) AS owner
+        FROM pg_catalog.pg_namespace WHERE nspname = %s
+      positional_args:
+      - 'sc"hema'
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].owner == 'ne"w'
+
+  # session_role reaches SET ROLE in module_utils, which every module issues.
+  - name: postgresql_schema - connect with a session_role whose name contains a quote
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: "{{ db_name }}"
+      session_role: 'ow"ner'
+      query: "SELECT CURRENT_ROLE AS role"
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].role == 'ow"ner'
+
+  always:
+
+  - name: postgresql_schema - drop the quoted schema
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_schema:
+      login_user: "{{ pg_user }}"
+      db: "{{ db_name }}"
+      name: 'sc"hema'
+      state: absent
+      cascade_drop: true
+    ignore_errors: true
+
+  - name: postgresql_schema - drop the quoted roles
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: "{{ db_name }}"
+      name: "{{ item }}"
+      state: absent
+    ignore_errors: true
+    with_items:
+    - 'ne"w'
+    - 'ow"ner'
