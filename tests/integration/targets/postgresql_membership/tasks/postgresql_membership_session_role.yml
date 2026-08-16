@@ -1,0 +1,251 @@
+# Copyright: (c) 2026, Florian R. Hölzlwimmer (@Hoeze) <git.ich@frhoelzlwimmer.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+####################################################################
+# Tests for the granting role the module names when the connecting #
+# role is not a superuser. session_role is what makes that case    #
+# reachable here: CURRENT_ROLE follows SET ROLE, so the module      #
+# resolves the granting role for the session role rather than for  #
+# login_user, even though login_user is a superuser.               #
+####################################################################
+
+- name: postgresql_membership - non-superuser granting role (PostgreSQL >= 16 only)
+  when: pg_ver_num | int >= 160000
+  block:
+
+  - name: postgresql_membership - create roles for the session_role tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+    with_items:
+    - "sr_group"
+    - "sr_member"
+    - "sr_direct"
+    - "sr_team"
+    - "sr_indirect"
+
+  # sr_direct holds ADMIN OPTION on sr_group itself. sr_indirect only reaches it
+  # through sr_team, which is the case PostgreSQL refuses to record under the
+  # connecting role.
+  - name: postgresql_membership - give sr_direct and sr_team ADMIN OPTION, sr_indirect only inheritance
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ item }}"
+    with_items:
+    - 'GRANT "sr_group" TO "sr_direct" WITH ADMIN OPTION'
+    - 'GRANT "sr_group" TO "sr_team" WITH ADMIN OPTION'
+    - 'GRANT "sr_team" TO "sr_indirect" WITH INHERIT TRUE'
+
+  # A non-superuser holding ADMIN OPTION directly is named as the granting role,
+  # not the bootstrap superuser that login_user would have produced.
+  - name: postgresql_membership - grant as a non-superuser holding ADMIN OPTION directly
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_direct"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "sr_group" TO "sr_member" GRANTED BY "sr_direct"']
+      - result.grants.sr_group.sr_member | map(attribute='grantor') | list == ["sr_direct"]
+
+  - name: postgresql_membership - and it is idempotent
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_direct"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  - name: postgresql_membership - revoke it again as the same role
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_direct"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      state: absent
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['REVOKE "sr_group" FROM "sr_member" GRANTED BY "sr_direct"']
+
+  # The documented breaking change: the module names the connecting role, and
+  # PostgreSQL refuses that when the role only inherits ADMIN OPTION.
+  - name: postgresql_membership - grant as a non-superuser holding ADMIN OPTION only indirectly
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'permission denied to grant privileges as role' in result.msg"
+
+  - name: postgresql_membership - nothing was granted by the failed run
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_count }}"
+      positional_args:
+      - "sr_group"
+      - "sr_member"
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].count == 0
+
+  # granted_by naming the role that actually holds ADMIN OPTION is the documented fix.
+  - name: postgresql_membership - the same task succeeds with granted_by
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      granted_by: "sr_team"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "sr_group" TO "sr_member" GRANTED BY "sr_team"']
+      - result.grants.sr_group.sr_member | map(attribute='grantor') | list == ["sr_team"]
+
+  - name: postgresql_membership - granted_by is idempotent for a non-superuser too
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      granted_by: "sr_team"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  always:
+
+  - name: postgresql_membership - drop roles from the session_role tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+      state: absent
+    ignore_errors: true
+    with_items:
+    - "sr_member"
+    - "sr_indirect"
+    - "sr_direct"
+    - "sr_team"
+    - "sr_group"
+
+####################################################################
+# Before PostgreSQL 16 no granting role is named, so a non-superuser
+# is not treated differently and granted_by is refused outright.
+####################################################################
+
+- name: postgresql_membership - non-superuser is unaffected before PostgreSQL 16
+  when: pg_ver_num | int < 160000
+  block:
+
+  - name: postgresql_membership - create roles for the legacy session_role test
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+    with_items:
+    - "sr_group"
+    - "sr_member"
+    - "sr_direct"
+
+  - name: postgresql_membership - give sr_direct ADMIN OPTION on sr_group
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: 'GRANT "sr_group" TO "sr_direct" WITH ADMIN OPTION'
+
+  - name: postgresql_membership - grant as a non-superuser, no GRANTED BY emitted
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_direct"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "sr_group" TO "sr_member"']
+
+  always:
+
+  - name: postgresql_membership - drop roles from the legacy session_role test
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+      state: absent
+    ignore_errors: true
+    with_items:
+    - "sr_member"
+    - "sr_direct"
+    - "sr_group"
