@@ -42,6 +42,26 @@ def test_pg_quote_name():
     # name contains quotes, not a pre-quoted identifier to pass through.
     assert pg_quote_name('"prequoted"') == '"""prequoted"""'
 
+    # A per cent sign is left alone for a statement psycopg gets no parameters for.
+    assert pg_quote_name('per%cent') == '"per%cent"'
+
+
+def test_pg_quote_name_for_params():
+    # Doubled so that psycopg's substitution over the whole statement leaves one behind
+    # rather than reading the name as a placeholder.
+    assert pg_quote_name('per%cent', for_params=True) == '"per%%cent"'
+    assert pg_quote_name('a%sb', for_params=True) == '"a%%sb"'
+    assert pg_quote_name('x%(password)sy', for_params=True) == '"x%%(password)sy"'
+
+    # Names without a per cent sign are unaffected by the flag.
+    assert pg_quote_name('alice', for_params=True) == '"alice"'
+    assert pg_quote_name('we"ird', for_params=True) == '"we""ird"'
+
+    # psycopg substitutes over the whole statement, which reduces the doubling back to
+    # one, so what reaches the server is the name as written.
+    doubled = pg_quote_name('per%cent', for_params=True)
+    assert doubled % {} == '"per%cent"'
+
 
 def test_check_input_nested_inputs(mocker):
     module = mocker.MagicMock()

@@ -398,7 +398,7 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
     # literal
     query_password_data = dict(password=password, expires=expires)
     query = ['CREATE USER %(user)s' %
-             {"user": pg_quote_name(user)}]
+             {"user": pg_quote_name(user, for_params=True)}]
     if password is not None and password != '':
         query.append("WITH %(crypt)s" % {"crypt": encrypted})
         query.append("PASSWORD %(password)s")
@@ -408,7 +408,8 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
         query.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
     query.append(role_attr_flags)
     query = ' '.join(query)
-    executed_queries.append(query)
+    # Reported with the doubling undone, since that is what psycopg leaves behind.
+    executed_queries.append(query.replace('%%', '%'))
     cursor.execute(query, query_password_data)
     return True
 
@@ -587,7 +588,8 @@ def exec_alter_user(module, cursor, statement, params=None):
 
     try:
         cursor.execute(statement, params)
-        executed_queries.append(statement)
+        # Reported with the doubling undone, since that is what psycopg leaves behind.
+        executed_queries.append(statement.replace('%%', '%'))
         changed = True
     # We could catch psycopg.errors.ReadOnlySqlTransaction directly,
     # but that was added only in Psycopg 2.8
@@ -643,7 +645,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
         # If we are here, something does need to change.
         # Compose a statement and execute it
-        alter = ['ALTER USER %(user)s' % {"user": pg_quote_name(user)}]
+        alter = ['ALTER USER %(user)s' % {"user": pg_quote_name(user, for_params=True)}]
         if pwchanging:
             if password != '':
                 alter.append("WITH %(crypt)s" % {"crypt": encrypted})
@@ -673,7 +675,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
         # If they need, compose a statement and execute
         alter = ['ALTER USER %(user)s' %
-                 {"user": pg_quote_name(user)}]
+                 {"user": pg_quote_name(user, for_params=True)}]
         if role_attr_flags:
             alter.append('WITH %s' % role_attr_flags)
 

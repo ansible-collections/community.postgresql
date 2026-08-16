@@ -291,6 +291,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     SQLParseError,
     check_input,
+    pg_quote_name,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
@@ -421,11 +422,13 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_l
 
     icu_supported = get_server_version(cursor.connection) >= 150000
 
-    query_fragments = ['CREATE DATABASE "%s"' % db]
+    # This statement carries query parameters, so the names are escaped for the
+    # substitution psycopg runs over the whole of it.
+    query_fragments = ['CREATE DATABASE %s' % pg_quote_name(db, for_params=True)]
     if owner:
-        query_fragments.append('OWNER "%s"' % owner)
+        query_fragments.append('OWNER %s' % pg_quote_name(owner, for_params=True))
     if template:
-        query_fragments.append('TEMPLATE "%s"' % template)
+        query_fragments.append('TEMPLATE %s' % pg_quote_name(template, for_params=True))
     if encoding:
         query_fragments.append('ENCODING %(enc)s')
     if lc_collate:
@@ -437,7 +440,7 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_l
     if locale_provider and icu_supported:
         query_fragments.append('LOCALE_PROVIDER %(localeprovider)s')
     if tablespace:
-        query_fragments.append('TABLESPACE "%s"' % tablespace)
+        query_fragments.append('TABLESPACE %s' % pg_quote_name(tablespace, for_params=True))
     if conn_limit:
         query_fragments.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
     query = ' '.join(query_fragments)

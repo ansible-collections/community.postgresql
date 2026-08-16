@@ -911,7 +911,7 @@ def set_comment(cursor, comment, obj_type, obj_name, check_mode=True, executed_q
         executed_statements (list) -- List of executed state-modifying statements.
     """
     # Every caller passes a single unqualified name, so it is quoted as one identifier.
-    query = 'COMMENT ON %s %s IS ' % (obj_type.upper(), pg_quote_name(obj_name))
+    query = 'COMMENT ON %s %s IS ' % (obj_type.upper(), pg_quote_name(obj_name, for_params=True))
 
     if not check_mode:
         cursor.execute(query + '%(comment)s', {'comment': comment})
