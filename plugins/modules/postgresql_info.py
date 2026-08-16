@@ -158,8 +158,10 @@ from fnmatch import fnmatch
 
 from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+    pg_quote_name,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
@@ -705,7 +707,7 @@ class PgClusterInfo(object):
 
     def __get_pretty_val(self, setting):
         """Get setting's value represented by SHOW command."""
-        return self.__exec_sql('SHOW "%s"' % setting)[0][setting]
+        return self.__exec_sql('SHOW %s' % pg_quote_name(setting))[0][setting]
 
     def __exec_sql(self, query):
         """Execute SQL and return the result."""
