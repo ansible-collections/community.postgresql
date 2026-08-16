@@ -801,9 +801,9 @@ class Connection(object):
                     f, args = obj.split('(', 1)
                 except Exception:
                     raise Error('Illegal function / procedure signature: "%s".' % obj)
-                obj_ids.append('%s."%s"(%s' % (quoted_schema_qualifier, f, args))
+                obj_ids.append('%s.%s(%s' % (quoted_schema_qualifier, pg_quote_name(f), args))
         elif obj_type in ['table', 'sequence', 'type']:
-            obj_ids = ['%s."%s"' % (quoted_schema_qualifier, o) for o in objs]
+            obj_ids = ['%s.%s' % (quoted_schema_qualifier, pg_quote_name(o)) for o in objs]
         else:
             # Everything left here is a single unqualified name: a role for
             # obj_type=group, otherwise a database, schema, language, tablespace,
@@ -1083,7 +1083,7 @@ def main():
 
     if p.session_role:
         try:
-            conn.cursor.execute('SET ROLE "%s"' % p.session_role)
+            conn.cursor.execute('SET ROLE %s' % pg_quote_name(p.session_role))
         except Exception as e:
             module.fail_json(msg="Could not switch to role %s: %s" % (p.session_role, to_native(e)), exception=traceback.format_exc())
 

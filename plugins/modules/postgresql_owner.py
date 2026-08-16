@@ -510,7 +510,7 @@ class PgOwnership(object):
 
     def __set_db_owner(self):
         """Set the database owner."""
-        query = 'ALTER DATABASE "%s" OWNER TO %s' % (self.obj_name, self.quoted_role)
+        query = 'ALTER DATABASE %s OWNER TO %s' % (pg_quote_name(self.obj_name), self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_func_owner(self):
@@ -538,7 +538,7 @@ class PgOwnership(object):
 
     def __set_tablespace_owner(self):
         """Set the tablespace owner."""
-        query = 'ALTER TABLESPACE "%s" OWNER TO %s' % (self.obj_name, self.quoted_role)
+        query = 'ALTER TABLESPACE %s OWNER TO %s' % (pg_quote_name(self.obj_name), self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_view_owner(self):

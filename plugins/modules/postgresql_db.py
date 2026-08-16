@@ -315,14 +315,14 @@ class NotSupportedError(Exception):
 
 
 def set_owner(cursor, db, owner):
-    query = 'ALTER DATABASE "%s" OWNER TO "%s"' % (db, owner)
+    query = 'ALTER DATABASE %s OWNER TO %s' % (pg_quote_name(db), pg_quote_name(owner))
     executed_commands.append(query)
     cursor.execute(query)
     return True
 
 
 def set_conn_limit(cursor, db, conn_limit):
-    query = 'ALTER DATABASE "%s" CONNECTION LIMIT %s' % (db, conn_limit)
+    query = 'ALTER DATABASE %s CONNECTION LIMIT %s' % (pg_quote_name(db), conn_limit)
     executed_commands.append(query)
     cursor.execute(query)
     return True
@@ -402,10 +402,10 @@ def db_dropconns(cursor, db):
 
 def db_delete(cursor, db, force=False):
     if db_exists(cursor, db):
-        query = 'DROP DATABASE "%s"' % db
+        query = 'DROP DATABASE %s' % pg_quote_name(db)
         if force:
             if get_server_version(cursor.connection) >= 130000:
-                query = ('DROP DATABASE "%s" WITH (FORCE)' % db)
+                query = ('DROP DATABASE %s WITH (FORCE)' % pg_quote_name(db))
             else:
                 db_dropconns(cursor, db)
         executed_commands.append(query)
@@ -696,7 +696,7 @@ def do_with_password(module, cmd, password):
 
 
 def set_tablespace(cursor, db, tablespace):
-    query = 'ALTER DATABASE "%s" SET TABLESPACE "%s"' % (db, tablespace)
+    query = 'ALTER DATABASE %s SET TABLESPACE %s' % (pg_quote_name(db), pg_quote_name(tablespace))
     executed_commands.append(query)
     cursor.execute(query)
     return True
@@ -723,7 +723,7 @@ def rename_db(module, cursor, db, target, check_mode=False):
         if check_mode:
             return True
 
-        query = 'ALTER DATABASE "%s" RENAME TO "%s"' % (db, target)
+        query = 'ALTER DATABASE %s RENAME TO %s' % (pg_quote_name(db), pg_quote_name(target))
         executed_commands.append(query)
         cursor.execute(query)
         return True
@@ -825,7 +825,7 @@ def main():
 
         if session_role:
             try:
-                cursor.execute('SET ROLE "%s"' % session_role)
+                cursor.execute('SET ROLE %s' % pg_quote_name(session_role))
             except Exception as e:
                 module.fail_json(msg="Could not switch role: %s" % to_native(e), exception=traceback.format_exc())
 

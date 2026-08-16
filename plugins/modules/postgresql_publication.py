@@ -257,7 +257,7 @@ parameters:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    check_input, pg_quote_identifier)
+    check_input, pg_quote_identifier, pg_quote_name)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db, ensure_required_libs, exec_sql, get_conn_params,
     get_server_version, pg_cursor_args, postgres_common_argument_spec,
@@ -956,7 +956,8 @@ class PgPublication():
             True if successful, False otherwise.
         """
         query = ('ALTER PUBLICATION %s '
-                 'OWNER TO "%s"' % (pg_quote_identifier(self.name, 'publication'), role))
+                 'OWNER TO %s' % (pg_quote_identifier(self.name, 'publication'),
+                                  pg_quote_name(role)))
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __exec_sql(self, query, check_mode=False):
