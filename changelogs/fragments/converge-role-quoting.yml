@@ -1,4 +1,8 @@
+breaking_changes:
+  - postgresql_user - the role name in O(name) is now taken literally, the way every other module in this collection treats a role name. The value ``"foo"`` creates a role called ``"foo"`` rather than ``foo``, and the value ``we""ird`` creates ``we""ird`` rather than ``we"ird``. Pass the literal role name in both cases.
+
 bugfixes:
   - postgresql_owner - fix a role whose name contains a double quote producing invalid SQL. The name is now quoted as a single identifier with embedded quotes doubled, in the ``OWNER TO`` and ``REASSIGN OWNED BY`` statements alike.
   - postgresql_privs - fix a role named in ``target_roles`` whose name contains a double quote producing invalid SQL in the generated ``ALTER DEFAULT PRIVILEGES FOR ROLE`` statement.
   - postgresql_privs - fix a name containing a double quote in ``objs`` producing invalid SQL for object types that are not schema qualified, which covers ``type=group`` as well as ``database``, ``schema``, ``language``, ``tablespace``, ``foreign_server``, ``foreign_data_wrapper`` and ``parameter``.
+  - postgresql_user - fix a role whose name contains a double quote being rejected with ``User escaped identifiers must escape extra quotes``. Such a name is now escaped and accepted, and a name that is not a balanced pair of quotes no longer fails.
