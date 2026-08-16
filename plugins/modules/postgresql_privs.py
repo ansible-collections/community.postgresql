@@ -425,6 +425,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
+    pg_quote_name,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     HAS_PSYCOPG,
@@ -804,7 +805,10 @@ class Connection(object):
         elif obj_type in ['table', 'sequence', 'type']:
             obj_ids = ['%s."%s"' % (quoted_schema_qualifier, o) for o in objs]
         else:
-            obj_ids = ['"%s"' % o for o in objs]
+            # Everything left here is a single unqualified name: a role for
+            # obj_type=group, otherwise a database, schema, language, tablespace,
+            # foreign server or wrapper, or a parameter.
+            obj_ids = [pg_quote_name(o) for o in objs]
 
         # set_what: SQL-fragment specifying what to set for the target roles:
         # Either group membership or privileges on objects of a certain type
@@ -833,7 +837,7 @@ class Connection(object):
         # as_who: SQL-fragment specifying to who to set the above
         as_who = None
         if target_roles:
-            as_who = ','.join('"%s"' % r for r in target_roles)
+            as_who = ','.join(pg_quote_name(r) for r in target_roles)
 
         status_before = get_status(objs)
 
@@ -1146,7 +1150,7 @@ def main():
                     # So the approach that works for all implicit roles is uppercase without double quotes.
                     roles.append('%s' % r.upper())
                 else:
-                    roles.append('"%s"' % r.replace('"', '""'))
+                    roles.append(pg_quote_name(r))
             else:
                 if fail_on_role:
                     module.fail_json(msg="Role '%s' does not exist" % r)

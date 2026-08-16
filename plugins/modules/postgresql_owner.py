@@ -176,6 +176,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
+    pg_quote_name,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
@@ -217,6 +218,9 @@ class PgOwnership(object):
         self.pg_version = pg_version
         self.check_role_exists(role)
         self.role = role
+        # Quoted once for interpolation into DDL. self.role stays raw,
+        # because it is also passed as a query parameter.
+        self.quoted_role = pg_quote_name(role)
         self.changed = False
         self.executed_queries = []
         self.obj_name = ''
@@ -256,7 +260,7 @@ class PgOwnership(object):
         roles = []
         for r in old_owners:
             if self.check_role_exists(r, fail_on_role):
-                roles.append('"%s"' % r)
+                roles.append(pg_quote_name(r))
 
         # Roles do not exist, nothing to do, exit:
         if not roles:
@@ -266,7 +270,7 @@ class PgOwnership(object):
 
         query = ['REASSIGN OWNED BY']
         query.append(old_owners)
-        query.append('TO "%s"' % self.role)
+        query.append('TO %s' % self.quoted_role)
         query = ' '.join(query)
 
         self.changed = exec_sql(self, query, return_bool=True)
@@ -506,41 +510,41 @@ class PgOwnership(object):
 
     def __set_db_owner(self):
         """Set the database owner."""
-        query = 'ALTER DATABASE "%s" OWNER TO "%s"' % (self.obj_name, self.role)
+        query = 'ALTER DATABASE "%s" OWNER TO %s' % (self.obj_name, self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_func_owner(self):
         """Set the function owner."""
-        query = 'ALTER FUNCTION %s OWNER TO "%s"' % (self.obj_name, self.role)
+        query = 'ALTER FUNCTION %s OWNER TO %s' % (self.obj_name, self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_seq_owner(self):
         """Set the sequence owner."""
-        query = 'ALTER SEQUENCE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'sequence'),
-                                                     self.role)
+        query = 'ALTER SEQUENCE %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'sequence'),
+                                                   self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_schema_owner(self):
         """Set the schema owner."""
-        query = 'ALTER SCHEMA %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'schema'),
-                                                   self.role)
+        query = 'ALTER SCHEMA %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'schema'),
+                                                 self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_table_owner(self):
         """Set the table owner."""
-        query = 'ALTER TABLE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                  self.role)
+        query = 'ALTER TABLE %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_tablespace_owner(self):
         """Set the tablespace owner."""
-        query = 'ALTER TABLESPACE "%s" OWNER TO "%s"' % (self.obj_name, self.role)
+        query = 'ALTER TABLESPACE "%s" OWNER TO %s' % (self.obj_name, self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_view_owner(self):
         """Set the view owner."""
-        query = 'ALTER VIEW %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                 self.role)
+        query = 'ALTER VIEW %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                               self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_mat_view_owner(self):
@@ -548,8 +552,8 @@ class PgOwnership(object):
         if self.pg_version < 90300:
             self.module.fail_json(msg="PostgreSQL version must be >= 9.3 for obj_type=matview.")
 
-        query = 'ALTER MATERIALIZED VIEW %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                              self.role)
+        query = 'ALTER MATERIALIZED VIEW %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                            self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_procedure_owner(self):
@@ -557,107 +561,107 @@ class PgOwnership(object):
         if self.pg_version < 110000:
             self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=procedure.")
 
-        query = 'ALTER PROCEDURE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                      self.role)
+        query = 'ALTER PROCEDURE %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                    self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_type_owner(self):
         """Set the type owner."""
-        query = 'ALTER TYPE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                 self.role)
+        query = 'ALTER TYPE %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                               self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_aggregate_owner(self):
         """Set the aggregate owner."""
-        query = 'ALTER AGGREGATE %s OWNER TO "%s"' % (self.obj_name, self.role)
+        query = 'ALTER AGGREGATE %s OWNER TO %s' % (self.obj_name, self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_routine_owner(self):
         """Set the routine owner."""
         if self.pg_version < 110000:
             self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=routine.")
-        query = 'ALTER ROUTINE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                    self.role)
+        query = 'ALTER ROUTINE %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                  self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_language_owner(self):
         """Set the language owner."""
-        query = 'ALTER LANGUAGE %s OWNER TO "%s"' % (self.obj_name, self.role)
+        query = 'ALTER LANGUAGE %s OWNER TO %s' % (self.obj_name, self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_domain_owner(self):
         """Set the domain owner."""
-        query = 'ALTER DOMAIN %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                   self.role)
+        query = 'ALTER DOMAIN %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                 self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_collation_owner(self):
         """Set the collation owner."""
-        query = 'ALTER COLLATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                      self.role)
+        query = 'ALTER COLLATION %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                    self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_conversion_owner(self):
         """Set the conversion owner."""
-        query = 'ALTER CONVERSION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                       self.role)
+        query = 'ALTER CONVERSION %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                     self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_text_search_configuration_owner(self):
         """Set the text search configuration owner."""
-        query = 'ALTER TEXT SEARCH CONFIGURATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                                      self.role)
+        query = 'ALTER TEXT SEARCH CONFIGURATION %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                                    self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_text_search_dictionary_owner(self):
         """Set the text search dictionary owner."""
-        query = 'ALTER TEXT SEARCH DICTIONARY %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                                   self.role)
+        query = 'ALTER TEXT SEARCH DICTIONARY %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                                 self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_foreign_data_wrapper_owner(self):
         """Set the foreign data wrapper owner."""
-        query = 'ALTER FOREIGN DATA WRAPPER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                                 self.role)
+        query = 'ALTER FOREIGN DATA WRAPPER %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                               self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_server_owner(self):
         """Set the server owner."""
-        query = 'ALTER SERVER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                   self.role)
+        query = 'ALTER SERVER %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                 self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_foreign_table_owner(self):
         """Set the foreign table owner."""
-        query = 'ALTER FOREIGN TABLE %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                          self.role)
+        query = 'ALTER FOREIGN TABLE %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                        self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_event_trigger_owner(self):
         """Set the event trigger owner."""
-        query = 'ALTER EVENT TRIGGER %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                          self.role)
+        query = 'ALTER EVENT TRIGGER %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                        self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_large_object_owner(self):
         """Set the large object owner."""
-        query = 'ALTER LARGE OBJECT %s OWNER TO "%s"' % (self.obj_name, self.role)
+        query = 'ALTER LARGE OBJECT %s OWNER TO %s' % (self.obj_name, self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_publication_owner(self):
         """Set the publication owner."""
         if self.pg_version < 110000:
             self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=publication.")
-        query = 'ALTER PUBLICATION %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'publication'),
-                                                        self.role)
+        query = 'ALTER PUBLICATION %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'publication'),
+                                                      self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_statistics_owner(self):
         """Set the statistics owner."""
         if self.pg_version < 110000:
             self.module.fail_json(msg="PostgreSQL version must be >= 11 for obj_type=statistics.")
-        query = 'ALTER STATISTICS %s OWNER TO "%s"' % (pg_quote_identifier(self.obj_name, 'table'),
-                                                       self.role)
+        query = 'ALTER STATISTICS %s OWNER TO %s' % (pg_quote_identifier(self.obj_name, 'table'),
+                                                     self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __role_exists(self, role):

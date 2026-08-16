@@ -366,6 +366,100 @@
     target_roles: "{{ db_user_with_dots2 }}"
     trust_input: false
 
+# A target_roles name containing a double quote must be quoted as one identifier with
+# the embedded quote doubled. Created with raw SQL to keep this test independent of
+# how postgresql_user quotes names.
+- name: Create a role whose name contains a double quote
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: 'CREATE ROLE "tr""quoted"'
+
+- name: Pass a role with a double quote in its name to target_roles parameter
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: "present"
+    roles: "{{ db_user_with_dots1 }}"
+    privs: "INSERT"
+    objs: TABLES
+    type: default_privs
+    target_roles: 'tr"quoted'
+    trust_input: false
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries | select('search', 'FOR ROLE "tr""quoted"') | list | length > 0
+
+# type=group names roles rather than objects, so the group name is quoted the same way.
+- name: Create a group whose name contains a double quote
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: 'CREATE ROLE "gr""oup"'
+
+- name: Grant a group whose name contains a double quote
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    state: present
+    type: group
+    objs: 'gr"oup'
+    roles: 'tr"quoted'
+    trust_input: false
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries | select('search', 'GRANT "gr""oup" TO "tr""quoted"') | list | length > 0
+
+- name: Check the membership really exists under the literal names
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: >-
+      SELECT count(*) AS count FROM pg_catalog.pg_auth_members m
+      JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
+      JOIN pg_catalog.pg_roles u ON m.member = u.oid
+      WHERE g.rolname = %s AND u.rolname = %s
+    positional_args:
+    - 'gr"oup'
+    - 'tr"quoted'
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0].count == 1
+
+- name: Drop the group whose name contains a double quote
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: 'DROP ROLE IF EXISTS "gr""oup"'
+
+- name: Drop the role whose name contains a double quote
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: 'DROP OWNED BY "tr""quoted" CASCADE; DROP ROLE IF EXISTS "tr""quoted"'
+
 # https://github.com/ansible-collections/community.postgresql/pull/502 - role PUBLIC
 - name: Test passing lowercase PUBLIC role - Grant CREATE ON DATABASE - Test
   become_user: "{{ pg_user }}"

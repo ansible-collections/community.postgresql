@@ -3053,6 +3053,78 @@
 # #############################
 
 #
+# A role name containing a double quote must be quoted as one identifier with the
+# embedded quote doubled, rather than ending the identifier early and producing
+# invalid SQL. Created with raw SQL to keep this test independent of how
+# postgresql_user quotes names.
+#
+
+- name: postgresql_owner - create a role whose name contains a double quote
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: postgres
+    query: 'CREATE ROLE "quo""ted"'
+
+- name: postgresql_owner - create a table for the quoted role to own
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: CREATE TABLE quoted_owner_table (id int)
+
+- name: postgresql_owner - hand the table to the quoted role
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: 'quo"ted'
+    obj_name: quoted_owner_table
+    obj_type: table
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TABLE "quoted_owner_table" OWNER TO "quo""ted"']
+
+- name: postgresql_owner - the table really is owned by the quoted role
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: acme
+    query: >-
+      SELECT tableowner FROM pg_catalog.pg_tables
+      WHERE tablename = 'quoted_owner_table'
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0].tableowner == 'quo"ted'
+
+- name: postgresql_owner - handing it over again is idempotent
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    db: acme
+    new_owner: 'quo"ted'
+    obj_name: quoted_owner_table
+    obj_type: table
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+# #############################
+
+#
 # Clean up
 #
 
@@ -3072,3 +3144,11 @@
     login_user: '{{ pg_user }}'
     name: acme
     state: absent
+
+- name: postgresql_owner - drop the role whose name contains a double quote
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    db: postgres
+    query: 'DROP ROLE IF EXISTS "quo""ted"'
