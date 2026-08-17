@@ -284,10 +284,10 @@ executed_commands:
 import os
 import subprocess
 import traceback
+from shlex import quote as shlex_quote
 
 from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six.moves import shlex_quote
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     SQLParseError,
     check_input,
