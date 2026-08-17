@@ -175,7 +175,7 @@ attributes:
     support: partial
     details:
       - The module is not idempotent when O(state=dump) — it always invokes C(pg_dump) and writes
-        the C(target) file, reporting C(changed=true) on every invocation.
+        the O(target) file, reporting C(changed=true) on every invocation.
       - The module is not idempotent when O(state=restore) — it always executes the contents of the
         O(target) file against the database and reports C(changed=true).
 
