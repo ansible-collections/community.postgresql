@@ -29,6 +29,7 @@
     - "sr_own"
     - "sr_nogrant"
     - "sr_member2"
+    - "sr_member3"
 
   # sr_direct holds ADMIN OPTION on sr_group itself. sr_indirect only reaches it
   # through sr_team, which is the case PostgreSQL refuses to record under the
@@ -159,7 +160,8 @@
   - assert:
       that:
       - result is failed
-      - '''The connecting role cannot grant "sr_nogrant"'' in result.msg'
+      - '''ADMIN OPTION on "sr_nogrant" is held only by roles'' in result.msg'
+      - "'sr_nogrant: sr_direct' in result.msg"
       - "'Set granted_by' not in result.msg"
 
   # The reviewed defect: one granting role for a task naming several groups. The
@@ -220,6 +222,51 @@
       that:
       - result is changed
       - result.queries == ['GRANT "sr_own" TO "sr_member" GRANTED BY "sr_indirect"']
+
+  # The other way out, and the one the failure message names second: a row per
+  # granting role, still one task and so still one transaction.
+  - name: postgresql_membership - the same mix succeeds as two memberships rows
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      target_role: "sr_member3"
+      memberships:
+      - groups: "sr_own"
+      - groups: "sr_group"
+        granted_by: "sr_team"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "sr_own" TO "sr_member3" GRANTED BY "sr_indirect"',
+                           'GRANT "sr_group" TO "sr_member3" GRANTED BY "sr_team"']
+      - result.grants.sr_own.sr_member3 | map(attribute='grantor') | list == ["sr_indirect"]
+      - result.grants.sr_group.sr_member3 | map(attribute='grantor') | list == ["sr_team"]
+
+  - name: postgresql_membership - and the two rows are idempotent together
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      target_role: "sr_member3"
+      memberships:
+      - groups: "sr_own"
+      - groups: "sr_group"
+        granted_by: "sr_team"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
 
   # granted_by naming a role the connecting role has no privileges of is refused with
   # its own message, since no group is at fault.
@@ -380,6 +427,7 @@
     with_items:
     - "sr_member"
     - "sr_member2"
+    - "sr_member3"
     - "sr_indirect"
     - "sr_direct"
     - "sr_team"

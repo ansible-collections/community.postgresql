@@ -24,7 +24,7 @@ options:
   groups:
     description:
     - The list of groups (roles) that need to be granted to or revoked from I(target_roles).
-    required: true
+    - Mutually exclusive with I(memberships), and one of the two is required.
     type: list
     elements: str
     aliases:
@@ -34,13 +34,38 @@ options:
   target_roles:
     description:
     - The list of target roles (groups will be granted to them).
-    required: true
+    - Required with I(groups). With I(memberships) it is optional, and acts as the
+      default for the rows that do not name their own.
     type: list
     elements: str
     aliases:
     - target_role
     - users
     - user
+  memberships:
+    description:
+    - A list of objects, each describing one membership. Use this to manage
+      memberships that need a different granting role or different options from one
+      another, which the top-level parameters cannot express because they name one
+      value for the whole task.
+    - "Each object may have the following keys, which mean exactly what the
+      parameters of the same name mean\\: C(groups) (required), C(target_roles),
+      C(granted_by), C(admin_option), C(inherit_option), C(set_option)."
+    - Mutually exclusive with I(groups), I(granted_by), I(admin_option),
+      I(inherit_option) and I(set_option). Those describe a single membership, so
+      naming them next to I(memberships) would leave it open which rows they apply
+      to. I(target_roles) is the exception, since the granting role and the options
+      belong to the group rather than to the member.
+    - I(state), I(fail_on_role) and the connection parameters describe the task and
+      stay at the top level.
+    - The whole task is one transaction, so a failure part-way leaves none of the
+      memberships applied. This is the difference from looping this module over a
+      list, which gives one transaction per item.
+    - Two rows may not describe the same grant, meaning the same group, target role
+      and granting role, since the second would only overwrite the options of the first.
+    type: list
+    elements: dict
+    version_added: '5.0.0'
   fail_on_role:
     description:
       - If C(true), fail when group or target_role doesn't exist. If C(false), just warn and continue.
@@ -99,6 +124,10 @@ options:
     - I(state=exact) implies that I(target_roles) will be members of only the I(groups)
       (available since community.postgresql 2.2.0).
       Any other groups will be revoked from I(target_roles).
+    - With I(memberships), I(state=exact) considers every group the rows name for a
+      target role, so a group wanted by one row is not revoked because another row
+      did not name it. The groups no row named are revoked without naming a granting
+      role, since there is no row to take one from.
     type: str
     default: present
     choices: [ absent, exact, present ]
@@ -244,6 +273,36 @@ EXAMPLES = r'''
     target_role: alice
     granted_by: dba_team
     state: absent
+
+# One task, one transaction. The granting role and the options differ per group,
+# which the top-level parameters cannot express, since they name one value for the
+# whole task.
+- name: Grant two groups whose ADMIN OPTION is held by different roles (PostgreSQL 16+)
+  community.postgresql.postgresql_membership:
+    target_roles:
+    - alice
+    - bob
+    memberships:
+    - groups: read_only
+      granted_by: app_team
+      admin_option: false
+    - groups: read_write
+      granted_by: dba_team
+      admin_option: false
+      set_option: false
+    state: present
+
+# alice is left a member of reporting and read_only and of nothing else, even
+# though no single row names both.
+- name: Make alice a member of exactly these groups (PostgreSQL 16+)
+  community.postgresql.postgresql_membership:
+    target_roles: alice
+    memberships:
+    - groups: reporting
+      granted_by: app_team
+    - groups: read_only
+      granted_by: dba_team
+    state: exact
 '''
 
 RETURN = r'''
@@ -321,6 +380,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
 from ansible_collections.community.postgresql.plugins.module_utils.membership import (
     MEMBERSHIP_OPTIONS,
     PgMembership,
+    RoleCache,
     membership_option_name,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -335,16 +395,168 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 # Parameters carrying a membership option, in the order PostgreSQL names them.
 OPTION_PARAMS = tuple(membership_option_name(option) for option in MEMBERSHIP_OPTIONS)
 
+# Keys a memberships row may carry. Each names the parameter of the same name, which
+# describes one membership rather than the task as a whole. state, fail_on_role and
+# the connection parameters are deliberately absent: they describe the task.
+ROW_KEYS = ('groups', 'target_roles', 'granted_by') + OPTION_PARAMS
+
+# Parameters that describe one membership and so may not be given at the top level
+# next to memberships, where it would be ambiguous which rows they apply to.
+# target_roles is the exception: the granting role and the options are properties of
+# the group, never of the member, so sharing one list of members over the rows cannot
+# make a row mean something else.
+ROW_ONLY_PARAMS = ('groups', 'granted_by') + OPTION_PARAMS
+
+
+def parse_memberships(module):
+    """Return the memberships of the task as a list of dicts.
+
+    One dict per membership, carrying every key of ROW_KEYS, so that the caller can
+    treat the memberships parameter and the top-level parameters the same way.
+
+    Args:
+        module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule.
+
+    Returns the memberships (list of dict).
+    """
+    rows = module.params['memberships']
+
+    if rows is None:
+        return [dict((key, module.params[key]) for key in ROW_KEYS)]
+
+    memberships = []
+    for index, row in enumerate(rows):
+        unknown = sorted(set(row) - set(ROW_KEYS))
+        if unknown:
+            module.fail_json(msg="Unknown key(s) %s in memberships[%d]. Known keys are %s"
+                                 % (", ".join(unknown), index, ", ".join(sorted(ROW_KEYS))))
+
+        # Named per row rather than defaulted from the top level, since a row without
+        # it describes no membership at all.
+        if not row.get('groups'):
+            module.fail_json(msg="The groups key is required in memberships[%d]" % index)
+
+        # target_roles is the one key a row may take from the top level. Resolved
+        # here so that everything downstream sees a complete membership.
+        target_roles = row.get('target_roles') or module.params['target_roles']
+        if not target_roles:
+            module.fail_json(msg="memberships[%d] has no target_roles, and none is set "
+                                 "at the top level to fall back to" % index)
+
+        membership = dict(
+            groups=as_list(row['groups']),
+            target_roles=as_list(target_roles),
+            granted_by=row.get('granted_by'),
+        )
+
+        for name in OPTION_PARAMS:
+            # An option left out means "leave as it is", which is what None means
+            # everywhere below, so an absent key and an explicit null are the same.
+            setting = row.get(name)
+            membership[name] = None if setting is None else module.boolean(setting)
+
+        memberships.append(membership)
+
+    check_no_duplicate_grants(module, memberships)
+    return memberships
+
+
+def check_no_duplicate_grants(module, memberships):
+    """Fail when two memberships describe the same grant.
+
+    The module manages one grant per group, target role and granting role, so two
+    memberships naming the same triple would have the second silently overwrite the
+    first's options. Naming the same pair under a different granted_by is a different
+    grant and stays allowed.
+
+    Args:
+        module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule.
+        memberships (list) -- memberships as returned by parse_memberships.
+    """
+    seen = {}
+    for index, membership in enumerate(memberships):
+        for group in membership['groups']:
+            for role in membership['target_roles']:
+                grant = (group, role, membership['granted_by'])
+                if grant in seen:
+                    module.fail_json(
+                        msg='memberships[%d] and memberships[%d] both grant "%s" to "%s"%s. '
+                            'Describe a grant once, since the second would only overwrite '
+                            'the options of the first'
+                            % (seen[grant], index, group, role,
+                               ' as "%s"' % membership['granted_by']
+                               if membership['granted_by'] else ''))
+
+                seen[grant] = index
+
+
+def as_list(value):
+    """Return value as a list of stripped names.
+
+    The top-level parameters are typed lists of strings, which Ansible splits and
+    coerces. A memberships row is an untyped dict, so a name given as a plain string
+    or a comma-separated one has to be accepted here instead.
+
+    Args:
+        value (str or list) -- one name, a comma-separated list of them, or a list.
+
+    Returns the names (list of str).
+    """
+    if not isinstance(value, list):
+        value = str(value).split(',')
+
+    return [str(name).strip() for name in value if str(name).strip()]
+
 # ===========================================
 # Module execution.
 #
 
 
+def merge_role_lists(target, source):
+    """Merge a granted or revoked mapping of one membership into the task's.
+
+    Args:
+        target (dict) -- group mapped to the target roles reported so far.
+        source (dict) -- the same, from one PgMembership object.
+    """
+    for group, roles in source.items():
+        merged = target.setdefault(group, [])
+        for role in roles:
+            # A role can be reported by two memberships naming the same group, and
+            # the task made one change to it, not two.
+            if role not in merged:
+                merged.append(role)
+
+
+def merge_by_group_and_role(target, source):
+    """Merge a grants or effective_options mapping of one membership into the task's.
+
+    Args:
+        target (dict) -- group mapped to target role mapped to what was reported.
+        source (dict) -- the same, from one PgMembership object.
+    """
+    for group, per_role in source.items():
+        target.setdefault(group, {}).update(per_role)
+
+
+def extend_unique(target, source):
+    """Append the names of source that target does not have yet.
+
+    Args:
+        target (list) -- names collected so far, extended in place.
+        source (list) -- names to add.
+    """
+    for name in source:
+        if name not in target:
+            target.append(name)
+
+
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        groups=dict(type='list', elements='str', required=True, aliases=['group', 'source_role', 'source_roles']),
-        target_roles=dict(type='list', elements='str', required=True, aliases=['target_role', 'user', 'users']),
+        groups=dict(type='list', elements='str', aliases=['group', 'source_role', 'source_roles']),
+        target_roles=dict(type='list', elements='str', aliases=['target_role', 'user', 'users']),
+        memberships=dict(type='list', elements='dict'),
         admin_option=dict(type='bool', default=None),
         inherit_option=dict(type='bool', default=None),
         set_option=dict(type='bool', default=None),
@@ -365,23 +577,34 @@ def main():
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
+        # Either form of naming the memberships, never both, so there is never a
+        # question of which one a grant came from. target_roles is not in the list
+        # because memberships may take it as a default; see ROW_ONLY_PARAMS.
+        required_one_of=[['groups', 'memberships']],
+        mutually_exclusive=[[name, 'memberships'] for name in ROW_ONLY_PARAMS],
+        # Naming groups without saying who they are for describes no membership.
+        required_by=dict(groups=('target_roles',)),
     )
 
-    groups = module.params['groups']
-    target_roles = module.params['target_roles']
     fail_on_role = module.params['fail_on_role']
-    # Keyed by the PostgreSQL membership option keyword, which is what the GRANT
-    # statement and pg_auth_members use.
-    membership_options = dict(
-        (option, module.params[membership_option_name(option)])
-        for option in MEMBERSHIP_OPTIONS)
-    granted_by = module.params['granted_by']
     state = module.params['state']
     session_role = module.params['session_role']
-    trust_input = module.params['trust_input']
-    if not trust_input:
+    memberships = parse_memberships(module)
+
+    if not module.params['trust_input']:
         # Check input for potentially dangerous elements:
-        check_input(module, groups, target_roles, session_role, granted_by)
+        for membership in memberships:
+            check_input(module, membership['groups'], membership['target_roles'],
+                        session_role, membership['granted_by'])
+
+    # The options describe a grant, so a revoke cannot apply them.
+    if state == 'absent':
+        ignored = sorted(set(name for membership in memberships
+                             for name in OPTION_PARAMS
+                             if membership[name] is not None))
+        if ignored:
+            module.warn("The %s parameter(s) have no effect with state=absent "
+                        "and are ignored" % ", ".join(ignored))
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -389,45 +612,96 @@ def main():
     db_connection, dummy = connect_to_db(module, conn_params, autocommit=False)
     cursor = db_connection.cursor(**pg_cursor_args)
 
-    # The options describe a grant, so a revoke cannot apply them.
-    if state == 'absent':
-        ignored = [name for name in OPTION_PARAMS if module.params[name] is not None]
-        if ignored:
-            module.warn("The %s parameter(s) have no effect with state=absent "
-                        "and are ignored" % ", ".join(ignored))
-
     # Both the membership options and the granting role are PostgreSQL 16 features, and
     # this is the only place they are rejected, so fail here rather than let the server
     # reject a statement it cannot parse. See the notes section for the model itself.
     server_version = get_server_version(db_connection)
     if server_version < 160000:
-        unsupported = []
-        if state != 'absent':
-            unsupported = [name for name in OPTION_PARAMS if module.params[name] is not None]
-        # Truthiness, not "is not None", so an empty granted_by means "not set"
-        # here exactly as it does when the grantor is resolved.
-        if granted_by:
-            unsupported.append('granted_by')
+        unsupported = set()
+        for membership in memberships:
+            if state != 'absent':
+                unsupported.update(name for name in OPTION_PARAMS
+                                   if membership[name] is not None)
+
+            # Truthiness, not "is not None", so an empty granted_by means "not set"
+            # here exactly as it does when the grantor is resolved.
+            if membership['granted_by']:
+                unsupported.add('granted_by')
 
         if unsupported:
             module.fail_json(msg="The %s parameter(s) require PostgreSQL 16 or later"
-                                 % ", ".join(unsupported))
+                                 % ", ".join(sorted(unsupported)))
 
     ##############
-    # Create the object and do main job:
-    pg_membership = PgMembership(module, cursor, groups, target_roles, fail_on_role,
-                                 membership_options, server_version, granted_by)
+    # Create the objects and do main job:
+    #
+    # One object per membership, all on the same connection, so that a task naming
+    # several of them is still one transaction and a failure part-way leaves nothing
+    # behind. The role cache is shared so that a role named by several memberships is
+    # looked up, and warned about, once for the task.
+    role_cache = RoleCache()
+    handlers = [
+        PgMembership(module, cursor, membership['groups'], membership['target_roles'],
+                     fail_on_role,
+                     dict((option, membership[membership_option_name(option)])
+                          for option in MEMBERSHIP_OPTIONS),
+                     server_version, membership['granted_by'], role_cache)
+        for membership in memberships
+    ]
 
-    if state == 'present':
-        pg_membership.grant()
+    changed = False
+    queries = []
+    granted = {}
+    revoked = {}
+    grants = {}
+    effective_options = {}
+    groups = []
+    target_roles = []
 
-    elif state == 'exact':
-        pg_membership.match()
+    if state == 'exact':
+        # Every group any membership assigns to a role is wanted, so the pruning runs
+        # once over the union rather than once per membership, where each would revoke
+        # what the others asked for. Grouped by that union so that roles wanting the
+        # same thing are pruned together.
+        wanted = {}
+        for handler in handlers:
+            for role in handler.target_roles:
+                wanted.setdefault(role, set()).update(handler.groups)
 
-    elif state == 'absent':
-        pg_membership.revoke()
+        by_wanted = {}
+        for role in sorted(wanted):
+            by_wanted.setdefault(frozenset(wanted[role]), []).append(role)
 
-    grants, effective_options = pg_membership.report()
+        for wanted_groups in sorted(by_wanted, key=sorted):
+            # No granted_by: the groups being revoked are the ones no membership named,
+            # so there is no row to take a granting role from. That is what state=exact
+            # has always done, and granted_by on a state=absent task remains the way to
+            # remove a grant recorded under somebody else.
+            pruner = PgMembership(module, cursor, sorted(wanted_groups),
+                                  by_wanted[wanted_groups], fail_on_role, {},
+                                  server_version, None, role_cache)
+            pruner.prune()
+
+            changed |= pruner.changed
+            queries.extend(pruner.executed_queries)
+            merge_role_lists(revoked, pruner.revoked)
+
+    for handler in handlers:
+        if state == 'absent':
+            handler.revoke()
+        else:
+            handler.grant()
+
+        handler_grants, handler_effective = handler.report()
+
+        changed |= handler.changed
+        queries.extend(handler.executed_queries)
+        merge_role_lists(granted, handler.granted)
+        merge_role_lists(revoked, handler.revoked)
+        merge_by_group_and_role(grants, handler_grants)
+        merge_by_group_and_role(effective_options, handler_effective)
+        extend_unique(groups, handler.groups)
+        extend_unique(target_roles, handler.target_roles)
 
     # Rollback if it's possible and check_mode:
     if module.check_mode:
@@ -440,22 +714,22 @@ def main():
 
     # Make return values:
     return_dict = dict(
-        changed=pg_membership.changed,
+        changed=changed,
         state=state,
-        groups=pg_membership.groups,
-        target_roles=pg_membership.target_roles,
-        queries=pg_membership.executed_queries,
+        groups=groups,
+        target_roles=target_roles,
+        queries=queries,
         grants=grants,
         effective_options=effective_options,
     )
 
     if state == 'present':
-        return_dict['granted'] = pg_membership.granted
+        return_dict['granted'] = granted
     elif state == 'absent':
-        return_dict['revoked'] = pg_membership.revoked
+        return_dict['revoked'] = revoked
     elif state == 'exact':
-        return_dict['granted'] = pg_membership.granted
-        return_dict['revoked'] = pg_membership.revoked
+        return_dict['granted'] = granted
+        return_dict['revoked'] = revoked
 
     module.exit_json(**return_dict)
 

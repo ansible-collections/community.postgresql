@@ -69,5 +69,8 @@
 # Tests for the granting role named when the connecting role is not a superuser:
 - import_tasks: postgresql_membership_session_role.yml
 
+# Tests for the memberships parameter, one membership per row:
+- import_tasks: postgresql_membership_list.yml
+
 # Tests for input handling and the shape of the return values:
 - import_tasks: postgresql_membership_inputs.yml
