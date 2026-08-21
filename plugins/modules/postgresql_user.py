@@ -18,7 +18,7 @@ description:
   grants the user access to an existing database or tables.
 - A user is a role with login privilege.
 - You cannot remove a user while it still has any privileges granted to it in any database.
-- Set I(fail_on_user) to C(false) to make the module ignore failures when trying to remove a user.
+- Set O(fail_on_user) to V(false) to make the module ignore failures when trying to remove a user.
   In this case, the module reports if changes happened as usual and separately reports
   whether the user has been removed or not.
 options:
@@ -34,26 +34,26 @@ options:
     - Set the user's password, before 1.4 this was required.
     - Password can be passed unhashed or hashed (MD5-hashed).
     - An unhashed password is automatically hashed when saved into the
-      database if I(encrypted) is set, otherwise it is saved in
+      database if O(encrypted) is set, otherwise it is saved in
       plain text format.
     - When passing an MD5-hashed password, you must generate it with the format
       C('str["md5"] + md5[ password + username ]'), resulting in a total of
       35 characters. An easy way to do this is
       C(echo "md5`echo -n 'verysecretpasswordJOE' | md5sum | awk '{print $1}'`").
     - Note that if the provided password string is already in MD5-hashed
-      format, then it is used as-is, regardless of I(encrypted) option.
+      format, then it is used as-is, regardless of O(encrypted) option.
     type: str
   login_db:
     description:
     - Name of database to connect to and where user's permissions are granted.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
+    - The O(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     default: ''
     aliases:
     - db
   fail_on_user:
     description:
-    - If C(true), fails when the user (role) cannot be removed. Otherwise just log and continue.
+    - If V(true), fails when the user (role) cannot be removed. Otherwise just log and continue.
     default: true
     type: bool
     aliases:
@@ -62,7 +62,7 @@ options:
     description:
     - "PostgreSQL user attributes string in the format: CREATEDB,CREATEROLE,SUPERUSER."
     - Note that '[NO]CREATEUSER' is deprecated.
-    - To create a simple role for using it like a group, use C(NOLOGIN) flag.
+    - To create a simple role for using it like a group, use V(NOLOGIN) flag.
     - See the full list of supported flags in documentation for your PostgreSQL version.
     type: str
     default: ''
@@ -83,22 +83,22 @@ options:
     description:
     - Whether the password is stored hashed in the database.
     - You can specify an unhashed password, and PostgreSQL ensures
-      the stored password is hashed when I(encrypted=true) is set.
+      the stored password is hashed when O(encrypted=true) is set.
       If you specify a hashed password, the module uses it as-is,
-      regardless of the setting of I(encrypted).
+      regardless of the setting of O(encrypted).
     - "Note: Postgresql 10 and newer does not support unhashed passwords."
-    - Previous to Ansible 2.6, this was C(false) by default.
+    - Previous to Ansible 2.6, this was V(false) by default.
     default: true
     type: bool
   expires:
     description:
     - The date at which the user's password is to expire.
-    - If set to C('infinity'), user's password never expires.
+    - If set to V(infinity), user's password never expires.
     - Note that this value must be a valid SQL date and time type.
     type: str
   no_password_changes:
     description:
-    - If C(true), does not inspect the database for password changes.
+    - If V(true), does not inspect the database for password changes.
       If the user already exists, skips all password related checks.
       Useful when C(pg_authid) is not accessible (such as in AWS RDS).
       Otherwise, makes password changes as necessary.
@@ -112,7 +112,7 @@ options:
     description:
       - Determines how an SSL session is negotiated with the server.
       - See U(https://www.postgresql.org/docs/current/static/libpq-ssl.html) for more information on the modes.
-      - Default of C(prefer) matches libpq default.
+      - Default of V(prefer) matches libpq default.
     type: str
     default: prefer
     choices: [ allow, disable, prefer, require, verify-ca, verify-full ]
@@ -130,9 +130,9 @@ options:
     version_added: '0.2.0'
   trust_input:
     description:
-    - If C(false), checks whether values of options I(name), I(password), I(expires),
-      I(role_attr_flags), I(comment), I(session_role) are potentially dangerous.
-    - It makes sense to use C(false) only when SQL injections through the options are possible.
+    - If V(false), checks whether values of options O(name), O(password), O(expires),
+      O(role_attr_flags), O(comment), O(session_role) are potentially dangerous.
+    - It makes sense to use V(false) only when SQL injections through the options are possible.
     type: bool
     default: true
     version_added: '0.2.0'
@@ -148,45 +148,45 @@ options:
       - Inputs to O(user) as well as keys and values in this parameter are quoted by the module. If you require the
         user to contain a C("), you need to double it, otherwise the module will fail. C(") and C(') are not allowed in
         configuration keys and any C(') in the value of a configuration will be escaped by this module.
-        Additionally, parameters and values are checked if O(trust_input) is C(false).
+        Additionally, parameters and values are checked if O(trust_input) is V(false).
     type: dict
     default: {}
     version_added: '3.5.0'
   reset_unspecified_configuration:
     description:
-      - If set to C(true), the user's default configuration parameters will be reset in case they are not included in
+      - If set to V(true), the user's default configuration parameters will be reset in case they are not included in
         O(configuration), otherwise existing parameters will not be modified if not included in O(configuration).
     type: bool
     default: false
     version_added: '3.5.0'
   quote_configuration_values:
     description:
-      - Automatically quote the values of configuration variables added via I(configuration). The default is C(true)
-        and setting this to C(false) leaves these options open to SQL-injections and makes the user responsible for
+      - Automatically quote the values of configuration variables added via O(configuration). The default is V(true)
+        and setting this to V(false) leaves these options open to SQL-injections and makes the user responsible for
         properly quoting values.
-      - This is required to be C(false) to modify settings like C(search_path), that need to be unquoted.
-      - If this is C(false) you will also need to make sure that strings are properly quoted.
+      - This is required to be V(false) to modify settings like C(search_path), that need to be unquoted.
+      - If this is V(false) you will also need to make sure that strings are properly quoted.
         For example C("'16MB'") for C(work_mem).
-      - Set this only to C(false) if you know what you are doing!
+      - Set this only to V(false) if you know what you are doing!
     type: bool
     default: true
     version_added: '3.11.0'
 notes:
 - The module creates a user (role) with login privilege by default.
-  Use C(NOLOGIN) I(role_attr_flags) to change this behaviour.
-- If you specify C(PUBLIC) as the user (role), then the privilege changes apply to all users (roles).
-  You may not specify password or role_attr_flags when the C(PUBLIC) user is specified.
+  Use V(NOLOGIN) O(role_attr_flags) to change this behaviour.
+- If you specify V(PUBLIC) as the user (role), then the privilege changes apply to all users (roles).
+  You may not specify password or role_attr_flags when the V(PUBLIC) user is specified.
 - SCRAM-SHA-256-hashed passwords (SASL Authentication) require PostgreSQL version 10 or newer.
   On the previous versions the whole hashed string is used as a password.
-- 'Working with SCRAM-SHA-256-hashed passwords, be sure you use the I(environment:) variable
+- 'Working with SCRAM-SHA-256-hashed passwords, be sure you use the C(environment): variable
   C(PGOPTIONS: "-c password_encryption=scram-sha-256") when it is not default
   for your PostgreSQL version (see the provided example).'
 - On some systems (such as AWS RDS), C(pg_authid) is not accessible, thus, the module cannot compare
   the current and desired C(password). In this case, the module assumes that the passwords are
   different and changes it reporting that the state has been changed.
-  To skip all password related checks for existing users, use I(no_password_changes=true).
-- On some systems (such as AWS RDS), C(SUPERUSER) is unavailable. This means the C(SUPERUSER) and
-  C(NOSUPERUSER) I(role_attr_flags) should not be specified to preserve idempotency and avoid
+  To skip all password related checks for existing users, use O(no_password_changes=true).
+- On some systems (such as AWS RDS), V(SUPERUSER) is unavailable. This means the V(SUPERUSER) and
+  V(NOSUPERUSER) O(role_attr_flags) should not be specified to preserve idempotency and avoid
   InsufficientPrivilege errors.
 
 attributes:

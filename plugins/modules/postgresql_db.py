@@ -39,13 +39,13 @@ options:
   lc_collate:
     description:
       - Collation order (LC_COLLATE) to use in the database
-        must match collation order of template database unless C(template0) is used as template.
+        must match collation order of template database unless V(template0) is used as template.
     type: str
     default: ''
   lc_ctype:
     description:
       - Character classification (LC_CTYPE) to use in the database (e.g. lower, upper, ...).
-      - Must match LC_CTYPE of template database unless C(template0) is used as template.
+      - Must match LC_CTYPE of template database unless V(template0) is used as template.
     type: str
     default: ''
   icu_locale:
@@ -58,7 +58,7 @@ options:
   locale_provider:
     description:
       - Specifies the provider to use for the default collation in this database (LOCALE_PROVIDER).
-      - Possible values are icu (if the server was built with ICU support) or libc.
+      - Possible values are V(icu) (if the server was built with ICU support) or V(libc).
       - By default, the provider is the same as that of the template.
     type: str
     default: ''
@@ -73,14 +73,14 @@ options:
   state:
     description:
     - The database state.
-    - C(present) implies that the database should be created if necessary.
-    - C(absent) implies that the database should be removed if present.
-    - C(dump) requires a target definition to which the database will be backed up. (Added in Ansible 2.4)
+    - V(present) implies that the database should be created if necessary.
+    - V(absent) implies that the database should be removed if present.
+    - V(dump) requires a target definition to which the database will be backed up. (Added in Ansible 2.4)
       Note that in some PostgreSQL versions of pg_dump, which is an embedded PostgreSQL utility and is used by the module,
       returns rc 0 even when errors occurred (e.g. the connection is forbidden by pg_hba.conf, etc.),
       so the module returns changed=True but the dump has not actually been done. Please, be sure that your version of
       pg_dump returns rc 1 in this case.
-    - C(restore) also requires a target definition from which the database will be restored. (Added in Ansible 2.4).
+    - V(restore) also requires a target definition from which the database will be restored. (Added in Ansible 2.4).
     - The format of the backup will be detected based on the target name.
     - Supported compression formats for dump and restore determined by target file format C(.pgc) (custom), C(.bz2) (bzip2), C(.gz) (gzip/pigz) and C(.xz) (xz).
     - Supported formats for dump and restore determined by target file format C(.sql) (plain), C(.tar) (tar), C(.pgc) (custom) and C(.dir) (directory)
@@ -88,26 +88,26 @@ options:
     - "Restore program is selected by target file format: C(.tar), C(.pgc), and C(.dir) are handled by pg_restore, other with pgsql."
     - "."
     - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)).
-      C(rename) is used to rename the database C(name) to C(target).
+      V(rename) is used to rename the database O(name) to O(target).
       To rename a database, use the M(community.postgresql.postgresql_query) module.
     type: str
     choices: [ absent, dump, present, rename, restore ]
     default: present
   force:
     description:
-    - Used to forcefully drop a database when the I(state) is C(absent), ignored otherwise.
+    - Used to forcefully drop a database when the O(state) is V(absent), ignored otherwise.
     type: bool
     default: False
   target:
     description:
     - File to back up or restore from.
-    - Used when I(state) is C(dump) or C(restore).
+    - Used when O(state) is V(dump) or V(restore).
     type: path
     default: ''
   target_opts:
     description:
     - Additional arguments for pg_dump or restore program (pg_restore or psql, depending on target's format).
-    - Used when I(state) is C(dump) or C(restore).
+    - Used when O(state) is V(dump) or V(restore).
     type: str
     default: ''
   maintenance_db:
@@ -130,15 +130,15 @@ options:
     default: ''
   dump_extra_args:
     description:
-      - Provides additional arguments when I(state) is C(dump).
+      - Provides additional arguments when O(state) is V(dump).
       - Cannot be used with dump-file-format-related arguments like ``--format=d``.
     type: str
     version_added: '0.2.0'
   trust_input:
     description:
-    - If C(false), check whether values of parameters I(owner), I(conn_limit), I(encoding),
-      I(db), I(template), I(tablespace), I(session_role) are potentially dangerous.
-    - It makes sense to use C(false) only when SQL injections via the parameters are possible.
+    - If V(false), check whether values of parameters O(owner), O(conn_limit), O(encoding),
+      O(db), O(template), O(tablespace), O(session_role) are potentially dangerous.
+    - It makes sense to use V(false) only when SQL injections via the parameters are possible.
     type: bool
     default: true
     version_added: '0.2.0'
@@ -166,7 +166,7 @@ seealso:
 - module: community.postgresql.postgresql_ping
 
 notes:
-- State C(dump) and C(restore) don't require I(psycopg) since ansible version 2.8.
+- State V(dump) and V(restore) don't require C(psycopg) since ansible version 2.8.
 
 attributes:
   check_mode:
@@ -175,9 +175,9 @@ attributes:
     support: partial
     details:
       - The module is not idempotent when O(state=dump) — it always invokes C(pg_dump) and writes
-        the C(target) file, reporting changed=true on every invocation.
+        the O(target) file, reporting C(changed=true) on every invocation.
       - The module is not idempotent when O(state=restore) — it always executes the contents of the
-        C(target) file against the database and reports changed=true.
+        O(target) file against the database and reports C(changed=true).
 
 author: "Ansible Core Team"
 
