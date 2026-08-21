@@ -57,7 +57,7 @@ options:
     default: false
   encoding:
     description:
-    - Set the client encoding for the current session (e.g. C(UTF-8)).
+    - Set the client encoding for the current session (e.g. V(UTF-8)).
     - The default is the encoding defined by the database.
     type: str
     version_added: '0.2.0'
