@@ -166,7 +166,7 @@ seealso:
 - module: community.postgresql.postgresql_ping
 
 notes:
-- State C(dump) and C(restore) don't require I(psycopg) since ansible version 2.8.
+- State V(dump) and V(restore) don't require C(psycopg) since ansible version 2.8.
 
 attributes:
   check_mode:
