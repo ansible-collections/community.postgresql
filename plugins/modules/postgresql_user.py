@@ -112,7 +112,7 @@ options:
     description:
       - Determines how an SSL session is negotiated with the server.
       - See U(https://www.postgresql.org/docs/current/static/libpq-ssl.html) for more information on the modes.
-      - Default of C(prefer) matches libpq default.
+      - Default of V(prefer) matches libpq default.
     type: str
     default: prefer
     choices: [ allow, disable, prefer, require, verify-ca, verify-full ]
