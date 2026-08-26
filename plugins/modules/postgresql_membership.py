@@ -35,7 +35,8 @@ options:
     description:
     - The list of target roles (groups will be granted to them).
     - Required with I(groups). With I(memberships) it is optional, and acts as the
-      default for the rows that do not name their own.
+      fallback for the rows that do not name their own. A row naming its own
+      replaces this value rather than adding to it.
     type: list
     elements: str
     aliases:
@@ -56,6 +57,8 @@ options:
       naming them next to I(memberships) would leave it open which rows they apply
       to. I(target_roles) is the exception, since the granting role and the options
       belong to the group rather than to the member.
+    - A row that names C(target_roles) replaces the top-level I(target_roles) for
+      that row rather than adding to it. A row that names neither is an error.
     - I(state), I(fail_on_role) and the connection parameters describe the task and
       stay at the top level.
     - The whole task is one transaction, so a failure part-way leaves none of the
