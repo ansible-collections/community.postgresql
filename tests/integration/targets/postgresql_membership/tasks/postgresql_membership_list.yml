@@ -312,6 +312,67 @@
       - result is not changed
       - result.queries == []
 
+  # The idiom an empty groups list spells in the deprecated top-level form.
+  - name: postgresql_membership - an empty memberships list leaves the role in no group
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships: []
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - 'result.revoked == {"ml_ro": ["ml_alice"], "ml_rw": ["ml_alice"]}'
+
+  - name: postgresql_membership - and it is idempotent
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships: []
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  - name: postgresql_membership - an empty memberships list still needs target_roles
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships: []
+      state: exact
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'needs target_roles' in result.msg"
+
+  - name: postgresql_membership - restore the memberships for the absent test
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships:
+      - groups: "ml_ro"
+      - groups: "ml_rw"
+      state: present
+
   - name: postgresql_membership - absent revokes every row
     become_user: "{{ pg_user }}"
     become: true

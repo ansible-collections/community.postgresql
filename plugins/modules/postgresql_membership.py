@@ -23,6 +23,8 @@ description:
 options:
   groups:
     description:
+    - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
+      Use the C(groups) key of I(memberships) instead, which is not deprecated.
     - The list of groups (roles) that need to be granted to or revoked from I(target_roles).
     - Mutually exclusive with I(memberships), and one of the two is required.
     type: list
@@ -66,6 +68,8 @@ options:
       list, which gives one transaction per item.
     - Two rows may not describe the same grant, meaning the same group, target role
       and granting role, since the second would only overwrite the options of the first.
+    - An empty list means the target roles are to be a member of no group at all,
+      which is what an empty I(groups) list means in the deprecated top-level form.
     type: list
     elements: dict
     version_added: '5.0.0'
@@ -76,6 +80,8 @@ options:
     type: bool
   admin_option:
     description:
+      - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
+        Use the C(admin_option) key of I(memberships) instead, which is not deprecated.
       - Controls the membership option C(ADMIN). When unset, the PostgreSQL default applies
         to a new grant and an existing grant keeps the setting it has.
       - Requires PostgreSQL 16 or later. Ignored when I(state=absent); with any other
@@ -84,6 +90,8 @@ options:
     version_added: '5.0.0'
   inherit_option:
     description:
+      - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
+        Use the C(inherit_option) key of I(memberships) instead, which is not deprecated.
       - Controls the membership option C(INHERIT). When unset, the PostgreSQL default applies
         to a new grant and an existing grant keeps the setting it has.
       - Requires PostgreSQL 16 or later. Ignored when I(state=absent); with any other
@@ -92,6 +100,8 @@ options:
     version_added: '5.0.0'
   set_option:
     description:
+      - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
+        Use the C(set_option) key of I(memberships) instead, which is not deprecated.
       - Controls the membership option C(SET). When unset, the PostgreSQL default applies
         to a new grant and an existing grant keeps the setting it has.
       - Requires PostgreSQL 16 or later. Ignored when I(state=absent); with any other
@@ -100,6 +110,8 @@ options:
     version_added: '5.0.0'
   granted_by:
     description:
+      - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
+        Use the C(granted_by) key of I(memberships) instead, which is not deprecated.
       - Role to record as the granting role of the membership this module manages.
       - When unset, the module names the bootstrap superuser if the connecting role is
         a superuser, and the connecting role otherwise. PostgreSQL itself would pick
@@ -215,20 +227,22 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 - name: Grant role read_only to alice and bob
   community.postgresql.postgresql_membership:
-    group: read_only
     target_roles:
     - alice
     - bob
+    memberships:
+    - groups: read_only
     state: present
 
 # you can also use target_roles: alice,bob,etc to pass the role list
 
 - name: Revoke role read_only and exec_func from bob. Ignore if roles don't exist
   community.postgresql.postgresql_membership:
-    groups:
-    - read_only
-    - exec_func
     target_role: bob
+    memberships:
+    - groups:
+      - read_only
+      - exec_func
     fail_on_role: false
     state: absent
 
@@ -236,50 +250,53 @@ EXAMPLES = r'''
     Make sure alice and bob are members only of marketing and sales.
     If they are members of other groups, they will be removed from those groups
   community.postgresql.postgresql_membership:
-    group:
-    - marketing
-    - sales
     target_roles:
     - alice
     - bob
+    memberships:
+    - groups:
+      - marketing
+      - sales
     state: exact
 
 - name: Make sure alice and bob do not belong to any groups
   community.postgresql.postgresql_membership:
-    group: []
     target_roles:
     - alice
     - bob
+    memberships: []
     state: exact
 
 - name: Grant read_write to alice with SET and INHERIT but without ADMIN (PostgreSQL 16+)
   community.postgresql.postgresql_membership:
-    group: read_write
     target_role: alice
-    admin_option: false
-    inherit_option: true
-    set_option: true
+    memberships:
+    - groups: read_write
+      admin_option: false
+      inherit_option: true
+      set_option: true
     state: present
 
 # Needed when the connecting role holds ADMIN OPTION on read_write only through
 # dba_team rather than directly.
 - name: Grant read_write to alice as dba_team (PostgreSQL 16+)
   community.postgresql.postgresql_membership:
-    group: read_write
     target_role: alice
-    granted_by: dba_team
+    memberships:
+    - groups: read_write
+      granted_by: dba_team
     state: present
 
 - name: Remove the read_write membership dba_team granted, leaving other grants alone (PostgreSQL 16+)
   community.postgresql.postgresql_membership:
-    group: read_write
     target_role: alice
-    granted_by: dba_team
+    memberships:
+    - groups: read_write
+      granted_by: dba_team
     state: absent
 
 # One task, one transaction. The granting role and the options differ per group,
-# which the top-level parameters cannot express, since they name one value for the
-# whole task.
+# which one set of top-level parameters could not express.
 - name: Grant two groups whose ADMIN OPTION is held by different roles (PostgreSQL 16+)
   community.postgresql.postgresql_membership:
     target_roles:
@@ -427,6 +444,19 @@ def parse_memberships(module):
     if rows is None:
         return [dict((key, module.params[key]) for key in ROW_KEYS)]
 
+    # An empty list is how the top-level form spells "a member of no group at all",
+    # as groups: [] with state=exact. Turned into the membership that produces, so
+    # the idiom survives the deprecation of groups.
+    if not rows:
+        if not module.params['target_roles']:
+            module.fail_json(msg="An empty memberships list needs target_roles at the top "
+                                 "level, naming the roles that are to have no groups")
+
+        membership = dict(groups=[], granted_by=None,
+                          target_roles=as_list(module.params['target_roles']))
+        membership.update((name, None) for name in OPTION_PARAMS)
+        return [membership]
+
     memberships = []
     for index, row in enumerate(rows):
         unknown = sorted(set(row) - set(ROW_KEYS))
@@ -557,13 +587,18 @@ def extend_unique(target, source):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        groups=dict(type='list', elements='str', aliases=['group', 'source_role', 'source_roles']),
+        groups=dict(type='list', elements='str', aliases=['group', 'source_role', 'source_roles'],
+                    removed_in_version='6.0.0', removed_from_collection='community.postgresql'),
         target_roles=dict(type='list', elements='str', aliases=['target_role', 'user', 'users']),
         memberships=dict(type='list', elements='dict'),
-        admin_option=dict(type='bool', default=None),
-        inherit_option=dict(type='bool', default=None),
-        set_option=dict(type='bool', default=None),
-        granted_by=dict(type='str'),
+        admin_option=dict(type='bool', default=None, removed_in_version='6.0.0',
+                    removed_from_collection='community.postgresql'),
+        inherit_option=dict(type='bool', default=None, removed_in_version='6.0.0',
+                    removed_from_collection='community.postgresql'),
+        set_option=dict(type='bool', default=None, removed_in_version='6.0.0',
+                    removed_from_collection='community.postgresql'),
+        granted_by=dict(type='str', removed_in_version='6.0.0',
+                        removed_from_collection='community.postgresql'),
         fail_on_role=dict(type='bool', default=True),
         state=dict(type='str', default='present', choices=['absent', 'exact', 'present']),
         login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
