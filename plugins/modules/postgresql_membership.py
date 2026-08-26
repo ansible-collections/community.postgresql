@@ -310,8 +310,12 @@ effective_options:
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
     check_input
-from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
+from ansible_collections.community.postgresql.plugins.module_utils.membership import (
+    MEMBERSHIP_OPTIONS,
     PgMembership,
+    membership_option_name,
+)
+from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
     get_conn_params,
@@ -321,7 +325,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 )
 
 # Parameters carrying a membership option, in the order PostgreSQL names them.
-OPTION_PARAMS = ('admin_option', 'inherit_option', 'set_option')
+OPTION_PARAMS = tuple(membership_option_name(option) for option in MEMBERSHIP_OPTIONS)
 
 # ===========================================
 # Module execution.
@@ -360,11 +364,9 @@ def main():
     fail_on_role = module.params['fail_on_role']
     # Keyed by the PostgreSQL membership option keyword, which is what the GRANT
     # statement and pg_auth_members use.
-    membership_options = {
-        'ADMIN': module.params['admin_option'],
-        'INHERIT': module.params['inherit_option'],
-        'SET': module.params['set_option'],
-    }
+    membership_options = dict(
+        (option, module.params[membership_option_name(option)])
+        for option in MEMBERSHIP_OPTIONS)
     granted_by = module.params['granted_by']
     state = module.params['state']
     session_role = module.params['session_role']
