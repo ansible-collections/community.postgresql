@@ -85,6 +85,8 @@ options:
       - The role must exist even with I(fail_on_role=false), which covers only I(groups)
         and I(target_roles). A missing granting role has no safe fallback, since the
         module would otherwise record the grant under a different role.
+      - One role is named for the whole task. Groups whose C(ADMIN OPTION) is held by
+        different roles therefore have to be split into a task each.
       - Requires PostgreSQL 16 or later, where the granting role is part of the
         membership identity. Setting it against an older server makes the module fail.
     type: str
@@ -136,6 +138,12 @@ notes:
 - When the connecting role is not a superuser the module names that role itself. If it
   holds C(ADMIN OPTION) on a group only indirectly, through another role, PostgreSQL
   refuses a grant naming it, and I(granted_by) must name the role that holds the option.
+- Before granting anything, the module checks that the granting role holds
+  C(ADMIN OPTION) on every group it is about to grant, and fails naming the roles that
+  do hold it. Left to the server, the refusal arrives partway through the transaction
+  and takes the grants already made with it. Only the groups a C(GRANT) is actually
+  emitted for are checked, so a task that has nothing left to do keeps succeeding even
+  after the granting role lost the option.
 - This module manages only its own grant. A membership granted by another role is not
   removed by I(state=absent) or I(state=exact), and does not stop the module making its
   own grant; the module warns instead.

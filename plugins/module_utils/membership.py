@@ -95,6 +95,13 @@ class PgMembership(object):
                                    for name, setting in (membership_options or dict()).items()
                                    if setting is not None)
 
+        # Set by __resolve_grantor. A superuser may act as any role, so neither
+        # privilege check below applies to it.
+        self.connected_as_superuser = False
+
+        # Resolved on demand by __check_grantor_assumable, and only once.
+        self.grantor_assumable = None
+
         self.grantor = self.__resolve_grantor(granted_by) if self.per_grantor_membership else None
 
         self.__check_roles_exist()
@@ -119,15 +126,6 @@ class PgMembership(object):
         # from a lookup is not reported as a role that does not exist.
         granted_by = granted_by.strip() if granted_by else None
 
-        if granted_by:
-            # A grantor that does not exist would make state=present die with a raw
-            # server error and state=absent match nothing, exiting changed=false with
-            # the membership still in place. Reject it here instead.
-            if not self.__roles_exist([granted_by]):
-                self.module.fail_json(msg="The granted_by role %s does not exist" % granted_by)
-
-            return granted_by
-
         # pg_authid is readable by superusers only, so the bootstrap superuser is
         # looked up by its fixed OID in pg_roles, which every role can select from.
         query = ("SELECT CURRENT_ROLE AS current_role, "
@@ -135,7 +133,18 @@ class PgMembership(object):
                  "(SELECT rolname FROM pg_catalog.pg_roles WHERE oid = 10) AS bootstrap")
 
         row = exec_sql(self, query, add_to_executed=False)[0]
-        return row['bootstrap'] if row['is_super'] else row['current_role']
+        self.connected_as_superuser = row['is_super']
+
+        if not granted_by:
+            return row['bootstrap'] if row['is_super'] else row['current_role']
+
+        # A grantor that does not exist would make state=present die with a raw
+        # server error and state=absent match nothing, exiting changed=false with
+        # the membership still in place. Reject it here instead.
+        if not self.__roles_exist([granted_by]):
+            self.module.fail_json(msg="The granted_by role %s does not exist" % granted_by)
+
+        return granted_by
 
     def __is_ours(self, grant):
         """Return whether this is the grant the module manages.
@@ -226,6 +235,100 @@ class PgMembership(object):
                     % (role, option, group, ", ".join('"%s"' % g for g in grantors),
                        self.grantor, option.lower()))
 
+    def __check_grantor_assumable(self):
+        """Fail unless the connecting role has the privileges of the grantor.
+
+        PostgreSQL lets a role record a grant as another role, and revoke one recorded
+        under it, only when it has that role's privileges. Checked from the paths that
+        emit a statement rather than where the grantor is resolved, so that a task with
+        nothing left to do keeps succeeding. Always true for the derived grantor, so
+        this only ever rejects a granted_by.
+        """
+        if not self.per_grantor_membership or self.connected_as_superuser:
+            return
+
+        if self.grantor_assumable is None:
+            self.grantor_assumable = exec_sql(
+                self, "SELECT pg_catalog.pg_has_role(%s, 'SET') AS assumable",
+                query_params=(self.grantor,), add_to_executed=False)[0]['assumable']
+
+        if not self.grantor_assumable:
+            self.module.fail_json(
+                msg='The connecting role cannot act as the granting role "%s", because it '
+                    'does not have the privileges of that role. Set granted_by to a role it '
+                    'does have the privileges of.' % self.grantor)
+
+    def __check_grantable(self, groups):
+        """Fail unless the grantor holds ADMIN OPTION on every group passed.
+
+        A statement that does not name a granting role makes PostgreSQL pick one, and
+        it picks per group: the connecting role itself when it holds ADMIN OPTION on
+        that group, otherwise a role it can assume that does. This module names one
+        role for the whole task, so a group that role cannot grant has to be reported
+        here. Left to the server it raises an error that does not mention granted_by,
+        and it takes the whole transaction with it, undoing the grants already made
+        for the other groups.
+
+        Only called for granting. PostgreSQL refuses to revoke ADMIN OPTION while a
+        grant made under it exists, so a grant this module finds under its own grantor
+        can always be revoked.
+
+        Args:
+            groups (set) -- groups a GRANT would be emitted for.
+        """
+        if not self.per_grantor_membership or self.connected_as_superuser or not groups:
+            return
+
+        self.__check_grantor_assumable()
+
+        # LEFT JOINed so that a group nobody holds ADMIN OPTION on still comes back as
+        # a row, which is what separates "name a different grantor" from "this
+        # connection cannot grant it at all". The candidates are the roles that could
+        # be named instead, so they are restricted to the ones the connecting role has
+        # the privileges of.
+        query = """SELECT g.rolname AS grp,
+                          coalesce(bool_or(a.rolname = %s), false) AS grantor_ok,
+                          coalesce(array_agg(a.rolname ORDER BY a.rolname)
+                                   FILTER (WHERE pg_catalog.pg_has_role(a.oid, 'SET')),
+                                   '{}') AS candidates
+                   FROM pg_catalog.pg_roles g
+                   LEFT JOIN pg_catalog.pg_auth_members m
+                     ON m.roleid = g.oid AND m.admin_option
+                   LEFT JOIN pg_catalog.pg_roles a ON a.oid = m.member
+                   WHERE g.rolname = ANY(%s)
+                   GROUP BY g.rolname"""
+
+        needs_other_grantor = {}
+        not_grantable = []
+        for row in exec_sql(self, query, query_params=(self.grantor, sorted(groups)),
+                            add_to_executed=False):
+            if row['grantor_ok']:
+                continue
+
+            if row['candidates']:
+                needs_other_grantor[row['grp']] = row['candidates']
+            else:
+                not_grantable.append(row['grp'])
+
+        msg = []
+        if not_grantable:
+            msg.append('The connecting role cannot grant %s, because it has the '
+                       'privileges of no role holding ADMIN OPTION on it.'
+                       % ", ".join('"%s"' % g for g in sorted(not_grantable)))
+
+        if needs_other_grantor:
+            msg.append('The granting role "%s" does not hold ADMIN OPTION on %s. Set '
+                       'granted_by to a role that does (%s). granted_by applies to every '
+                       'group of the task, so groups needing a different granting role '
+                       'have to be split into separate tasks.'
+                       % (self.grantor,
+                          ", ".join('"%s"' % g for g in sorted(needs_other_grantor)),
+                          "; ".join('%s: %s' % (g, ", ".join(needs_other_grantor[g]))
+                                    for g in sorted(needs_other_grantor))))
+
+        if msg:
+            self.module.fail_json(msg=" ".join(msg))
+
     def __granted_by(self):
         """Return the GRANTED BY clause, empty before PostgreSQL 16.
 
@@ -236,6 +339,61 @@ class PgMembership(object):
             return ''
 
         return ' GRANTED BY %s' % pg_quote_name(self.grantor)
+
+    def __needs_grant(self, grants):
+        """Return whether a GRANT has to be emitted for a pair.
+
+        Shared with __groups_to_grant so that the groups the grantor is checked
+        against are exactly the ones a statement is emitted for. Checking the
+        others would fail a task that has nothing left to do, which is the run
+        that has to stay green.
+
+        Args:
+            grants (list) -- grants of the pair as returned by __role_grants.
+
+        Returns True when a GRANT is needed (bool).
+        """
+        current = self.__own_grant(grants)
+        return current is None or any(current[option] != wanted
+                                      for option, wanted in self.wanted_options.items())
+
+    def __groups_to_grant(self, memberships):
+        """Return the groups a GRANT would be emitted for, over all target roles.
+
+        Args:
+            memberships (dict) -- target role mapped to its grants keyed by group,
+                as returned by __role_grants.
+
+        Returns the group names (set).
+        """
+        return set(group for role_grants in memberships.values()
+                   for group in self.groups
+                   if self.__needs_grant(role_grants.get(group, [])))
+
+    def __anything_to_revoke(self, memberships, wanted_groups):
+        """Return whether a REVOKE would be emitted for any pair.
+
+        Args:
+            memberships (dict) -- target role mapped to its grants keyed by group,
+                as returned by __all_role_grants.
+            wanted_groups (bool) -- True to consider the groups the caller asked for,
+                which is what state=absent revokes, False to consider the other
+                groups the target roles are a member of, which is what state=exact
+                revokes.
+
+        Returns True when at least one REVOKE is needed (bool).
+        """
+        for role_grants in memberships.values():
+            if wanted_groups:
+                considered = self.groups
+            else:
+                considered = set(role_grants) - set(self.groups)
+
+            for group in considered:
+                if self.__own_grant(role_grants.get(group, [])) is not None:
+                    return True
+
+        return False
 
     def __grant(self, group, role, grants):
         """Grant group to role and apply the wanted options.
@@ -251,9 +409,7 @@ class PgMembership(object):
         Returns True when a change was made (bool).
         """
         self.__warn_foreign_options(group, role, grants)
-        current = self.__own_grant(grants)
-        if current is not None and all(current[option] == wanted
-                                       for option, wanted in self.wanted_options.items()):
+        if not self.__needs_grant(grants):
             return False
 
         # PostgreSQL takes the options as one comma-separated list, and every
@@ -324,6 +480,13 @@ class PgMembership(object):
             memberships.setdefault(row['grp'], []).append(grant)
         return memberships
 
+    def __all_role_grants(self):
+        """Return the grants of every target role, keyed by role then group.
+
+        Returns a dict mapping a target role to what __role_grants returns for it.
+        """
+        return dict((role, self.__role_grants(role)) for role in self.target_roles)
+
     def grant(self):
         # Seeded outside the loop below, which does not run when every target role was
         # filtered out as non-existent or none was passed, so that the reported groups
@@ -331,11 +494,16 @@ class PgMembership(object):
         for group in self.groups:
             self.granted.setdefault(group, [])
 
-        for role in self.target_roles:
-            memberships = self.__role_grants(role)
+        # Read for every target role before anything is emitted, so that the groups a
+        # GRANT is needed for are known and can be checked against the grantor's
+        # privileges up front. Granting a group to one role does not touch another
+        # role's memberships, so reading them all at once loses nothing.
+        memberships = self.__all_role_grants()
+        self.__check_grantable(self.__groups_to_grant(memberships))
 
+        for role in self.target_roles:
             for group in self.groups:
-                if self.__grant(group, role, memberships.get(group, [])):
+                if self.__grant(group, role, memberships[role].get(group, [])):
                     self.granted[group].append(role)
 
         return self.changed
@@ -344,11 +512,17 @@ class PgMembership(object):
         for group in self.groups:
             self.revoked.setdefault(group, [])
 
-        for role in self.target_roles:
-            memberships = self.__role_grants(role)
+        # Revoking needs no ADMIN OPTION check, since PostgreSQL refuses to revoke the
+        # option while a grant made under it exists. It does need the grantor to be one
+        # the connection can act as, which a granted_by naming somebody else's grant
+        # need not be.
+        memberships = self.__all_role_grants()
+        if self.__anything_to_revoke(memberships, True):
+            self.__check_grantor_assumable()
 
+        for role in self.target_roles:
             for group in self.groups:
-                if self.__revoke(group, role, memberships.get(group, [])):
+                if self.__revoke(group, role, memberships[role].get(group, [])):
                     self.revoked[group].append(role)
 
         return self.changed
@@ -359,8 +533,16 @@ class PgMembership(object):
         for group in self.groups:
             self.granted.setdefault(group, [])
 
+        # Same snapshot-then-check as grant(), for the same reason. The revokes of the
+        # unwanted groups need no ADMIN OPTION check, for the reason given in revoke(),
+        # but they do need a grantor the connection can act as.
+        all_memberships = self.__all_role_grants()
+        self.__check_grantable(self.__groups_to_grant(all_memberships))
+        if self.__anything_to_revoke(all_memberships, False):
+            self.__check_grantor_assumable()
+
         for role in self.target_roles:
-            memberships = self.__role_grants(role)
+            memberships = all_memberships[role]
 
             # Every group the role is a member of is considered, whoever granted
             # it, so that an unwanted membership this module cannot revoke is
