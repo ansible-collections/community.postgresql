@@ -49,7 +49,7 @@ def membership_option_name(option):
 
 class PgMembership(object):
     def __init__(self, module, cursor, groups, target_roles, role_cache,
-                 fail_on_role=True, membership_options=None, server_version=0,
+                 server_version, fail_on_role=True, membership_options=None,
                  granted_by=None):
         """Manage the membership of target_roles in groups.
 
@@ -66,6 +66,11 @@ class PgMembership(object):
                 of the same task so that a name several of them use is looked up, and
                 warned about, once. Required rather than defaulted, since an object
                 left with one of its own would silently repeat both.
+            server_version (int) -- server version as returned by get_server_version.
+                Decides whether memberships are per-grantor and whether the membership
+                options can be set. Required rather than defaulted, since any default
+                would name a version, and getting it wrong changes the model silently
+                instead of failing.
 
         Kwargs:
             fail_on_role (bool) -- fail when a passed role does not exist, otherwise
@@ -73,9 +78,6 @@ class PgMembership(object):
             membership_options (dict) -- wanted membership options keyed by the
                 PostgreSQL option keyword (ADMIN, INHERIT, SET), a value of None
                 meaning "leave as it is" (default None).
-            server_version (int) -- server version as returned by get_server_version.
-                Decides whether memberships are per-grantor and whether the membership
-                options can be set (default 0).
             granted_by (str) -- role to record as the granting role, or None to derive
                 it (default None).
         """

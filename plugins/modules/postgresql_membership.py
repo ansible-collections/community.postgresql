@@ -675,10 +675,10 @@ def main():
     role_cache = RoleCache()
     handlers = [
         PgMembership(module, cursor, membership['groups'], membership['target_roles'],
-                     role_cache, fail_on_role,
+                     role_cache, server_version, fail_on_role,
                      dict((option, membership[membership_option_name(option)])
                           for option in MEMBERSHIP_OPTIONS),
-                     server_version, membership['granted_by'])
+                     membership['granted_by'])
         for membership in memberships
     ]
 
@@ -711,8 +711,8 @@ def main():
             # has always done, and granted_by on a state=absent task remains the way to
             # remove a grant recorded under somebody else.
             pruner = PgMembership(module, cursor, sorted(wanted_groups),
-                                  by_wanted[wanted_groups], role_cache, fail_on_role,
-                                  {}, server_version, None)
+                                  by_wanted[wanted_groups], role_cache, server_version,
+                                  fail_on_role, {}, None)
             pruner.prune()
 
             changed |= pruner.changed
