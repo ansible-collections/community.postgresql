@@ -16,10 +16,6 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 # three spellings cannot drift apart.
 MEMBERSHIP_OPTIONS = ('ADMIN', 'INHERIT', 'SET')
 
-# ADMIN is recorded on every supported version. INHERIT and SET are columns
-# PostgreSQL 16 added, together with the per-grantor membership model.
-PRE_16_MEMBERSHIP_OPTIONS = ('ADMIN',)
-
 
 class RoleCache(object):
     """Existence of roles, shared by the PgMembership objects of one task.
@@ -110,9 +106,11 @@ class PgMembership(object):
 
         # The options the server records, which is also what report() gives back.
         # Kept as one list so that the column selected, the key of a grant and the
-        # reported name are all derived from the same place.
+        # reported name are all derived from the same place. ADMIN is recorded on
+        # every supported version; INHERIT and SET are columns PostgreSQL 16 added,
+        # together with the per-grantor membership model.
         self.recorded_options = (MEMBERSHIP_OPTIONS if self.per_grantor_membership
-                                 else PRE_16_MEMBERSHIP_OPTIONS)
+                                 else ('ADMIN',))
 
         # Callers are responsible for not asking for options the server cannot set;
         # postgresql_membership rejects them before constructing this object.
@@ -128,9 +126,6 @@ class PgMembership(object):
         # for the bootstrap superuser and for nobody else, not even another
         # superuser, so the check that the grantor holds it is skipped only then.
         self.grantor_is_bootstrap = False
-
-        # Resolved on demand by __check_grantor_assumable, and only once.
-        self.grantor_assumable = None
 
         self.grantor = self.__resolve_grantor(granted_by) if self.per_grantor_membership else None
 
@@ -284,12 +279,11 @@ class PgMembership(object):
         if not self.per_grantor_membership or self.connected_as_superuser:
             return
 
-        if self.grantor_assumable is None:
-            self.grantor_assumable = exec_sql(
-                self, "SELECT pg_catalog.pg_has_role(%s, 'SET') AS assumable",
-                query_params=(self.grantor,), add_to_executed=False)[0]['assumable']
+        assumable = exec_sql(self, "SELECT pg_catalog.pg_has_role(%s, 'SET') AS assumable",
+                             query_params=(self.grantor,),
+                             add_to_executed=False)[0]['assumable']
 
-        if not self.grantor_assumable:
+        if not assumable:
             self.module.fail_json(
                 msg='The connecting role cannot act as the granting role "%s", because it '
                     'does not have the privileges of that role. Set granted_by to a role it '
@@ -427,30 +421,36 @@ class PgMembership(object):
                    for group in self.groups
                    if self.__needs_grant(role_grants.get(group, [])))
 
-    def __anything_to_revoke(self, memberships, wanted_groups):
-        """Return whether a REVOKE would be emitted for any pair.
+    def __anything_to_revoke(self, memberships):
+        """Return whether a REVOKE would be emitted for one of self.groups.
+
+        What state=absent revokes.
 
         Args:
             memberships (dict) -- target role mapped to its grants keyed by group,
                 as returned by __all_role_grants.
-            wanted_groups (bool) -- True to consider the groups the caller asked for,
-                which is what state=absent revokes, False to consider the other
-                groups the target roles are a member of, which is what state=exact
-                revokes.
 
         Returns True when at least one REVOKE is needed (bool).
         """
-        for role_grants in memberships.values():
-            if wanted_groups:
-                considered = self.groups
-            else:
-                considered = set(role_grants) - set(self.groups)
+        return any(self.__own_grant(role_grants.get(group, [])) is not None
+                   for role_grants in memberships.values()
+                   for group in self.groups)
 
-            for group in considered:
-                if self.__own_grant(role_grants.get(group, [])) is not None:
-                    return True
+    def __anything_to_prune(self, memberships):
+        """Return whether a REVOKE would be emitted for a group nobody asked for.
 
-        return False
+        What state=exact revokes, the groups a target role is a member of that
+        self.groups does not name.
+
+        Args:
+            memberships (dict) -- target role mapped to its grants keyed by group,
+                as returned by __all_role_grants.
+
+        Returns True when at least one REVOKE is needed (bool).
+        """
+        return any(self.__own_grant(role_grants.get(group, [])) is not None
+                   for role_grants in memberships.values()
+                   for group in set(role_grants) - set(self.groups))
 
     def __grant(self, group, role, grants):
         """Grant group to role and apply the wanted options.
@@ -584,7 +584,7 @@ class PgMembership(object):
         # the connection can act as, which a granted_by naming somebody else's grant
         # need not be.
         memberships = self.__all_role_grants()
-        if self.__anything_to_revoke(memberships, True):
+        if self.__anything_to_revoke(memberships):
             self.__check_grantor_assumable()
 
         for role in self.target_roles:
@@ -609,7 +609,7 @@ class PgMembership(object):
 
         # Revoking needs no ADMIN OPTION check, for the reason given in revoke(), but
         # it does need a grantor the connection can act as.
-        if self.__anything_to_revoke(all_memberships, False):
+        if self.__anything_to_prune(all_memberships):
             self.__check_grantor_assumable()
 
         for role in self.target_roles:

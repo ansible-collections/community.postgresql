@@ -457,7 +457,7 @@ ROW_KEYS = ('groups', 'target_roles', 'granted_by') + OPTION_PARAMS
 # target_roles is the exception: the granting role and the options are properties of
 # the group, never of the member, so sharing one list of members over the rows cannot
 # make a row mean something else.
-ROW_ONLY_PARAMS = ('groups', 'granted_by') + OPTION_PARAMS
+ROW_ONLY_PARAMS = tuple(key for key in ROW_KEYS if key != 'target_roles')
 
 
 def parse_memberships(module):
@@ -544,12 +544,9 @@ def merge_role_lists(target, source):
         source (dict) -- the same, from one PgMembership object.
     """
     for group, roles in source.items():
-        merged = target.setdefault(group, [])
-        for role in roles:
-            # A role can be reported by two memberships naming the same group, and
-            # the task made one change to it, not two.
-            if role not in merged:
-                merged.append(role)
+        # A role can be reported by two memberships naming the same group, and the
+        # task made one change to it, not two.
+        extend_unique(target.setdefault(group, []), roles)
 
 
 def merge_by_group_and_role(target, source):
