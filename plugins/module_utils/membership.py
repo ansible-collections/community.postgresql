@@ -31,10 +31,12 @@ class RoleCache(object):
     """
 
     def __init__(self):
-        # Role name mapped to whether it exists. Only names already looked up.
+        # Role name mapped to whether it exists, a dict of str to bool. Holds only
+        # the names looked up so far.
         self.existence = {}
 
-        # Names already warned about, so the warning is emitted once per task.
+        # Names already warned about, a set of str, so the warning is emitted once
+        # per task rather than once per object.
         self.warned = set()
 
 
@@ -50,9 +52,9 @@ def membership_option_name(option):
 
 
 class PgMembership(object):
-    def __init__(self, module, cursor, groups, target_roles, fail_on_role=True,
-                 membership_options=None, server_version=0, granted_by=None,
-                 role_cache=None):
+    def __init__(self, module, cursor, groups, target_roles, role_cache,
+                 fail_on_role=True, membership_options=None, server_version=0,
+                 granted_by=None):
         """Manage the membership of target_roles in groups.
 
         Throughout this class, "group" is the role whose membership is granted, "role"
@@ -64,6 +66,10 @@ class PgMembership(object):
             cursor (psycopg cursor) -- database cursor object.
             groups (list) -- group roles whose membership is managed.
             target_roles (list) -- member roles that receive or lose the membership.
+            role_cache (RoleCache) -- existence of roles, shared with the other objects
+                of the same task so that a name several of them use is looked up, and
+                warned about, once. Required rather than defaulted, since an object
+                left with one of its own would silently repeat both.
 
         Kwargs:
             fail_on_role (bool) -- fail when a passed role does not exist, otherwise
@@ -76,12 +82,10 @@ class PgMembership(object):
                 options can be set (default 0).
             granted_by (str) -- role to record as the granting role, or None to derive
                 it (default None).
-            role_cache (RoleCache) -- existence of roles, shared with the other objects
-                of the same task, or None for one of this object's own (default None).
         """
         self.module = module
         self.cursor = cursor
-        self.role_cache = role_cache if role_cache is not None else RoleCache()
+        self.role_cache = role_cache
         # Deduplicated: a repeated name would otherwise be processed twice against
         # the same snapshot, emitting the statement twice and adding the target role
         # twice to granted/revoked.
@@ -192,6 +196,8 @@ class PgMembership(object):
 
         Args:
             grants (list) -- grants of a pair as returned by __role_grants.
+
+        Returns the grant we manage (dict), or None when the pair has none.
         """
         return next((grant for grant in grants if self.__is_ours(grant)), None)
 
@@ -200,6 +206,8 @@ class PgMembership(object):
 
         Args:
             grants (list) -- grants of a pair as returned by __role_grants.
+
+        Returns the grants made by other roles (list of dict).
         """
         return [grant for grant in grants if not self.__is_ours(grant)]
 
@@ -381,6 +389,8 @@ class PgMembership(object):
 
         Guarded on the same flag as __is_ours, so the statement emitted and the grant
         recognized cannot diverge.
+
+        Returns the clause to append to a GRANT or REVOKE (str).
         """
         if not self.per_grantor_membership:
             return ''
@@ -501,8 +511,9 @@ class PgMembership(object):
         Args:
             role (str) -- member role.
 
-        Returns a dict mapping a group name to its list of grants. A grant is a dict of
-        'grantor' plus the options the server records, keyed by the PostgreSQL keyword.
+        Returns a dict mapping a group name (str) to its grants (list of dict). A grant
+        holds 'grantor' plus the options the server records, keyed by the PostgreSQL
+        keyword.
         """
         columns = ", ".join("m.%s" % membership_option_name(option)
                             for option in self.recorded_options)
@@ -530,11 +541,16 @@ class PgMembership(object):
     def __all_role_grants(self):
         """Return the grants of every target role, keyed by role then group.
 
-        Returns a dict mapping a target role to what __role_grants returns for it.
+        Returns a dict mapping a target role (str) to what __role_grants returns for
+        it (dict).
         """
         return dict((role, self.__role_grants(role)) for role in self.target_roles)
 
     def grant(self):
+        """Grant every group to every target role, with the wanted options.
+
+        Returns True when a change was made (bool).
+        """
         # Seeded outside the loop below, which does not run when every target role was
         # filtered out as non-existent or none was passed, so that the reported groups
         # are the ones asked for either way.
@@ -556,6 +572,10 @@ class PgMembership(object):
         return self.changed
 
     def revoke(self):
+        """Revoke the module's own grant of every group from every target role.
+
+        Returns True when a change was made (bool).
+        """
         for group in self.groups:
             self.revoked.setdefault(group, [])
 
@@ -609,6 +629,10 @@ class PgMembership(object):
         return self.changed
 
     def match(self):
+        """Leave the target roles a member of self.groups and of nothing else.
+
+        Returns True when a change was made (bool).
+        """
         # Pruning first and granting second, rather than both per role, so that the
         # two halves stay the same code the multi-membership path runs.
         self.prune()
@@ -623,7 +647,9 @@ class PgMembership(object):
         Includes grants the module does not manage, since PostgreSQL applies the
         options as their union. Only pairs where role is a member.
 
-        Returns two dicts keyed by group then target role.
+        Returns two dicts keyed by group then target role: the grants of each pair
+        (list of dict) and the options the target role effectively holds (dict of str
+        to bool).
         """
         grants = {}
         effective_options = {}
@@ -652,6 +678,11 @@ class PgMembership(object):
         return grants, effective_options
 
     def __check_roles_exist(self):
+        """Fail or warn about the passed roles that do not exist.
+
+        Drops them from self.groups and self.target_roles when fail_on_role is false,
+        so that everything downstream works on names known to exist.
+        """
         if self.groups:
             existent_groups = self.__roles_exist(self.groups)
 

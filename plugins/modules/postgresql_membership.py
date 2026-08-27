@@ -592,11 +592,11 @@ def main():
         target_roles=dict(type='list', elements='str', aliases=['target_role', 'user', 'users']),
         memberships=dict(type='list', elements='dict'),
         admin_option=dict(type='bool', default=None, removed_in_version='6.0.0',
-                    removed_from_collection='community.postgresql'),
+                          removed_from_collection='community.postgresql'),
         inherit_option=dict(type='bool', default=None, removed_in_version='6.0.0',
-                    removed_from_collection='community.postgresql'),
+                            removed_from_collection='community.postgresql'),
         set_option=dict(type='bool', default=None, removed_in_version='6.0.0',
-                    removed_from_collection='community.postgresql'),
+                        removed_from_collection='community.postgresql'),
         granted_by=dict(type='str', removed_in_version='6.0.0',
                         removed_from_collection='community.postgresql'),
         fail_on_role=dict(type='bool', default=True),
@@ -680,10 +680,10 @@ def main():
     role_cache = RoleCache()
     handlers = [
         PgMembership(module, cursor, membership['groups'], membership['target_roles'],
-                     fail_on_role,
+                     role_cache, fail_on_role,
                      dict((option, membership[membership_option_name(option)])
                           for option in MEMBERSHIP_OPTIONS),
-                     server_version, membership['granted_by'], role_cache)
+                     server_version, membership['granted_by'])
         for membership in memberships
     ]
 
@@ -716,8 +716,8 @@ def main():
             # has always done, and granted_by on a state=absent task remains the way to
             # remove a grant recorded under somebody else.
             pruner = PgMembership(module, cursor, sorted(wanted_groups),
-                                  by_wanted[wanted_groups], fail_on_role, {},
-                                  server_version, None, role_cache)
+                                  by_wanted[wanted_groups], role_cache, fail_on_role,
+                                  {}, server_version, None)
             pruner.prune()
 
             changed |= pruner.changed
