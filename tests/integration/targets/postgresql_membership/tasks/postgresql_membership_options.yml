@@ -31,9 +31,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        set_option: true
       target_role: "opt_user1"
-      set_option: true
       state: present
     register: result
     ignore_errors: true
@@ -84,11 +85,12 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        admin_option: false
+        inherit_option: false
+        set_option: false
       target_role: "opt_user1"
-      admin_option: false
-      inherit_option: false
-      set_option: false
       state: present
     register: result
 
@@ -123,11 +125,12 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        admin_option: false
+        inherit_option: false
+        set_option: false
       target_role: "opt_user1"
-      admin_option: false
-      inherit_option: false
-      set_option: false
       state: present
     register: result
 
@@ -143,9 +146,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        set_option: true
       target_role: "opt_user1"
-      set_option: true
       state: present
     register: result
 
@@ -183,11 +187,12 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        set_option: true
       target_roles:
       - "opt_user1"
       - "opt_user2"
-      set_option: true
       state: present
     register: result
 
@@ -223,9 +228,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        set_option: true
       target_role: "opt_user3"
-      set_option: true
       state: present
     register: result
 
@@ -258,9 +264,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        set_option: true
       target_role: "opt_user3"
-      set_option: true
       state: present
     register: result
 
@@ -278,9 +285,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        set_option: false
       target_role: "opt_user1"
-      set_option: false
       state: exact
     register: result
 
@@ -315,9 +323,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        set_option: false
       target_role: "opt_user1"
-      set_option: false
       state: exact
     register: result
 
@@ -341,9 +350,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        set_option: true
       target_role: "opt_user1"
-      set_option: true
       state: present
     register: result
     check_mode: true
@@ -361,9 +371,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        set_option: false
       target_role: "opt_user1"
-      set_option: false
       state: present
     register: result
     check_mode: true
@@ -404,11 +415,12 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        admin_option: true
+        inherit_option: false
+        set_option: false
       target_role: "opt_user1"
-      admin_option: true
-      inherit_option: false
-      set_option: false
       state: present
     register: result
 
@@ -446,11 +458,12 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "opt_group"
+      memberships:
+      - groups: "opt_group"
+        admin_option: false
+        inherit_option: true
+        set_option: false
       target_role: "opt_user1"
-      admin_option: false
-      inherit_option: true
-      set_option: false
       state: present
     register: result
 

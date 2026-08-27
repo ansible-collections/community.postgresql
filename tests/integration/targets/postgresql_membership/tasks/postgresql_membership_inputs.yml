@@ -153,9 +153,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "in_group1"
+      memberships:
+      - groups: "in_group1"
+        admin_option: true
       target_role: "in_user1"
-      admin_option: true
       state: absent
     register: result
 
@@ -207,9 +208,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "gbv_group"
+      memberships:
+      - groups: "gbv_group"
+        granted_by: "gbv_absent"
       target_role: "gbv_user"
-      granted_by: "gbv_absent"
       state: present
     register: result
     ignore_errors: true
@@ -226,9 +228,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "gbv_group"
+      memberships:
+      - groups: "gbv_group"
+        granted_by: "gbv_absent"
       target_role: "gbv_user"
-      granted_by: "gbv_absent"
       fail_on_role: false
       state: present
     register: result

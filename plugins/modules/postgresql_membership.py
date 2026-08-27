@@ -51,10 +51,9 @@ options:
       memberships that need a different granting role or different options from one
       another, which the top-level parameters cannot express because they name one
       value for the whole task.
-    - Mutually exclusive with I(groups), I(granted_by), I(admin_option),
-      I(inherit_option) and I(set_option). Those describe a single membership, so
-      naming them next to I(memberships) would leave it open which rows they apply
-      to. I(target_roles) is the exception, since the granting role and the options
+    - Mutually exclusive with I(groups), which describes a single membership too,
+      so naming both would leave it open which one a grant came from.
+      I(target_roles) is the exception, since the granting role and the options
       belong to the group rather than to the member.
     - A row that names C(target_roles) replaces the top-level I(target_roles) for
       that row rather than adding to it. A row that names neither is an error.
@@ -110,59 +109,6 @@ options:
       - If C(true), fail when group or target_role doesn't exist. If C(false), just warn and continue.
     default: true
     type: bool
-  admin_option:
-    description:
-      - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
-        Use the C(admin_option) key of I(memberships) instead, which is not deprecated.
-      - Controls the membership option C(ADMIN). When unset, the PostgreSQL default applies
-        to a new grant and an existing grant keeps the setting it has.
-      - Requires PostgreSQL 16 or later. Ignored when I(state=absent); with any other
-        state, setting it against an older server makes the module fail.
-    type: bool
-    version_added: '5.0.0'
-  inherit_option:
-    description:
-      - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
-        Use the C(inherit_option) key of I(memberships) instead, which is not deprecated.
-      - Controls the membership option C(INHERIT). When unset, the PostgreSQL default applies
-        to a new grant and an existing grant keeps the setting it has.
-      - Requires PostgreSQL 16 or later. Ignored when I(state=absent); with any other
-        state, setting it against an older server makes the module fail.
-    type: bool
-    version_added: '5.0.0'
-  set_option:
-    description:
-      - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
-        Use the C(set_option) key of I(memberships) instead, which is not deprecated.
-      - Controls the membership option C(SET). When unset, the PostgreSQL default applies
-        to a new grant and an existing grant keeps the setting it has.
-      - Requires PostgreSQL 16 or later. Ignored when I(state=absent); with any other
-        state, setting it against an older server makes the module fail.
-    type: bool
-    version_added: '5.0.0'
-  granted_by:
-    description:
-      - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
-        Use the C(granted_by) key of I(memberships) instead, which is not deprecated.
-      - Role to record as the granting role of the membership this module manages.
-      - When unset, the module names the bootstrap superuser if the connecting role is
-        a superuser, and the connecting role otherwise. PostgreSQL itself would pick
-        differently, naming a role that holds C(ADMIN OPTION) on the group, which is
-        not always the connecting one.
-      - The named role must already exist, must hold C(ADMIN OPTION) on the groups, and
-        the connecting role must hold its privileges. Set it when the connecting role
-        holds C(ADMIN OPTION) only indirectly, through another role, since PostgreSQL
-        then refuses a grant naming the connecting role. Also set it to manage a grant
-        made by a different role.
-      - The role must exist even with I(fail_on_role=false), which covers only I(groups)
-        and I(target_roles). A missing granting role has no safe fallback, since the
-        module would otherwise record the grant under a different role.
-      - One role is named for the whole task. Groups whose C(ADMIN OPTION) is held by
-        different roles therefore have to be split into a task each.
-      - Requires PostgreSQL 16 or later, where the granting role is part of the
-        membership identity. Setting it against an older server makes the module fail.
-    type: str
-    version_added: '5.0.0'
   state:
     description:
     - Membership state.
@@ -447,17 +393,27 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 # Parameters carrying a membership option, in the order PostgreSQL names them.
 OPTION_PARAMS = tuple(membership_option_name(option) for option in MEMBERSHIP_OPTIONS)
 
-# Keys a memberships row may carry. Each names the parameter of the same name, which
-# describes one membership rather than the task as a whole. state, fail_on_role and
-# the connection parameters are deliberately absent: they describe the task.
+# Keys a memberships row may carry, which is also the shape parse_memberships returns
+# for the deprecated top-level form. state, fail_on_role and the connection parameters
+# are deliberately absent: they describe the task rather than one membership.
 ROW_KEYS = ('groups', 'target_roles', 'granted_by') + OPTION_PARAMS
 
-# Parameters that describe one membership and so may not be given at the top level
-# next to memberships, where it would be ambiguous which rows they apply to.
-# target_roles is the exception: the granting role and the options are properties of
-# the group, never of the member, so sharing one list of members over the rows cannot
-# make a row mean something else.
-ROW_ONLY_PARAMS = tuple(key for key in ROW_KEYS if key != 'target_roles')
+
+def one_membership(groups, target_roles):
+    """Return a membership carrying every key of ROW_KEYS, the rest unset.
+
+    Used for the deprecated top-level form, which names no granting role and no
+    options, so that the caller sees the same shape a row produces.
+
+    Args:
+        groups (list) -- groups the membership is of.
+        target_roles (list) -- roles the groups are granted to.
+
+    Returns the membership (dict).
+    """
+    membership = dict((key, None) for key in ROW_KEYS)
+    membership.update(groups=groups, target_roles=target_roles)
+    return membership
 
 
 def parse_memberships(module):
@@ -476,7 +432,7 @@ def parse_memberships(module):
     rows = module.params['memberships']
 
     if rows is None:
-        return [dict((key, module.params[key]) for key in ROW_KEYS)]
+        return [one_membership(module.params['groups'], module.params['target_roles'])]
 
     # An empty list is how the top-level form spells "a member of no group at all",
     # as groups: [] with state=exact. Turned into the membership that produces, so
@@ -486,9 +442,7 @@ def parse_memberships(module):
             module.fail_json(msg="An empty memberships list needs target_roles at the top "
                                  "level, naming the roles that are to have no groups")
 
-        membership = dict((key, None) for key in ROW_KEYS)
-        membership.update(groups=[], target_roles=module.params['target_roles'])
-        return [membership]
+        return [one_membership([], module.params['target_roles'])]
 
     memberships = []
     for index, row in enumerate(rows):
@@ -586,14 +540,6 @@ def main():
             inherit_option=dict(type='bool'),
             set_option=dict(type='bool'),
         )),
-        admin_option=dict(type='bool', default=None, removed_in_version='6.0.0',
-                          removed_from_collection='community.postgresql'),
-        inherit_option=dict(type='bool', default=None, removed_in_version='6.0.0',
-                            removed_from_collection='community.postgresql'),
-        set_option=dict(type='bool', default=None, removed_in_version='6.0.0',
-                        removed_from_collection='community.postgresql'),
-        granted_by=dict(type='str', removed_in_version='6.0.0',
-                        removed_from_collection='community.postgresql'),
         fail_on_role=dict(type='bool', default=True),
         state=dict(type='str', default='present', choices=['absent', 'exact', 'present']),
         login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
@@ -611,10 +557,10 @@ def main():
         argument_spec=argument_spec,
         supports_check_mode=True,
         # Either form of naming the memberships, never both, so there is never a
-        # question of which one a grant came from. target_roles is not in the list
-        # because memberships may take it as a default; see ROW_ONLY_PARAMS.
+        # question of which one a grant came from. target_roles is not excluded,
+        # since memberships may take it as the default for its rows.
         required_one_of=[['groups', 'memberships']],
-        mutually_exclusive=[[name, 'memberships'] for name in ROW_ONLY_PARAMS],
+        mutually_exclusive=[['groups', 'memberships']],
         # Naming groups without saying who they are for describes no membership.
         required_by=dict(groups=('target_roles',)),
     )

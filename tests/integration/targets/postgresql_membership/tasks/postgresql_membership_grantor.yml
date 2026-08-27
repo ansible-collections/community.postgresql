@@ -86,9 +86,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "grantor_group"
+      memberships:
+      - groups: "grantor_group"
+        admin_option: false
       target_role: "grantor_user"
-      admin_option: false
       state: present
     register: result
 
@@ -406,9 +407,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "grantor_group"
+      memberships:
+      - groups: "grantor_group"
+        granted_by: "grantor_other"
       target_role: "grantor_user"
-      granted_by: "grantor_other"
       state: present
     register: result
     ignore_errors: true
@@ -475,9 +477,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "gb_group"
+      memberships:
+      - groups: "gb_group"
+        granted_by: "gb_admin"
       target_role: "gb_user"
-      granted_by: "gb_admin"
       state: present
     register: result
 
@@ -493,9 +496,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "gb_group"
+      memberships:
+      - groups: "gb_group"
+        granted_by: "gb_admin"
       target_role: "gb_user"
-      granted_by: "gb_admin"
       state: present
     register: result
 
@@ -530,9 +534,10 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "gb_group"
+      memberships:
+      - groups: "gb_group"
+        granted_by: "gb_admin"
       target_role: "gb_user"
-      granted_by: "gb_admin"
       state: absent
     register: result
 

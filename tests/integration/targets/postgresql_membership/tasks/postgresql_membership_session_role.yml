@@ -277,9 +277,10 @@
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
       db: postgres
-      group: "sr_group"
+      memberships:
+      - groups: "sr_group"
+        granted_by: "sr_direct"
       target_role: "sr_member"
-      granted_by: "sr_direct"
       state: present
     register: result
     ignore_errors: true
@@ -297,9 +298,10 @@
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
       db: postgres
-      group: "sr_group"
+      memberships:
+      - groups: "sr_group"
+        granted_by: "sr_team"
       target_role: "sr_member"
-      granted_by: "sr_team"
       state: present
     register: result
 
@@ -316,9 +318,10 @@
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
       db: postgres
-      group: "sr_group"
+      memberships:
+      - groups: "sr_group"
+        granted_by: "sr_team"
       target_role: "sr_member"
-      granted_by: "sr_team"
       state: present
     register: result
 
@@ -345,9 +348,10 @@
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
       db: postgres
-      group: "sr_group"
+      memberships:
+      - groups: "sr_group"
+        granted_by: "sr_team"
       target_role: "sr_member"
-      granted_by: "sr_team"
       state: present
     register: result
 
@@ -363,9 +367,10 @@
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
       db: postgres
-      group: "sr_group"
+      memberships:
+      - groups: "sr_group"
+        granted_by: "sr_team"
       target_role: "sr_member2"
-      granted_by: "sr_team"
       state: present
     register: result
     ignore_errors: true
@@ -384,9 +389,10 @@
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
       db: postgres
-      group: "sr_group"
+      memberships:
+      - groups: "sr_group"
+        granted_by: "sr_team"
       target_role: "sr_member"
-      granted_by: "sr_team"
       state: absent
     register: result
     ignore_errors: true
