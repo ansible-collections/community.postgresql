@@ -273,7 +273,10 @@ class PgMembership(object):
         """Fail unless the connecting role has the privileges of the grantor.
 
         PostgreSQL lets a role record a grant as another role, and revoke one recorded
-        under it, only when it has that role's privileges. Checked from the paths that
+        under it, only when it has that role's privileges, which is has_privs_of_role
+        and so pg_has_role(..., 'USAGE'). Not 'SET': the two differ on a membership
+        granted WITH INHERIT TRUE, SET FALSE, which carries the privileges without
+        being assumable, and on its opposite. Checked from the paths that
         emit a statement rather than where the grantor is resolved, so that a task with
         nothing left to do keeps succeeding. Always true for the derived grantor, so
         this only ever rejects a granted_by.
@@ -281,7 +284,7 @@ class PgMembership(object):
         if not self.per_grantor_membership or self.connected_as_superuser:
             return
 
-        assumable = exec_sql(self, "SELECT pg_catalog.pg_has_role(%s, 'SET') AS assumable",
+        assumable = exec_sql(self, "SELECT pg_catalog.pg_has_role(%s, 'USAGE') AS assumable",
                              query_params=(self.grantor,),
                              add_to_executed=False)[0]['assumable']
 
@@ -298,9 +301,8 @@ class PgMembership(object):
         it picks per group: the connecting role itself when it holds ADMIN OPTION on
         that group, otherwise a role it can assume that does. This module names one
         role for the whole task, so a group that role cannot grant has to be reported
-        here. Left to the server it raises an error that does not mention granted_by,
-        and it takes the whole transaction with it, undoing the grants already made
-        for the other groups.
+        here. Left to the server it raises an error naming neither the option that is
+        missing nor a role that holds it, which is what the caller needs to fix it.
 
         Only called for granting. PostgreSQL refuses to revoke ADMIN OPTION while a
         grant made under it exists, so a grant this module finds under its own grantor
@@ -329,7 +331,7 @@ class PgMembership(object):
                           coalesce(array_agg(a.rolname ORDER BY a.rolname)
                                    FILTER (WHERE a.rolname IS NOT NULL), '{}') AS holders,
                           coalesce(array_agg(a.rolname ORDER BY a.rolname)
-                                   FILTER (WHERE pg_catalog.pg_has_role(a.oid, 'SET')),
+                                   FILTER (WHERE pg_catalog.pg_has_role(a.oid, 'USAGE')),
                                    '{}') AS candidates
                    FROM pg_catalog.pg_roles g
                    LEFT JOIN pg_catalog.pg_auth_members m

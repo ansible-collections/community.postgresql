@@ -66,6 +66,8 @@ options:
       and granting role, since the second would only overwrite the options of the first.
     - An empty list means the target roles are to be a member of no group at all,
       which is what an empty I(groups) list means in the deprecated top-level form.
+    - A name repeated within a row, or a row and the top level naming the same role
+      with different surrounding whitespace, counts once.
     type: list
     elements: dict
     version_added: '5.0.0'
@@ -119,8 +121,8 @@ options:
       Any other groups will be revoked from I(target_roles).
     - With I(memberships), I(state=exact) considers every group the rows name for a
       target role, so a group wanted by one row is not revoked because another row
-      did not name it. The groups no row named are revoked without naming a granting
-      role, since there is no row to take one from.
+      did not name it. The groups no row named are revoked under the granting role
+      the module derives from the connection, since no row names one for them.
     type: str
     default: present
     choices: [ absent, exact, present ]
@@ -162,10 +164,10 @@ notes:
   refuses a grant naming it, and I(granted_by) must name the role that holds the option.
 - Before granting anything, the module checks that the granting role holds
   C(ADMIN OPTION) on every group it is about to grant, and fails naming the roles that
-  do hold it. Left to the server, the refusal arrives partway through the transaction
-  and takes the grants already made with it. Only the groups a C(GRANT) is actually
-  emitted for are checked, so a task that has nothing left to do keeps succeeding even
-  after the granting role lost the option.
+  do hold it. The server's own refusal names neither the missing option nor a role
+  that holds it. Only the groups a C(GRANT) is actually emitted for are checked, so a
+  task that has nothing left to do keeps succeeding even after the granting role lost
+  the option.
 - This module manages only its own grant. A membership granted by another role is not
   removed by I(state=absent) or I(state=exact), and does not stop the module making its
   own grant; the module warns instead.
@@ -416,6 +418,17 @@ def one_membership(groups, target_roles):
     return membership
 
 
+def normalise_names(names):
+    """Return the names stripped, in order, without repeats.
+
+    Args:
+        names (list) -- role names as given.
+
+    Returns the names to use (list of str).
+    """
+    return list(dict.fromkeys(name.strip() for name in names))
+
+
 def parse_memberships(module):
     """Return the memberships of the task as a list of dicts.
 
@@ -438,7 +451,7 @@ def parse_memberships(module):
     # as groups: [] with state=exact. Turned into the membership that produces, so
     # the idiom survives the deprecation of groups.
     if not rows:
-        if not module.params['target_roles']:
+        if module.params['target_roles'] is None:
             module.fail_json(msg="An empty memberships list needs target_roles at the top "
                                  "level, naming the roles that are to have no groups")
 
@@ -449,12 +462,22 @@ def parse_memberships(module):
         # The one key a row may take from the top level, which the argument spec has
         # no way of expressing. Resolved here so everything downstream sees a
         # complete membership.
-        membership = dict(row)
-        membership['target_roles'] = row['target_roles'] or module.params['target_roles']
-        if not membership['target_roles']:
+        target_roles = row['target_roles']
+        if target_roles is None:
+            target_roles = module.params['target_roles']
+
+        # None, not falsy: an empty list is a task with no target role to grant to,
+        # which the deprecated form treats as a no-op, so this one does too.
+        if target_roles is None:
             module.fail_json(msg="memberships[%d] has no target_roles, and none is set "
                                  "at the top level to fall back to" % index)
 
+        membership = dict(row)
+        # Stripped and deduplicated here rather than in PgMembership, so that the
+        # duplicate check below compares the names the statements will use, and a
+        # name repeated inside one row is one grant rather than a clash with itself.
+        membership['groups'] = normalise_names(row['groups'])
+        membership['target_roles'] = normalise_names(target_roles)
         memberships.append(membership)
 
     check_no_duplicate_grants(module, memberships)
@@ -652,10 +675,10 @@ def main():
             by_wanted.setdefault(frozenset(wanted[role]), []).append(role)
 
         for wanted_groups in sorted(by_wanted, key=sorted):
-            # No granted_by: the groups being revoked are the ones no membership named,
-            # so there is no row to take a granting role from. That is what state=exact
-            # has always done, and granted_by on a state=absent task remains the way to
-            # remove a grant recorded under somebody else.
+            # No granted_by, so the grantor is derived from the connection: the groups
+            # being revoked are the ones no membership named, and there is no row to
+            # take one from. That is what state=exact has always done, and granted_by
+            # on a state=absent task remains the way to remove somebody else's grant.
             pruner = PgMembership(module, cursor, sorted(wanted_groups),
                                   by_wanted[wanted_groups], role_cache, server_version,
                                   fail_on_role, {}, None)

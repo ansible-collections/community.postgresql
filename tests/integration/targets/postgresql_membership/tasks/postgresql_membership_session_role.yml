@@ -30,6 +30,8 @@
     - "sr_nogrant"
     - "sr_member2"
     - "sr_member3"
+    - "sr_usage_grp"
+    - "sr_usage_holder"
 
   # sr_direct holds ADMIN OPTION on sr_group itself. sr_indirect only reaches it
   # through sr_team, which is the case PostgreSQL refuses to record under the
@@ -48,6 +50,10 @@
     - 'GRANT "sr_team" TO "sr_indirect" WITH INHERIT TRUE'
     - 'GRANT "sr_own" TO "sr_indirect" WITH ADMIN OPTION'
     - 'GRANT "sr_nogrant" TO "sr_direct" WITH ADMIN OPTION'
+    # sr_indirect has sr_usage_holder's privileges but cannot SET ROLE to it, which
+    # is the case where has_privs_of_role and SET ROLE disagree.
+    - 'GRANT "sr_usage_grp" TO "sr_usage_holder" WITH ADMIN OPTION'
+    - 'GRANT "sr_usage_holder" TO "sr_indirect" WITH INHERIT TRUE, SET FALSE'
 
   # A non-superuser holding ADMIN OPTION directly is named as the granting role,
   # not the bootstrap superuser that login_user would have produced.
@@ -330,6 +336,29 @@
       - result is not changed
       - result.queries == []
 
+  # PostgreSQL asks that the connecting role have the privileges of the granting
+  # role, which is has_privs_of_role rather than SET ROLE. A grantor reachable by
+  # inheritance alone is therefore usable, and a check written against SET ROLE
+  # would refuse this grant that the server accepts.
+  - name: postgresql_membership - a granting role reachable by inheritance alone is usable
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      target_role: "sr_member"
+      memberships:
+      - groups: "sr_usage_grp"
+        granted_by: "sr_usage_holder"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "sr_usage_grp" TO "sr_member" GRANTED BY "sr_usage_holder"']
+
   # Only the groups a GRANT is emitted for are checked, so a converged task keeps
   # succeeding after the connecting role lost the privileges of the granting role.
   # Failing here would turn a settled playbook red without anything to change.
@@ -434,12 +463,16 @@
     - "sr_member"
     - "sr_member2"
     - "sr_member3"
+    - "sr_usage_grp"
+    - "sr_usage_holder"
     - "sr_indirect"
     - "sr_direct"
     - "sr_team"
     - "sr_group"
     - "sr_own"
     - "sr_nogrant"
+    - "sr_usage_grp"
+    - "sr_usage_holder"
 
 ####################################################################
 # Before PostgreSQL 16 no granting role is named, so a non-superuser
