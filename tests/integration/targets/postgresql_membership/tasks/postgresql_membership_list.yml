@@ -140,7 +140,7 @@
   - assert:
       that:
       - result is failed
-      - "'Unknown key(s) grantedby in memberships[0]' in result.msg"
+      - "'memberships.grantedby' in result.msg"
 
   - name: postgresql_membership - a row without groups is rejected
     become_user: "{{ pg_user }}"
@@ -158,7 +158,7 @@
   - assert:
       that:
       - result is failed
-      - "'groups key is required in memberships[0]' in result.msg"
+      - "'missing required arguments: groups' in result.msg"
 
   - name: postgresql_membership - a row with no target_roles and no default is rejected
     become_user: "{{ pg_user }}"

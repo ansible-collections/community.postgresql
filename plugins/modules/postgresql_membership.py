@@ -51,9 +51,6 @@ options:
       memberships that need a different granting role or different options from one
       another, which the top-level parameters cannot express because they name one
       value for the whole task.
-    - "Each object may have the following keys, which mean exactly what the
-      parameters of the same name mean\\: C(groups) (required), C(target_roles),
-      C(granted_by), C(admin_option), C(inherit_option), C(set_option)."
     - Mutually exclusive with I(groups), I(granted_by), I(admin_option),
       I(inherit_option) and I(set_option). Those describe a single membership, so
       naming them next to I(memberships) would leave it open which rows they apply
@@ -73,6 +70,41 @@ options:
     type: list
     elements: dict
     version_added: '5.0.0'
+    suboptions:
+      groups:
+        description:
+        - The list of groups (roles) granted to or revoked from the target roles of
+          this membership.
+        type: list
+        elements: str
+        required: true
+      target_roles:
+        description:
+        - The list of target roles of this membership.
+        - Replaces the top-level I(target_roles) for this membership rather than
+          adding to it. Falls back to it when not named.
+        type: list
+        elements: str
+      granted_by:
+        description:
+        - Role to record as the granting role of this membership.
+        - Requires PostgreSQL 16 or later.
+        type: str
+      admin_option:
+        description:
+        - Controls the membership option C(ADMIN) for this membership.
+        - Requires PostgreSQL 16 or later.
+        type: bool
+      inherit_option:
+        description:
+        - Controls the membership option C(INHERIT) for this membership.
+        - Requires PostgreSQL 16 or later.
+        type: bool
+      set_option:
+        description:
+        - Controls the membership option C(SET) for this membership.
+        - Requires PostgreSQL 16 or later.
+        type: bool
   fail_on_role:
     description:
       - If C(true), fail when group or target_role doesn't exist. If C(false), just warn and continue.
@@ -432,7 +464,9 @@ def parse_memberships(module):
     """Return the memberships of the task as a list of dicts.
 
     One dict per membership, carrying every key of ROW_KEYS, so that the caller can
-    treat the memberships parameter and the top-level parameters the same way.
+    treat the memberships parameter and the top-level parameters the same way. The
+    keys of a row are validated and coerced by the argument spec, which also fills
+    in the ones a row leaves out, so only what the spec cannot express is done here.
 
     Args:
         module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule.
@@ -452,41 +486,20 @@ def parse_memberships(module):
             module.fail_json(msg="An empty memberships list needs target_roles at the top "
                                  "level, naming the roles that are to have no groups")
 
-        membership = dict(groups=[], granted_by=None,
-                          target_roles=as_list(module.params['target_roles']))
-        membership.update((name, None) for name in OPTION_PARAMS)
+        membership = dict((key, None) for key in ROW_KEYS)
+        membership.update(groups=[], target_roles=module.params['target_roles'])
         return [membership]
 
     memberships = []
     for index, row in enumerate(rows):
-        unknown = sorted(set(row) - set(ROW_KEYS))
-        if unknown:
-            module.fail_json(msg="Unknown key(s) %s in memberships[%d]. Known keys are %s"
-                                 % (", ".join(unknown), index, ", ".join(sorted(ROW_KEYS))))
-
-        # Named per row rather than defaulted from the top level, since a row without
-        # it describes no membership at all.
-        if not row.get('groups'):
-            module.fail_json(msg="The groups key is required in memberships[%d]" % index)
-
-        # target_roles is the one key a row may take from the top level. Resolved
-        # here so that everything downstream sees a complete membership.
-        target_roles = row.get('target_roles') or module.params['target_roles']
-        if not target_roles:
+        # The one key a row may take from the top level, which the argument spec has
+        # no way of expressing. Resolved here so everything downstream sees a
+        # complete membership.
+        membership = dict(row)
+        membership['target_roles'] = row['target_roles'] or module.params['target_roles']
+        if not membership['target_roles']:
             module.fail_json(msg="memberships[%d] has no target_roles, and none is set "
                                  "at the top level to fall back to" % index)
-
-        membership = dict(
-            groups=as_list(row['groups']),
-            target_roles=as_list(target_roles),
-            granted_by=row.get('granted_by'),
-        )
-
-        for name in OPTION_PARAMS:
-            # An option left out means "leave as it is", which is what None means
-            # everywhere below, so an absent key and an explicit null are the same.
-            setting = row.get(name)
-            membership[name] = None if setting is None else module.boolean(setting)
 
         memberships.append(membership)
 
@@ -521,28 +534,6 @@ def check_no_duplicate_grants(module, memberships):
                                if membership['granted_by'] else ''))
 
                 seen[grant] = index
-
-
-def as_list(value):
-    """Return value as a list of stripped names.
-
-    The top-level parameters are typed lists of strings, which Ansible splits and
-    coerces. A memberships row is an untyped dict, so a name given as a plain string
-    or a comma-separated one has to be accepted here instead.
-
-    Args:
-        value (str or list) -- one name, a comma-separated list of them, or a list.
-
-    Returns the names (list of str).
-    """
-    if not isinstance(value, list):
-        value = str(value).split(',')
-
-    return [str(name).strip() for name in value if str(name).strip()]
-
-# ===========================================
-# Module execution.
-#
 
 
 def merge_role_lists(target, source):
@@ -590,7 +581,14 @@ def main():
         groups=dict(type='list', elements='str', aliases=['group', 'source_role', 'source_roles'],
                     removed_in_version='6.0.0', removed_from_collection='community.postgresql'),
         target_roles=dict(type='list', elements='str', aliases=['target_role', 'user', 'users']),
-        memberships=dict(type='list', elements='dict'),
+        memberships=dict(type='list', elements='dict', options=dict(
+            groups=dict(type='list', elements='str', required=True),
+            target_roles=dict(type='list', elements='str'),
+            granted_by=dict(type='str'),
+            admin_option=dict(type='bool'),
+            inherit_option=dict(type='bool'),
+            set_option=dict(type='bool'),
+        )),
         admin_option=dict(type='bool', default=None, removed_in_version='6.0.0',
                           removed_from_collection='community.postgresql'),
         inherit_option=dict(type='bool', default=None, removed_in_version='6.0.0',
