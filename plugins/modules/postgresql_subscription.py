@@ -219,8 +219,10 @@ final_state:
 from copy import deepcopy
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+    pg_quote_name,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
@@ -389,7 +391,8 @@ class PgSubscription():
         """
         query_fragments = []
         query_fragments.append("CREATE SUBSCRIPTION %s CONNECTION '%s' "
-                               "PUBLICATION %s" % (self.name, connparams, ', '.join(publications)))
+                               "PUBLICATION %s" % (pg_quote_name(self.name), connparams,
+                                                   ', '.join(pg_quote_name(p) for p in publications)))
 
         if subsparams:
             query_fragments.append("WITH (%s)" % subsparams)
@@ -466,7 +469,7 @@ class PgSubscription():
             changed (bool): True if the subscription has been removed, otherwise False.
         """
         if self.exists:
-            query_fragments = ["DROP SUBSCRIPTION %s" % self.name]
+            query_fragments = ["DROP SUBSCRIPTION %s" % pg_quote_name(self.name)]
             if cascade:
                 query_fragments.append("CASCADE")
 
@@ -485,7 +488,7 @@ class PgSubscription():
         Returns:
             True if successful, False otherwise.
         """
-        query = 'ALTER SUBSCRIPTION %s OWNER TO "%s"' % (self.name, role)
+        query = 'ALTER SUBSCRIPTION %s OWNER TO %s' % (pg_quote_name(self.name), pg_quote_name(role))
         return self.__exec_sql(query, check_mode=check_mode)
 
     def set_comment(self, comment, check_mode=True):
@@ -516,7 +519,7 @@ class PgSubscription():
         Returns:
             True if successful, False otherwise.
         """
-        query = 'ALTER SUBSCRIPTION %s REFRESH PUBLICATION' % self.name
+        query = 'ALTER SUBSCRIPTION %s REFRESH PUBLICATION' % pg_quote_name(self.name)
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __set_params(self, params_to_update, check_mode=True):
@@ -532,7 +535,7 @@ class PgSubscription():
         Returns:
             True if successful, False otherwise.
         """
-        query = 'ALTER SUBSCRIPTION %s SET (%s)' % (self.name, ', '.join(params_to_update))
+        query = 'ALTER SUBSCRIPTION %s SET (%s)' % (pg_quote_name(self.name), ', '.join(params_to_update))
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __set_conn_params(self, connparams, check_mode=True):
@@ -548,7 +551,7 @@ class PgSubscription():
         Returns:
             True if successful, False otherwise.
         """
-        query = "ALTER SUBSCRIPTION %s CONNECTION '%s'" % (self.name, connparams)
+        query = "ALTER SUBSCRIPTION %s CONNECTION '%s'" % (pg_quote_name(self.name), connparams)
         return self.__exec_sql(query, check_mode=check_mode)
 
     def __set_publications(self, publications, check_mode=True):
@@ -564,7 +567,8 @@ class PgSubscription():
         Returns:
             True if successful, False otherwise.
         """
-        query = 'ALTER SUBSCRIPTION %s SET PUBLICATION %s' % (self.name, ', '.join(publications))
+        quoted_publications = ', '.join(pg_quote_name(p) for p in publications)
+        query = 'ALTER SUBSCRIPTION %s SET PUBLICATION %s' % (pg_quote_name(self.name), quoted_publications)
         return self.__exec_sql(query, check_mode=check_mode)
 
     def enable(self, enabled=True, check_mode=True):
@@ -580,9 +584,9 @@ class PgSubscription():
             True if successful, False otherwise.
         """
         if enabled:
-            query = 'ALTER SUBSCRIPTION %s ENABLE' % self.name
+            query = 'ALTER SUBSCRIPTION %s ENABLE' % pg_quote_name(self.name)
         else:
-            query = 'ALTER SUBSCRIPTION %s DISABLE' % self.name
+            query = 'ALTER SUBSCRIPTION %s DISABLE' % pg_quote_name(self.name)
 
         return self.__exec_sql(query, check_mode=check_mode)
 

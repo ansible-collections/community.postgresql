@@ -304,8 +304,10 @@ newschema:
 
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+    pg_quote_name,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
@@ -443,7 +445,7 @@ class Sequence(object):
         """Implements ALTER SEQUENCE RENAME TO command behavior."""
         query = ['ALTER SEQUENCE']
         query.append(self.__add_schema())
-        query.append('RENAME TO "%s"' % self.module.params['rename_to'])
+        query.append('RENAME TO %s' % pg_quote_name(self.module.params['rename_to']))
 
         return exec_sql(self, ' '.join(query), return_bool=True)
 
@@ -451,7 +453,7 @@ class Sequence(object):
         """Implements ALTER SEQUENCE OWNER TO command behavior."""
         query = ['ALTER SEQUENCE']
         query.append(self.__add_schema())
-        query.append('OWNER TO "%s"' % self.module.params['owner'])
+        query.append('OWNER TO %s' % pg_quote_name(self.module.params['owner']))
 
         return exec_sql(self, ' '.join(query), return_bool=True)
 
@@ -459,12 +461,12 @@ class Sequence(object):
         """Implements ALTER SEQUENCE SET SCHEMA command behavior."""
         query = ['ALTER SEQUENCE']
         query.append(self.__add_schema())
-        query.append('SET SCHEMA "%s"' % self.module.params['newschema'])
+        query.append('SET SCHEMA %s' % pg_quote_name(self.module.params['newschema']))
 
         return exec_sql(self, ' '.join(query), return_bool=True)
 
     def __add_schema(self):
-        return '"%s"."%s"' % (self.schema, self.name)
+        return '%s.%s' % (pg_quote_name(self.schema), pg_quote_name(self.name))
 
 
 # ===========================================

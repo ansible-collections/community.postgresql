@@ -831,17 +831,58 @@
       - result is failed
       - result.msg == 'Passed input \'{{ dangerous_name }}\' is potentially dangerous'
 
+  # The name is escaped as a single identifier, so the injection attempt ends up as
+  # part of the role name instead of executable SQL. It is created, not rejected.
+  # A comment is set at the same time: COMMENT ON interpolates the name into its
+  # statement, so it is the other place the name has to be quoted.
   - name: Create role with potentially dangerous name, trust
     <<: *task_parameters
     postgresql_user:
       <<: *pg_parameters
       name: '{{ dangerous_name }}'
-    ignore_errors: true
+      comment: 'set on a role whose name needs quoting'
 
   - assert:
       that:
-      - result is failed
-      - result.msg == 'User escaped identifiers must escape extra quotes'
+      - result is changed
+
+  - name: check the comment landed on the literal role name
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >-
+        SELECT pg_catalog.shobj_description(r.oid, 'pg_authid') AS comment
+        FROM pg_catalog.pg_roles AS r WHERE r.rolname = %s
+      positional_args:
+      - '{{ dangerous_name }}'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].comment == 'set on a role whose name needs quoting'
+
+  - name: check that the dangerous name was stored literally, and nothing was executed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT rolname FROM pg_catalog.pg_roles WHERE rolname = %s"
+      positional_args:
+      - '{{ dangerous_name }}'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
+  - name: Remove the role with the potentially dangerous name
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ dangerous_name }}'
+      state: absent
+
+  - assert:
+      that:
+      - result is changed
 
 ##### Test error handling when the database is read-only
 

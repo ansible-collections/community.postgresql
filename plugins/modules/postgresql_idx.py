@@ -262,8 +262,10 @@ valid:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+    pg_quote_name,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
@@ -400,9 +402,11 @@ class Index(object):
         if concurrent:
             query += ' CONCURRENTLY'
 
-        query += ' "%s"' % self.name
+        query += ' %s' % pg_quote_name(self.name)
 
-        query += ' ON "%s"."%s" ' % (self.schema, tblname)
+        # Schema-qualified: each part is quoted on its own, so a dot in either name
+        # stays part of that name.
+        query += ' ON %s.%s ' % (pg_quote_name(self.schema), pg_quote_name(tblname))
 
         query += 'USING %s (%s)' % (idxtype, columns)
 
@@ -410,7 +414,7 @@ class Index(object):
             query += ' WITH (%s)' % storage_params
 
         if tblspace:
-            query += ' TABLESPACE "%s"' % tblspace
+            query += ' TABLESPACE %s' % pg_quote_name(tblspace)
 
         if cond:
             query += ' WHERE %s' % cond
@@ -440,7 +444,7 @@ class Index(object):
         if concurrent:
             query += ' CONCURRENTLY'
 
-        query += ' "%s"."%s"' % (self.schema, self.name)
+        query += ' %s.%s' % (pg_quote_name(self.schema), pg_quote_name(self.name))
 
         if cascade:
             query += ' CASCADE'

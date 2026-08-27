@@ -1,0 +1,75 @@
+# Copyright: (c) 2026, Florian R. Hölzlwimmer (@Hoeze) <git.ich@frhoelzlwimmer.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+####################################################################
+# The owner reaches ALTER TABLE ... OWNER TO, which interpolated   #
+# the role name raw. A name containing a double quote must be      #
+# quoted as an identifier instead.                                 #
+####################################################################
+
+- name: postgresql_table - quoted names
+  block:
+
+  - name: postgresql_table - create a role whose name contains a double quote
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'tb"owner'
+
+  - name: postgresql_table - create a table owned by that role
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_table:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: quoted_owner_table
+      columns:
+      - id int
+      owner: 'tb"owner'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: postgresql_table - the owner is stored under the literal name
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: >-
+        SELECT pg_catalog.pg_get_userbyid(c.relowner) AS owner
+        FROM pg_catalog.pg_class c WHERE c.relname = %s
+      positional_args:
+      - quoted_owner_table
+    register: result
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].owner == 'tb"owner'
+
+  always:
+
+  - name: postgresql_table - drop the table
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_table:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: quoted_owner_table
+      state: absent
+    ignore_errors: true
+
+  - name: postgresql_table - drop the quoted owner
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'tb"owner'
+      state: absent
+    ignore_errors: true

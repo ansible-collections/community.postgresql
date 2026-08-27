@@ -256,6 +256,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
+    pg_quote_name,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
@@ -379,7 +380,7 @@ class Table(object):
             query += " WITH (%s)" % params
 
         if tblspace:
-            query += ' TABLESPACE "%s"' % tblspace
+            query += ' TABLESPACE %s' % pg_quote_name(tblspace)
 
         if exec_sql(self, query, return_bool=True):
             changed = True
@@ -426,7 +427,7 @@ class Table(object):
             query += " WITH (%s)" % params
 
         if tblspace:
-            query += ' TABLESPACE "%s"' % tblspace
+            query += ' TABLESPACE %s' % pg_quote_name(tblspace)
 
         if exec_sql(self, query, return_bool=True):
             changed = True
@@ -446,7 +447,8 @@ class Table(object):
         return exec_sql(self, query, return_bool=True)
 
     def set_owner(self, username):
-        query = 'ALTER TABLE %s OWNER TO "%s"' % (pg_quote_identifier(self.name, 'table'), username)
+        query = 'ALTER TABLE %s OWNER TO %s' % (pg_quote_identifier(self.name, 'table'),
+                                                pg_quote_name(username))
         return exec_sql(self, query, return_bool=True)
 
     def drop(self, cascade=False):
@@ -459,7 +461,8 @@ class Table(object):
         return exec_sql(self, query, return_bool=True)
 
     def set_tblspace(self, tblspace):
-        query = 'ALTER TABLE %s SET TABLESPACE "%s"' % (pg_quote_identifier(self.name, 'table'), tblspace)
+        query = 'ALTER TABLE %s SET TABLESPACE %s' % (pg_quote_identifier(self.name, 'table'),
+                                                      pg_quote_name(tblspace))
         return exec_sql(self, query, return_bool=True)
 
     def set_stor_params(self, params):

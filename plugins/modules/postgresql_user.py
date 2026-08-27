@@ -25,6 +25,9 @@ options:
   name:
     description:
     - Name of the user (role) to add or remove.
+    - The name is taken literally. A C(") in it is escaped by the module and must not be
+      doubled, and a name wrapped in C(") is a name containing quotes rather than a
+      pre-quoted identifier.
     type: str
     required: true
     aliases:
@@ -145,8 +148,7 @@ options:
       - Removes any parameter from the user that is not listed here.
       - Parameters that are present in the database but are not included in this list will only be reset, if
         O(reset_unspecified_configuration=true).
-      - Inputs to O(user) as well as keys and values in this parameter are quoted by the module. If you require the
-        user to contain a C("), you need to double it, otherwise the module will fail. C(") and C(') are not allowed in
+      - Keys and values in this parameter are quoted by the module. C(") and C(') are not allowed in
         configuration keys and any C(') in the value of a configuration will be escaped by this module.
         Additionally, parameters and values are checked if O(trust_input) is V(false).
     type: dict
@@ -316,9 +318,8 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils import \
     saslprep
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
-    SQLParseError,
     check_input,
-    pg_quote_identifier,
+    pg_quote_name,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     HAS_PSYCOPG,
@@ -397,7 +398,7 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
     # literal
     query_password_data = dict(password=password, expires=expires)
     query = ['CREATE USER %(user)s' %
-             {"user": _pg_quote_user(user, module)}]
+             {"user": pg_quote_name(user, for_params=True)}]
     if password is not None and password != '':
         query.append("WITH %(crypt)s" % {"crypt": encrypted})
         query.append("PASSWORD %(password)s")
@@ -407,7 +408,8 @@ def user_add(cursor, user, password, role_attr_flags, encrypted, expires, conn_l
         query.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
     query.append(role_attr_flags)
     query = ' '.join(query)
-    executed_queries.append(query)
+    # Reported with the doubling undone, since that is what psycopg leaves behind.
+    executed_queries.append(query.replace('%%', '%'))
     cursor.execute(query, query_password_data)
     return True
 
@@ -586,7 +588,8 @@ def exec_alter_user(module, cursor, statement, params=None):
 
     try:
         cursor.execute(statement, params)
-        executed_queries.append(statement)
+        # Reported with the doubling undone, since that is what psycopg leaves behind.
+        executed_queries.append(statement.replace('%%', '%'))
         changed = True
     # We could catch psycopg.errors.ReadOnlySqlTransaction directly,
     # but that was added only in Psycopg 2.8
@@ -642,7 +645,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
         # If we are here, something does need to change.
         # Compose a statement and execute it
-        alter = ['ALTER USER %(user)s' % {"user": _pg_quote_user(user, module)}]
+        alter = ['ALTER USER %(user)s' % {"user": pg_quote_name(user, for_params=True)}]
         if pwchanging:
             if password != '':
                 alter.append("WITH %(crypt)s" % {"crypt": encrypted})
@@ -672,7 +675,7 @@ def user_alter(db_connection, module, user, password, role_attr_flags, encrypted
 
         # If they need, compose a statement and execute
         alter = ['ALTER USER %(user)s' %
-                 {"user": _pg_quote_user(user, module)}]
+                 {"user": pg_quote_name(user, for_params=True)}]
         if role_attr_flags:
             alter.append('WITH %s' % role_attr_flags)
 
@@ -693,7 +696,7 @@ def user_delete(cursor, user, module):
     """Try to remove a user. Returns True if successful otherwise False"""
     cursor.execute("SAVEPOINT ansible_pgsql_user_delete")
     try:
-        query = 'DROP USER %s' % _pg_quote_user(user, module)
+        query = 'DROP USER %s' % pg_quote_name(user)
         executed_queries.append(query)
         cursor.execute(query)
     except Exception as e:
@@ -809,17 +812,17 @@ def user_configuration(cursor, module, user, configuration, reset_unspec_config,
         # It seems psycopg's prepared statements don't work with 'ALTER ROLE' at this point.
         # This is vulnerable to SQL-injections (added to docs) but I don't see a better way to do this.
         for item in config_updates["reset"]:
-            query = 'ALTER ROLE %(user)s RESET "%(key)s";' % {"user": _pg_quote_user(user, module), "key": item}
+            query = 'ALTER ROLE %(user)s RESET "%(key)s";' % {"user": pg_quote_name(user), "key": item}
             executed_queries.append(query)
             cursor.execute(query)
             changed = True
         for key, value in config_updates["update"].items():
             if quote_values:
                 query = ('ALTER ROLE %(user)s SET "%(key)s" TO \'%(value)s\';' %
-                         {"user": _pg_quote_user(user, module), "key": key, "value": value})
+                         {"user": pg_quote_name(user), "key": key, "value": value})
             else:
                 query = ('ALTER ROLE %(user)s SET "%(key)s" TO %(value)s;' %
-                         {"user": _pg_quote_user(user, module), "key": key, "value": value})
+                         {"user": pg_quote_name(user), "key": key, "value": value})
             executed_queries.append(query)
             cursor.execute(query)
             changed = True
@@ -827,20 +830,6 @@ def user_configuration(cursor, module, user, configuration, reset_unspec_config,
         module.fail_json("Unable to update configuration for '%(user)s' due to: %(exception)s" %
                          {"user": user, "exception": e})
     return changed
-
-
-def _pg_quote_user(user, module):
-    """correctly escape users, pg_quote_identifiers will fail if the user contains a dot but is not pre-quoted"""
-    if user[0] != '"' and user[-1] != '"':
-        # we pre-quote users to make sure pg_quote_identifiers doesn't fail on dots
-        return pg_quote_identifier('"%s"' % user, 'role')
-    elif (user[0] == '"' and user[-1] != '"') or (user[0] != '"' and user[-1] == '"'):
-        module.fail_json("The value of the user-field can't contain a double-quote in the end "
-                         "if it doesn't start with one and vice-versa.")
-    else:
-        # user is already quoted, we run it through pg_quote_identifiers to make sure it doesn't contain any lonely
-        # double-quotes to prevent SQL-injections
-        return pg_quote_identifier(user, 'role')
 
 
 # ===========================================
@@ -927,11 +916,8 @@ def main():
 
     if state == "present":
         if user_exists(cursor, user):
-            try:
-                changed = user_alter(db_connection, module, user, password,
-                                     role_attr_flags, encrypted, expires, no_password_changes, conn_limit)
-            except SQLParseError as e:
-                module.fail_json(msg=to_native(e), exception=traceback.format_exc())
+            changed = user_alter(db_connection, module, user, password,
+                                 role_attr_flags, encrypted, expires, no_password_changes, conn_limit)
         else:
             try:
                 changed = user_add(cursor, user, password,
@@ -940,8 +926,6 @@ def main():
                 module.fail_json(msg="Unable to add user with given requirement "
                                      "due to : %s" % to_native(e),
                                  exception=traceback.format_exc())
-            except SQLParseError as e:
-                module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
         if comment is not None:
             try:
@@ -960,10 +944,7 @@ def main():
                 changed = True
                 kw['user_removed'] = True
             else:
-                try:
-                    changed, err = user_delete(cursor, user, module)
-                except SQLParseError as e:
-                    module.fail_json(msg=to_native(e), exception=traceback.format_exc())
+                changed, err = user_delete(cursor, user, module)
 
                 if fail_on_user and not changed:
                     msg = "Unable to remove user: %s" % err

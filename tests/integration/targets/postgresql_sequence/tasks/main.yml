@@ -6,3 +6,6 @@
 # Initial CI tests of postgresql_sequence module
 - import_tasks: postgresql_sequence_initial.yml
   when: postgres_version_resp.stdout is version('9.4', '>=')
+
+# Names containing a double quote must be quoted as identifiers:
+- import_tasks: postgresql_sequence_quoted_names.yml

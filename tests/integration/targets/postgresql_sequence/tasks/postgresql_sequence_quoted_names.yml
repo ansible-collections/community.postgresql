@@ -1,0 +1,159 @@
+# Copyright: (c) 2026, Florian R. Hölzlwimmer (@Hoeze) <git.ich@frhoelzlwimmer.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+####################################################################
+# A name containing a double quote must be quoted as an identifier #
+# rather than interpolated raw. The sequence's own name is schema  #
+# qualified, so each part is quoted separately and a dot in either #
+# stays part of that name.                                         #
+####################################################################
+
+- name: postgresql_sequence - quoted names
+  block:
+
+  - name: postgresql_sequence - create a role and schema whose names contain a double quote
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'se"qowner'
+
+  - name: postgresql_sequence - create the quoted schemas
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_schema:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+    with_items:
+    - 'sq"schema'
+    - 'sq"other'
+
+  - name: postgresql_sequence - create a sequence with a quoted name in a quoted schema
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_sequence:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'se"q'
+      schema: 'sq"schema'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: postgresql_sequence - it exists under the literal names
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: >-
+        SELECT c.relname, n.nspname FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'S' AND c.relname = %s AND n.nspname = %s
+      positional_args:
+      - 'se"q'
+      - 'sq"schema'
+    register: result
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
+  # owner reaches ALTER SEQUENCE ... OWNER TO
+  - name: postgresql_sequence - give it a quoted owner
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_sequence:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'se"q'
+      schema: 'sq"schema'
+      owner: 'se"qowner'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  # rename_to reaches ALTER SEQUENCE ... RENAME TO
+  - name: postgresql_sequence - rename it to another quoted name
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_sequence:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'se"q'
+      schema: 'sq"schema'
+      rename_to: 'se"q2'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  # newschema reaches ALTER SEQUENCE ... SET SCHEMA
+  - name: postgresql_sequence - move it to another quoted schema
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_sequence:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'se"q2'
+      schema: 'sq"schema'
+      newschema: 'sq"other'
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: postgresql_sequence - renamed and moved, with the owner intact
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: >-
+        SELECT n.nspname, pg_catalog.pg_get_userbyid(c.relowner) AS owner
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relkind = 'S' AND c.relname = %s
+      positional_args:
+      - 'se"q2'
+    register: result
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].nspname == 'sq"other'
+      - result.query_result[0].owner == 'se"qowner'
+
+  always:
+
+  - name: postgresql_sequence - drop the quoted schemas
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_schema:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+      state: absent
+      cascade_drop: true
+    ignore_errors: true
+    with_items:
+    - 'sq"schema'
+    - 'sq"other'
+
+  - name: postgresql_sequence - drop the quoted owner
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'se"qowner'
+      state: absent
+    ignore_errors: true

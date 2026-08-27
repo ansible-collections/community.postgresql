@@ -1,0 +1,16 @@
+breaking_changes:
+  - postgresql_membership - on PostgreSQL 16 and later the module names the granting role explicitly. A task where the connecting role holds ``ADMIN OPTION`` only indirectly now needs ``granted_by`` set to the role that holds it.
+  - postgresql_membership - ``state=absent`` and ``state=exact`` no longer report a change for a membership they cannot revoke, meaning one recorded under a different granting role. A handler triggered by that result no longer fires.
+
+minor_changes:
+  - postgresql_membership - add the ``admin_option``, ``inherit_option`` and ``set_option`` options, controlling the membership options of the grants the module makes on PostgreSQL 16 and later (https://github.com/ansible-collections/community.postgresql/issues/757).
+  - postgresql_membership - add the ``granted_by`` option, naming the role to record as the granting role. It is required when the connecting role holds ``ADMIN OPTION`` only indirectly, and manages a grant made by a different role.
+  - postgresql_membership - add the ``grants`` and ``effective_options`` return values, reporting every grant of the requested pairs and the options the target role effectively holds.
+  - postgresql_membership - ``state=exact`` now reports ``granted`` with an entry for every requested group, as ``state=present`` already did. It previously listed only the groups that changed, so a task asserting ``result.granted == {}`` on an unchanged run now sees one empty entry per requested group.
+
+bugfixes:
+  - postgresql_membership - fix the module not recognizing its own grant on PostgreSQL 16 and later unless connected as the bootstrap superuser. ``state=present`` reported a change on every run and ``state=absent`` issued no ``REVOKE`` at all.
+  - postgresql_membership - fix ``state=present`` not creating its own grant on PostgreSQL 16 and later when only another role had granted the membership, for example through the ``WITH ADMIN OPTION`` grant PostgreSQL creates when a non-superuser creates a role (https://github.com/ansible-collections/community.postgresql/issues/757).
+  - postgresql_membership - fix a group named more than once being granted or revoked twice, which emitted the statement twice and listed the target role twice in ``granted`` or ``revoked``.
+  - postgresql_membership - fix an empty ``target_roles`` list failing with a SQL syntax error; it is now a no-op, as an empty ``groups`` list already was.
+  - postgresql_membership - fix a group or role whose name contains a single or double quote producing invalid SQL. Names are now passed as query parameters or quoted as identifiers instead of being interpolated raw.

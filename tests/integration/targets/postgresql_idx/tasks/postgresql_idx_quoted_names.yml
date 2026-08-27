@@ -1,0 +1,106 @@
+# Copyright: (c) 2026, Florian R. Hölzlwimmer (@Hoeze) <git.ich@frhoelzlwimmer.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+####################################################################
+# CREATE INDEX names the index and the schema-qualified table, and #
+# DROP INDEX names the schema-qualified index. Each part is quoted #
+# separately, so a double quote in any of them is escaped and a    #
+# dot stays part of the name it belongs to.                        #
+####################################################################
+
+- name: postgresql_idx - quoted names
+  block:
+
+  - name: postgresql_idx - create a schema whose name contains a double quote
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_schema:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'ix"schema'
+
+  - name: postgresql_idx - create a table whose name contains a double quote
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: 'CREATE TABLE "ix""schema"."ix""table" (col1 int)'
+
+  - name: postgresql_idx - create an index whose name contains a double quote
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_idx:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      schema: 'ix"schema'
+      table: 'ix"table'
+      name: 'ix"index'
+      columns: col1
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: postgresql_idx - it exists under the literal names
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: >-
+        SELECT schemaname, tablename, indexname FROM pg_catalog.pg_indexes
+        WHERE schemaname = %s AND indexname = %s
+      positional_args:
+      - 'ix"schema'
+      - 'ix"index'
+    register: result
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].tablename == 'ix"table'
+
+  - name: postgresql_idx - drop it again
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_idx:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      schema: 'ix"schema'
+      name: 'ix"index'
+      state: absent
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+
+  - name: postgresql_idx - it is really gone
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "SELECT count(*) AS count FROM pg_catalog.pg_indexes WHERE indexname = %s"
+      positional_args:
+      - 'ix"index'
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].count == 0
+
+  always:
+
+  - name: postgresql_idx - drop the quoted schema
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_schema:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: 'ix"schema'
+      state: absent
+      cascade_drop: true
+    ignore_errors: true

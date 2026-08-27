@@ -53,3 +53,6 @@
 
 # Test connection limit zero fix (issue #879)
 - import_tasks: postgresql_db_conn_limit_zero.yml
+
+# Names containing a double quote must be quoted as identifiers:
+- import_tasks: postgresql_db_quoted_names.yml
