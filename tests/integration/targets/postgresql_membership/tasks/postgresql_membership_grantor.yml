@@ -714,15 +714,34 @@
       - result is not changed
       - result.queries == []
 
-  # Without granted_by the module manages a different grant, so it makes its own
-  # instead of treating gb_admin's as already satisfying the request.
-  - name: postgresql_membership - the default grantor is a separate grant
+  # The deprecated option names no granting role, so the pair is the membership
+  # and gb_admin's grant already satisfies it.
+  - name: postgresql_membership - the deprecated option takes gb_admin's grant as the membership
     become_user: "{{ pg_user }}"
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
       group: "gb_group"
+      target_role: "gb_user"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  # A memberships row without granted_by manages the grant of the derived role,
+  # so it makes its own instead of treating gb_admin's as satisfying the request.
+  - name: postgresql_membership - the default grantor is a separate grant
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "gb_group"
       target_role: "gb_user"
       state: present
     register: result
