@@ -4,9 +4,10 @@
 ####################################################################
 
 # Facts shared by every task file below. The server version gates the PostgreSQL 16
-# features, and from 16 on the module names the granting role explicitly, which is the
-# bootstrap superuser when the connecting role is a superuser. Defined here so that no
-# task file depends on another one having run first.
+# features, and from 16 on a memberships row names the granting role in every statement
+# and the deprecated groups form names it in REVOKE, which is the bootstrap superuser
+# when the connecting role is a superuser. Defined here so that no task file depends on
+# another one having run first.
 - name: postgresql_membership - detect server version and bootstrap superuser
   become_user: "{{ pg_user }}"
   become: true

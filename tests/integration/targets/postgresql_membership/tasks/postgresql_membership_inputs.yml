@@ -42,7 +42,7 @@
   - assert:
       that:
       - result is changed
-      - result.queries == ['GRANT "in_group1" TO "o\'brien"' ~ granted_by_sql]
+      - result.queries == ['GRANT "in_group1" TO "o\'brien"']
 
   - name: postgresql_membership - the membership really exists under the literal name
     become_user: "{{ pg_user }}"
@@ -96,11 +96,12 @@
   - assert:
       that:
       - result is changed
-      - result.queries == ['GRANT "in_group1" TO "in_user1"' ~ granted_by_sql]
+      - result.queries == ['GRANT "in_group1" TO "in_user1"']
       - 'result.granted == {"in_group1": ["in_user1"]}'
 
   # queries is ordered by target role and then by group, because each role's memberships
-  # are read once rather than once per pair.
+  # are read once rather than once per pair. The deprecated form's GRANT names no
+  # granting role, so there is no clause to expect on PostgreSQL 16 either.
   - name: postgresql_membership - queries are ordered by target role, then by group
     become_user: "{{ pg_user }}"
     become: true
@@ -121,9 +122,9 @@
       - result is changed
       # in_user1 already has in_group1 from the task above, so only three are emitted,
       # and they still come out grouped by target role in the order asked for.
-      - result.queries == ['GRANT "in_group1" TO "in_user2"' ~ granted_by_sql,
-                           'GRANT "in_group2" TO "in_user2"' ~ granted_by_sql,
-                           'GRANT "in_group2" TO "in_user1"' ~ granted_by_sql]
+      - result.queries == ['GRANT "in_group1" TO "in_user2"',
+                           'GRANT "in_group2" TO "in_user2"',
+                           'GRANT "in_group2" TO "in_user1"']
 
   # An empty target_roles list is a no-op, and granted still reports an entry for every
   # group that was asked about.

@@ -2,8 +2,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 ####################################################################
-# Tests for the grantor-scoped membership model (PostgreSQL 16+). #
-# See the module's notes section for the model itself.            #
+# Tests for the two membership models on PostgreSQL 16+: the       #
+# memberships form manages one grant, identified by its granting  #
+# role, and the deprecated groups form manages the pair, whoever  #
+# granted it. See the module's notes section for the models.      #
 ####################################################################
 
 - name: postgresql_membership - grantor model (PostgreSQL >= 16 only)
@@ -43,7 +45,8 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "grantor_group"
+      memberships:
+      - groups: "grantor_group"
       target_role: "grantor_user"
       state: present
     register: result
@@ -51,6 +54,7 @@
   - assert:
       that:
       - result is changed
+      - result.queries == ['GRANT "grantor_group" TO "grantor_user"' ~ granted_by_sql]
 
   - name: postgresql_membership - present is idempotent afterwards
     become_user: "{{ pg_user }}"
@@ -58,7 +62,8 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "grantor_group"
+      memberships:
+      - groups: "grantor_group"
       target_role: "grantor_user"
       state: present
     register: result
@@ -120,16 +125,17 @@
       - result.query_result | length == 1
       - result.query_result[0].admin_option == false
 
-  # A plain REVOKE only removes our grant, so the membership survives. The module
-  # must revoke what it owns, warn, and then converge instead of reporting a
-  # change forever.
+  # REVOKE names our granting role, so it removes our grant only and the membership
+  # survives. The module must revoke what it owns, warn, and then converge instead of
+  # reporting a change forever.
   - name: postgresql_membership - absent revokes our grant only
     become_user: "{{ pg_user }}"
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "grantor_group"
+      memberships:
+      - groups: "grantor_group"
       target_role: "grantor_user"
       state: absent
     register: result
@@ -137,6 +143,7 @@
   - assert:
       that:
       - result is changed
+      - result.queries == ['REVOKE "grantor_group" FROM "grantor_user"' ~ granted_by_sql]
       - 'result.revoked == {"grantor_group": ["grantor_user"]}'
       - result.warnings | select('search', 'remains a member') | list | length > 0
 
@@ -146,7 +153,8 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "grantor_group"
+      memberships:
+      - groups: "grantor_group"
       target_role: "grantor_user"
       state: absent
     register: result
@@ -181,7 +189,8 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "grantor_keep"
+      memberships:
+      - groups: "grantor_keep"
       target_role: "grantor_user"
       state: exact
     register: result
@@ -217,7 +226,8 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       db: postgres
-      group: "grantor_keep"
+      memberships:
+      - groups: "grantor_keep"
       target_role: "grantor_user"
       state: exact
     register: result
@@ -242,6 +252,202 @@
     - "grantor_other"
     - "grantor_keep"
     - "grantor_group"
+
+####################################################################
+# The deprecated groups form names no granting role, so it takes  #
+# the (group, target role) pair as the membership: a grant by any #
+# role satisfies it, its GRANT leaves the choice of granting role #
+# to PostgreSQL, and absent removes every grant of the pair.      #
+####################################################################
+
+- name: postgresql_membership - pair identity of the deprecated groups form (PostgreSQL >= 16 only)
+  when: pg_ver_num | int >= 160000
+  block:
+
+  - name: postgresql_membership - create roles for the pair identity tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+    with_items:
+    - "pair_group"
+    - "pair_keep"
+    - "pair_user"
+    - "pair_other"
+
+  - name: postgresql_membership - let another role grant the membership
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ item }}"
+    with_items:
+    - 'GRANT "pair_group" TO "pair_other" WITH ADMIN OPTION'
+    - 'GRANT "pair_group" TO "pair_user" GRANTED BY "pair_other"'
+
+  # Any grant of the pair satisfies it, whoever made it: there is no granting role
+  # of our own to tell it apart from.
+  - name: postgresql_membership - present is satisfied by another role's grant
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      group: "pair_group"
+      target_role: "pair_user"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+      - 'result.granted == {"pair_group": []}'
+      - result.grants.pair_group.pair_user | map(attribute='grantor') | list == ['pair_other']
+
+  # A second grant of the pair, recorded under the bootstrap superuser. absent has to
+  # remove both, one REVOKE per granting role, for the membership to go away.
+  - name: postgresql_membership - grant the pair a second time as the superuser
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: 'GRANT "pair_group" TO "pair_user"'
+
+  - name: postgresql_membership - absent revokes every grant of the pair
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      group: "pair_group"
+      target_role: "pair_user"
+      state: absent
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - 'result.revoked == {"pair_group": ["pair_user"]}'
+      # Both sides sorted: the bootstrap superuser's name does not always sort last.
+      - (result.queries | sort) == (['REVOKE "pair_group" FROM "pair_user" GRANTED BY "pair_other"',
+                                     'REVOKE "pair_group" FROM "pair_user"' ~ granted_by_sql] | sort)
+      - result.warnings | default([]) | select('search', 'remains a member') | list | length == 0
+
+  - name: postgresql_membership - the membership is really gone
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_count }}"
+      positional_args:
+      - "pair_group"
+      - "pair_user"
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].count == 0
+
+  - name: postgresql_membership - absent converges
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      group: "pair_group"
+      target_role: "pair_user"
+      state: absent
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  # GRANT names no granting role. PostgreSQL picks one, and which it picked is not
+  # something the module reads back or depends on.
+  - name: postgresql_membership - present grants without naming a granting role
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      group: "pair_group"
+      target_role: "pair_user"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "pair_group" TO "pair_user"']
+      - 'result.granted == {"pair_group": ["pair_user"]}'
+
+  # exact prunes by pair too: an unwanted group is revoked under every granting role.
+  - name: postgresql_membership - let the other role grant the unwanted group as well
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: 'GRANT "pair_group" TO "pair_user" GRANTED BY "pair_other"'
+
+  - name: postgresql_membership - exact revokes every grant of an unwanted group
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      group: "pair_keep"
+      target_role: "pair_user"
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - 'result.granted == {"pair_keep": ["pair_user"]}'
+      - 'result.revoked == {"pair_group": ["pair_user"]}'
+      - result.queries | length == 3
+
+  - name: postgresql_membership - the unwanted membership is really gone
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_count }}"
+      positional_args:
+      - "pair_group"
+      - "pair_user"
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].count == 0
+
+  always:
+
+  - name: postgresql_membership - drop roles from the pair identity tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+      state: absent
+    ignore_errors: true
+    with_items:
+    - "pair_user"
+    - "pair_other"
+    - "pair_keep"
+    - "pair_group"
 
 # Before PostgreSQL 16 the grantor is not part of the membership identity: a pair
 # can only be granted once and any role holding ADMIN OPTION can revoke it. The

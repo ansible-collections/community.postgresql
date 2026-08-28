@@ -42,7 +42,7 @@
     that:
     - result is changed
     - result.groups == ["group1"]
-    - result.queries == ['GRANT "group1" TO "user1"' ~ granted_by_sql]
+    - result.queries == ['GRANT "group1" TO "user1"']
     - result.granted["group1"] == ["user1"]
     - result.state == "present"
     - result.target_roles == ["user1"]
@@ -89,7 +89,7 @@
     that:
     - result is changed
     - result.groups == ["group1"]
-    - result.queries == ['GRANT "group1" TO "user1"' ~ granted_by_sql]
+    - result.queries == ['GRANT "group1" TO "user1"']
     - result.granted["group1"] == ["user1"]
     - result.state == "present"
     - result.target_roles == ["user1"]
@@ -257,7 +257,7 @@
     that:
     - result is changed
     - result.groups == ["group1", "group2"]
-    - result.queries == ['GRANT "group1" TO "user1"' ~ granted_by_sql]
+    - result.queries == ['GRANT "group1" TO "user1"']
     - result.granted["group1"] == ["user1"]
     - result.granted["group2"] == []
     - result.state == "present"
@@ -343,7 +343,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['GRANT "group.with.dots" TO "user1"' ~ granted_by_sql]
+    - result.queries == ['GRANT "group.with.dots" TO "user1"']
 
 #############################
 # Check trust_input parameter

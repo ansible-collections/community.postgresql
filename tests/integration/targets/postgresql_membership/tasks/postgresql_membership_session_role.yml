@@ -2,11 +2,13 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 ####################################################################
-# Tests for the granting role the module names when the connecting #
-# role is not a superuser. session_role is what makes that case    #
-# reachable here: CURRENT_ROLE follows SET ROLE, so the module      #
-# resolves the granting role for the session role rather than for  #
-# login_user, even though login_user is a superuser.               #
+# Tests for the granting role a memberships row names when the     #
+# connecting role is not a superuser, and for the deprecated       #
+# groups form, which names none and lets PostgreSQL pick one.      #
+# session_role is what makes that case reachable here:             #
+# CURRENT_ROLE follows SET ROLE, so the module resolves the        #
+# granting role for the session role rather than for login_user,   #
+# even though login_user is a superuser.                           #
 ####################################################################
 
 - name: postgresql_membership - non-superuser granting role (PostgreSQL >= 16 only)
@@ -55,8 +57,9 @@
     - 'GRANT "sr_usage_grp" TO "sr_usage_holder" WITH ADMIN OPTION'
     - 'GRANT "sr_usage_holder" TO "sr_indirect" WITH INHERIT TRUE, SET FALSE'
 
-  # A non-superuser holding ADMIN OPTION directly is named as the granting role,
-  # not the bootstrap superuser that login_user would have produced.
+  # The deprecated form names no granting role. PostgreSQL records the grant under
+  # the connecting role, which holds ADMIN OPTION directly, and the REVOKE names
+  # what it finds recorded.
   - name: postgresql_membership - grant as a non-superuser holding ADMIN OPTION directly
     become_user: "{{ pg_user }}"
     become: true
@@ -72,7 +75,7 @@
   - assert:
       that:
       - result is changed
-      - result.queries == ['GRANT "sr_group" TO "sr_member" GRANTED BY "sr_direct"']
+      - result.queries == ['GRANT "sr_group" TO "sr_member"']
       - result.grants.sr_group.sr_member | map(attribute='grantor') | list == ["sr_direct"]
 
   - name: postgresql_membership - and it is idempotent
@@ -109,10 +112,10 @@
       - result is changed
       - result.queries == ['REVOKE "sr_group" FROM "sr_member" GRANTED BY "sr_direct"']
 
-  # The documented breaking change: the module names the connecting role, and
-  # PostgreSQL refuses that when the role only inherits ADMIN OPTION. Reported by
-  # the module before anything is emitted, naming the role that does hold the option
-  # rather than passing the server's error through.
+  # The regression the pair identity fixes: the deprecated form has nothing to name
+  # a granting role with, and PostgreSQL picks one that holds ADMIN OPTION, here
+  # sr_team. Naming the connecting role instead would have been refused, since it
+  # holds the option only through sr_team.
   - name: postgresql_membership - grant as a non-superuser holding ADMIN OPTION only indirectly
     become_user: "{{ pg_user }}"
     become: true
@@ -121,6 +124,80 @@
       session_role: "sr_indirect"
       db: postgres
       group: "sr_group"
+      target_role: "sr_member"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "sr_group" TO "sr_member"']
+      - result.grants.sr_group.sr_member | map(attribute='grantor') | list == ["sr_team"]
+
+  - name: postgresql_membership - and that is idempotent
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  # absent revokes the grant under whatever role PostgreSQL recorded it under.
+  - name: postgresql_membership - absent removes the grant PostgreSQL recorded under sr_team
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      state: absent
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['REVOKE "sr_group" FROM "sr_member" GRANTED BY "sr_team"']
+
+  - name: postgresql_membership - nothing is left of it
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_count }}"
+      positional_args:
+      - "sr_group"
+      - "sr_member"
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].count == 0
+
+  # The documented breaking change of the memberships form: a row names the
+  # connecting role, and PostgreSQL refuses that when the role only inherits ADMIN
+  # OPTION. Reported by the module before anything is emitted, naming the role that
+  # does hold the option rather than passing the server's error through.
+  - name: postgresql_membership - the same membership as a row names sr_indirect, and is refused
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      memberships:
+      - groups: "sr_group"
       target_role: "sr_member"
       state: present
     register: result
@@ -157,7 +234,8 @@
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
       db: postgres
-      group: "sr_nogrant"
+      memberships:
+      - groups: "sr_nogrant"
       target_role: "sr_member"
       state: present
     register: result
@@ -170,19 +248,20 @@
       - "'sr_nogrant: sr_direct' in result.msg"
       - "'Set granted_by' not in result.msg"
 
-  # The reviewed defect: one granting role for a task naming several groups. The
+  # The reviewed defect: one granting role for a row naming several groups. The
   # grantable group must not be granted, since the refusal of the other one takes the
   # whole transaction down with it.
-  - name: postgresql_membership - a task mixing a grantable and a non-grantable group fails
+  - name: postgresql_membership - a row mixing a grantable and a non-grantable group fails
     become_user: "{{ pg_user }}"
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
       db: postgres
-      groups:
-      - "sr_own"
-      - "sr_group"
+      memberships:
+      - groups:
+        - "sr_own"
+        - "sr_group"
       target_role: "sr_member"
       state: present
     register: result
@@ -192,9 +271,9 @@
       that:
       - result is failed
       - '''does not hold ADMIN OPTION on "sr_group"'' in result.msg'
-      - "'split into separate tasks' in result.msg"
+      - "'given a row each' in result.msg"
 
-  - name: postgresql_membership - the grantable group of the failed task was left alone
+  - name: postgresql_membership - the grantable group of the failed row was left alone
     become_user: "{{ pg_user }}"
     become: true
     postgresql_query:
@@ -210,16 +289,17 @@
       that:
       - result.query_result[0].count == 0
 
-  # Splitting the task per group is the documented way out, so the grantable half
-  # has to work on its own.
-  - name: postgresql_membership - the grantable group succeeds in a task of its own
+  # Giving the grantable group a row of its own is the documented way out, so that
+  # row has to work alone.
+  - name: postgresql_membership - the grantable group succeeds in a row of its own
     become_user: "{{ pg_user }}"
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
       db: postgres
-      group: "sr_own"
+      memberships:
+      - groups: "sr_own"
       target_role: "sr_member"
       state: present
     register: result
@@ -229,8 +309,8 @@
       - result is changed
       - result.queries == ['GRANT "sr_own" TO "sr_member" GRANTED BY "sr_indirect"']
 
-  # The other way out, and the one the failure message names second: a row per
-  # granting role, still one task and so still one transaction.
+  # The other way out: a row per granting role, still one task and so still one
+  # transaction.
   - name: postgresql_membership - the same mix succeeds as two memberships rows
     become_user: "{{ pg_user }}"
     become: true

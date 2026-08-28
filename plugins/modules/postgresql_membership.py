@@ -27,6 +27,11 @@ options:
       Use the C(groups) key of I(memberships) instead, which is not deprecated.
     - The list of groups (roles) that need to be granted to or revoked from I(target_roles).
     - Mutually exclusive with I(memberships), and one of the two is required.
+    - Names no granting role and no membership option, so on PostgreSQL 16 and later
+      it identifies a membership by the group and the target role alone. It is
+      present when any role has granted it, C(GRANT) leaves the choice of granting
+      role to PostgreSQL, and I(state=absent) revokes every grant of the pair. Use
+      I(memberships) to manage one grant of a pair, or its options.
     type: list
     elements: str
     aliases:
@@ -123,6 +128,8 @@ options:
       target role, so a group wanted by one row is not revoked because another row
       did not name it. The groups no row named are revoked under the granting role
       the module derives from the connection, since no row names one for them.
+    - With the deprecated I(groups), I(state=exact) revokes every grant of the groups
+      it does not name, as I(state=absent) does.
     type: str
     default: present
     choices: [ absent, exact, present ]
@@ -150,36 +157,46 @@ options:
     version_added: '0.2.0'
 notes:
 - On PostgreSQL 16 and later, the same membership can be granted independently by
-  several roles, each grant carrying its own options. A membership is therefore
-  identified by the group, the target role B(and) the granting role, and this module
-  manages one of those grants.
+  several roles, each grant carrying its own options. I(memberships) therefore
+  identifies a membership by the group, the target role B(and) the granting role, and
+  manages one of those grants. The deprecated I(groups) names neither a granting role
+  nor an option, so it identifies a membership by the group and the target role alone,
+  present when any role has granted it and absent only when no role has.
 - PostgreSQL chooses the granting role itself when a statement does not name one, and
   the role it chooses is not necessarily the connecting role. It is the bootstrap
   superuser when the connecting role is a superuser, and otherwise the nearest role
-  the connecting role inherits that holds C(ADMIN OPTION) on the group. This module
+  the connecting role inherits that holds C(ADMIN OPTION) on the group. I(memberships)
   therefore names the granting role explicitly, so that the grant it manages is
-  identified exactly. Use I(granted_by) to choose that role.
-- When the connecting role is not a superuser the module names that role itself. If it
-  holds C(ADMIN OPTION) on a group only indirectly, through another role, PostgreSQL
-  refuses a grant naming it, and I(granted_by) must name the role that holds the option.
-- Before granting anything, the module checks that the granting role holds
-  C(ADMIN OPTION) on every group it is about to grant, and fails naming the roles that
-  do hold it. The server's own refusal names neither the missing option nor a role
-  that holds it. Only the groups a C(GRANT) is actually emitted for are checked, so a
-  task that has nothing left to do keeps succeeding even after the granting role lost
-  the option.
-- This module manages only its own grant. A membership granted by another role is not
-  removed by I(state=absent) or I(state=exact), and does not stop the module making its
-  own grant; the module warns instead.
-- Set I(granted_by) to that role to manage its grant instead. The connecting role must
-  hold that role's privileges, which a superuser always does.
-- A grant whose granting role has since been dropped cannot be named, so it can only be
-  warned about.
+  identified exactly. Use I(granted_by) to choose that role. The deprecated I(groups)
+  leaves the choice to PostgreSQL, since it has no grant of its own to recognize.
+- When the connecting role is not a superuser, a I(memberships) row names that role
+  itself. If it holds C(ADMIN OPTION) on a group only indirectly, through another
+  role, PostgreSQL refuses a grant naming it, and I(granted_by) must name the role
+  that holds the option. The deprecated I(groups) needs nothing in that case, because
+  PostgreSQL picks the role that holds it.
+- Before granting anything under I(memberships), the module checks that the granting
+  role holds C(ADMIN OPTION) on every group it is about to grant, and fails naming the
+  roles that do hold it. The server's own refusal names neither the missing option
+  nor a role that holds it. Only the groups a C(GRANT) is actually emitted for are
+  checked, so a task that has nothing left to do keeps succeeding even after the
+  granting role lost the option. The deprecated I(groups) checks nothing ahead of a
+  statement, since it names no role that could be checked.
+- I(memberships) manages only its own grant. A membership granted by another role is
+  not removed by I(state=absent) or I(state=exact), and does not stop the module making
+  its own grant; the module warns instead. Set I(granted_by) to that role to manage
+  its grant. The connecting role must hold that role's privileges, which a superuser
+  always does.
+- The deprecated I(groups) revokes every grant of a pair under I(state=absent) and
+  I(state=exact), one C(REVOKE) per granting role, so the membership goes away. The
+  server refuses a grant the connecting role may not revoke.
+- A grant whose granting role has since been dropped cannot be named, so either form
+  can only warn about it.
 - PostgreSQL applies membership options as the union of all grants of a pair, so a
   target role keeps an option as long as any grant carries it. Setting for example
   I(admin_option=false) only clears it on the grant this module manages. The
   C(effective_options) return value reports what the target role actually holds.
-- Before PostgreSQL 16 a pair can be granted only once, so the granting role is ignored.
+- Before PostgreSQL 16 a pair can be granted only once, so the granting role is ignored
+  and the two forms behave the same.
 seealso:
 - module: community.postgresql.postgresql_user
 - module: community.postgresql.postgresql_privs
@@ -309,8 +326,10 @@ RETURN = r'''
 queries:
     description:
       - List of executed queries.
-      - On PostgreSQL 16 and later each statement names the granting role, as in the sample.
-        Before 16 there is no C(GRANTED BY) clause.
+      - With I(memberships) on PostgreSQL 16 and later, each statement names the granting
+        role, as in the sample. With the deprecated I(groups), C(GRANT) names none and
+        C(REVOKE) names the granting role of each grant it removes. Before 16 there is
+        no C(GRANTED BY) clause.
     returned: success
     type: list
     elements: str
@@ -379,8 +398,8 @@ from ansible_collections.community.postgresql.plugins.module_utils.database impo
     check_input
 from ansible_collections.community.postgresql.plugins.module_utils.membership import (
     MEMBERSHIP_OPTIONS,
-    PgMembership,
-    RoleCache,
+    PgMembershipByGrantor,
+    PgMembershipByPair,
     membership_option_name,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -395,27 +414,9 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 # Parameters carrying a membership option, in the order PostgreSQL names them.
 OPTION_PARAMS = tuple(membership_option_name(option) for option in MEMBERSHIP_OPTIONS)
 
-# Keys a memberships row may carry, which is also the shape parse_memberships returns
-# for the deprecated top-level form. state, fail_on_role and the connection parameters
+# Keys a memberships row carries. state, fail_on_role and the connection parameters
 # are deliberately absent: they describe the task rather than one membership.
 ROW_KEYS = ('groups', 'target_roles', 'granted_by') + OPTION_PARAMS
-
-
-def one_membership(groups, target_roles):
-    """Return a membership carrying every key of ROW_KEYS, the rest unset.
-
-    Used for the deprecated top-level form, which names no granting role and no
-    options, so that the caller sees the same shape a row produces.
-
-    Args:
-        groups (list) -- groups the membership is of.
-        target_roles (list) -- roles the groups are granted to.
-
-    Returns the membership (dict).
-    """
-    membership = dict((key, None) for key in ROW_KEYS)
-    membership.update(groups=groups, target_roles=target_roles)
-    return membership
 
 
 def normalise_names(names):
@@ -430,32 +431,31 @@ def normalise_names(names):
 
 
 def parse_memberships(module):
-    """Return the memberships of the task as a list of dicts.
+    """Return the rows of the memberships parameter, completed.
 
-    One dict per membership, carrying every key of ROW_KEYS, so that the caller can
-    treat the memberships parameter and the top-level parameters the same way. The
-    keys of a row are validated and coerced by the argument spec, which also fills
-    in the ones a row leaves out, so only what the spec cannot express is done here.
+    One dict per row, carrying every key of ROW_KEYS. The keys of a row are validated
+    and coerced by the argument spec, which also fills in the ones a row leaves out,
+    so only what the spec cannot express is done here.
 
     Args:
-        module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule.
+        module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule,
+            with the memberships parameter set.
 
     Returns the memberships (list of dict).
     """
     rows = module.params['memberships']
 
-    if rows is None:
-        return [one_membership(module.params['groups'], module.params['target_roles'])]
-
     # An empty list is how the top-level form spells "a member of no group at all",
-    # as groups: [] with state=exact. Turned into the membership that produces, so
-    # the idiom survives the deprecation of groups.
+    # as groups: [] with state=exact. Turned into the row that produces, so the idiom
+    # survives the deprecation of groups.
     if not rows:
         if module.params['target_roles'] is None:
             module.fail_json(msg="An empty memberships list needs target_roles at the top "
                                  "level, naming the roles that are to have no groups")
 
-        return [one_membership([], module.params['target_roles'])]
+        membership = dict.fromkeys(ROW_KEYS)
+        membership.update(groups=[], target_roles=normalise_names(module.params['target_roles']))
+        return [membership]
 
     memberships = []
     for index, row in enumerate(rows):
@@ -473,11 +473,15 @@ def parse_memberships(module):
                                  "at the top level to fall back to" % index)
 
         membership = dict(row)
-        # Stripped and deduplicated here rather than in PgMembership, so that the
-        # duplicate check below compares the names the statements will use, and a
+        # Stripped and deduplicated here rather than in PgMembershipByGrantor, so that
+        # the duplicate check below compares the names the statements will use, and a
         # name repeated inside one row is one grant rather than a clash with itself.
         membership['groups'] = normalise_names(row['groups'])
         membership['target_roles'] = normalise_names(target_roles)
+        # None rather than empty when not set, so that a value carrying whitespace
+        # from a lookup is not reported as a role that does not exist, and an empty
+        # string means "not set" everywhere.
+        membership['granted_by'] = (row['granted_by'] or '').strip() or None
         memberships.append(membership)
 
     check_no_duplicate_grants(module, memberships)
@@ -511,42 +515,6 @@ def check_no_duplicate_grants(module, memberships):
                                if membership['granted_by'] else ''))
 
                 seen[grant] = index
-
-
-def merge_role_lists(target, source):
-    """Merge a granted or revoked mapping of one membership into the task's.
-
-    Args:
-        target (dict) -- group mapped to the target roles reported so far.
-        source (dict) -- the same, from one PgMembership object.
-    """
-    for group, roles in source.items():
-        # A role can be reported by two memberships naming the same group, and the
-        # task made one change to it, not two.
-        extend_unique(target.setdefault(group, []), roles)
-
-
-def merge_by_group_and_role(target, source):
-    """Merge a grants or effective_options mapping of one membership into the task's.
-
-    Args:
-        target (dict) -- group mapped to target role mapped to what was reported.
-        source (dict) -- the same, from one PgMembership object.
-    """
-    for group, per_role in source.items():
-        target.setdefault(group, {}).update(per_role)
-
-
-def extend_unique(target, source):
-    """Append the names of source that target does not have yet.
-
-    Args:
-        target (list) -- names collected so far, extended in place.
-        source (list) -- names to add.
-    """
-    for name in source:
-        if name not in target:
-            target.append(name)
 
 
 def main():
@@ -591,22 +559,35 @@ def main():
     fail_on_role = module.params['fail_on_role']
     state = module.params['state']
     session_role = module.params['session_role']
-    memberships = parse_memberships(module)
 
-    if not module.params['trust_input']:
-        # Check input for potentially dangerous elements:
-        for membership in memberships:
-            check_input(module, membership['groups'], membership['target_roles'],
-                        session_role, membership['granted_by'])
+    # The two forms describe a membership differently, and each gets the class of its
+    # model. See the notes section. The deprecated top-level form names neither a
+    # granting role nor an option, so it has nothing to tell one grant of a pair from
+    # another and takes the pair itself as the membership. memberships names a
+    # granting role per row, or has one derived, and takes one grant as the membership.
+    if module.params['memberships'] is None:
+        groups = normalise_names(module.params['groups'])
+        target_roles = normalise_names(module.params['target_roles'])
+        memberships = None
 
-    # The options describe a grant, so a revoke cannot apply them.
-    if state == 'absent':
-        ignored = sorted(set(name for membership in memberships
-                             for name in OPTION_PARAMS
-                             if membership[name] is not None))
-        if ignored:
-            module.warn("The %s parameter(s) have no effect with state=absent "
-                        "and are ignored" % ", ".join(ignored))
+        if not module.params['trust_input']:
+            check_input(module, groups, target_roles, session_role)
+    else:
+        memberships = parse_memberships(module)
+
+        if not module.params['trust_input']:
+            for membership in memberships:
+                check_input(module, membership['groups'], membership['target_roles'],
+                            session_role, membership['granted_by'])
+
+        # The options describe a grant, so a revoke cannot apply them.
+        if state == 'absent':
+            ignored = sorted(set(name for membership in memberships
+                                 for name in OPTION_PARAMS
+                                 if membership[name] is not None))
+            if ignored:
+                module.warn("The %s parameter(s) have no effect with state=absent "
+                            "and are ignored" % ", ".join(ignored))
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -616,17 +597,15 @@ def main():
 
     # Both the membership options and the granting role are PostgreSQL 16 features, and
     # this is the only place they are rejected, so fail here rather than let the server
-    # reject a statement it cannot parse. See the notes section for the model itself.
+    # reject a statement it cannot parse.
     server_version = get_server_version(db_connection)
-    if server_version < 160000:
+    if memberships is not None and server_version < 160000:
         unsupported = set()
         for membership in memberships:
             if state != 'absent':
                 unsupported.update(name for name in OPTION_PARAMS
                                    if membership[name] is not None)
 
-            # Truthiness, not "is not None", so an empty granted_by means "not set"
-            # here exactly as it does when the grantor is resolved.
             if membership['granted_by']:
                 unsupported.add('granted_by')
 
@@ -635,75 +614,25 @@ def main():
                                  % ", ".join(sorted(unsupported)))
 
     ##############
-    # Create the objects and do main job:
+    # Create the object and do main job:
     #
-    # One object per membership, all on the same connection, so that a task naming
-    # several of them is still one transaction and a failure part-way leaves nothing
-    # behind. The role cache is shared so that a role named by several memberships is
-    # looked up, and warned about, once for the task.
-    role_cache = RoleCache()
-    handlers = [
-        PgMembership(module, cursor, membership['groups'], membership['target_roles'],
-                     role_cache, server_version, fail_on_role,
-                     dict((option, membership[membership_option_name(option)])
-                          for option in MEMBERSHIP_OPTIONS),
-                     membership['granted_by'])
-        for membership in memberships
-    ]
+    # One object for the whole task, so that a task naming several memberships reads
+    # the server once, is one transaction, and a failure part-way leaves nothing behind.
+    if memberships is None:
+        handler = PgMembershipByPair(module, cursor, groups, target_roles,
+                                     server_version, fail_on_role)
+    else:
+        handler = PgMembershipByGrantor(module, cursor, memberships, server_version,
+                                        fail_on_role)
 
-    changed = False
-    queries = []
-    granted = {}
-    revoked = {}
-    grants = {}
-    effective_options = {}
-    groups = []
-    target_roles = []
+    if state == 'present':
+        handler.grant()
+    elif state == 'absent':
+        handler.revoke()
+    elif state == 'exact':
+        handler.match()
 
-    if state == 'exact':
-        # Every group any membership assigns to a role is wanted, so the pruning runs
-        # once over the union rather than once per membership, where each would revoke
-        # what the others asked for. Grouped by that union so that roles wanting the
-        # same thing are pruned together.
-        wanted = {}
-        for handler in handlers:
-            for role in handler.target_roles:
-                wanted.setdefault(role, set()).update(handler.groups)
-
-        by_wanted = {}
-        for role in sorted(wanted):
-            by_wanted.setdefault(frozenset(wanted[role]), []).append(role)
-
-        for wanted_groups in sorted(by_wanted, key=sorted):
-            # No granted_by, so the grantor is derived from the connection: the groups
-            # being revoked are the ones no membership named, and there is no row to
-            # take one from. That is what state=exact has always done, and granted_by
-            # on a state=absent task remains the way to remove somebody else's grant.
-            pruner = PgMembership(module, cursor, sorted(wanted_groups),
-                                  by_wanted[wanted_groups], role_cache, server_version,
-                                  fail_on_role, {}, None)
-            pruner.prune()
-
-            changed |= pruner.changed
-            queries.extend(pruner.executed_queries)
-            merge_role_lists(revoked, pruner.revoked)
-
-    for handler in handlers:
-        if state == 'absent':
-            handler.revoke()
-        else:
-            handler.grant()
-
-        handler_grants, handler_effective = handler.report()
-
-        changed |= handler.changed
-        queries.extend(handler.executed_queries)
-        merge_role_lists(granted, handler.granted)
-        merge_role_lists(revoked, handler.revoked)
-        merge_by_group_and_role(grants, handler_grants)
-        merge_by_group_and_role(effective_options, handler_effective)
-        extend_unique(groups, handler.groups)
-        extend_unique(target_roles, handler.target_roles)
+    grants, effective_options = handler.report()
 
     # Rollback if it's possible and check_mode:
     if module.check_mode:
@@ -716,22 +645,22 @@ def main():
 
     # Make return values:
     return_dict = dict(
-        changed=changed,
+        changed=handler.changed,
         state=state,
-        groups=groups,
-        target_roles=target_roles,
-        queries=queries,
+        groups=handler.groups,
+        target_roles=handler.target_roles,
+        queries=handler.executed_queries,
         grants=grants,
         effective_options=effective_options,
     )
 
     if state == 'present':
-        return_dict['granted'] = granted
+        return_dict['granted'] = handler.granted
     elif state == 'absent':
-        return_dict['revoked'] = revoked
+        return_dict['revoked'] = handler.revoked
     elif state == 'exact':
-        return_dict['granted'] = granted
-        return_dict['revoked'] = revoked
+        return_dict['granted'] = handler.granted
+        return_dict['revoked'] = handler.revoked
 
     module.exit_json(**return_dict)
 
