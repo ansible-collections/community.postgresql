@@ -137,11 +137,8 @@ class PgMembershipBase(object):
         return ([group for group in groups if group in existing],
                 [role for role in target_roles if role in existing])
 
-    def _role_grants(self, roles):
-        """Return every membership of the roles, keyed by role and then by group.
-
-        Args:
-            roles (list) -- member roles.
+    def _role_grants(self):
+        """Return every membership of the target roles, keyed by role and then by group.
 
         Returns a dict mapping each role (str) to a dict mapping a group name (str) to
         its grants (list of dict). A grant holds 'grantor' plus the options the server
@@ -163,8 +160,8 @@ class PgMembershipBase(object):
                    WHERE u.rolname = ANY(%%s)
                    ORDER BY u.rolname, g.rolname, gr.rolname""" % columns
 
-        memberships = dict((role, {}) for role in roles)
-        for row in exec_sql(self, query, query_params=(list(roles),),
+        memberships = dict((role, {}) for role in self.target_roles)
+        for row in exec_sql(self, query, query_params=(list(self.target_roles),),
                             add_to_executed=False):
             grant = dict(grantor=row['grantor'])
             for option in self.recorded_options:
@@ -229,7 +226,7 @@ class PgMembershipBase(object):
         """
         grants = {}
         effective_options = {}
-        memberships = self._role_grants(self.target_roles)
+        memberships = self._role_grants()
 
         for group, role in self.pairs:
             role_grants = memberships[role].get(group)
@@ -300,7 +297,7 @@ class PgMembershipByPair(PgMembershipBase):
         for group in self.groups:
             self.granted.setdefault(group, [])
 
-        memberships = self._role_grants(self.target_roles)
+        memberships = self._role_grants()
         for group, role in self.pairs:
             # Any grant satisfies the pair. No GRANTED BY: PostgreSQL picks a role that
             # holds ADMIN OPTION on the group, which is more than the connecting role
@@ -321,7 +318,7 @@ class PgMembershipByPair(PgMembershipBase):
         for group in self.groups:
             self.revoked.setdefault(group, [])
 
-        memberships = self._role_grants(self.target_roles)
+        memberships = self._role_grants()
         for group, role in self.pairs:
             if self._revoke_pair(group, role, memberships[role].get(group, [])):
                 self._record(self.revoked, group, role)
@@ -336,7 +333,7 @@ class PgMembershipByPair(PgMembershipBase):
         # revoked is not seeded: it lists the groups actually revoked, which are
         # discovered on the server rather than asked for. Sorted for the same reason,
         # to keep the emitted statements in a stable order.
-        memberships = self._role_grants(self.target_roles)
+        memberships = self._role_grants()
         for role in self.target_roles:
             for group in sorted(set(memberships[role]) - set(self.groups)):
                 if self._revoke_pair(group, role, memberships[role][group]):
@@ -775,7 +772,7 @@ class PgMembershipByGrantor(PgMembershipBase):
         # needed are known and can be checked against their granting roles up front.
         # Granting a group to one role does not touch another role's memberships, so
         # reading them all at once loses nothing.
-        memberships = self._role_grants(self.target_roles)
+        memberships = self._role_grants()
         needed = [self._needs_grant(wanted, self._grants_of(memberships, wanted))
                   for wanted in self.wanted]
         self._check_grantable([wanted for wanted, needs in zip(self.wanted, needed) if needs])
@@ -811,7 +808,7 @@ class PgMembershipByGrantor(PgMembershipBase):
         # option while a grant made under it exists. It does need the grantor to be one
         # the connection can act as, which a granted_by naming somebody else's grant
         # need not be.
-        memberships = self._role_grants(self.target_roles)
+        memberships = self._role_grants()
         self._check_grantors_assumable(set(
             wanted['grantor'] for wanted in self.wanted
             if self._own_grant(self._grants_of(memberships, wanted), wanted['grantor']) is not None))
@@ -843,7 +840,7 @@ class PgMembershipByGrantor(PgMembershipBase):
         # revoked is not seeded: it lists the groups actually revoked, which are
         # discovered on the server rather than asked for. Sorted for the same reason,
         # to keep the emitted statements in a stable order.
-        memberships = self._role_grants(self.target_roles)
+        memberships = self._role_grants()
         for role in self.target_roles:
             for group in sorted(set(memberships[role]) - wanted_groups.get(role, set())):
                 if self._revoke_own(group, role, self.derived_grantor, memberships[role][group]):
