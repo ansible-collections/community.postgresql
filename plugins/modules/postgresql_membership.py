@@ -68,7 +68,8 @@ options:
       memberships applied. This is the difference from looping this module over a
       list, which gives one transaction per item.
     - Two rows may not describe the same grant, meaning the same group, target role
-      and granting role, since the second would only overwrite the options of the first.
+      and granting role, the derived one included, since the second would only
+      overwrite the options of the first.
     - An empty list means the target roles are to be a member of no group at all,
       which is what an empty I(groups) list means in the deprecated top-level form.
     - A name repeated within a row, or a row and the top level naming the same role
@@ -474,8 +475,8 @@ def parse_memberships(module):
 
         membership = dict(row)
         # Stripped and deduplicated here rather than in PgMembershipByGrantor, so that
-        # the duplicate check below compares the names the statements will use, and a
-        # name repeated inside one row is one grant rather than a clash with itself.
+        # a name repeated inside one row is one grant rather than a clash with itself,
+        # and its duplicate check compares the names the statements will use.
         membership['groups'] = normalise_names(row['groups'])
         membership['target_roles'] = normalise_names(target_roles)
         # None rather than empty when not set, so that a value carrying whitespace
@@ -484,37 +485,7 @@ def parse_memberships(module):
         membership['granted_by'] = (row['granted_by'] or '').strip() or None
         memberships.append(membership)
 
-    check_no_duplicate_grants(module, memberships)
     return memberships
-
-
-def check_no_duplicate_grants(module, memberships):
-    """Fail when two memberships describe the same grant.
-
-    The module manages one grant per group, target role and granting role, so two
-    memberships naming the same triple would have the second silently overwrite the
-    first's options. Naming the same pair under a different granted_by is a different
-    grant and stays allowed.
-
-    Args:
-        module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule.
-        memberships (list) -- memberships as returned by parse_memberships.
-    """
-    seen = {}
-    for index, membership in enumerate(memberships):
-        for group in membership['groups']:
-            for role in membership['target_roles']:
-                grant = (group, role, membership['granted_by'])
-                if grant in seen:
-                    module.fail_json(
-                        msg='memberships[%d] and memberships[%d] both grant "%s" to "%s"%s. '
-                            'Describe a grant once, since the second would only overwrite '
-                            'the options of the first'
-                            % (seen[grant], index, group, role,
-                               ' as "%s"' % membership['granted_by']
-                               if membership['granted_by'] else ''))
-
-                seen[grant] = index
 
 
 def main():

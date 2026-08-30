@@ -400,7 +400,8 @@ class PgMembershipByGrantor(PgMembershipBase):
                 and the option parameters named by membership_option_name (bool, or
                 None to leave the option as it is). Names are stripped and
                 deduplicated by the caller, and granted_by is None rather than empty
-                when not set.
+                when not set. Two rows describing the same grant, by group, target
+                role and granting role with the derived one filled in, are refused.
             server_version (int) -- server version as returned by get_server_version.
 
         Kwargs:
@@ -441,9 +442,13 @@ class PgMembershipByGrantor(PgMembershipBase):
         # One wanted grant per (row, target role, group), in that order, which is the
         # order the statements come out in. Each carries the granting role it is
         # recorded under and the options it is to have, a missing option meaning
-        # "leave it as it is".
+        # "leave it as it is". Two rows describing the same grant are refused here,
+        # where the derived granting role is known, since the second would only
+        # overwrite the options of the first. The same pair under another granting
+        # role is a different grant and stays allowed.
         self.wanted = []
-        for row in memberships:
+        seen = {}
+        for index, row in enumerate(memberships):
             if self.per_grantor_membership:
                 grantor = row['granted_by'] or self.derived_grantor
             else:
@@ -455,11 +460,38 @@ class PgMembershipByGrantor(PgMembershipBase):
 
             for role in row['target_roles']:
                 for group in row['groups']:
-                    if role in self.target_roles and group in self.groups:
-                        self.wanted.append(dict(group=group, role=role, grantor=grantor,
-                                                options=options))
+                    if role not in self.target_roles or group not in self.groups:
+                        continue
+
+                    key = (group, role, grantor)
+                    if key in seen:
+                        self._fail_duplicate_grant(seen[key], (index, row), key)
+                    seen[key] = (index, row)
+
+                    self.wanted.append(dict(group=group, role=role, grantor=grantor,
+                                            options=options))
 
         self.pairs = unique((wanted['group'], wanted['role']) for wanted in self.wanted)
+
+    def _fail_duplicate_grant(self, first, second, key):
+        """Fail because two rows describe the same grant.
+
+        Args:
+            first (tuple) -- index and row of the first description.
+            second (tuple) -- index and row of the second.
+            key (tuple) -- the grant, as (group, role, grantor).
+        """
+        group, role, grantor = key
+        where = ''
+        if grantor:
+            where = ' under "%s"' % grantor
+            if any(row['granted_by'] is None for dummy, row in (first, second)):
+                where += ', the granting role derived for a row that names no granted_by'
+
+        self.module.fail_json(
+            msg='memberships[%d] and memberships[%d] both grant "%s" to "%s"%s. Describe a '
+                'grant once, since the second would only overwrite the options of the first'
+                % (first[0], second[0], group, role, where))
 
     def _resolve_connection(self):
         """Read what the connecting role is, and derive the granting role from it.

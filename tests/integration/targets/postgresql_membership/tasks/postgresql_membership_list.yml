@@ -158,6 +158,51 @@
       - result is failed
       - '''both grant "ml_ro" to "ml_alice"'' in result.msg'
 
+  # The granting role a row leaves to be derived counts as named, so a row naming it
+  # explicitly describes the same grant. One is only derived from PostgreSQL 16 on.
+  - name: postgresql_membership - a row naming the derived granting role clashes with one that does not
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_role: "ml_alice"
+      memberships:
+      - groups: "ml_ro"
+        admin_option: true
+      - groups: "ml_ro"
+        granted_by: "{{ pg_bootstrap }}"
+        admin_option: false
+      state: present
+    register: result
+    ignore_errors: true
+    when: pg_ver_num | int >= 160000
+
+  - assert:
+      that:
+      - result is failed
+      - '''both grant "ml_ro" to "ml_alice" under "'' ~ pg_bootstrap ~ ''"'' in result.msg'
+      - "'derived for a row that names no granted_by' in result.msg"
+    when: pg_ver_num | int >= 160000
+
+  - name: postgresql_membership - nothing was granted by the clashing rows
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_count }}"
+      positional_args:
+      - "ml_ro"
+      - "ml_alice"
+    register: result
+    when: pg_ver_num | int >= 160000
+
+  - assert:
+      that:
+      - result.query_result[0].count == 0
+    when: pg_ver_num | int >= 160000
+
   ##################################################
   # Doing the job.
   ##################################################
