@@ -35,9 +35,10 @@
     - "sr_usage_grp"
     - "sr_usage_holder"
 
-  # sr_direct holds ADMIN OPTION on sr_group itself. sr_indirect only reaches it
-  # through sr_team, which is the case PostgreSQL refuses to record under the
-  # connecting role. sr_own is the group sr_indirect can grant on its own, and
+  # sr_direct holds ADMIN OPTION on sr_group itself, through two grants, so that a
+  # role holding the option more than once is in the fixture. sr_indirect only
+  # reaches it through sr_team, which is the case PostgreSQL refuses to record under
+  # the connecting role. sr_own is the group sr_indirect can grant on its own, and
   # sr_nogrant the one no role it can assume holds ADMIN OPTION on.
   - name: postgresql_membership - give sr_direct and sr_team ADMIN OPTION, sr_indirect only inheritance
     become_user: "{{ pg_user }}"
@@ -49,6 +50,7 @@
     with_items:
     - 'GRANT "sr_group" TO "sr_direct" WITH ADMIN OPTION'
     - 'GRANT "sr_group" TO "sr_team" WITH ADMIN OPTION'
+    - 'GRANT "sr_group" TO "sr_direct" WITH ADMIN OPTION GRANTED BY "sr_team"'
     - 'GRANT "sr_team" TO "sr_indirect" WITH INHERIT TRUE'
     - 'GRANT "sr_own" TO "sr_indirect" WITH ADMIN OPTION'
     - 'GRANT "sr_nogrant" TO "sr_direct" WITH ADMIN OPTION'
@@ -224,6 +226,28 @@
   - assert:
       that:
       - result.query_result[0].count == 0
+
+  # The roles named as holding the option are listed once each, although sr_direct
+  # holds it through two grants. Connected as a superuser, every holder is a candidate.
+  - name: postgresql_membership - a role holding ADMIN OPTION through two grants is named once
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "sr_group"
+        granted_by: "sr_member2"
+      target_role: "sr_member"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - '''The granting role "sr_member2" does not hold ADMIN OPTION on "sr_group"'' in result.msg'
+      - "'sr_group: sr_direct, sr_team' in result.msg"
 
   # A group nobody the connecting role can assume holds ADMIN OPTION on. granted_by
   # cannot fix it, so the message must not suggest it.

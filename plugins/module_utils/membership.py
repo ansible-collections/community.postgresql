@@ -668,11 +668,12 @@ class PgMembershipByGrantor(PgMembershipBase):
         # LEFT JOINed so that a group nobody holds ADMIN OPTION on still comes back as
         # a row, which is what separates the three ways this can go wrong. holders are
         # all the roles that hold it, candidates the ones the connection could also
-        # name, which for a superuser is all of them.
+        # name, which for a superuser is all of them. DISTINCT, since a role holding
+        # the option through grants from several granting roles has a row per grant.
         query = """SELECT g.rolname AS grp,
-                          coalesce(array_agg(a.rolname ORDER BY a.rolname)
+                          coalesce(array_agg(DISTINCT a.rolname ORDER BY a.rolname)
                                    FILTER (WHERE a.rolname IS NOT NULL), '{}') AS holders,
-                          coalesce(array_agg(a.rolname ORDER BY a.rolname)
+                          coalesce(array_agg(DISTINCT a.rolname ORDER BY a.rolname)
                                    FILTER (WHERE pg_catalog.pg_has_role(a.oid, 'USAGE')),
                                    '{}') AS candidates
                    FROM pg_catalog.pg_roles g
