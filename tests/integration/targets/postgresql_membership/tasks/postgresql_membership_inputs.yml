@@ -201,6 +201,53 @@
       - result is failed
       - "'one of the following is required: groups, memberships' in result.msg"
 
+  # granted_by_any describes what the deprecated groups option does anyway.
+  - name: postgresql_membership - granted_by_any with the deprecated groups option is refused
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      groups: "in_group2"
+      target_role: "in_user2"
+      granted_by_any: true
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'granted_by_any applies to memberships' in result.msg"
+
+  - name: postgresql_membership - make sure in_user2 is not a member of in_group2
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: 'REVOKE "in_group2" FROM "in_user2"'
+
+  # The same statement on every version: granted_by_any names no granting role, so
+  # this is the migration of a groups task that behaves the same before and after 16.
+  - name: postgresql_membership - granted_by_any grants without a granting role on every version
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      granted_by_any: true
+      memberships:
+      - groups: "in_group2"
+      target_role: "in_user2"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "in_group2" TO "in_user2"']
+
   always:
 
   - name: postgresql_membership - drop roles from the input tests

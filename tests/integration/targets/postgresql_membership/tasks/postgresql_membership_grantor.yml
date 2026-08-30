@@ -802,3 +802,260 @@
       state: absent
     ignore_errors: true
     with_items: "{{ roles | reverse | list }}"
+
+####################################################################
+# granted_by_any: every grant of a membership counts, whoever made #
+# it, as with the deprecated groups option.                        #
+####################################################################
+
+- name: postgresql_membership - granted_by_any (PostgreSQL >= 16 only)
+  when: pg_per_grantor | bool
+  vars:
+    # Groups and granting roles first: dropping in reverse then removes the
+    # members before the roles that granted to them.
+    roles:
+    - "ga_group"
+    - "ga_keep"
+    - "ga_other"
+    - "ga_user"
+  block:
+
+  - name: postgresql_membership - create roles for the granted_by_any tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+    with_items: "{{ roles }}"
+
+  - name: postgresql_membership - let ga_other grant ga_group to ga_user
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ item }}"
+    with_items:
+    - 'GRANT "ga_group" TO "ga_other" WITH ADMIN OPTION'
+    - 'GRANT "ga_group" TO "ga_user" GRANTED BY "ga_other"'
+
+  # Any grant satisfies the membership, so nothing is granted beside ga_other's.
+  - name: postgresql_membership - present with granted_by_any takes another role's grant as the membership
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      granted_by_any: true
+      memberships:
+      - groups: "ga_group"
+      target_role: "ga_user"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  # The row-level key works on its own, and the GRANT names no granting role.
+  - name: postgresql_membership - a row with granted_by_any grants without naming a granting role
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "ga_keep"
+        granted_by_any: true
+      target_role: "ga_user"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "ga_keep" TO "ga_user"']
+      - result.grants.ga_keep.ga_user | map(attribute='grantor') | list == [pg_bootstrap]
+
+  - name: postgresql_membership - add a second grant of ga_group under the bootstrap superuser
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: 'GRANT "ga_group" TO "ga_user"'
+
+  - name: postgresql_membership - absent with granted_by_any revokes every grant of the membership
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      granted_by_any: true
+      memberships:
+      - groups: "ga_group"
+      target_role: "ga_user"
+      state: absent
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['REVOKE "ga_group" FROM "ga_user" GRANTED BY "ga_other"',
+                           'REVOKE "ga_group" FROM "ga_user" GRANTED BY "' ~ pg_bootstrap ~ '"']
+      - result.warnings | default([]) | select('search', 'remains a member') | list | length == 0
+      - 'result.revoked == {"ga_group": ["ga_user"]}'
+
+  - name: postgresql_membership - nothing is left of the membership
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_count }}"
+      positional_args:
+      - "ga_group"
+      - "ga_user"
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].count == 0
+
+  - name: postgresql_membership - let ga_other grant ga_group to ga_user again
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: 'GRANT "ga_group" TO "ga_user" GRANTED BY "ga_other"'
+
+  # The task-level key makes exact prune under every granting role. ga_keep is
+  # already held through the bootstrap superuser's grant, so nothing is granted.
+  - name: postgresql_membership - exact with granted_by_any prunes another role's grant
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      granted_by_any: true
+      memberships:
+      - groups: "ga_keep"
+      target_role: "ga_user"
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['REVOKE "ga_group" FROM "ga_user" GRANTED BY "ga_other"']
+      - 'result.revoked == {"ga_group": ["ga_user"]}'
+      - 'result.granted == {"ga_keep": []}'
+      - result.warnings | default([]) | select('search', 'remains a member') | list | length == 0
+
+  # A row managing every grant of a pair leaves another row nothing to manage.
+  - name: postgresql_membership - a granted_by_any row beside a granted_by row for the same pair is refused
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "ga_group"
+        granted_by_any: true
+      - groups: "ga_group"
+        granted_by: "ga_other"
+      target_role: "ga_user"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'one of them under any granting role' in result.msg"
+
+  - name: postgresql_membership - an option with granted_by_any is refused
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "ga_group"
+        granted_by_any: true
+        admin_option: true
+      target_role: "ga_user"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'admin_option' in result.msg"
+      - "'granted_by_any' in result.msg"
+
+  - name: postgresql_membership - granted_by and granted_by_any in one row are refused
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "ga_group"
+        granted_by: "ga_other"
+        granted_by_any: true
+      target_role: "ga_user"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'names granted_by and sets granted_by_any' in result.msg"
+
+  - name: postgresql_membership - let ga_other grant ga_group to ga_user once more
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: 'GRANT "ga_group" TO "ga_user" GRANTED BY "ga_other"'
+
+  # The task-level default does not reach a row naming granted_by, which manages
+  # its one grant as before.
+  - name: postgresql_membership - a row naming granted_by keeps its grant under the task-level key
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      granted_by_any: true
+      memberships:
+      - groups: "ga_group"
+        granted_by: "ga_other"
+      target_role: "ga_user"
+      state: absent
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['REVOKE "ga_group" FROM "ga_user" GRANTED BY "ga_other"']
+
+  always:
+
+  - name: postgresql_membership - drop roles from the granted_by_any tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+      state: absent
+    ignore_errors: true
+    with_items: "{{ roles | reverse | list }}"

@@ -245,14 +245,17 @@ class PgMembershipBase(object):
                         % (grantor, self.GRANTOR_REMEDY))
 
     def _granted_by(self, grantor):
-        """Return the GRANTED BY clause naming grantor, empty before PostgreSQL 16.
+        """Return the GRANTED BY clause naming grantor.
+
+        Empty before PostgreSQL 16, and for None, which stands for any granting role
+        and leaves the choice to the server.
 
         Args:
-            grantor (str) -- granting role to name.
+            grantor (str) -- granting role to name, or None.
 
         Returns the clause to append to a GRANT or REVOKE (str).
         """
-        if not self.per_grantor_membership:
+        if not self.per_grantor_membership or grantor is None:
             return ''
 
         return ' GRANTED BY %s' % pg_quote_name(grantor)
@@ -264,6 +267,29 @@ class PgMembershipBase(object):
             query (str) -- the statement.
         """
         self.changed |= exec_sql(self, query, return_bool=True)
+
+    def _revoke_all_grants(self, group, role, grants):
+        """Revoke every grant of group to role, one REVOKE per granting role.
+
+        On PostgreSQL 16 and later REVOKE removes only the grant under the granting
+        role it names, so each grant is named in turn and the membership actually goes
+        away. Before 16 no granting role is named, so a grant whose granting role was
+        dropped is revoked like any other.
+
+        Args:
+            group (str) -- group role that is revoked.
+            role (str) -- member role that loses it.
+            grants (list) -- grants of the pair as returned by _role_grants.
+
+        Returns True when a statement was emitted (bool).
+        """
+        changed = False
+        for grant in grants:
+            self._execute('REVOKE %s FROM %s%s' % (
+                pg_quote_name(group), pg_quote_name(role), self._granted_by(grant['grantor'])))
+            changed = True
+
+        return changed
 
     def _seed(self, mapping):
         """Give every group of the task an entry in granted or revoked.
@@ -415,7 +441,7 @@ class PgMembershipByPair(PgMembershipBase):
             for grant in memberships[role].get(group, [])))
 
         for group, role in self.pairs:
-            if self._revoke_pair(group, role, memberships[role].get(group, [])):
+            if self._revoke_all_grants(group, role, memberships[role].get(group, [])):
                 self._record(self.revoked, group, role)
 
         return self.changed
@@ -438,33 +464,10 @@ class PgMembershipByPair(PgMembershipBase):
             grant['grantor'] for dummy_group, dummy_role, grants in outside for grant in grants))
 
         for group, role, grants in outside:
-            if self._revoke_pair(group, role, grants):
+            if self._revoke_all_grants(group, role, grants):
                 self._record(self.revoked, group, role)
 
         return self.changed
-
-    def _revoke_pair(self, group, role, grants):
-        """Revoke every grant of group to role, one REVOKE per granting role.
-
-        On PostgreSQL 16 and later REVOKE removes only the grant under the granting
-        role it names, so each grant is named in turn and the membership actually goes
-        away. Before 16 no granting role is named, so a grant whose granting role was
-        dropped is revoked like any other.
-
-        Args:
-            group (str) -- group role that is revoked.
-            role (str) -- member role that loses it.
-            grants (list) -- grants of the pair as returned by _role_grants.
-
-        Returns True when a statement was emitted (bool).
-        """
-        changed = False
-        for grant in grants:
-            self._execute('REVOKE %s FROM %s%s' % (
-                pg_quote_name(group), pg_quote_name(role), self._granted_by(grant['grantor'])))
-            changed = True
-
-        return changed
 
 
 class PgMembershipByGrantor(PgMembershipBase):
@@ -478,25 +481,31 @@ class PgMembershipByGrantor(PgMembershipBase):
     module recognize its own grant on a later run and set the options, which are
     stored per grant.
 
-    Before PostgreSQL 16 a pair has one grant and no options, so no granting role is
-    named and the grant found is always the one managed.
+    A row with granted_by_any manages every grant of its pairs instead, whoever made
+    them, as PgMembershipByPair does: it carries no granting role, its GRANT names
+    none, and its REVOKE removes every grant. Before PostgreSQL 16 a pair has one
+    grant and no options, so every row behaves that way.
     """
 
     GRANTOR_REMEDY = 'Set granted_by to a role it does have the privileges of.'
 
-    def __init__(self, module, cursor, memberships, server_version, fail_on_role=True):
+    def __init__(self, module, cursor, memberships, server_version, fail_on_role=True,
+                 granted_by_any=False):
         """Manage the grants the memberships describe.
 
         Args:
             module (AnsibleModule) -- object of ansible.module_utils.basic.AnsibleModule class.
             cursor (psycopg cursor) -- database cursor object.
             memberships (list) -- one dict per row of the memberships parameter, with
-                the keys groups (list), target_roles (list), granted_by (str or None)
-                and the option parameters named by membership_option_name (bool, or
-                None to leave the option as it is). Names are stripped and
-                deduplicated by the caller, and granted_by is None rather than empty
-                when not set. Two rows describing the same grant, by group, target
-                role and granting role with the derived one filled in, are refused.
+                the keys groups (list), target_roles (list), granted_by (str or None),
+                granted_by_any (bool) and the option parameters named by
+                membership_option_name (bool, or None to leave the option as it is).
+                Names are stripped and deduplicated by the caller, granted_by is None
+                rather than empty when not set, and a row with granted_by_any has
+                neither granted_by nor an option. Two rows describing the same grant,
+                by group, target role and granting role with the derived one filled
+                in, are refused, as is a row with granted_by_any beside any other row
+                of the same pair.
             server_version (int) -- server version as returned by get_server_version.
 
         Kwargs:
@@ -504,8 +513,12 @@ class PgMembershipByGrantor(PgMembershipBase):
                 warn and skip it (default True). A granted_by that does not exist
                 always fails, since it would make state=present die with a raw server
                 error and state=absent match nothing.
+            granted_by_any (bool) -- whether prune() revokes every grant of an unwanted
+                membership rather than the one under the derived granting role
+                (default False).
         """
         super(PgMembershipByGrantor, self).__init__(module, cursor, server_version, fail_on_role)
+        self.granted_by_any = granted_by_any
 
         groups = unique(group for row in memberships for group in row['groups'])
         target_roles = unique(role for row in memberships for role in row['target_roles'])
@@ -520,18 +533,19 @@ class PgMembershipByGrantor(PgMembershipBase):
 
         # One wanted grant per (row, target role, group), in that order, which is the
         # order the statements come out in. Each carries the granting role it is
-        # recorded under and the options it is to have, a missing option meaning
-        # "leave it as it is". Two rows describing the same grant are refused here,
-        # where the derived granting role is known, since the second would only
-        # overwrite the options of the first. The same pair under another granting
-        # role is a different grant and stays allowed.
+        # recorded under, None standing for any granting role, and the options it is
+        # to have, a missing option meaning "leave it as it is". Two rows describing
+        # the same grant are refused here, where the derived granting role is known,
+        # since the second would only overwrite the options of the first. The same
+        # pair under another granting role is a different grant and stays allowed,
+        # except beside a row managing every grant of the pair.
         self.wanted = []
-        seen = {}
+        by_pair = {}
         for index, row in enumerate(memberships):
-            if self.per_grantor_membership:
-                grantor = row['granted_by'] or self.derived_grantor
-            else:
+            if row['granted_by_any'] or not self.per_grantor_membership:
                 grantor = None
+            else:
+                grantor = row['granted_by'] or self.derived_grantor
 
             options = dict((option, row.get(membership_option_name(option)))
                            for option in MEMBERSHIP_OPTIONS
@@ -542,48 +556,57 @@ class PgMembershipByGrantor(PgMembershipBase):
                     if role not in self.target_roles or group not in self.groups:
                         continue
 
-                    key = (group, role, grantor)
-                    if key in seen:
-                        self._fail_duplicate_grant(seen[key], (index, row), key)
-                    seen[key] = (index, row)
+                    for first in by_pair.get((group, role), []):
+                        if None in (first[2], grantor) or first[2] == grantor:
+                            self._fail_duplicate_grant(first, (index, row, grantor), group, role)
+                    by_pair.setdefault((group, role), []).append((index, row, grantor))
 
                     self.wanted.append(dict(group=group, role=role, grantor=grantor,
                                             options=options))
 
         self.pairs = unique((wanted['group'], wanted['role']) for wanted in self.wanted)
 
-    def _fail_duplicate_grant(self, first, second, key):
-        """Fail because two rows describe the same grant.
+    def _fail_duplicate_grant(self, first, second, group, role):
+        """Fail because two rows describe the same grant, or one covers the other's.
 
         Args:
-            first (tuple) -- index and row of the first description.
-            second (tuple) -- index and row of the second.
-            key (tuple) -- the grant, as (group, role, grantor).
+            first (tuple) -- index, row and resolved grantor of the first description.
+            second (tuple) -- the same for the second.
+            group (str) -- group role of the pair.
+            role (str) -- member role of the pair.
         """
-        group, role, grantor = key
-        where = ''
-        if grantor:
-            where = ' under "%s"' % grantor
-            if any(row['granted_by'] is None for dummy, row in (first, second)):
-                where += ', the granting role derived for a row that names no granted_by'
+        first_index, first_row, first_grantor = first
+        second_index, second_row, second_grantor = second
+        if None in (first_grantor, second_grantor) and self.per_grantor_membership:
+            where = ', one of them under any granting role'
+            why = ('A row with granted_by_any manages every grant of the pair, so another '
+                   'row for it has nothing of its own to manage')
+        else:
+            where = ''
+            if first_grantor is not None:
+                where = ' under "%s"' % first_grantor
+                if any(row['granted_by'] is None for row in (first_row, second_row)):
+                    where += ', the granting role derived for a row that names no granted_by'
+            why = 'Describe a grant once, since the second would only overwrite the options of the first'
 
         self.module.fail_json(
-            msg='memberships[%d] and memberships[%d] both grant "%s" to "%s"%s. Describe a '
-                'grant once, since the second would only overwrite the options of the first'
-                % (first[0], second[0], group, role, where))
+            msg='memberships[%d] and memberships[%d] both grant "%s" to "%s"%s. %s'
+                % (first_index, second_index, group, role, where, why))
 
     def _is_own(self, grant, grantor):
-        """Return whether a grant is the one recorded under grantor.
+        """Return whether a grant is one this task manages.
 
-        Before PostgreSQL 16 a pair has only one grant, so it is always the one.
+        A grantor of None stands for any granting role, so every grant is managed:
+        before PostgreSQL 16, where a pair has only one, and for a row with
+        granted_by_any.
 
         Args:
             grant (dict) -- a grant as returned by _role_grants.
-            grantor (str) -- granting role of the grant managed.
+            grantor (str) -- granting role of the grant managed, or None.
 
-        Returns True when the grant is the one managed (bool).
+        Returns True when the grant is managed (bool).
         """
-        return not self.per_grantor_membership or grant['grantor'] == grantor
+        return grantor is None or grant['grantor'] == grantor
 
     def _own_grant(self, grants, grantor):
         """Return the grant of a pair recorded under grantor, or None.
@@ -682,12 +705,14 @@ class PgMembershipByGrantor(PgMembershipBase):
         Only called for granting. A grant exists only while its granting role holds
         ADMIN OPTION on the group (revoking the option fails, or removes the grant
         with CASCADE), so a grant this module finds under its own granting role can
-        always be revoked.
+        always be revoked. A wanted grant under any granting role names none, so it
+        is not checked: the server picks one and refuses what it must.
 
         Args:
             pending (list) -- the wanted grants a GRANT would be emitted for, from
                 self.wanted.
         """
+        pending = [wanted for wanted in pending if wanted['grantor'] is not None]
         if not self.per_grantor_membership or not pending:
             return
 
@@ -789,12 +814,12 @@ class PgMembershipByGrantor(PgMembershipBase):
 
         REVOKE removes only the grant under the grantor it names, so on PostgreSQL 16+
         another role's grant survives and is warned about, whether or not anything
-        was revoked.
+        was revoked. A grantor of None means every grant of the pair is revoked.
 
         Args:
             group (str) -- group role that is revoked.
             role (str) -- member role that loses it.
-            grantor (str) -- granting role of the grant managed.
+            grantor (str) -- granting role of the grant managed, or None.
             grants (list) -- grants of the pair as returned by _role_grants.
 
         Kwargs:
@@ -803,6 +828,9 @@ class PgMembershipByGrantor(PgMembershipBase):
 
         Returns True when a statement was emitted (bool).
         """
+        if grantor is None:
+            return self._revoke_all_grants(group, role, grants)
+
         changed = False
         if self._own_grant(grants, grantor) is not None:
             self._execute('REVOKE %s FROM %s%s' % (
@@ -862,9 +890,13 @@ class PgMembershipByGrantor(PgMembershipBase):
         memberships = self._role_grants()
         pending = [(wanted, memberships[wanted['role']].get(wanted['group'], []))
                    for wanted in self.wanted]
-        self._check_grantors_privileges(set(
-            wanted['grantor'] for wanted, grants in pending
-            if self._own_grant(grants, wanted['grantor']) is not None))
+        grantors = set()
+        for wanted, grants in pending:
+            if wanted['grantor'] is None:
+                grantors.update(grant['grantor'] for grant in grants)
+            elif self._own_grant(grants, wanted['grantor']) is not None:
+                grantors.add(wanted['grantor'])
+        self._check_grantors_privileges(grantors)
 
         for wanted, grants in pending:
             if self._revoke_own(wanted['group'], wanted['role'], wanted['grantor'], grants):
@@ -882,7 +914,9 @@ class PgMembershipByGrantor(PgMembershipBase):
         no row to take one from. granted_by on a state=absent task remains the way to
         remove somebody else's grant. The derived granting role needs no privilege
         check: it is CURRENT_ROLE, or the bootstrap superuser for a superuser, which
-        has every role's privileges.
+        has every role's privileges. With the task-level granted_by_any every grant of
+        an unwanted membership is revoked instead, after checking the privileges over
+        every granting role found recorded.
 
         Returns True when a change was made (bool).
         """
@@ -894,10 +928,16 @@ class PgMembershipByGrantor(PgMembershipBase):
         # discovered on the server rather than asked for. Sorted so the emitted
         # statements come out in a stable order.
         memberships = self._role_grants()
-        for role in self.target_roles:
-            for group in sorted(set(memberships[role]) - wanted_groups.get(role, set())):
-                if self._revoke_own(group, role, self.derived_grantor, memberships[role][group],
-                                    pruning=True):
-                    self._record(self.revoked, group, role)
+        outside = [(group, role, memberships[role][group]) for role in self.target_roles
+                   for group in sorted(set(memberships[role]) - wanted_groups.get(role, set()))]
+
+        grantor = None if self.granted_by_any else self.derived_grantor
+        if grantor is None:
+            self._check_grantors_privileges(set(
+                grant['grantor'] for dummy_group, dummy_role, grants in outside for grant in grants))
+
+        for group, role, grants in outside:
+            if self._revoke_own(group, role, grantor, grants, pruning=True):
+                self._record(self.revoked, group, role)
 
         return self.changed
