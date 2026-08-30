@@ -23,15 +23,12 @@ description:
 options:
   groups:
     description:
-    - DEPRECATED as a top-level option. It will be removed in version 6.0.0.
-      Use the C(groups) key of I(memberships) instead, which is not deprecated.
+    - DEPRECATED. This option will be removed in version 6.0.0. Use the C(groups)
+      key of I(memberships) instead.
     - The list of groups (roles) that need to be granted to or revoked from I(target_roles).
     - Mutually exclusive with I(memberships), and one of the two is required.
-    - Names no granting role and no membership option, so on PostgreSQL 16 and later
-      it identifies a membership by the group and the target role alone. It is
-      present when any role has granted it, C(GRANT) leaves the choice of granting
-      role to PostgreSQL, and I(state=absent) revokes every grant of the pair. Use
-      I(memberships) to manage one grant of a pair, or its options.
+    - On PostgreSQL 16 and later it treats the (group, target role) pair as the
+      membership, whoever granted it; see the notes.
     type: list
     elements: str
     aliases:
@@ -56,12 +53,10 @@ options:
       memberships that need a different granting role or different options from one
       another, which the top-level parameters cannot express because they name one
       value for the whole task.
-    - Mutually exclusive with I(groups), which describes a single membership too,
-      so naming both would leave it open which one a grant came from.
-      I(target_roles) is the exception, since the granting role and the options
-      belong to the group rather than to the member.
-    - A row that names C(target_roles) replaces the top-level I(target_roles) for
-      that row rather than adding to it. A row that names neither is an error.
+    - On PostgreSQL 16 and later a row manages the one grant recorded under its
+      granting role; see the notes.
+    - Mutually exclusive with I(groups). The top-level I(target_roles) may still be
+      given, as the default for rows that do not name their own.
     - I(state), I(fail_on_role) and the connection parameters describe the task and
       stay at the top level.
     - The whole task is one transaction, so a failure part-way leaves none of the
@@ -70,10 +65,12 @@ options:
     - Two rows may not describe the same grant, meaning the same group, target role
       and granting role, the derived one included, since the second would only
       overwrite the options of the first.
-    - An empty list means the target roles are to be a member of no group at all,
-      which is what an empty I(groups) list means in the deprecated top-level form.
-    - A name repeated within a row, or a row and the top level naming the same role
-      with different surrounding whitespace, counts once.
+    - An option key left out leaves that option as it is, so a new grant gets
+      PostgreSQL's default for it and an existing grant keeps its value. The option
+      keys are ignored with I(state=absent).
+    - An empty list with I(state=exact) leaves the target roles a member of no group,
+      as an empty I(groups) list does. It needs the top-level I(target_roles). With
+      the other states it does nothing.
     type: list
     elements: dict
     version_added: '5.0.0'
@@ -95,6 +92,12 @@ options:
       granted_by:
         description:
         - Role to record as the granting role of this membership.
+        - When not set, the granting role is the bootstrap superuser if the connecting
+          role is a superuser, and the connecting role itself otherwise.
+        - The connecting role must hold the privileges of the role named, which a
+          superuser always does.
+        - The role must exist, whatever I(fail_on_role) says.
+        - With I(state=absent) it selects which grant of the pair is revoked.
         - Requires PostgreSQL 16 or later.
         type: str
       admin_option:
@@ -115,6 +118,7 @@ options:
   fail_on_role:
     description:
       - If C(true), fail when group or target_role doesn't exist. If C(false), just warn and continue.
+      - A I(granted_by) role that does not exist always fails.
     default: true
     type: bool
   state:
@@ -161,36 +165,32 @@ notes:
   several roles, each grant carrying its own options. I(memberships) therefore
   identifies a membership by the group, the target role B(and) the granting role, and
   manages one of those grants. The deprecated I(groups) names neither a granting role
-  nor an option, so it identifies a membership by the group and the target role alone,
-  present when any role has granted it and absent only when no role has.
-- PostgreSQL chooses the granting role itself when a statement does not name one, and
-  the role it chooses is not necessarily the connecting role. It is the bootstrap
-  superuser when the connecting role is a superuser, and otherwise the nearest role
-  the connecting role inherits that holds C(ADMIN OPTION) on the group. I(memberships)
-  therefore names the granting role explicitly, so that the grant it manages is
-  identified exactly. Use I(granted_by) to choose that role. The deprecated I(groups)
-  leaves the choice to PostgreSQL, since it has no grant of its own to recognize.
+  nor an option, so it identifies a membership by the group and the target role alone.
+  It is present when any role has granted it, its C(GRANT) leaves the choice of
+  granting role to PostgreSQL, and I(state=absent) and I(state=exact) revoke every
+  grant of the pair, one C(REVOKE) per granting role. The connecting role must hold
+  the privileges of each of those granting roles; the module checks that before
+  revoking anything and fails naming the role it lacks.
+- The connecting role is I(session_role) when set, and I(login_user) otherwise.
+- PostgreSQL chooses the granting role itself when a statement does not name one. It
+  is the bootstrap superuser when the connecting role is a superuser, otherwise the
+  connecting role itself when it holds C(ADMIN OPTION) on the group, or else the
+  nearest role it inherits that does. I(memberships) always names one; see
+  I(granted_by).
 - When the connecting role is not a superuser, a I(memberships) row names that role
   itself. If it holds C(ADMIN OPTION) on a group only indirectly, through another
   role, PostgreSQL refuses a grant naming it, and I(granted_by) must name the role
   that holds the option. The deprecated I(groups) needs nothing in that case, because
   PostgreSQL picks the role that holds it.
-- Before granting anything under I(memberships), the module checks that the granting
-  role holds C(ADMIN OPTION) on every group it is about to grant, and fails naming the
-  roles that do hold it. The server's own refusal names neither the missing option
-  nor a role that holds it. Only the groups a C(GRANT) is actually emitted for are
-  checked, so a task that has nothing left to do keeps succeeding even after the
-  granting role lost the option. The deprecated I(groups) checks nothing ahead of a
-  C(GRANT), since it names no role that could be checked.
-- I(memberships) manages only its own grant. A membership granted by another role is
-  not removed by I(state=absent) or I(state=exact), and does not stop the module making
-  its own grant; the module warns instead. Set I(granted_by) to that role to manage
-  its grant. The connecting role must hold that role's privileges, which a superuser
-  always does.
-- The deprecated I(groups) revokes every grant of a pair under I(state=absent) and
-  I(state=exact), one C(REVOKE) per granting role, so the membership goes away. The
-  connecting role must hold the privileges of every one of those granting roles;
-  the module checks that before revoking anything and fails naming the role it lacks.
+- Under I(memberships) the module checks, before emitting a C(GRANT), that the
+  granting role holds C(ADMIN OPTION) on the group, and fails naming the roles that
+  do. Only the groups a C(GRANT) is emitted for are checked, so a task with nothing
+  left to do keeps succeeding even after the granting role lost the option. The
+  deprecated I(groups) leaves the check to the server.
+- A membership granted by another role does not count as the module's own.
+  I(state=present) makes its own grant beside it. I(state=absent) and I(state=exact)
+  leave it in place and warn. Set I(granted_by) to that role to manage its grant; the
+  connecting role must hold that role's privileges, which a superuser always does.
 - Before PostgreSQL 16 a grant whose granting role has since been dropped is revoked
   like any other grant. PostgreSQL 16 and later refuse to drop a role that a grant
   records as its granting role, so the case does not arise there.
@@ -198,8 +198,11 @@ notes:
   target role keeps an option as long as any grant carries it. Setting for example
   I(admin_option=false) only clears it on the grant this module manages. The
   C(effective_options) return value reports what the target role actually holds.
-- Before PostgreSQL 16 a pair can be granted only once, so the granting role is ignored
-  and the two forms behave the same.
+- Before PostgreSQL 16 a pair can be granted only once and carries no per-grant
+  options, so the two forms behave the same. I(granted_by) and the option keys are
+  refused there.
+- Names are stripped of surrounding whitespace, and a name repeated in a list counts
+  once.
 seealso:
 - module: community.postgresql.postgresql_user
 - module: community.postgresql.postgresql_privs
@@ -340,16 +343,18 @@ queries:
 granted:
     description:
       - Dict of granted groups and roles.
-      - Contains an entry for every requested group, empty when nothing was granted for it.
+      - Contains an entry for every requested group that exists, empty when nothing
+        was granted for it.
     returned: if I(state=present) or I(state=exact)
     type: dict
     sample: { "ro_group": [ "alice", "bob" ] }
 revoked:
     description:
       - Dict of revoked groups and roles.
-      - With I(state=absent) it contains an entry for every requested group, empty when
-        nothing was revoked for it. With I(state=exact) only the groups actually revoked
-        appear, because those are discovered on the server rather than requested.
+      - With I(state=absent) it contains an entry for every requested group that
+        exists, empty when nothing was revoked for it. With I(state=exact) only the
+        groups actually revoked appear, because those are discovered on the server
+        rather than requested.
     returned: if I(state=absent) or I(state=exact)
     type: dict
     sample: { "ro_group": [ "alice", "bob" ] }
@@ -358,12 +363,29 @@ state:
     returned: success
     type: str
     sample: "present"
+groups:
+    description:
+      - Groups the task named, in order of first appearance, without those found not
+        to exist. With I(memberships) it spans every row.
+    returned: success
+    type: list
+    elements: str
+    sample: [ "ro_group" ]
+target_roles:
+    description:
+      - Target roles the task named, in order of first appearance, without those found
+        not to exist. With I(memberships) it spans every row.
+    returned: success
+    type: list
+    elements: str
+    sample: [ "alice", "bob" ]
 grants:
     description:
       - Every grant of the requested groups to the requested target roles, keyed by
         group and then by target role, with one entry per granting role.
       - Includes the grants made by roles other than the connecting one, which this
         module does not manage.
+      - Only pairs where the target role is a member are reported.
       - The C(inherit_option) and C(set_option) keys are only present on PostgreSQL 16 and later.
       - C(grantor) is C(null) for a grant whose granting role has since been dropped,
         which PostgreSQL only allows before version 16.
@@ -448,13 +470,12 @@ def parse_memberships(module):
     """
     rows = module.params['memberships']
 
-    # An empty list is how the top-level form spells "a member of no group at all",
-    # as groups: [] with state=exact. Turned into the row that produces, so the idiom
-    # survives the deprecation of groups.
+    # groups: [] with state=exact means "a member of no group at all"; an empty
+    # memberships list is turned into the row that produces.
     if not rows:
         if module.params['target_roles'] is None:
             module.fail_json(msg="An empty memberships list needs target_roles at the top "
-                                 "level, naming the roles that are to have no groups")
+                                 "level, naming the roles it applies to")
 
         membership = dict.fromkeys(ROW_KEYS)
         membership.update(groups=[], target_roles=normalise_names(module.params['target_roles']))
@@ -538,11 +559,8 @@ def main():
     if module.params['groups'] is None and module.params['memberships'] is None:
         module.fail_json(msg="one of the following is required: groups, memberships")
 
-    # The two forms describe a membership differently, and each gets the class of its
-    # model. See the notes section. The deprecated top-level form names neither a
-    # granting role nor an option, so it has nothing to tell one grant of a pair from
-    # another and takes the pair itself as the membership. memberships names a
-    # granting role per row, or has one derived, and takes one grant as the membership.
+    # Each form gets the class of its model; see the class docstrings in
+    # module_utils/membership.py.
     if module.params['memberships'] is None:
         groups = normalise_names(module.params['groups'])
         target_roles = normalise_names(module.params['target_roles'])
