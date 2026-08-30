@@ -531,6 +531,11 @@ def main():
     state = module.params['state']
     session_role = module.params['session_role']
 
+    # required_one_of counts a parameter as given when its key is present, so a null
+    # value passes it. Refused here, so that neither form goes on to iterate None.
+    if module.params['groups'] is None and module.params['memberships'] is None:
+        module.fail_json(msg="one of the following is required: groups, memberships")
+
     # The two forms describe a membership differently, and each gets the class of its
     # model. See the notes section. The deprecated top-level form names neither a
     # granting role nor an option, so it has nothing to tell one grant of a pair from

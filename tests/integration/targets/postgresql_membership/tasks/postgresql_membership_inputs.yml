@@ -165,6 +165,42 @@
       that:
       - result.warnings | select('search', 'have no effect with state=absent') | list | length > 0
 
+  # required_one_of counts a key that is present, so a null value passes it and the
+  # module has to refuse it itself instead of failing on iterating None.
+  - name: postgresql_membership - a null groups is refused like a missing one
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      groups:
+      target_role: "in_user1"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'one of the following is required: groups, memberships' in result.msg"
+
+  - name: postgresql_membership - a null memberships is refused the same way
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      target_role: "in_user1"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'one of the following is required: groups, memberships' in result.msg"
+
   always:
 
   - name: postgresql_membership - drop roles from the input tests
