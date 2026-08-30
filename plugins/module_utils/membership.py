@@ -265,6 +265,19 @@ class PgMembershipBase(object):
         """
         self.changed |= exec_sql(self, query, return_bool=True)
 
+    def _seed(self, mapping):
+        """Give every group of the task an entry in granted or revoked.
+
+        Called before a loop that does not run when every target role was filtered
+        out as non-existent or none was passed, so that the reported groups are the
+        ones asked for either way.
+
+        Args:
+            mapping (dict) -- granted or revoked, group mapped to its target roles.
+        """
+        for group in self.groups:
+            mapping.setdefault(group, [])
+
     @staticmethod
     def _record(mapping, group, role):
         """Add role to the roles reported for group, once.
@@ -370,11 +383,7 @@ class PgMembershipByPair(PgMembershipBase):
 
         Returns True when a change was made (bool).
         """
-        # Seeded before the loop, which does not run when every target role was
-        # filtered out as non-existent or none was passed, so that the reported groups
-        # are the ones asked for either way.
-        for group in self.groups:
-            self.granted.setdefault(group, [])
+        self._seed(self.granted)
 
         memberships = self._role_grants()
         for group, role in self.pairs:
@@ -395,8 +404,7 @@ class PgMembershipByPair(PgMembershipBase):
 
         Returns True when a change was made (bool).
         """
-        for group in self.groups:
-            self.revoked.setdefault(group, [])
+        self._seed(self.revoked)
 
         # Each REVOKE names the granting role it found recorded, so the connecting
         # role needs that role's privileges. Checked before anything is emitted, so
@@ -598,17 +606,6 @@ class PgMembershipByGrantor(PgMembershipBase):
         Returns the grants made by other roles (list of dict).
         """
         return [grant for grant in grants if not self._is_own(grant, grantor)]
-
-    def _grants_of(self, memberships, wanted):
-        """Return the grants of the pair a wanted grant is of.
-
-        Args:
-            memberships (dict) -- grants of every target role, from _role_grants.
-            wanted (dict) -- a wanted grant, from self.wanted.
-
-        Returns the grants of the pair (list of dict).
-        """
-        return memberships[wanted['role']].get(wanted['group'], [])
 
     def _warn_foreign_membership(self, group, role, grantor, grants, pruning):
         """Warn that grants recorded under other roles keep the membership alive.
@@ -820,23 +817,21 @@ class PgMembershipByGrantor(PgMembershipBase):
 
         Returns True when a change was made (bool).
         """
-        # Seeded before the loop, which does not run when every target role was
-        # filtered out as non-existent or none was passed, so that the reported groups
-        # are the ones asked for either way.
-        for group in self.groups:
-            self.granted.setdefault(group, [])
+        self._seed(self.granted)
 
         # Read for every target role before anything is emitted, so that the grants
         # needed are known and can be checked against their granting roles up front.
         # Granting a group to one role does not touch another role's memberships, so
         # reading them all at once loses nothing.
         memberships = self._role_grants()
-        needed = [self._needs_grant(wanted, self._grants_of(memberships, wanted))
-                  for wanted in self.wanted]
-        self._check_grantable([wanted for wanted, needs in zip(self.wanted, needed) if needs])
+        pending = []
+        for wanted in self.wanted:
+            grants = memberships[wanted['role']].get(wanted['group'], [])
+            pending.append((wanted, grants, self._needs_grant(wanted, grants)))
+        self._check_grantable([wanted for wanted, dummy, needs in pending if needs])
 
-        for wanted, needs in zip(self.wanted, needed):
-            self._warn_foreign_options(wanted, self._grants_of(memberships, wanted))
+        for wanted, grants, needs in pending:
+            self._warn_foreign_options(wanted, grants)
             if not needs:
                 continue
 
@@ -859,20 +854,20 @@ class PgMembershipByGrantor(PgMembershipBase):
 
         Returns True when a change was made (bool).
         """
-        for group in self.groups:
-            self.revoked.setdefault(group, [])
+        self._seed(self.revoked)
 
         # Revoking needs no ADMIN OPTION check: see _check_grantable. It does need the
         # grantor to be one the connecting role has the privileges of, which a
         # granted_by naming somebody else's grant need not be.
         memberships = self._role_grants()
+        pending = [(wanted, memberships[wanted['role']].get(wanted['group'], []))
+                   for wanted in self.wanted]
         self._check_grantors_privileges(set(
-            wanted['grantor'] for wanted in self.wanted
-            if self._own_grant(self._grants_of(memberships, wanted), wanted['grantor']) is not None))
+            wanted['grantor'] for wanted, grants in pending
+            if self._own_grant(grants, wanted['grantor']) is not None))
 
-        for wanted in self.wanted:
-            if self._revoke_own(wanted['group'], wanted['role'], wanted['grantor'],
-                                self._grants_of(memberships, wanted)):
+        for wanted, grants in pending:
+            if self._revoke_own(wanted['group'], wanted['role'], wanted['grantor'], grants):
                 self._record(self.revoked, wanted['group'], wanted['role'])
 
         return self.changed
