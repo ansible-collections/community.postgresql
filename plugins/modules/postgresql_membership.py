@@ -126,15 +126,22 @@ options:
     - Membership state.
     - I(state=present) implies the I(groups)must be granted to I(target_roles).
     - I(state=absent) implies the I(groups) must be revoked from I(target_roles).
-    - I(state=exact) implies that I(target_roles) will be members of only the I(groups)
-      (available since community.postgresql 2.2.0).
-      Any other groups will be revoked from I(target_roles).
-    - With I(memberships), I(state=exact) considers every group the rows name for a
-      target role, so a group wanted by one row is not revoked because another row
-      did not name it. The groups no row named are revoked under the granting role
-      the module derives from the connection, since no row names one for them.
-    - With the deprecated I(groups), I(state=exact) revokes every grant of the groups
-      it does not name, as I(state=absent) does.
+    - I(state=exact) leaves the target roles members of the named groups and of no
+      other group, revoking every other membership they hold. Roles not named in
+      I(target_roles) are never touched (available since community.postgresql 2.2.0).
+    - On PostgreSQL 16 and later a membership can be held through several grants, one
+      per granting role, and a task can only revoke the grant recorded under its own
+      granting role (see I(granted_by)). With I(memberships), I(state=absent) and
+      I(state=exact) therefore remove a membership only when this task's granting
+      role made it. A grant made by another role stays, the target role stays a
+      member, and the module warns. To remove such a grant, name its granting role
+      in I(granted_by) in a I(state=absent) task, connected as a role that holds
+      that role's privileges.
+    - With I(memberships) and I(state=exact), a target role keeps every group any
+      row names for it; the groups no row names are revoked under the granting role
+      derived from the connection, since no row names one for them.
+    - The deprecated I(groups) revokes every grant of a membership, whoever made it,
+      so with it I(state=absent) and I(state=exact) always remove the membership.
     type: str
     default: present
     choices: [ absent, exact, present ]
@@ -251,7 +258,8 @@ EXAMPLES = r'''
 
 - name: >
     Make sure alice and bob are members only of marketing and sales.
-    If they are members of other groups, they will be removed from those groups
+    They are removed from any other group this task's granting role granted them;
+    a grant made by another role is warned about instead (see the notes)
   community.postgresql.postgresql_membership:
     target_roles:
     - alice
@@ -315,8 +323,9 @@ EXAMPLES = r'''
       set_option: false
     state: present
 
-# alice is left a member of reporting and read_only and of nothing else, even
-# though no single row names both.
+# alice is left a member of reporting and read_only, even though no single row
+# names both. Any other membership granted by the connecting role is revoked;
+# one granted by another role survives with a warning.
 - name: Make alice a member of exactly these groups (PostgreSQL 16+)
   community.postgresql.postgresql_membership:
     target_roles: alice
