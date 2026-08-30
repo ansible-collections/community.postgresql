@@ -1,0 +1,512 @@
+# Copyright: (c) 2026, Florian R. Hölzlwimmer (@Hoeze) <git.ich@frhoelzlwimmer.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+####################################################################
+# Tests for the admin_option, inherit_option and set_option params #
+# (https://github.com/ansible-collections/community.postgresql/issues/757).
+# The option keys are refused before PostgreSQL 16, where the       #
+# WITH <option> <boolean> syntax does not exist, so the option      #
+# tests are gated on the server version.                            #
+####################################################################
+
+# On PostgreSQL < 16 the options are unsupported and must fail loudly:
+- name: postgresql_membership - membership options rejected before PostgreSQL 16
+  when: not (pg_per_grantor | bool)
+  vars:
+    # Created in this order and dropped in reverse.
+    roles:
+    - "opt_group"
+    - "opt_user1"
+  block:
+
+  - name: postgresql_membership - create roles for the legacy rejection test
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+    ignore_errors: true
+    with_items: "{{ roles }}"
+
+  - name: postgresql_membership - set_option must fail on PostgreSQL < 16
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        set_option: true
+      target_role: "opt_user1"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'require PostgreSQL 16 or later' in result.msg"
+
+  always:
+
+  - name: postgresql_membership - drop roles from the legacy rejection test
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+      state: absent
+    ignore_errors: true
+    with_items: "{{ roles | reverse | list }}"
+
+- name: postgresql_membership - membership option tests (PostgreSQL >= 16 only)
+  when: pg_per_grantor | bool
+  vars:
+    # Groups and granting roles first: dropping in reverse then removes the
+    # members before the roles that granted to them.
+    roles:
+    - "opt_group"
+    - "opt_grantor"
+    - "opt_user1"
+    - "opt_user2"
+    - "opt_user3"
+  block:
+
+  - name: postgresql_membership - create roles for the option tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+    ignore_errors: true
+    with_items: "{{ roles }}"
+
+  # Grant with all three options explicitly disabled:
+  - name: postgresql_membership - grant with options disabled
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        admin_option: false
+        inherit_option: false
+        set_option: false
+      target_role: "opt_user1"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.granted["opt_group"] == ["opt_user1"]
+
+  - name: postgresql_membership - read back the membership options
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_options }}"
+      positional_args:
+      - "opt_group"
+      - "opt_user1"
+    register: opts
+
+  - assert:
+      that:
+      - opts.query_result | length == 1
+      - opts.query_result[0].admin_option == false
+      - opts.query_result[0].inherit_option == false
+      - opts.query_result[0].set_option == false
+
+  # Granting again with the same options must be idempotent:
+  - name: postgresql_membership - grant again with the same options (idempotency)
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        admin_option: false
+        inherit_option: false
+        set_option: false
+      target_role: "opt_user1"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.granted["opt_group"] == []
+
+  # Changing a single option must alter the existing membership:
+  - name: postgresql_membership - enable set_option on the existing membership
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        set_option: true
+      target_role: "opt_user1"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.granted["opt_group"] == ["opt_user1"]
+
+  - name: postgresql_membership - read back all options after the change
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_options }}"
+      positional_args:
+      - "opt_group"
+      - "opt_user1"
+    register: opts
+
+  # set_option flipped to true; admin_option and inherit_option must stay false.
+  - assert:
+      that:
+      - opts.query_result | length == 1
+      - opts.query_result[0].set_option == true
+      - opts.query_result[0].admin_option == false
+      - opts.query_result[0].inherit_option == false
+
+  # Reporting check: grant to a role that is already a member with matching
+  # options (no change) together with a brand new role. Only the new role must
+  # appear in granted[] - this guards against over-reporting unchanged roles.
+  - name: postgresql_membership - grant to one unchanged and one new role
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        set_option: true
+      target_roles:
+      - "opt_user1"
+      - "opt_user2"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.granted["opt_group"] == ["opt_user2"]
+
+  # Granting role isolation (issue #757): a membership granted by a different role
+  # must not hide the need to create our own grant. We let opt_grantor grant
+  # opt_group to opt_user3, then run the module as pg_user. The module must not
+  # treat the opt_grantor-granted row as its own and must issue a fresh GRANT.
+  - name: postgresql_membership - allow opt_grantor to administer opt_group
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: 'GRANT "opt_group" TO "opt_grantor" WITH ADMIN OPTION'
+
+  - name: postgresql_membership - pre-grant opt_group to opt_user3 as opt_grantor
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      session_role: "opt_grantor"
+      db: postgres
+      query: 'GRANT "opt_group" TO "opt_user3"'
+
+  - name: postgresql_membership - module grants opt_group to opt_user3 with set_option
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        set_option: true
+      target_role: "opt_user3"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.granted["opt_group"] == ["opt_user3"]
+
+  - name: postgresql_membership - verify the module's own grant, under the bootstrap superuser, has set_option
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_options_by }}"
+      positional_args:
+      - "opt_group"
+      - "opt_user3"
+      - "{{ pg_bootstrap }}"
+    register: gr_row
+
+  - assert:
+      that:
+      - gr_row.query_result | length == 1
+      - gr_row.query_result[0].set_option == true
+
+  - name: postgresql_membership - re-run the same grant is idempotent
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        set_option: true
+      target_role: "opt_user3"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.granted["opt_group"] == []
+
+  # state=exact must reconcile options on a membership that already exists,
+  # not only on newly granted ones. opt_user1 is already a member of opt_group
+  # with set_option=true at this point.
+  - name: postgresql_membership - state=exact changes an option on an existing membership
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        set_option: false
+      target_role: "opt_user1"
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.granted["opt_group"] == ["opt_user1"]
+
+  - name: postgresql_membership - read back all options after state=exact
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_options }}"
+      positional_args:
+      - "opt_group"
+      - "opt_user1"
+    register: opts
+
+  # set_option reconciled to false; admin_option and inherit_option must stay false.
+  - assert:
+      that:
+      - opts.query_result | length == 1
+      - opts.query_result[0].set_option == false
+      - opts.query_result[0].admin_option == false
+      - opts.query_result[0].inherit_option == false
+
+  - name: postgresql_membership - state=exact with the same option is idempotent
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        set_option: false
+      target_role: "opt_user1"
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      # state=exact seeds an entry for every requested group, as state=present does.
+      - 'result.granted == {"opt_group": []}'
+
+  ####################################################################
+  # check_mode: the module must predict whether an option change is  #
+  # needed and report it without writing to the database.            #
+  # opt_user1 currently has set_option=false on opt_group.           #
+  ####################################################################
+
+  # Enabling set_option in check_mode must report a change but leave the
+  # membership untouched (changes run in a transaction that is rolled back).
+  - name: postgresql_membership - enable set_option in check_mode (change needed)
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        set_option: true
+      target_role: "opt_user1"
+      state: present
+    register: result
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+      - result.granted["opt_group"] == ["opt_user1"]
+      - result.queries == ['GRANT "opt_group" TO "opt_user1" WITH SET true' ~ granted_by_sql]
+
+  # Requesting the option value opt_user1 already has must report no change.
+  - name: postgresql_membership - keep set_option in check_mode (no change needed)
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        set_option: false
+      target_role: "opt_user1"
+      state: present
+    register: result
+    check_mode: true
+
+  - assert:
+      that:
+      - result is not changed
+      - result.granted["opt_group"] == []
+      - result.queries == []
+
+  # Confirm the change-needed check_mode run above did not actually write:
+  # every option must still hold its pre-check_mode value.
+  - name: postgresql_membership - verify check_mode left all options unchanged
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_options }}"
+      positional_args:
+      - "opt_group"
+      - "opt_user1"
+    register: opts
+
+  - assert:
+      that:
+      - opts.query_result | length == 1
+      - opts.query_result[0].set_option == false
+      - opts.query_result[0].admin_option == false
+      - opts.query_result[0].inherit_option == false
+
+  # Every other case in this file leaves ADMIN and INHERIT both false, so a mapping that
+  # swapped two of the three option names would go unnoticed. These two grants give each
+  # pair of options differing values, so any swap changes a readback below.
+  - name: postgresql_membership - set ADMIN apart from INHERIT and SET
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        admin_option: true
+        inherit_option: false
+        set_option: false
+      target_role: "opt_user1"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "opt_group" TO "opt_user1" WITH ADMIN true, INHERIT false, SET false' ~ granted_by_sql]
+      - result.effective_options.opt_group.opt_user1.admin_option == true
+      - result.effective_options.opt_group.opt_user1.inherit_option == false
+      - result.effective_options.opt_group.opt_user1.set_option == false
+
+  - name: postgresql_membership - read back the options ADMIN differs on
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_options }}"
+      positional_args:
+      - "opt_group"
+      - "opt_user1"
+    register: opts
+
+  - assert:
+      that:
+      - opts.query_result | length == 1
+      - opts.query_result[0].admin_option == true
+      - opts.query_result[0].inherit_option == false
+      - opts.query_result[0].set_option == false
+
+  # INHERIT now differs from SET, which the grant above could not distinguish.
+  - name: postgresql_membership - set INHERIT apart from ADMIN and SET
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "opt_group"
+        admin_option: false
+        inherit_option: true
+        set_option: false
+      target_role: "opt_user1"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "opt_group" TO "opt_user1" WITH ADMIN false, INHERIT true, SET false' ~ granted_by_sql]
+
+  - name: postgresql_membership - read back the options INHERIT differs on
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_options }}"
+      positional_args:
+      - "opt_group"
+      - "opt_user1"
+    register: opts
+
+  - assert:
+      that:
+      # Still one row: changing the options of a grant updates it rather than adding one.
+      - opts.query_result | length == 1
+      - opts.query_result[0].admin_option == false
+      - opts.query_result[0].inherit_option == true
+      - opts.query_result[0].set_option == false
+
+  always:
+
+  - name: postgresql_membership - drop roles created for the option tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+      state: absent
+    ignore_errors: true
+    with_items: "{{ roles | reverse | list }}"

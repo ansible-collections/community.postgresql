@@ -129,6 +129,22 @@ def pg_quote_identifier(identifier, id_type):
     return '.'.join(identifier_fragments)
 
 
+def pg_quote_name(name):
+    """Return a name as a quoted SQL identifier.
+
+    For objects that are never schema qualified, such as roles, databases and
+    tablespaces: a dot is part of the name, where pg_quote_identifier would split on
+    it and reject the name. The name is taken literally, so an embedded double quote
+    is escaped rather than treated as pre-quoting.
+
+    Args:
+        name (str) -- name to quote.
+
+    Returns the quoted identifier (str).
+    """
+    return '"%s"' % name.replace('"', '""')
+
+
 def mysql_quote_identifier(identifier, id_type):
     identifier_fragments = _identifier_parse(identifier, quote_char='`')
     if (len(identifier_fragments) - 1) > _MYSQL_IDENTIFIER_TO_DOT_LEVEL[id_type]:

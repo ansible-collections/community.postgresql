@@ -42,7 +42,7 @@
     that:
     - result is changed
     - result.groups == ["group1"]
-    - result.queries == ["GRANT \"group1\" TO \"user1\""]
+    - result.queries == ['GRANT "group1" TO "user1"']
     - result.granted["group1"] == ["user1"]
     - result.state == "present"
     - result.target_roles == ["user1"]
@@ -89,7 +89,7 @@
     that:
     - result is changed
     - result.groups == ["group1"]
-    - result.queries == ["GRANT \"group1\" TO \"user1\""]
+    - result.queries == ['GRANT "group1" TO "user1"']
     - result.granted["group1"] == ["user1"]
     - result.state == "present"
     - result.target_roles == ["user1"]
@@ -133,7 +133,7 @@
     that:
     - result is changed
     - result.groups == ["group1"]
-    - result.queries == ["REVOKE \"group1\" FROM \"user1\""]
+    - result.queries == ['REVOKE "group1" FROM "user1"' ~ granted_by_sql]
     - result.revoked["group1"] == ["user1"]
     - result.state == "absent"
     - result.target_roles == ["user1"]
@@ -230,7 +230,7 @@
     that:
     - result is changed
     - result.groups == ["group1"]
-    - result.queries == ["REVOKE \"group1\" FROM \"user1\""]
+    - result.queries == ['REVOKE "group1" FROM "user1"' ~ granted_by_sql]
     - result.revoked["group1"] == ["user1"]
     - result.state == "absent"
     - result.target_roles == ["user1"]
@@ -257,7 +257,7 @@
     that:
     - result is changed
     - result.groups == ["group1", "group2"]
-    - result.queries == ["GRANT \"group1\" TO \"user1\""]
+    - result.queries == ['GRANT "group1" TO "user1"']
     - result.granted["group1"] == ["user1"]
     - result.granted["group2"] == []
     - result.state == "present"
@@ -267,7 +267,7 @@
 # Check fail_on_role:
 
 # Try to grant non existent group to non existent role with fail_on_role=true:
-- name: postgresql_membership - revoke non existen group from non existen role
+- name: postgresql_membership - grant a non-existent group to a non-existent role with fail_on_role=true
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
@@ -285,7 +285,7 @@
     - result is not changed
 
 # Try to grant non existent group to non existent role with fail_on_role=no:
-- name: postgresql_membership - revoke non existen group from non existen role
+- name: postgresql_membership - grant a non-existent group to a non-existent role with fail_on_role=false
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
@@ -307,7 +307,7 @@
     - result.state == 'present'
 
 # Try to revoke non existent group from non existent role with fail_on_role=no:
-- name: postgresql_membership - revoke non existen group from non existen role
+- name: postgresql_membership - revoke a non-existent group from a non-existent role with fail_on_role=false
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
@@ -343,7 +343,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ["GRANT \"group.with.dots\" TO \"user1\""]
+    - result.queries == ['GRANT "group.with.dots" TO "user1"']
 
 #############################
 # Check trust_input parameter
@@ -547,7 +547,8 @@
     - result is changed
     - result.revoked["group.with.dots"] == ["user1"]
     - result.revoked["group2"] == ["user1"]
-    - result.granted == {}
+    # state=exact seeds an entry for every requested group, as state=present does.
+    - 'result.granted == {"group1": []}'
 
 
 - name: Check result of prev task
@@ -613,7 +614,7 @@
     that:
     - result is not changed
     - result.queries == []
-    - result.granted == {}
+    - 'result.granted == {"group2": [], "group.with.dots": []}'
     - result.revoked == {}
 
 
@@ -698,7 +699,7 @@
     that:
     - result is changed
     - result.revoked["group1"] == ["user1", "user.with.dots"]
-    - result.granted == {}
+    - 'result.granted == {"group2": [], "group.with.dots": []}'
 
 - name: Check result of prev task for user1
   become_user: "{{ pg_user }}"

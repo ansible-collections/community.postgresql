@@ -3,5 +3,80 @@
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
 
+# Facts shared by every task file below. The server version gates the PostgreSQL 16
+# features, and from 16 on a memberships row names the granting role in every statement
+# and the deprecated groups form names it in REVOKE, which is the bootstrap superuser
+# when the connecting role is a superuser. Defined here so that no task file depends on
+# another one having run first.
+- name: postgresql_membership - detect server version and bootstrap superuser
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    login_user: "{{ pg_user }}"
+    db: postgres
+    query: >-
+      SELECT current_setting('server_version_num') AS server_version_num,
+             (SELECT rolname FROM pg_catalog.pg_roles WHERE oid = 10) AS bootstrap
+  register: pg_info
+
+- name: postgresql_membership - shared facts
+  set_fact:
+    pg_ver_num: "{{ pg_info.query_result[0].server_version_num }}"
+    pg_bootstrap: "{{ pg_info.query_result[0].bootstrap }}"
+
+# The one place the version threshold is spelled; every task file guards on this.
+- name: postgresql_membership - per-grantor membership model from PostgreSQL 16 on
+  set_fact:
+    pg_per_grantor: "{{ pg_ver_num | int >= 160000 }}"
+
+- name: postgresql_membership - expected GRANTED BY clause
+  set_fact:
+    granted_by_sql: ' GRANTED BY "{{ pg_bootstrap }}"'
+  when: pg_per_grantor | bool
+
+- name: postgresql_membership - no GRANTED BY clause before PostgreSQL 16
+  set_fact:
+    granted_by_sql: ''
+  when: not (pg_per_grantor | bool)
+
+# Read-back queries used from several task files below. Each takes the group and the
+# target role as positional arguments, so no name is interpolated into the SQL.
+- name: postgresql_membership - shared read-back queries
+  set_fact:
+    q_grant_options: >-
+      SELECT m.admin_option, m.inherit_option, m.set_option
+      FROM pg_catalog.pg_auth_members m
+      JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
+      JOIN pg_catalog.pg_roles u ON m.member = u.oid
+      WHERE g.rolname = %s AND u.rolname = %s
+    q_grant_count: >-
+      SELECT count(*) AS count FROM pg_catalog.pg_auth_members m
+      JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
+      JOIN pg_catalog.pg_roles u ON m.member = u.oid
+      WHERE g.rolname = %s AND u.rolname = %s
+    # Options of one specific grant. Third argument is the granting role.
+    q_grant_options_by: >-
+      SELECT m.admin_option, m.inherit_option, m.set_option
+      FROM pg_catalog.pg_auth_members m
+      JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
+      JOIN pg_catalog.pg_roles u ON m.member = u.oid
+      JOIN pg_catalog.pg_roles gr ON m.grantor = gr.oid
+      WHERE g.rolname = %s AND u.rolname = %s AND gr.rolname = %s
+
 # Initial CI tests of postgresql_membership module
 - import_tasks: postgresql_membership_initial.yml
+
+# Tests for admin_option, inherit_option and set_option (PostgreSQL >= 16):
+- import_tasks: postgresql_membership_options.yml
+
+# Tests for the grantor-scoped membership model (PostgreSQL >= 16):
+- import_tasks: postgresql_membership_grantor.yml
+
+# Tests for the granting role named when the connecting role is not a superuser:
+- import_tasks: postgresql_membership_session_role.yml
+
+# Tests for the memberships parameter, one membership per row:
+- import_tasks: postgresql_membership_list.yml
+
+# Tests for input handling and the shape of the return values:
+- import_tasks: postgresql_membership_inputs.yml
