@@ -9,6 +9,15 @@
 ####################################################################
 
 - name: postgresql_membership - input handling
+  vars:
+    # Groups and granting roles first: dropping in reverse then removes the
+    # members before the roles that granted to them.
+    roles:
+    - "in_group1"
+    - "in_group2"
+    - "in_user1"
+    - "in_user2"
+    - "o'brien"
   block:
 
   - name: postgresql_membership - create roles for the input tests
@@ -18,16 +27,10 @@
       login_user: "{{ pg_user }}"
       db: postgres
       name: "{{ item }}"
-    with_items:
-    - "in_group1"
-    - "in_group2"
-    - "in_user1"
-    - "in_user2"
-    - "o'brien"
+    with_items: "{{ roles }}"
 
-  # A single quote is what actually broke the old code: it built the existence check as
-  # IN ('name') by interpolation, so the name closed the literal early and the statement
-  # was invalid. The name is passed as a query parameter now.
+  # A single quote closes an interpolated SQL literal early, so the name has to go in
+  # as a query parameter.
   - name: postgresql_membership - grant to a role whose name contains a single quote
     become_user: "{{ pg_user }}"
     become: true
@@ -50,12 +53,9 @@
     postgresql_query:
       login_user: "{{ pg_user }}"
       db: postgres
-      query: >-
-        SELECT count(*) AS count FROM pg_catalog.pg_auth_members m
-        JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
-        JOIN pg_catalog.pg_roles u ON m.member = u.oid
-        WHERE g.rolname = 'in_group1' AND u.rolname = %s
+      query: "{{ q_grant_count }}"
       positional_args:
+      - "in_group1"
       - "o'brien"
     register: result
 
@@ -99,9 +99,9 @@
       - result.queries == ['GRANT "in_group1" TO "in_user1"']
       - 'result.granted == {"in_group1": ["in_user1"]}'
 
-  # queries is ordered by target role and then by group, because each role's memberships
-  # are read once rather than once per pair. The deprecated form's GRANT names no
-  # granting role, so there is no clause to expect on PostgreSQL 16 either.
+  # queries is ordered by target role and then by group, the order the (group, target
+  # role) pairs are walked in. The deprecated form's GRANT names no granting role, so
+  # there is no clause to expect on PostgreSQL 16 either.
   - name: postgresql_membership - queries are ordered by target role, then by group
     become_user: "{{ pg_user }}"
     become: true
@@ -212,12 +212,7 @@
       name: "{{ item }}"
       state: absent
     ignore_errors: true
-    with_items:
-    - "o'brien"
-    - "in_user1"
-    - "in_user2"
-    - "in_group1"
-    - "in_group2"
+    with_items: "{{ roles | reverse | list }}"
 
 ####################################################################
 # granted_by only exists from PostgreSQL 16 on, and the role it     #
@@ -225,7 +220,13 @@
 ####################################################################
 
 - name: postgresql_membership - granted_by validation (PostgreSQL >= 16 only)
-  when: pg_ver_num | int >= 160000
+  when: pg_per_grantor | bool
+  vars:
+    # Groups and granting roles first: dropping in reverse then removes the
+    # members before the roles that granted to them.
+    roles:
+    - "gbv_group"
+    - "gbv_user"
   block:
 
   - name: postgresql_membership - create roles for the granted_by validation test
@@ -235,9 +236,7 @@
       login_user: "{{ pg_user }}"
       db: postgres
       name: "{{ item }}"
-    with_items:
-    - "gbv_group"
-    - "gbv_user"
+    with_items: "{{ roles }}"
 
   - name: postgresql_membership - a granted_by role that does not exist is refused
     become_user: "{{ pg_user }}"
@@ -289,6 +288,4 @@
       name: "{{ item }}"
       state: absent
     ignore_errors: true
-    with_items:
-    - "gbv_user"
-    - "gbv_group"
+    with_items: "{{ roles | reverse | list }}"

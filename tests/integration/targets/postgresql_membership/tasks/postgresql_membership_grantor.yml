@@ -9,7 +9,15 @@
 ####################################################################
 
 - name: postgresql_membership - grantor model (PostgreSQL >= 16 only)
-  when: pg_ver_num | int >= 160000
+  when: pg_per_grantor | bool
+  vars:
+    # Groups and granting roles first: dropping in reverse then removes the
+    # members before the roles that granted to them.
+    roles:
+    - "grantor_group"
+    - "grantor_keep"
+    - "grantor_other"
+    - "grantor_user"
   block:
 
   - name: postgresql_membership - create roles for the grantor tests
@@ -19,11 +27,7 @@
       login_user: "{{ pg_user }}"
       db: postgres
       name: "{{ item }}"
-    with_items:
-    - "grantor_group"
-    - "grantor_keep"
-    - "grantor_user"
-    - "grantor_other"
+    with_items: "{{ roles }}"
 
   # grantor_other, not the connecting role, grants the membership. GRANTED BY
   # records the grant under grantor_other without connecting as it.
@@ -247,11 +251,7 @@
       name: "{{ item }}"
       state: absent
     ignore_errors: true
-    with_items:
-    - "grantor_user"
-    - "grantor_other"
-    - "grantor_keep"
-    - "grantor_group"
+    with_items: "{{ roles | reverse | list }}"
 
 ####################################################################
 # The deprecated groups form names no granting role, so it takes  #
@@ -261,7 +261,15 @@
 ####################################################################
 
 - name: postgresql_membership - pair identity of the deprecated groups form (PostgreSQL >= 16 only)
-  when: pg_ver_num | int >= 160000
+  when: pg_per_grantor | bool
+  vars:
+    # Groups and granting roles first: dropping in reverse then removes the
+    # members before the roles that granted to them.
+    roles:
+    - "pair_group"
+    - "pair_keep"
+    - "pair_other"
+    - "pair_user"
   block:
 
   - name: postgresql_membership - create roles for the pair identity tests
@@ -271,11 +279,7 @@
       login_user: "{{ pg_user }}"
       db: postgres
       name: "{{ item }}"
-    with_items:
-    - "pair_group"
-    - "pair_keep"
-    - "pair_user"
-    - "pair_other"
+    with_items: "{{ roles }}"
 
   - name: postgresql_membership - let another role grant the membership
     become_user: "{{ pg_user }}"
@@ -443,17 +447,23 @@
       name: "{{ item }}"
       state: absent
     ignore_errors: true
-    with_items:
-    - "pair_user"
-    - "pair_other"
-    - "pair_keep"
-    - "pair_group"
+    with_items: "{{ roles | reverse | list }}"
 
-# Before PostgreSQL 16 the grantor is not part of the membership identity: a pair
-# can only be granted once and any role holding ADMIN OPTION can revoke it. The
-# module must behave exactly as it did before.
+# Before PostgreSQL 16 the granting role is not part of the membership identity: a
+# pair can only be granted once and any role holding ADMIN OPTION can revoke it, so
+# both forms treat the one grant as the membership.
 - name: postgresql_membership - grantor ignored before PostgreSQL 16
-  when: pg_ver_num | int < 160000
+  when: not (pg_per_grantor | bool)
+  vars:
+    # Created in this order and dropped in reverse. dg_granter is dropped by the test itself.
+    roles:
+    - "grantor_group"
+    - "grantor_other"
+    - "grantor_user"
+    dg_roles:
+    - "dg_group"
+    - "dg_granter"
+    - "dg_user"
   block:
 
   - name: postgresql_membership - create roles for the legacy grantor test
@@ -463,10 +473,7 @@
       login_user: "{{ pg_user }}"
       db: postgres
       name: "{{ item }}"
-    with_items:
-    - "grantor_group"
-    - "grantor_user"
-    - "grantor_other"
+    with_items: "{{ roles }}"
 
   - name: postgresql_membership - let another role grant the membership
     become_user: "{{ pg_user }}"
@@ -536,10 +543,7 @@
       login_user: "{{ pg_user }}"
       db: postgres
       name: "{{ item }}"
-    with_items:
-    - "dg_group"
-    - "dg_user"
-    - "dg_granter"
+    with_items: "{{ dg_roles }}"
 
   - name: postgresql_membership - grant as dg_granter, then drop that role
     become_user: "{{ pg_user }}"
@@ -554,7 +558,7 @@
     - 'REVOKE "dg_group" FROM "dg_granter"'
     - 'DROP ROLE "dg_granter"'
 
-  - name: postgresql_membership - the recorded grantor no longer resolves
+  - name: postgresql_membership - the recorded granting role no longer resolves
     become_user: "{{ pg_user }}"
     become: true
     postgresql_query:
@@ -604,7 +608,7 @@
       that:
       - result.query_result[0].count == 0
 
-  # granted_by names a grantor, which is only part of the membership identity
+  # granted_by names a granting role, which is only part of the membership identity
   # from PostgreSQL 16 on, so it must be refused rather than silently ignored.
   - name: postgresql_membership - granted_by rejected before PostgreSQL 16
     become_user: "{{ pg_user }}"
@@ -637,12 +641,7 @@
       name: "{{ item }}"
       state: absent
     ignore_errors: true
-    with_items:
-    - "grantor_user"
-    - "grantor_other"
-    - "grantor_group"
-    - "dg_user"
-    - "dg_group"
+    with_items: "{{ (roles + dg_roles) | reverse | list }}"
 
 ####################################################################
 # Tests for granted_by, which names the role a grant is recorded   #
@@ -652,7 +651,14 @@
 ####################################################################
 
 - name: postgresql_membership - granted_by (PostgreSQL >= 16 only)
-  when: pg_ver_num | int >= 160000
+  when: pg_per_grantor | bool
+  vars:
+    # Groups and granting roles first: dropping in reverse then removes the
+    # members before the roles that granted to them.
+    roles:
+    - "gb_group"
+    - "gb_admin"
+    - "gb_user"
   block:
 
   - name: postgresql_membership - create roles for the granted_by tests
@@ -662,12 +668,9 @@
       login_user: "{{ pg_user }}"
       db: postgres
       name: "{{ item }}"
-    with_items:
-    - "gb_group"
-    - "gb_admin"
-    - "gb_user"
+    with_items: "{{ roles }}"
 
-  # A named grantor must itself hold ADMIN OPTION on the group.
+  # A named granting role must itself hold ADMIN OPTION on the group.
   - name: postgresql_membership - give gb_admin ADMIN OPTION on gb_group
     become_user: "{{ pg_user }}"
     become: true
@@ -733,7 +736,7 @@
 
   # A memberships row without granted_by manages the grant of the derived role,
   # so it makes its own instead of treating gb_admin's as satisfying the request.
-  - name: postgresql_membership - the default grantor is a separate grant
+  - name: postgresql_membership - the derived granting role is a separate grant
     become_user: "{{ pg_user }}"
     become: true
     postgresql_membership:
@@ -798,7 +801,4 @@
       name: "{{ item }}"
       state: absent
     ignore_errors: true
-    with_items:
-    - "gb_user"
-    - "gb_admin"
-    - "gb_group"
+    with_items: "{{ roles | reverse | list }}"

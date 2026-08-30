@@ -12,7 +12,22 @@
 ####################################################################
 
 - name: postgresql_membership - non-superuser granting role (PostgreSQL >= 16 only)
-  when: pg_ver_num | int >= 160000
+  when: pg_per_grantor | bool
+  vars:
+    # Groups and granting roles first: dropping in reverse then removes the
+    # members before the roles that granted to them.
+    roles:
+    - "sr_group"
+    - "sr_own"
+    - "sr_nogrant"
+    - "sr_usage_grp"
+    - "sr_team"
+    - "sr_direct"
+    - "sr_indirect"
+    - "sr_usage_holder"
+    - "sr_member"
+    - "sr_member2"
+    - "sr_member3"
   block:
 
   - name: postgresql_membership - create roles for the session_role tests
@@ -22,18 +37,7 @@
       login_user: "{{ pg_user }}"
       db: postgres
       name: "{{ item }}"
-    with_items:
-    - "sr_group"
-    - "sr_member"
-    - "sr_direct"
-    - "sr_team"
-    - "sr_indirect"
-    - "sr_own"
-    - "sr_nogrant"
-    - "sr_member2"
-    - "sr_member3"
-    - "sr_usage_grp"
-    - "sr_usage_holder"
+    with_items: "{{ roles }}"
 
   # sr_direct holds ADMIN OPTION on sr_group itself, through two grants, so that a
   # role holding the option more than once is in the fixture. sr_indirect only
@@ -114,8 +118,8 @@
       - result is changed
       - result.queries == ['REVOKE "sr_group" FROM "sr_member" GRANTED BY "sr_direct"']
 
-  # The regression the pair identity fixes: the deprecated form has nothing to name
-  # a granting role with, and PostgreSQL picks one that holds ADMIN OPTION, here
+  # The deprecated form has nothing to name a granting role with, and PostgreSQL
+  # picks one that holds ADMIN OPTION, here
   # sr_team. Naming the connecting role instead would have been refused, since it
   # holds the option only through sr_team.
   - name: postgresql_membership - grant as a non-superuser holding ADMIN OPTION only indirectly
@@ -272,9 +276,8 @@
       - "'sr_nogrant: sr_direct' in result.msg"
       - "'Set granted_by' not in result.msg"
 
-  # The reviewed defect: one granting role for a row naming several groups. The
-  # grantable group must not be granted, since the refusal of the other one takes the
-  # whole transaction down with it.
+  # One granting role covers every group of a row, so the grantable group must not be
+  # granted either: the refusal of the other one takes the whole transaction down.
   - name: postgresql_membership - a row mixing a grantable and a non-grantable group fails
     become_user: "{{ pg_user }}"
     become: true
@@ -441,7 +444,7 @@
       - result.queries == []
 
   # PostgreSQL asks that the connecting role have the privileges of the granting
-  # role, which is has_privs_of_role rather than SET ROLE. A grantor reachable by
+  # role, which is has_privs_of_role rather than SET ROLE. A granting role reachable by
   # inheritance alone is therefore usable, and a check written against SET ROLE
   # would refuse this grant that the server accepts.
   - name: postgresql_membership - a granting role reachable by inheritance alone is usable
@@ -513,8 +516,9 @@
       - result is failed
       - "'does not have the privileges of that role' in result.msg"
 
-  # Revoking a grant recorded under another role needs that role's privileges too,
-  # which is the loop used to remove the grants competing with the managed one.
+  # Revoking a grant recorded under another role needs that role's privileges too, and
+  # the module reports the missing privileges itself rather than passing on the
+  # server's error.
   - name: postgresql_membership - revoking under an unusable granting role is reported
     become_user: "{{ pg_user }}"
     become: true
@@ -603,28 +607,22 @@
       name: "{{ item }}"
       state: absent
     ignore_errors: true
-    with_items:
-    - "sr_member"
-    - "sr_member2"
-    - "sr_member3"
-    - "sr_usage_grp"
-    - "sr_usage_holder"
-    - "sr_indirect"
-    - "sr_direct"
-    - "sr_team"
-    - "sr_group"
-    - "sr_own"
-    - "sr_nogrant"
-    - "sr_usage_grp"
-    - "sr_usage_holder"
+    with_items: "{{ roles | reverse | list }}"
 
 ####################################################################
 # Before PostgreSQL 16 no granting role is named, so a non-superuser
-# is not treated differently and granted_by is refused outright.
+# is not treated differently. The refusal of granted_by before 16 is
+# tested in postgresql_membership_grantor.yml.
 ####################################################################
 
 - name: postgresql_membership - non-superuser is unaffected before PostgreSQL 16
-  when: pg_ver_num | int < 160000
+  when: not (pg_per_grantor | bool)
+  vars:
+    # Created in this order and dropped in reverse.
+    roles:
+    - "sr_group"
+    - "sr_direct"
+    - "sr_member"
   block:
 
   - name: postgresql_membership - create roles for the legacy session_role test
@@ -634,10 +632,7 @@
       login_user: "{{ pg_user }}"
       db: postgres
       name: "{{ item }}"
-    with_items:
-    - "sr_group"
-    - "sr_member"
-    - "sr_direct"
+    with_items: "{{ roles }}"
 
   - name: postgresql_membership - give sr_direct ADMIN OPTION on sr_group
     become_user: "{{ pg_user }}"
@@ -675,7 +670,4 @@
       name: "{{ item }}"
       state: absent
     ignore_errors: true
-    with_items:
-    - "sr_member"
-    - "sr_direct"
-    - "sr_group"
+    with_items: "{{ roles | reverse | list }}"

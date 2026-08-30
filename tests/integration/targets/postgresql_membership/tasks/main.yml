@@ -24,15 +24,20 @@
     pg_ver_num: "{{ pg_info.query_result[0].server_version_num }}"
     pg_bootstrap: "{{ pg_info.query_result[0].bootstrap }}"
 
+# The one place the version threshold is spelled; every task file guards on this.
+- name: postgresql_membership - per-grantor membership model from PostgreSQL 16 on
+  set_fact:
+    pg_per_grantor: "{{ pg_ver_num | int >= 160000 }}"
+
 - name: postgresql_membership - expected GRANTED BY clause
   set_fact:
     granted_by_sql: ' GRANTED BY "{{ pg_bootstrap }}"'
-  when: pg_ver_num | int >= 160000
+  when: pg_per_grantor | bool
 
 - name: postgresql_membership - no GRANTED BY clause before PostgreSQL 16
   set_fact:
     granted_by_sql: ''
-  when: pg_ver_num | int < 160000
+  when: not (pg_per_grantor | bool)
 
 # Read-back queries used from several task files below. Each takes the group and the
 # target role as positional arguments, so no name is interpolated into the SQL.

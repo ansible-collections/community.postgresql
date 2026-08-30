@@ -267,7 +267,7 @@
 # Check fail_on_role:
 
 # Try to grant non existent group to non existent role with fail_on_role=true:
-- name: postgresql_membership - revoke non existen group from non existen role
+- name: postgresql_membership - grant a non-existent group to a non-existent role with fail_on_role=true
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
@@ -285,7 +285,7 @@
     - result is not changed
 
 # Try to grant non existent group to non existent role with fail_on_role=no:
-- name: postgresql_membership - revoke non existen group from non existen role
+- name: postgresql_membership - grant a non-existent group to a non-existent role with fail_on_role=false
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
@@ -307,7 +307,7 @@
     - result.state == 'present'
 
 # Try to revoke non existent group from non existent role with fail_on_role=no:
-- name: postgresql_membership - revoke non existen group from non existen role
+- name: postgresql_membership - revoke a non-existent group from a non-existent role with fail_on_role=false
   become_user: "{{ pg_user }}"
   become: true
   postgresql_membership:
