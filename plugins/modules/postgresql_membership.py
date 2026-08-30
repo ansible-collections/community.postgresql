@@ -426,6 +426,7 @@ from ansible_collections.community.postgresql.plugins.module_utils.membership im
     PgMembershipByGrantor,
     PgMembershipByPair,
     membership_option_name,
+    unique,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
@@ -439,9 +440,17 @@ from ansible_collections.community.postgresql.plugins.module_utils.postgres impo
 # Parameters carrying a membership option, in the order PostgreSQL names them.
 OPTION_PARAMS = tuple(membership_option_name(option) for option in MEMBERSHIP_OPTIONS)
 
-# Keys a memberships row carries. state, fail_on_role and the connection parameters
-# are deliberately absent: they describe the task rather than one membership.
-ROW_KEYS = ('groups', 'target_roles', 'granted_by') + OPTION_PARAMS
+# The argument spec of one memberships row, and so the keys a row carries. state,
+# fail_on_role and the connection parameters are deliberately absent: they describe
+# the task rather than one membership.
+MEMBERSHIP_ROW_SPEC = dict(
+    groups=dict(type='list', elements='str', required=True),
+    target_roles=dict(type='list', elements='str'),
+    granted_by=dict(type='str'),
+    admin_option=dict(type='bool'),
+    inherit_option=dict(type='bool'),
+    set_option=dict(type='bool'),
+)
 
 
 def normalise_names(names):
@@ -452,13 +461,13 @@ def normalise_names(names):
 
     Returns the names to use (list of str).
     """
-    return list(dict.fromkeys(name.strip() for name in names))
+    return unique(name.strip() for name in names)
 
 
 def parse_memberships(module):
     """Return the rows of the memberships parameter, completed.
 
-    One dict per row, carrying every key of ROW_KEYS. The keys of a row are validated
+    One dict per row, carrying every key of MEMBERSHIP_ROW_SPEC. The keys are validated
     and coerced by the argument spec, which also fills in the ones a row leaves out,
     so only what the spec cannot express is done here.
 
@@ -477,7 +486,7 @@ def parse_memberships(module):
             module.fail_json(msg="An empty memberships list needs target_roles at the top "
                                  "level, naming the roles it applies to")
 
-        membership = dict.fromkeys(ROW_KEYS)
+        membership = dict.fromkeys(MEMBERSHIP_ROW_SPEC)
         membership.update(groups=[], target_roles=normalise_names(module.params['target_roles']))
         return [membership]
 
@@ -517,14 +526,7 @@ def main():
         groups=dict(type='list', elements='str', aliases=['group', 'source_role', 'source_roles'],
                     removed_in_version='6.0.0', removed_from_collection='community.postgresql'),
         target_roles=dict(type='list', elements='str', aliases=['target_role', 'user', 'users']),
-        memberships=dict(type='list', elements='dict', options=dict(
-            groups=dict(type='list', elements='str', required=True),
-            target_roles=dict(type='list', elements='str'),
-            granted_by=dict(type='str'),
-            admin_option=dict(type='bool'),
-            inherit_option=dict(type='bool'),
-            set_option=dict(type='bool'),
-        )),
+        memberships=dict(type='list', elements='dict', options=MEMBERSHIP_ROW_SPEC),
         fail_on_role=dict(type='bool', default=True),
         state=dict(type='str', default='present', choices=['absent', 'exact', 'present']),
         login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
@@ -565,6 +567,7 @@ def main():
         groups = normalise_names(module.params['groups'])
         target_roles = normalise_names(module.params['target_roles'])
         memberships = None
+        options_given = []
 
         if not module.params['trust_input']:
             check_input(module, groups, target_roles, session_role)
@@ -576,14 +579,14 @@ def main():
                 check_input(module, membership['groups'], membership['target_roles'],
                             session_role, membership['granted_by'])
 
-        # The options describe a grant, so a revoke cannot apply them.
-        if state == 'absent':
-            ignored = sorted(set(name for membership in memberships
-                                 for name in OPTION_PARAMS
-                                 if membership[name] is not None))
-            if ignored:
-                module.warn("The %s parameter(s) have no effect with state=absent "
-                            "and are ignored" % ", ".join(ignored))
+        # The option parameters any row sets. They describe a grant, so a revoke
+        # cannot apply them, and they need PostgreSQL 16, which is checked below.
+        options_given = sorted(set(name for membership in memberships
+                                   for name in OPTION_PARAMS
+                                   if membership[name] is not None))
+        if state == 'absent' and options_given:
+            module.warn("The %s parameter(s) have no effect with state=absent "
+                        "and are ignored" % ", ".join(options_given))
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -596,14 +599,9 @@ def main():
     # reject a statement it cannot parse.
     server_version = get_server_version(db_connection)
     if memberships is not None and server_version < 160000:
-        unsupported = set()
-        for membership in memberships:
-            if state != 'absent':
-                unsupported.update(name for name in OPTION_PARAMS
-                                   if membership[name] is not None)
-
-            if membership['granted_by']:
-                unsupported.add('granted_by')
+        unsupported = set(options_given) if state != 'absent' else set()
+        if any(membership['granted_by'] for membership in memberships):
+            unsupported.add('granted_by')
 
         if unsupported:
             module.fail_json(msg="The %s parameter(s) require PostgreSQL 16 or later"
