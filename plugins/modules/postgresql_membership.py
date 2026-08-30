@@ -239,6 +239,8 @@ notes:
 - Names are stripped of surrounding whitespace, and a name repeated in a list counts
   once.
 seealso:
+- ref: ansible_collections.community.postgresql.docsite.membership_guide
+  description: How a memberships task decides which grants to modify.
 - module: community.postgresql.postgresql_user
 - module: community.postgresql.postgresql_privs
 - module: community.postgresql.postgresql_owner
