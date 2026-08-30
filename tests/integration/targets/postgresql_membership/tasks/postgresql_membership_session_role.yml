@@ -552,6 +552,46 @@
       that:
       - result.query_result[0].count == 1
 
+  # The deprecated form names the granting role it finds recorded in each REVOKE, so
+  # the connecting role needs that role's privileges too, and is told which role it
+  # lacks before anything is emitted rather than by the server's error.
+  - name: postgresql_membership - the deprecated form refuses to revoke under an unusable granting role
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      session_role: "sr_indirect"
+      db: postgres
+      group: "sr_group"
+      target_role: "sr_member"
+      state: absent
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - '''cannot act as the granting role "sr_team"'' in result.msg'
+      - "'Only a role that has them can revoke' in result.msg"
+      - "'permission denied to revoke' not in result.msg"
+      - result.queries | default([]) == []
+
+  - name: postgresql_membership - the grant the deprecated form could not remove is still there
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_count }}"
+      positional_args:
+      - "sr_group"
+      - "sr_member"
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].count == 1
+
   always:
 
   - name: postgresql_membership - drop roles from the session_role tests

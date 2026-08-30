@@ -52,7 +52,12 @@ class PgMembershipBase(object):
     takes it to be the pair, whoever granted it. PgMembershipByGrantor takes it to be
     one grant of the pair, identified by its granting role as well. Before 16
     pg_auth_members is unique on (roleid, member), so the two models coincide.
+
+    A subclass sets GRANTOR_REMEDY, the sentence a failure of _check_grantors_assumable
+    ends with, saying what the caller can do about it in that model.
     """
+
+    GRANTOR_REMEDY = None
 
     def __init__(self, module, cursor, server_version, fail_on_role=True):
         """Set up what both models need.
@@ -90,6 +95,25 @@ class PgMembershipBase(object):
         # together with the per-grantor membership model.
         self.recorded_options = (MEMBERSHIP_OPTIONS if self.per_grantor_membership
                                  else ('ADMIN',))
+
+        # The three below are set by _resolve_connection from PostgreSQL 16 on, where
+        # a statement names a granting role. Before 16 they keep these values and
+        # nothing reads them. A superuser may act as any role, so the check that the
+        # connection has the grantor's privileges does not apply to it.
+        self.connected_as_superuser = False
+
+        # PostgreSQL waives the ADMIN OPTION requirement for the bootstrap superuser
+        # and for nobody else, not even another superuser, so the check that the
+        # grantor holds it is skipped only then.
+        self.bootstrap = None
+
+        # The granting role of a memberships row that names none, and of the
+        # memberships state=exact prunes, which no row describes. Never checked for,
+        # being the connecting role's own.
+        self.derived_grantor = None
+
+        if self.per_grantor_membership:
+            self._resolve_connection()
 
         # The groups and target roles of the task in order of first appearance, and the
         # (group, role) pairs it names. Set by the subclass, without the roles found
@@ -170,6 +194,58 @@ class PgMembershipBase(object):
                 grant[option] = row[membership_option_name(option)]
             memberships[row['member']].setdefault(row['grp'], []).append(grant)
         return memberships
+
+    def _resolve_connection(self):
+        """Read what the connecting role is, and derive the granting role from it.
+
+        The derived role is the bootstrap superuser when connected as a superuser,
+        since that is what PostgreSQL records for any superuser's grant, and
+        CURRENT_ROLE otherwise. CURRENT_ROLE is not what PostgreSQL would pick for a
+        non-superuser holding ADMIN OPTION indirectly, which is why granted_by exists.
+        """
+        # pg_authid is readable by superusers only, so the bootstrap superuser is
+        # looked up by its fixed OID in pg_roles, which every role can select from.
+        query = ("SELECT CURRENT_ROLE AS current_role, "
+                 "(SELECT rolsuper FROM pg_catalog.pg_roles WHERE rolname = CURRENT_ROLE) AS is_super, "
+                 "(SELECT rolname FROM pg_catalog.pg_roles WHERE oid = 10) AS bootstrap")
+
+        row = exec_sql(self, query, add_to_executed=False)[0]
+        self.connected_as_superuser = row['is_super']
+        self.bootstrap = row['bootstrap']
+        self.derived_grantor = row['bootstrap'] if row['is_super'] else row['current_role']
+
+    def _check_grantors_assumable(self, grantors):
+        """Fail unless the connecting role has the privileges of every grantor.
+
+        PostgreSQL lets a role record a grant as another role, and revoke one recorded
+        under it, only when it has that role's privileges, which is has_privs_of_role
+        and so pg_has_role(..., 'USAGE'). Not 'SET': the two differ on a membership
+        granted WITH INHERIT TRUE, SET FALSE, which carries the privileges without
+        being assumable, and on its opposite. Checked from the paths that emit a
+        statement rather than where the grantor is resolved, so that a task with
+        nothing left to do keeps succeeding. Never queried for the derived grantor,
+        which is the connecting role itself: only a granted_by, or a granting role the
+        pair model finds recorded, is.
+
+        Args:
+            grantors (set) -- granting roles a statement would be emitted under.
+        """
+        if not self.per_grantor_membership or self.connected_as_superuser:
+            return
+
+        for grantor in sorted(grantors):
+            if grantor == self.derived_grantor:
+                continue
+
+            assumable = exec_sql(self, "SELECT pg_catalog.pg_has_role(%s, 'USAGE') AS assumable",
+                                 query_params=(grantor,),
+                                 add_to_executed=False)[0]['assumable']
+
+            if not assumable:
+                self.module.fail_json(
+                    msg='The connecting role cannot act as the granting role "%s", because it '
+                        'does not have the privileges of that role. %s'
+                        % (grantor, self.GRANTOR_REMEDY))
 
     def _granted_by(self, grantor):
         """Return the GRANTED BY clause naming grantor, empty before PostgreSQL 16.
@@ -259,9 +335,12 @@ class PgMembershipByPair(PgMembershipBase):
     treats the pair as the membership: present when any grant of it exists, granted
     by a GRANT that names no granting role and leaves the choice to PostgreSQL, and
     revoked by revoking every grant of it, one statement per granting role. Nothing
-    is checked ahead of a statement, since no role is named that could be checked;
-    the server refuses what it must.
+    is checked ahead of a GRANT, since it names no role that could be checked; the
+    server refuses what it must. A REVOKE names the granting role found recorded,
+    so the connecting role's privileges over it are checked first.
     """
+
+    GRANTOR_REMEDY = 'Only a role that has them can revoke the grant recorded under it.'
 
     def __init__(self, module, cursor, groups, target_roles, server_version,
                  fail_on_role=True):
@@ -320,7 +399,14 @@ class PgMembershipByPair(PgMembershipBase):
         for group in self.groups:
             self.revoked.setdefault(group, [])
 
+        # Each REVOKE names the granting role it found recorded, so the connecting
+        # role needs that role's privileges. Checked before anything is emitted, so
+        # the failure names the role instead of passing the server's error through.
         memberships = self._role_grants()
+        self._check_grantors_assumable(set(
+            grant['grantor'] for group, role in self.pairs
+            for grant in memberships[role].get(group, [])))
+
         for group, role in self.pairs:
             if self._revoke_pair(group, role, memberships[role].get(group, [])):
                 self._record(self.revoked, group, role)
@@ -336,10 +422,17 @@ class PgMembershipByPair(PgMembershipBase):
         # discovered on the server rather than asked for. Sorted for the same reason,
         # to keep the emitted statements in a stable order.
         memberships = self._role_grants()
-        for role in self.target_roles:
-            for group in sorted(set(memberships[role]) - set(self.groups)):
-                if self._revoke_pair(group, role, memberships[role][group]):
-                    self._record(self.revoked, group, role)
+        outside = [(group, role, memberships[role][group]) for role in self.target_roles
+                   for group in sorted(set(memberships[role]) - set(self.groups))]
+
+        # As in revoke(): the grantors found recorded have to be usable before any
+        # of them is named in a REVOKE.
+        self._check_grantors_assumable(set(
+            grant['grantor'] for dummy_group, dummy_role, grants in outside for grant in grants))
+
+        for group, role, grants in outside:
+            if self._revoke_pair(group, role, grants):
+                self._record(self.revoked, group, role)
 
         return self.changed
 
@@ -382,6 +475,8 @@ class PgMembershipByGrantor(PgMembershipBase):
     named and the grant found is always the one managed.
     """
 
+    GRANTOR_REMEDY = 'Set granted_by to a role it does have the privileges of.'
+
     def __init__(self, module, cursor, memberships, server_version, fail_on_role=True):
         """Manage the grants the memberships describe.
 
@@ -404,22 +499,6 @@ class PgMembershipByGrantor(PgMembershipBase):
                 error and state=absent match nothing.
         """
         super(PgMembershipByGrantor, self).__init__(module, cursor, server_version, fail_on_role)
-
-        # Set by _resolve_connection. A superuser may act as any role, so the check
-        # that the connection has the grantor's privileges does not apply to it.
-        self.connected_as_superuser = False
-
-        # Set by _resolve_connection. PostgreSQL waives the ADMIN OPTION requirement
-        # for the bootstrap superuser and for nobody else, not even another
-        # superuser, so the check that the grantor holds it is skipped only then.
-        self.bootstrap = None
-
-        # Set by _resolve_connection. The granting role of the rows that name none,
-        # and of the memberships state=exact prunes, which no row describes.
-        self.derived_grantor = None
-
-        if self.per_grantor_membership:
-            self._resolve_connection()
 
         groups = unique(group for row in memberships for group in row['groups'])
         target_roles = unique(role for row in memberships for role in row['target_roles'])
@@ -485,25 +564,6 @@ class PgMembershipByGrantor(PgMembershipBase):
             msg='memberships[%d] and memberships[%d] both grant "%s" to "%s"%s. Describe a '
                 'grant once, since the second would only overwrite the options of the first'
                 % (first[0], second[0], group, role, where))
-
-    def _resolve_connection(self):
-        """Read what the connecting role is, and derive the granting role from it.
-
-        The derived role is the bootstrap superuser when connected as a superuser,
-        since that is what PostgreSQL records for any superuser's grant, and
-        CURRENT_ROLE otherwise. CURRENT_ROLE is not what PostgreSQL would pick for a
-        non-superuser holding ADMIN OPTION indirectly, which is why granted_by exists.
-        """
-        # pg_authid is readable by superusers only, so the bootstrap superuser is
-        # looked up by its fixed OID in pg_roles, which every role can select from.
-        query = ("SELECT CURRENT_ROLE AS current_role, "
-                 "(SELECT rolsuper FROM pg_catalog.pg_roles WHERE rolname = CURRENT_ROLE) AS is_super, "
-                 "(SELECT rolname FROM pg_catalog.pg_roles WHERE oid = 10) AS bootstrap")
-
-        row = exec_sql(self, query, add_to_executed=False)[0]
-        self.connected_as_superuser = row['is_super']
-        self.bootstrap = row['bootstrap']
-        self.derived_grantor = row['bootstrap'] if row['is_super'] else row['current_role']
 
     def _is_own(self, grant, grantor):
         """Return whether a grant is the one recorded under grantor.
@@ -601,38 +661,6 @@ class PgMembershipByGrantor(PgMembershipBase):
                     % (wanted['role'], option, wanted['group'],
                        ", ".join('"%s"' % g for g in grantors),
                        wanted['grantor'], option.lower()))
-
-    def _check_grantors_assumable(self, grantors):
-        """Fail unless the connecting role has the privileges of every grantor.
-
-        PostgreSQL lets a role record a grant as another role, and revoke one recorded
-        under it, only when it has that role's privileges, which is has_privs_of_role
-        and so pg_has_role(..., 'USAGE'). Not 'SET': the two differ on a membership
-        granted WITH INHERIT TRUE, SET FALSE, which carries the privileges without
-        being assumable, and on its opposite. Checked from the paths that emit a
-        statement rather than where the grantor is resolved, so that a task with
-        nothing left to do keeps succeeding. Always true for the derived grantor,
-        which is the connecting role itself, so only a granted_by is ever queried.
-
-        Args:
-            grantors (set) -- granting roles a statement would be emitted under.
-        """
-        if not self.per_grantor_membership or self.connected_as_superuser:
-            return
-
-        for grantor in sorted(grantors):
-            if grantor == self.derived_grantor:
-                continue
-
-            assumable = exec_sql(self, "SELECT pg_catalog.pg_has_role(%s, 'USAGE') AS assumable",
-                                 query_params=(grantor,),
-                                 add_to_executed=False)[0]['assumable']
-
-            if not assumable:
-                self.module.fail_json(
-                    msg='The connecting role cannot act as the granting role "%s", because it '
-                        'does not have the privileges of that role. Set granted_by to a role it '
-                        'does have the privileges of.' % grantor)
 
     def _check_grantable(self, pending):
         """Fail unless every pending grant's granting role holds ADMIN OPTION on its group.

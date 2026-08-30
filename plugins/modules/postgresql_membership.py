@@ -181,7 +181,7 @@ notes:
   nor a role that holds it. Only the groups a C(GRANT) is actually emitted for are
   checked, so a task that has nothing left to do keeps succeeding even after the
   granting role lost the option. The deprecated I(groups) checks nothing ahead of a
-  statement, since it names no role that could be checked.
+  C(GRANT), since it names no role that could be checked.
 - I(memberships) manages only its own grant. A membership granted by another role is
   not removed by I(state=absent) or I(state=exact), and does not stop the module making
   its own grant; the module warns instead. Set I(granted_by) to that role to manage
@@ -189,7 +189,8 @@ notes:
   always does.
 - The deprecated I(groups) revokes every grant of a pair under I(state=absent) and
   I(state=exact), one C(REVOKE) per granting role, so the membership goes away. The
-  server refuses a grant the connecting role may not revoke.
+  connecting role must hold the privileges of every one of those granting roles;
+  the module checks that before revoking anything and fails naming the role it lacks.
 - Before PostgreSQL 16 a grant whose granting role has since been dropped is revoked
   like any other grant. PostgreSQL 16 and later refuse to drop a role that a grant
   records as its granting role, so the case does not arise there.
