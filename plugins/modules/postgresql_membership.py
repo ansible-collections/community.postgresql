@@ -16,10 +16,12 @@ description:
 - Adds or removes PostgreSQL roles from groups (other roles).
 - Users are roles with login privilege.
 - Groups are PostgreSQL roles usually without LOGIN privilege.
+- Each I(memberships) row names the groups and target roles of one membership and,
+  on PostgreSQL 16 and later, its granting role and membership options.
 - "Common use case:"
-- 1) add a new group (groups) by M(community.postgresql.postgresql_user) module with I(role_attr_flags=NOLOGIN)
-- 2) grant them desired privileges by M(community.postgresql.postgresql_privs) module
-- 3) add desired PostgreSQL users to the new group (groups) by this module
+- 1) add a new group by M(community.postgresql.postgresql_user) module with I(role_attr_flags=NOLOGIN)
+- 2) grant it the desired privileges by M(community.postgresql.postgresql_privs) module
+- 3) add the desired PostgreSQL users to the new group with I(memberships)
 options:
   groups:
     description:
@@ -38,9 +40,8 @@ options:
   target_roles:
     description:
     - The list of target roles (groups will be granted to them).
-    - Required with I(groups). With I(memberships) it is optional, and acts as the
-      fallback for the rows that do not name their own. A row naming its own
-      replaces this value rather than adding to it.
+    - With I(memberships) it is the default for the rows that do not name their own;
+      a row naming its own replaces it. Required with the deprecated I(groups).
     type: list
     elements: str
     aliases:
@@ -243,8 +244,6 @@ EXAMPLES = r'''
     memberships:
     - groups: read_only
     state: present
-
-# you can also use target_roles: alice,bob,etc to pass the role list
 
 - name: Revoke role read_only and exec_func from bob. Ignore if roles don't exist
   community.postgresql.postgresql_membership:
