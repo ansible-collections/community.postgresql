@@ -53,8 +53,11 @@ class PgMembershipBase(object):
     one grant of the pair, identified by its granting role as well. Before 16
     pg_auth_members is unique on (roleid, member), so the two models coincide.
 
-    A subclass sets GRANTOR_REMEDY, the sentence a failure of _check_grantors_assumable
-    ends with, saying what the caller can do about it in that model.
+    A subclass sets groups, target_roles and pairs in __init__, restricted to roles
+    that exist, and provides grant(), revoke() and prune(). Each returns self.changed
+    after recording what it changed in granted and revoked through _record. It also
+    sets GRANTOR_REMEDY, the sentence a failure of _check_grantors_privileges ends
+    with, saying what the caller can do about it in that model.
     """
 
     GRANTOR_REMEDY = None
@@ -67,9 +70,8 @@ class PgMembershipBase(object):
             cursor (psycopg cursor) -- database cursor object.
             server_version (int) -- server version as returned by get_server_version.
                 Decides whether memberships are per-grantor and whether the membership
-                options can be set. Required rather than defaulted, since any default
-                would name a version, and getting it wrong changes the model silently
-                instead of failing.
+                options can be set. No default: a wrong default would switch the
+                model silently.
 
         Kwargs:
             fail_on_role (bool) -- fail when a passed role does not exist, otherwise
@@ -78,21 +80,19 @@ class PgMembershipBase(object):
         self.module = module
         self.cursor = cursor
         self.fail_on_role = fail_on_role
-        self.executed_queries = []
+        self.executed_queries = []  # What exec_sql appends to; returned as queries.
         self.granted = {}
         self.revoked = {}
         self.changed = False
 
         # The options are per grant precisely because grants are per grantor, so one
-        # flag covers both. Before 16 neither the option columns nor the
-        # GRANT ... WITH <option> <boolean> syntax exist.
+        # flag covers both. Before 16 neither the inherit_option and set_option
+        # columns nor the GRANT ... WITH <option> <boolean> syntax exist.
         self.per_grantor_membership = server_version >= 160000
 
-        # The options the server records, which is also what report() gives back.
-        # Kept as one list so that the column selected, the key of a grant and the
-        # reported name are all derived from the same place. ADMIN is recorded on
-        # every supported version; INHERIT and SET are columns PostgreSQL 16 added,
-        # together with the per-grantor membership model.
+        # The options the server records and report() gives back. ADMIN exists on
+        # every supported version; INHERIT and SET arrived with the per-grantor model
+        # in 16.
         self.recorded_options = (MEMBERSHIP_OPTIONS if self.per_grantor_membership
                                  else ('ADMIN',))
 
@@ -116,8 +116,7 @@ class PgMembershipBase(object):
             self._resolve_connection()
 
         # The groups and target roles of the task in order of first appearance, and the
-        # (group, role) pairs it names. Set by the subclass, without the roles found
-        # not to exist, so that everything downstream works on names known to exist.
+        # (group, role) pairs it names. Set by the subclass, see the class docstring.
         self.groups = []
         self.target_roles = []
         self.pairs = []
@@ -162,12 +161,12 @@ class PgMembershipBase(object):
                 [role for role in target_roles if role in existing])
 
     def _role_grants(self):
-        """Return every membership of the target roles, keyed by role and then by group.
+        """Return every grant of the target roles' memberships, keyed by role then group.
 
         Returns a dict mapping each role (str) to a dict mapping a group name (str) to
         its grants (list of dict). A grant holds 'grantor' plus the options the server
         records, keyed by the PostgreSQL keyword. The grants of a pair are ordered by
-        grantor, so the statements derived from them come out in a stable order.
+        granting role, so the statements derived from them come out in a stable order.
         """
         columns = ", ".join("m.%s" % membership_option_name(option)
                             for option in self.recorded_options)
@@ -214,18 +213,16 @@ class PgMembershipBase(object):
         self.bootstrap = row['bootstrap']
         self.derived_grantor = row['bootstrap'] if row['is_super'] else row['current_role']
 
-    def _check_grantors_assumable(self, grantors):
+    def _check_grantors_privileges(self, grantors):
         """Fail unless the connecting role has the privileges of every grantor.
 
         PostgreSQL lets a role record a grant as another role, and revoke one recorded
-        under it, only when it has that role's privileges, which is has_privs_of_role
-        and so pg_has_role(..., 'USAGE'). Not 'SET': the two differ on a membership
-        granted WITH INHERIT TRUE, SET FALSE, which carries the privileges without
-        being assumable, and on its opposite. Checked from the paths that emit a
-        statement rather than where the grantor is resolved, so that a task with
-        nothing left to do keeps succeeding. Never queried for the derived grantor,
-        which is the connecting role itself: only a granted_by, or a granting role the
-        pair model finds recorded, is.
+        under it, only when it has that role's privileges: has_privs_of_role, which is
+        pg_has_role(..., 'USAGE'), not whether it can SET ROLE to it. The two differ
+        on a membership granted WITH INHERIT TRUE, SET FALSE, and on its opposite.
+        Checked only from the paths that emit a statement, so a task with nothing
+        left to do keeps succeeding. The derived grantor is never queried: it is
+        CURRENT_ROLE, or the check is skipped for a superuser.
 
         Args:
             grantors (set) -- granting roles a statement would be emitted under.
@@ -237,11 +234,11 @@ class PgMembershipBase(object):
             if grantor == self.derived_grantor:
                 continue
 
-            assumable = exec_sql(self, "SELECT pg_catalog.pg_has_role(%s, 'USAGE') AS assumable",
+            has_privs = exec_sql(self, "SELECT pg_catalog.pg_has_role(%s, 'USAGE') AS has_privs",
                                  query_params=(grantor,),
-                                 add_to_executed=False)[0]['assumable']
+                                 add_to_executed=False)[0]['has_privs']
 
-            if not assumable:
+            if not has_privs:
                 self.module.fail_json(
                     msg='The connecting role cannot act as the granting role "%s", because it '
                         'does not have the privileges of that role. %s'
@@ -296,7 +293,8 @@ class PgMembershipBase(object):
         """Return the grants and effective options of the pairs the task names.
 
         Includes every grant of a pair, whoever made it, since PostgreSQL applies the
-        options as their union. Only pairs where role is a member.
+        options as their union. Pairs where the target role is not a member are left
+        out.
 
         Returns two dicts keyed by group then target role: the grants of each pair
         (list of dict) and the options the target role effectively holds (dict of str
@@ -382,7 +380,8 @@ class PgMembershipByPair(PgMembershipBase):
         for group, role in self.pairs:
             # Any grant satisfies the pair. No GRANTED BY: PostgreSQL picks a role that
             # holds ADMIN OPTION on the group, which is more than the connecting role
-            # can be told to do, and which grant it records under is not read back.
+            # can be told to do, and this model does not care which role the grant is
+            # recorded under.
             if memberships[role].get(group):
                 continue
 
@@ -403,7 +402,7 @@ class PgMembershipByPair(PgMembershipBase):
         # role needs that role's privileges. Checked before anything is emitted, so
         # the failure names the role instead of passing the server's error through.
         memberships = self._role_grants()
-        self._check_grantors_assumable(set(
+        self._check_grantors_privileges(set(
             grant['grantor'] for group, role in self.pairs
             for grant in memberships[role].get(group, [])))
 
@@ -419,15 +418,15 @@ class PgMembershipByPair(PgMembershipBase):
         Returns True when a change was made (bool).
         """
         # revoked is not seeded: it lists the groups actually revoked, which are
-        # discovered on the server rather than asked for. Sorted for the same reason,
-        # to keep the emitted statements in a stable order.
+        # discovered on the server rather than asked for. Sorted so the emitted
+        # statements come out in a stable order.
         memberships = self._role_grants()
         outside = [(group, role, memberships[role][group]) for role in self.target_roles
                    for group in sorted(set(memberships[role]) - set(self.groups))]
 
         # As in revoke(): the grantors found recorded have to be usable before any
         # of them is named in a REVOKE.
-        self._check_grantors_assumable(set(
+        self._check_grantors_privileges(set(
             grant['grantor'] for dummy_group, dummy_role, grants in outside for grant in grants))
 
         for group, role, grants in outside:
@@ -611,34 +610,44 @@ class PgMembershipByGrantor(PgMembershipBase):
         """
         return memberships[wanted['role']].get(wanted['group'], [])
 
-    def _warn_foreign_membership(self, group, role, grantor, grants):
-        """Warn that grants made by other roles keep the membership alive.
+    def _warn_foreign_membership(self, group, role, grantor, grants, pruning):
+        """Warn that grants recorded under other roles keep the membership alive.
 
-        Reads grants captured before the change, so it is check_mode safe.
+        Judged from the grants read before any statement ran, so the warning does not
+        depend on what was emitted.
 
         Args:
             group (str) -- group role the membership is of.
             role (str) -- member role.
             grantor (str) -- granting role of the grant managed.
             grants (list) -- grants of the pair as returned by _role_grants.
+            pruning (bool) -- whether the group is one no row names, which decides the
+                advice: a row cannot set granted_by for a group it does not name.
         """
         # Foreign grants only exist from PostgreSQL 16 on, where the grantor of every
         # grant resolves, so the names are never None.
         grantors = sorted(grant['grantor'] for grant in self._foreign_grants(grants, grantor))
+        if not grantors:
+            return
 
-        if grantors:
-            self.module.warn(
-                'Role "%s" remains a member of "%s" through the grant(s) made by %s. '
-                'This module manages the grant recorded as made by "%s", so the membership '
-                'and its effective options are not fully removed. Set granted_by to manage '
-                'one of the other grants instead, when the connecting role holds the '
-                'privileges of that granting role.'
-                % (role, group, ", ".join('"%s"' % g for g in grantors), grantor))
+        if pruning:
+            advice = ('A state=absent task naming the group with granted_by set to one of '
+                      'those roles can remove its grant')
+        else:
+            advice = 'Set granted_by to manage one of the other grants instead'
+
+        self.module.warn(
+            'Role "%s" remains a member of "%s" through the grant(s) recorded under %s. '
+            'This module manages the grant recorded under "%s", so the membership and its '
+            'effective options are not fully removed. %s, when the connecting role holds '
+            'the privileges of that granting role.'
+            % (role, group, ", ".join('"%s"' % g for g in grantors), grantor, advice))
 
     def _warn_foreign_options(self, wanted, grants):
-        """Warn that grants made by other roles keep an option the caller cleared.
+        """Warn that grants recorded under other roles keep an option the caller cleared.
 
-        Reads grants captured before the change, so it is check_mode safe.
+        Judged from the grants read before any statement ran, so the warning does not
+        depend on what was emitted.
 
         Args:
             wanted (dict) -- a wanted grant, from self.wanted.
@@ -655,8 +664,8 @@ class PgMembershipByGrantor(PgMembershipBase):
             grantors = sorted(grant['grantor'] for grant in foreign if grant[option])
             if grantors:
                 self.module.warn(
-                    'Role "%s" keeps the %s option on "%s" through the grant(s) made by %s. '
-                    'This module manages the grant recorded as made by "%s", so %s_option=false '
+                    'Role "%s" keeps the %s option on "%s" through the grant(s) recorded under '
+                    '%s. This module manages the grant recorded under "%s", so %s_option=false '
                     'does not remove it.'
                     % (wanted['role'], option, wanted['group'],
                        ", ".join('"%s"' % g for g in grantors),
@@ -667,14 +676,16 @@ class PgMembershipByGrantor(PgMembershipBase):
 
         A statement that does not name a granting role makes PostgreSQL pick one, and
         it picks per group: the connecting role itself when it holds ADMIN OPTION on
-        that group, otherwise a role it can assume that does. This model names the
-        role instead, so a group that role cannot grant has to be reported here. Left
-        to the server it raises an error naming neither the option that is missing
-        nor a role that holds it, which is what the caller needs to fix it.
+        that group, otherwise a role whose privileges it inherits that does. This
+        model names the role instead, so a group that role cannot grant has to be
+        reported here. Left to the server, the refusal names no role that holds the
+        option, which is what the caller needs to fix it, and arrives only once a
+        statement is attempted.
 
-        Only called for granting. PostgreSQL refuses to revoke ADMIN OPTION while a
-        grant made under it exists, so a grant this module finds under its own grantor
-        can always be revoked.
+        Only called for granting. A grant exists only while its granting role holds
+        ADMIN OPTION on the group (revoking the option fails, or removes the grant
+        with CASCADE), so a grant this module finds under its own granting role can
+        always be revoked.
 
         Args:
             pending (list) -- the wanted grants a GRANT would be emitted for, from
@@ -683,7 +694,7 @@ class PgMembershipByGrantor(PgMembershipBase):
         if not self.per_grantor_membership or not pending:
             return
 
-        self._check_grantors_assumable(set(wanted['grantor'] for wanted in pending))
+        self._check_grantors_privileges(set(wanted['grantor'] for wanted in pending))
 
         # The one grantor PostgreSQL asks nothing of. Every other role has to hold the
         # option in pg_auth_members, a superuser included, so being connected as one
@@ -762,9 +773,9 @@ class PgMembershipByGrantor(PgMembershipBase):
         """Return whether a GRANT has to be emitted for a wanted grant.
 
         Only the grant under the wanted granting role is compared, so a membership
-        granted by another role does not suppress the GRANT (issue #757). What the
-        pre-flight checks is exactly what this returns True for, so a task with
-        nothing left to do is never checked, which is the run that has to stay green.
+        granted by another role does not suppress the GRANT (issue #757).
+        _check_grantable sees exactly the wanted grants this returns True for, so a
+        task with nothing left to do is never checked and stays green.
 
         Args:
             wanted (dict) -- a wanted grant, from self.wanted.
@@ -776,7 +787,7 @@ class PgMembershipByGrantor(PgMembershipBase):
         return current is None or any(current[option] != setting
                                       for option, setting in wanted['options'].items())
 
-    def _revoke_own(self, group, role, grantor, grants):
+    def _revoke_own(self, group, role, grantor, grants, pruning=False):
         """Revoke the grant of group to role recorded under grantor, if there is one.
 
         REVOKE removes only the grant under the grantor it names, so on PostgreSQL 16+
@@ -789,6 +800,10 @@ class PgMembershipByGrantor(PgMembershipBase):
             grantor (str) -- granting role of the grant managed.
             grants (list) -- grants of the pair as returned by _role_grants.
 
+        Kwargs:
+            pruning (bool) -- whether no row names the group, see
+                _warn_foreign_membership (default False).
+
         Returns True when a statement was emitted (bool).
         """
         changed = False
@@ -797,7 +812,7 @@ class PgMembershipByGrantor(PgMembershipBase):
                 pg_quote_name(group), pg_quote_name(role), self._granted_by(grantor)))
             changed = True
 
-        self._warn_foreign_membership(group, role, grantor, grants)
+        self._warn_foreign_membership(group, role, grantor, grants, pruning)
         return changed
 
     def grant(self):
@@ -825,8 +840,8 @@ class PgMembershipByGrantor(PgMembershipBase):
             if not needs:
                 continue
 
-            # PostgreSQL takes the options as one comma-separated list, and every
-            # wanted option has to be restated in the statement that carries them.
+            # One WITH list carrying every wanted option, not only the ones that
+            # differ, so the statement states what the row states.
             query = 'GRANT %s TO %s' % (pg_quote_name(wanted['group']), pg_quote_name(wanted['role']))
             if wanted['options']:
                 query += ' WITH %s' % ', '.join(
@@ -847,12 +862,11 @@ class PgMembershipByGrantor(PgMembershipBase):
         for group in self.groups:
             self.revoked.setdefault(group, [])
 
-        # Revoking needs no ADMIN OPTION check, since PostgreSQL refuses to revoke the
-        # option while a grant made under it exists. It does need the grantor to be one
-        # the connection can act as, which a granted_by naming somebody else's grant
-        # need not be.
+        # Revoking needs no ADMIN OPTION check: see _check_grantable. It does need the
+        # grantor to be one the connecting role has the privileges of, which a
+        # granted_by naming somebody else's grant need not be.
         memberships = self._role_grants()
-        self._check_grantors_assumable(set(
+        self._check_grantors_privileges(set(
             wanted['grantor'] for wanted in self.wanted
             if self._own_grant(self._grants_of(memberships, wanted), wanted['grantor']) is not None))
 
@@ -871,8 +885,9 @@ class PgMembershipByGrantor(PgMembershipBase):
         of being silently left in place. What is revoked is the grant under the derived
         granting role: the groups being revoked are the ones no row named, so there is
         no row to take one from. granted_by on a state=absent task remains the way to
-        remove somebody else's grant. The derived role is the connecting role's own,
-        so no assumability check is needed.
+        remove somebody else's grant. The derived granting role needs no privilege
+        check: it is CURRENT_ROLE, or the bootstrap superuser for a superuser, which
+        has every role's privileges.
 
         Returns True when a change was made (bool).
         """
@@ -881,12 +896,13 @@ class PgMembershipByGrantor(PgMembershipBase):
             wanted_groups.setdefault(wanted['role'], set()).add(wanted['group'])
 
         # revoked is not seeded: it lists the groups actually revoked, which are
-        # discovered on the server rather than asked for. Sorted for the same reason,
-        # to keep the emitted statements in a stable order.
+        # discovered on the server rather than asked for. Sorted so the emitted
+        # statements come out in a stable order.
         memberships = self._role_grants()
         for role in self.target_roles:
             for group in sorted(set(memberships[role]) - wanted_groups.get(role, set())):
-                if self._revoke_own(group, role, self.derived_grantor, memberships[role][group]):
+                if self._revoke_own(group, role, self.derived_grantor, memberships[role][group],
+                                    pruning=True):
                     self._record(self.revoked, group, role)
 
         return self.changed
