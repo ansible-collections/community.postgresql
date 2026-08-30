@@ -190,8 +190,9 @@ notes:
 - The deprecated I(groups) revokes every grant of a pair under I(state=absent) and
   I(state=exact), one C(REVOKE) per granting role, so the membership goes away. The
   server refuses a grant the connecting role may not revoke.
-- A grant whose granting role has since been dropped cannot be named, so either form
-  can only warn about it.
+- Before PostgreSQL 16 a grant whose granting role has since been dropped is revoked
+  like any other grant. PostgreSQL 16 and later refuse to drop a role that a grant
+  records as its granting role, so the case does not arise there.
 - PostgreSQL applies membership options as the union of all grants of a pair, so a
   target role keeps an option as long as any grant carries it. Setting for example
   I(admin_option=false) only clears it on the grant this module manages. The

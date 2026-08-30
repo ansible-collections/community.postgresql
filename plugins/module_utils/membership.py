@@ -149,9 +149,11 @@ class PgMembershipBase(object):
                             for option in self.recorded_options)
 
         # The grantor is LEFT JOINed: before PostgreSQL 16 dropping a role did not
-        # check pg_auth_members.grantor, so a membership can reference an OID that
-        # no longer resolves. An inner join would hide such a membership entirely
-        # and state=absent would silently leave it in place.
+        # check pg_auth_members.grantor, so a grant can carry an OID that no longer
+        # resolves and comes back with grantor None. An inner join would hide such a
+        # membership entirely and state=absent would silently leave it in place.
+        # PostgreSQL 16 refuses to drop a role that a grant records as its grantor,
+        # so from 16 on the grantor always resolves.
         query = """SELECT u.rolname AS member, g.rolname AS grp, gr.rolname AS grantor, %s
                    FROM pg_catalog.pg_auth_members m
                    JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
@@ -346,10 +348,8 @@ class PgMembershipByPair(PgMembershipBase):
 
         On PostgreSQL 16 and later REVOKE removes only the grant under the granting
         role it names, so each grant is named in turn and the membership actually goes
-        away. A grant whose granting role no longer resolves has no name to put there,
-        so it can only be warned about; PostgreSQL 16 refuses to drop a role a grant
-        records as its grantor, so this only fires on a cluster upgraded from 15 or
-        earlier carrying such a row.
+        away. Before 16 no granting role is named, so a grant whose granting role was
+        dropped is revoked like any other.
 
         Args:
             group (str) -- group role that is revoked.
@@ -360,13 +360,6 @@ class PgMembershipByPair(PgMembershipBase):
         """
         changed = False
         for grant in grants:
-            if self.per_grantor_membership and grant['grantor'] is None:
-                self.module.warn(
-                    'Role "%s" remains a member of "%s" through a grant whose granting role '
-                    'no longer exists. Naming a grantor cannot revoke it, so the membership '
-                    'has to be removed another way.' % (role, group))
-                continue
-
             self._execute('REVOKE %s FROM %s%s' % (
                 pg_quote_name(group), pg_quote_name(role), self._granted_by(grant['grantor'])))
             changed = True
@@ -569,9 +562,9 @@ class PgMembershipByGrantor(PgMembershipBase):
             grantor (str) -- granting role of the grant managed.
             grants (list) -- grants of the pair as returned by _role_grants.
         """
-        foreign = self._foreign_grants(grants, grantor)
-        grantors = sorted(grant['grantor'] for grant in foreign
-                          if grant['grantor'] is not None)
+        # Foreign grants only exist from PostgreSQL 16 on, where the grantor of every
+        # grant resolves, so the names are never None.
+        grantors = sorted(grant['grantor'] for grant in self._foreign_grants(grants, grantor))
 
         if grantors:
             self.module.warn(
@@ -581,16 +574,6 @@ class PgMembershipByGrantor(PgMembershipBase):
                 'one of the other grants instead, when the connecting role holds the '
                 'privileges of that granting role.'
                 % (role, group, ", ".join('"%s"' % g for g in grantors), grantor))
-
-        # A grant whose grantor OID no longer resolves has no name to put in GRANTED BY,
-        # so it cannot be revoked that way at all. Say so rather than staying silent.
-        # Rare: PostgreSQL 16 refuses to drop a role that a grant records as its grantor,
-        # so this only fires on a cluster upgraded from 15 or earlier carrying such a row.
-        if len(grantors) < len(foreign):
-            self.module.warn(
-                'Role "%s" remains a member of "%s" through a grant whose granting role '
-                'no longer exists. Naming a grantor cannot revoke it, so the membership '
-                'has to be removed another way.' % (role, group))
 
     def _warn_foreign_options(self, wanted, grants):
         """Warn that grants made by other roles keep an option the caller cleared.
@@ -609,8 +592,7 @@ class PgMembershipByGrantor(PgMembershipBase):
             if setting:
                 continue
 
-            grantors = sorted(grant['grantor'] for grant in foreign
-                              if grant[option] and grant['grantor'] is not None)
+            grantors = sorted(grant['grantor'] for grant in foreign if grant[option])
             if grantors:
                 self.module.warn(
                     'Role "%s" keeps the %s option on "%s" through the grant(s) made by %s. '

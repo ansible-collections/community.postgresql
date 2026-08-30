@@ -527,9 +527,8 @@
 
   # Before 16 dropping a role did not clear pg_auth_members.grantor, so a membership
   # can reference an OID that no longer resolves. It must stay visible and revocable.
-  # Guards the LEFT JOIN in __role_grants: an inner join on the grantor would hide such
-  # a membership entirely. Not a regression test for older behavior, which read the
-  # memberships without joining the grantor at all and so was never affected.
+  # Guards the LEFT JOIN on the grantor in _role_grants: an inner join would hide such
+  # a membership entirely. PostgreSQL 16 refuses the DROP ROLE, so the case is pre-16 only.
   - name: postgresql_membership - create roles for the dangling grantor test
     become_user: "{{ pg_user }}"
     become: true
