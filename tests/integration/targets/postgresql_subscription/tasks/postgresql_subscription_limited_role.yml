@@ -47,7 +47,8 @@
     postgresql_membership:
       <<: *pg_parameters
       login_port: '{{ replica_port }}'
-      group: "pg_create_subscription"
+      memberships:
+      - groups: "pg_create_subscription"
       target_role: "{{ pg_limited_user }}"
       state: present
 

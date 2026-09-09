@@ -1,0 +1,416 @@
+# Copyright: (c) 2026, Florian R. Hölzlwimmer (@Hoeze) <git.ich@frhoelzlwimmer.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+####################################################################
+# Tests for the memberships parameter, which names one membership  #
+# per row so that the granting role and the options can differ     #
+# between them, which the top-level parameters cannot express.     #
+####################################################################
+
+- name: postgresql_membership - memberships list
+  vars:
+    # Groups and granting roles first: dropping in reverse then removes the
+    # members before the roles that granted to them.
+    roles:
+    - "ml_ro"
+    - "ml_rw"
+    - "ml_report"
+    - "ml_stale"
+    - "ml_alice"
+    - "ml_bob"
+  block:
+
+  - name: postgresql_membership - create roles for the memberships tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+    with_items: "{{ roles }}"
+
+  ##################################################
+  # The two forms may not be mixed, so that a grant
+  # can only have come from one of them.
+  ##################################################
+
+  - name: postgresql_membership - groups and memberships are mutually exclusive
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      group: "ml_ro"
+      target_role: "ml_alice"
+      memberships:
+      - groups: "ml_rw"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'mutually exclusive' in result.msg"
+
+  - name: postgresql_membership - one of groups or memberships is required
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_role: "ml_alice"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'one of the following is required' in result.msg"
+
+  - name: postgresql_membership - groups still requires target_roles
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      group: "ml_ro"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'target_roles' in result.msg"
+
+  ##################################################
+  # A row is validated on its own terms.
+  ##################################################
+
+  - name: postgresql_membership - an unknown key in a row is rejected
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_role: "ml_alice"
+      memberships:
+      - groups: "ml_ro"
+        grantedby: "{{ pg_user }}"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'memberships.grantedby' in result.msg"
+
+  - name: postgresql_membership - a row without groups is rejected
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_role: "ml_alice"
+      memberships:
+      - target_roles: "ml_bob"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'missing required arguments: groups' in result.msg"
+
+  - name: postgresql_membership - a row with no target_roles and no default is rejected
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships:
+      - groups: "ml_ro"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'no target_roles' in result.msg"
+
+  - name: postgresql_membership - two rows describing the same grant are rejected
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_role: "ml_alice"
+      memberships:
+      - groups: "ml_ro"
+      - groups: "ml_ro"
+      state: present
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - '''both grant "ml_ro" to "ml_alice"'' in result.msg'
+
+  # The granting role a row leaves to be derived counts as named, so a row naming it
+  # explicitly describes the same grant. One is only derived from PostgreSQL 16 on.
+  - name: postgresql_membership - a row naming the derived granting role clashes with one that does not
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_role: "ml_alice"
+      memberships:
+      - groups: "ml_ro"
+        admin_option: true
+      - groups: "ml_ro"
+        granted_by: "{{ pg_bootstrap }}"
+        admin_option: false
+      state: present
+    register: result
+    ignore_errors: true
+    when: pg_per_grantor | bool
+
+  - assert:
+      that:
+      - result is failed
+      - '''both grant "ml_ro" to "ml_alice" under "'' ~ pg_bootstrap ~ ''"'' in result.msg'
+      - "'derived for a row that names no granted_by' in result.msg"
+    when: pg_per_grantor | bool
+
+  - name: postgresql_membership - nothing was granted by the clashing rows
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_query:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      query: "{{ q_grant_count }}"
+      positional_args:
+      - "ml_ro"
+      - "ml_alice"
+    register: result
+    when: pg_per_grantor | bool
+
+  - assert:
+      that:
+      - result.query_result[0].count == 0
+    when: pg_per_grantor | bool
+
+  ##################################################
+  # Doing the job.
+  ##################################################
+
+  - name: postgresql_membership - grant two groups in one task, target_roles shared
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles:
+      - "ml_alice"
+      - "ml_bob"
+      memberships:
+      - groups: "ml_ro"
+      - groups: "ml_rw"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "ml_ro" TO "ml_alice"' ~ granted_by_sql,
+                           'GRANT "ml_ro" TO "ml_bob"' ~ granted_by_sql,
+                           'GRANT "ml_rw" TO "ml_alice"' ~ granted_by_sql,
+                           'GRANT "ml_rw" TO "ml_bob"' ~ granted_by_sql]
+      - result.groups == ["ml_ro", "ml_rw"]
+      - result.target_roles == ["ml_alice", "ml_bob"]
+      - 'result.granted == {"ml_ro": ["ml_alice", "ml_bob"], "ml_rw": ["ml_alice", "ml_bob"]}'
+
+  - name: postgresql_membership - and it is idempotent
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles:
+      - "ml_alice"
+      - "ml_bob"
+      memberships:
+      - groups: "ml_ro"
+      - groups: "ml_rw"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+      - 'result.granted == {"ml_ro": [], "ml_rw": []}'
+
+  - name: postgresql_membership - a row may name its own target_roles
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships:
+      - groups: "ml_report"
+      - groups: "ml_stale"
+        target_roles: "ml_bob"
+      state: present
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ['GRANT "ml_report" TO "ml_alice"' ~ granted_by_sql,
+                           'GRANT "ml_stale" TO "ml_bob"' ~ granted_by_sql]
+
+  ##################################################
+  # state=exact spans the rows, which is the whole
+  # reason it cannot be a loop over the module.
+  ##################################################
+
+  - name: postgresql_membership - exact keeps a group only one row names
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships:
+      - groups: "ml_ro"
+      - groups: "ml_rw"
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      # ml_report is revoked because no row named it. ml_ro and ml_rw both survive,
+      # although neither row names both of them.
+      - 'result.revoked == {"ml_report": ["ml_alice"]}'
+      - 'result.granted == {"ml_ro": [], "ml_rw": []}'
+      - result.queries == ['REVOKE "ml_report" FROM "ml_alice"' ~ granted_by_sql]
+
+  - name: postgresql_membership - exact is idempotent across the rows
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships:
+      - groups: "ml_ro"
+      - groups: "ml_rw"
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  # The idiom an empty groups list spells in the deprecated top-level form.
+  - name: postgresql_membership - an empty memberships list leaves the role in no group
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships: []
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - 'result.revoked == {"ml_ro": ["ml_alice"], "ml_rw": ["ml_alice"]}'
+
+  - name: postgresql_membership - and it is idempotent
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships: []
+      state: exact
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.queries == []
+
+  - name: postgresql_membership - an empty memberships list still needs target_roles
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      memberships: []
+      state: exact
+    register: result
+    ignore_errors: true
+
+  - assert:
+      that:
+      - result is failed
+      - "'needs target_roles' in result.msg"
+
+  - name: postgresql_membership - restore the memberships for the absent test
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships:
+      - groups: "ml_ro"
+      - groups: "ml_rw"
+      state: present
+
+  - name: postgresql_membership - absent revokes every row
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_membership:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      target_roles: "ml_alice"
+      memberships:
+      - groups: "ml_ro"
+      - groups: "ml_rw"
+      state: absent
+    register: result
+
+  - assert:
+      that:
+      - result is changed
+      - 'result.revoked == {"ml_ro": ["ml_alice"], "ml_rw": ["ml_alice"]}'
+
+  always:
+
+  - name: postgresql_membership - drop roles from the memberships tests
+    become_user: "{{ pg_user }}"
+    become: true
+    postgresql_user:
+      login_user: "{{ pg_user }}"
+      db: postgres
+      name: "{{ item }}"
+      state: absent
+    ignore_errors: true
+    with_items: "{{ roles | reverse | list }}"

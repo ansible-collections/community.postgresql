@@ -28,7 +28,8 @@
 
 - name: make db_session_role1 an admin for convenience
   postgresql_membership:
-    group: "{{ pg_user }}"
+    memberships:
+    - groups: "{{ pg_user }}"
     target_roles: "{{ db_session_role1 }}"
     state: present
 
