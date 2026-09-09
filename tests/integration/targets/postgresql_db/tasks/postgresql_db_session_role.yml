@@ -22,7 +22,7 @@
     password: "password"
     role_attr_flags: "CREATEDB,LOGIN,CREATEROLE"
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
 
 - name: Create a low privileged user using the newly created user
   become: true
@@ -34,7 +34,7 @@
     role_attr_flags: "LOGIN"
     login_user: "{{ pg_user }}"
     session_role: "{{ db_session_role1 }}"
-    db: postgres
+    login_db: postgres
 
 - name: Create DB as session_role
   become_user: "{{ pg_user }}"
