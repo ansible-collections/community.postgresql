@@ -51,7 +51,7 @@
     role_attr_flags: "CREATEDB,LOGIN,CREATEROLE"
     login_user: "{{ pg_user }}"
     trust_input: false
-    db: postgres
+    login_db: postgres
 
 - name: Create db
   postgresql_db:
@@ -77,7 +77,7 @@
     state: "present"
     encrypted: 'true'
     password: "md55c8ccfd9d6711fc69a7eae647fc54f51"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ db_user1 }}"
     login_password: "password"
     login_host: "localhost"
@@ -100,7 +100,7 @@
     roles: "{{ db_user2 }}"
     privs: "CREATE,connect"
     objs: "{{ db_name }}"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ db_user1 }}"
     login_password: "password"
     login_host: "localhost"
@@ -123,7 +123,7 @@
     privs: "ALL"
     type: "database"
     objs: "ansible_db"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ db_user1 }}"
     login_password: "password"
     login_host: "localhost"
@@ -132,7 +132,7 @@
   postgresql_user:
     name: "{{ db_user2 }}"
     state: 'absent'
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ db_user1 }}"
     login_password: "password"
     login_host: "localhost"

@@ -25,12 +25,8 @@ options:
   login_db:
     description:
     - Name of the database to connect to and add or remove the schema.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     default: postgres
-    aliases:
-    - db
-    - database
   owner:
     description:
     - Name of the role to set as owner of the schema.
@@ -243,18 +239,7 @@ def main():
     argument_spec.update(
         schema=dict(type="str", required=True, aliases=['name']),
         owner=dict(type="str", default=""),
-        login_db=dict(type='str', default='postgres', aliases=['db', 'database'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            },
-            {
-                'name': 'database',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str', default='postgres'),
         cascade_drop=dict(type="bool", default=False),
         state=dict(type="str", default="present", choices=["absent", "present"]),
         session_role=dict(type="str"),

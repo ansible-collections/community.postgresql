@@ -24,7 +24,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     ignore_errors: true
     with_items: "{{ roles }}"
@@ -34,7 +34,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         set_option: true
@@ -55,7 +55,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true
@@ -79,7 +79,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     ignore_errors: true
     with_items: "{{ roles }}"
@@ -90,7 +90,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         admin_option: false
@@ -110,7 +110,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_options }}"
       positional_args:
       - "opt_group"
@@ -130,7 +130,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         admin_option: false
@@ -151,7 +151,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         set_option: true
@@ -169,7 +169,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_options }}"
       positional_args:
       - "opt_group"
@@ -192,7 +192,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         set_option: true
@@ -216,7 +216,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "opt_group" TO "opt_grantor" WITH ADMIN OPTION'
 
   - name: postgresql_membership - pre-grant opt_group to opt_user3 as opt_grantor
@@ -225,7 +225,7 @@
     postgresql_query:
       login_user: "{{ pg_user }}"
       session_role: "opt_grantor"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "opt_group" TO "opt_user3"'
 
   - name: postgresql_membership - module grants opt_group to opt_user3 with set_option
@@ -233,7 +233,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         set_option: true
@@ -251,7 +251,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_options_by }}"
       positional_args:
       - "opt_group"
@@ -269,7 +269,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         set_option: true
@@ -290,7 +290,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         set_option: false
@@ -308,7 +308,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_options }}"
       positional_args:
       - "opt_group"
@@ -328,7 +328,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         set_option: false
@@ -355,7 +355,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         set_option: true
@@ -376,7 +376,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         set_option: false
@@ -398,7 +398,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_options }}"
       positional_args:
       - "opt_group"
@@ -420,7 +420,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         admin_option: true
@@ -443,7 +443,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_options }}"
       positional_args:
       - "opt_group"
@@ -463,7 +463,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "opt_group"
         admin_option: false
@@ -483,7 +483,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_options }}"
       positional_args:
       - "opt_group"
@@ -505,7 +505,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true

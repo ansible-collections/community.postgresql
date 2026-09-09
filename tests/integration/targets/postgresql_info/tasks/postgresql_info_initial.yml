@@ -85,7 +85,7 @@
     postgresql_table:
       login_user: '{{ pg_user }}'
       login_port: '{{ replica_port }}'
-      db:   '{{ item[0] }}'
+      login_db:   '{{ item[0] }}'
       name: "{{ item[1] }}.{{ item[2] }}"
       columns: waste_id int
     loop:

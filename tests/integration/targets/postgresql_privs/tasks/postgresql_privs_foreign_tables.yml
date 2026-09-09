@@ -24,7 +24,7 @@
         name: "{{ db_user1 }}"
         encrypted: 'true'
         password: "md5{{ (db_password ~ db_user1) | hash('md5')}}"
-        db: "{{ db_name }}"
+        login_db: "{{ db_name }}"
         login_user: "{{ pg_user }}"
 
 - name: Install foreign data wrapper extension
@@ -88,7 +88,7 @@
     roles: "{{ db_user1 }}"
     privs: "INSERT"
     objs: "foreign_table1"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     trust_input: false
   register: result

@@ -24,7 +24,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_user:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: bob
     state: present
@@ -34,7 +34,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_user:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: alice
     state: present
@@ -44,7 +44,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     owner: bob
@@ -66,7 +66,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     location: /another-ssd
@@ -82,7 +82,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     owner: alice
@@ -102,7 +102,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     owner: alice
@@ -122,7 +122,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     set:
@@ -162,7 +162,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     set:
@@ -180,7 +180,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     rename_to: foo
@@ -197,7 +197,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: foo
     rename_to: '{{ dangerous_name }}'
@@ -214,7 +214,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: foo
     state: absent
@@ -232,7 +232,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: foo
     state: absent
@@ -250,7 +250,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     location: /ssd
@@ -266,7 +266,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
   register: result
@@ -280,7 +280,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     location: /ssd
@@ -297,7 +297,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     location: /ssd
@@ -312,7 +312,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
   register: result
@@ -326,7 +326,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     location: /ssd
@@ -343,7 +343,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
   register: result
@@ -357,7 +357,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     location: /ssd
@@ -373,7 +373,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
   register: result
@@ -387,7 +387,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     location: /ssd
@@ -403,7 +403,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     query: "SELECT shobj_description((SELECT oid FROM pg_catalog.pg_tablespace WHERE spcname = 'acme'), 'pg_tablespace') AS comment"
   register: result
@@ -417,7 +417,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     location: /ssd
@@ -435,7 +435,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     state: absent

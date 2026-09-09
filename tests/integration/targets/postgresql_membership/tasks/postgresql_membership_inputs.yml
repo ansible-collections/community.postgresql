@@ -25,7 +25,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -36,7 +36,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "in_group1"
       target_role: "o'brien"
       state: present
@@ -52,7 +52,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "in_group1"
@@ -68,7 +68,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "in_group1"
       target_role: "o'brien"
       state: absent
@@ -85,7 +85,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       groups:
       - "in_group1"
       - "in_group1"
@@ -107,7 +107,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       groups:
       - "in_group1"
       - "in_group2"
@@ -133,7 +133,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       groups:
       - "in_group1"
       - "in_group2"
@@ -153,7 +153,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "in_group1"
         admin_option: true
@@ -172,7 +172,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       groups:
       target_role: "in_user1"
       state: present
@@ -189,7 +189,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       target_role: "in_user1"
       state: present
@@ -207,7 +207,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       groups: "in_group2"
       target_role: "in_user2"
       granted_by_any: true
@@ -225,7 +225,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'REVOKE "in_group2" FROM "in_user2"'
 
   # The same statement on every version: granted_by_any names no granting role, so
@@ -235,7 +235,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       granted_by_any: true
       memberships:
       - groups: "in_group2"
@@ -255,7 +255,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true
@@ -281,7 +281,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -290,7 +290,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "gbv_group"
         granted_by: "gbv_absent"
@@ -310,7 +310,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "gbv_group"
         granted_by: "gbv_absent"
@@ -331,7 +331,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true

@@ -10,7 +10,7 @@
   become: true
   postgresql_user:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: "{{ item }}"
   ignore_errors: true
   with_items:
@@ -30,7 +30,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: "group1"
     user: "user1"
     state: present
@@ -54,7 +54,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: "group1"
     user: "user1"
     state: absent
@@ -78,7 +78,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: "group1"
     user: "user1"
     state: present
@@ -100,7 +100,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: "group1"
     user: "user1"
     state: present
@@ -122,7 +122,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: "group1"
     user: "user1"
     state: absent
@@ -144,7 +144,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: "group1"
     user: "user1"
     state: absent
@@ -166,7 +166,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group:
     - "group1"
     - "group2"
@@ -192,7 +192,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group:
     - "group1"
     - "group2"
@@ -219,7 +219,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: "group1"
     user: "user1"
     state: absent
@@ -242,7 +242,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group:
     - "group1"
     - "group2"
@@ -272,7 +272,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: fake_group
     user: fake_user
     state: present
@@ -290,7 +290,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: fake_group
     user: fake_user
     state: present
@@ -312,7 +312,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: fake_group
     user: fake_user
     state: absent
@@ -334,7 +334,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group: "group.with.dots"
     user: "user1"
     state: present
@@ -353,7 +353,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group:
     - "group.with.dots"
     - 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
@@ -373,7 +373,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     group:
     - "group.with.dots"
     - 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
@@ -395,7 +395,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     groups: []
     user: "user1"
     state: exact
@@ -416,7 +416,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
@@ -429,7 +429,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     groups: []
     user: "user1"
     state: exact
@@ -449,7 +449,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
@@ -462,7 +462,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     groups:
     - "group1"
     - "group2"
@@ -486,7 +486,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
@@ -499,7 +499,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     groups:
     - "group1"
     - "group2"
@@ -522,7 +522,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
@@ -535,7 +535,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     groups:
     - "group1"
     user: "user1"
@@ -556,7 +556,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
@@ -569,7 +569,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     groups:
     - "group2"
     - "group.with.dots"
@@ -589,7 +589,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
@@ -602,7 +602,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     groups:
     - "group2"
     - "group.with.dots"
@@ -623,7 +623,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
@@ -636,7 +636,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     groups:
     - "group1"
     - "group2"
@@ -659,7 +659,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
@@ -672,7 +672,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user.with.dots'"
   register: result
 
@@ -685,7 +685,7 @@
   become: true
   postgresql_membership:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     groups:
     - "group2"
     - "group.with.dots"
@@ -706,7 +706,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user1'"
   register: result
 
@@ -719,7 +719,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: "SELECT ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid) FROM pg_catalog.pg_roles r WHERE r.rolname = 'user.with.dots'"
   register: result
 

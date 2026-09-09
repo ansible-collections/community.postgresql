@@ -7,7 +7,7 @@
   become: true
   postgresql_set:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: max_replication_slots
     value: '10'
 
@@ -16,7 +16,7 @@
   become: true
   postgresql_set:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: wal_level
     value: logical
 
@@ -46,7 +46,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot0
   check_mode: true
   register: result
@@ -61,7 +61,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot0'"
   ignore_errors: true
@@ -77,7 +77,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot0
   register: result
 
@@ -98,7 +98,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot0' and slot_type = 'physical'"
   ignore_errors: true
@@ -114,7 +114,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot0
   check_mode: true
   register: result
@@ -129,7 +129,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot0' and slot_type = 'physical'"
   ignore_errors: true
@@ -145,7 +145,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot0
     slot_type: physical
   register: result
@@ -160,7 +160,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot0' and slot_type = 'physical'"
   ignore_errors: true
@@ -179,7 +179,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot1
     immediately_reserve: true
   register: result
@@ -196,7 +196,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot1' and slot_type = 'physical' and restart_lsn is not NULL"
   ignore_errors: true
@@ -225,7 +225,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot2
     slot_type: logical
   check_mode: true
@@ -243,7 +243,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot2'"
   ignore_errors: true
@@ -261,7 +261,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot2
     slot_type: logical
   register: result
@@ -278,7 +278,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot2' and slot_type = 'logical'"
   ignore_errors: true
@@ -296,7 +296,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot2
     slot_type: logical
   check_mode: true
@@ -314,7 +314,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot2' and slot_type = 'logical'"
   ignore_errors: true
@@ -332,7 +332,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot2
     slot_type: logical
   register: result
@@ -349,7 +349,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot2' and slot_type = 'logical'"
   ignore_errors: true
@@ -370,7 +370,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot3
     slot_type: logical
     output_plugin: test_decoding
@@ -388,7 +388,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot3' and slot_type = 'logical' and plugin = 'test_decoding'"
   ignore_errors: true
@@ -410,7 +410,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot2
     state: absent
   check_mode: true
@@ -428,7 +428,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot2'"
   ignore_errors: true
@@ -446,7 +446,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot2
     state: absent
   register: result
@@ -463,7 +463,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot2' and slot_type = 'logical'"
   ignore_errors: true
@@ -481,7 +481,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot2
     state: absent
   check_mode: true
@@ -499,7 +499,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot2' and slot_type = 'logical'"
   ignore_errors: true
@@ -517,7 +517,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot2
     state: absent
   register: result
@@ -534,7 +534,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot2' and slot_type = 'logical'"
   ignore_errors: true
@@ -556,7 +556,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot1
     state: absent
   check_mode: true
@@ -573,7 +573,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot1'"
   ignore_errors: true
@@ -591,7 +591,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot1
     state: absent
   register: result
@@ -608,7 +608,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot1' and slot_type = 'physical'"
   ignore_errors: true
@@ -626,7 +626,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot1
     state: absent
   check_mode: true
@@ -644,7 +644,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot1' and slot_type = 'physical'"
   ignore_errors: true
@@ -662,7 +662,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: slot1
     state: absent
   register: result
@@ -679,7 +679,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     query: "SELECT 1 FROM pg_replication_slots WHERE slot_name = 'slot1' and slot_type = 'physical'"
   ignore_errors: true
@@ -695,7 +695,7 @@
 - name: postgresql_slot - try using a bad name
   postgresql_slot:
     session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
-    db: postgres
+    login_db: postgres
     name: slot1
     trust_input: false
   register: result
@@ -717,7 +717,7 @@
   become: true
   postgresql_slot:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     name: "{{ item }}"
     state: absent
   ignore_errors: true

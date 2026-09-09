@@ -12,7 +12,7 @@
     encrypted: true
     password: password
     role_attr_flags: LOGIN
-    db: "{{ db_default }}"
+    login_db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
 
 - name: postgresql_sequence - create DB
@@ -33,14 +33,14 @@
     encrypted: true
     password: password
     role_attr_flags: LOGIN
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
 
 - name: postgresql_sequence - create a schema
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar_schema
 
@@ -51,7 +51,7 @@
   become: true
   check_mode: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar
   register: result
@@ -69,7 +69,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar'"
   register: result
@@ -86,7 +86,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar
   register: result
@@ -104,7 +104,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar'"
   register: result
@@ -121,7 +121,7 @@
   become: true
   check_mode: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar
     state: absent
@@ -140,7 +140,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar'"
   register: result
@@ -156,7 +156,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar
     state: absent
@@ -175,7 +175,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar'"
   register: result
@@ -191,7 +191,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar
     state: absent
@@ -210,7 +210,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar'"
   register: result
@@ -226,7 +226,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar_desc
     increment: -1
@@ -251,7 +251,7 @@
 # Real SQL check
 - name: postgresql_sequence - check that the new sequence "foobar_desc" exists
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar_desc'"
   register: result
@@ -268,7 +268,7 @@
   become: true
   check_mode: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar_desc
     rename_to: foobar_with_options
@@ -288,7 +288,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar_desc'"
   register: result
@@ -304,7 +304,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar_desc
     rename_to: foobar_with_options
@@ -324,7 +324,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar_with_options'"
   register: result
@@ -341,7 +341,7 @@
   become: true
   check_mode: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar_with_options
     newschema: foobar_schema
@@ -362,7 +362,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name,sequence_schema FROM information_schema.sequences WHERE sequence_name = 'foobar_with_options' AND sequence_schema = 'public'"
   register: result
@@ -378,7 +378,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar_with_options
     newschema: foobar_schema
@@ -399,7 +399,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name,sequence_schema FROM information_schema.sequences WHERE sequence_name = 'foobar_with_options' AND sequence_schema = 'foobar_schema'"
   register: result
@@ -416,7 +416,7 @@
   become: true
   check_mode: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar_with_options
     schema: foobar_schema
@@ -437,7 +437,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT c.relname,a.rolname,n.nspname
             FROM pg_class as c
@@ -460,7 +460,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar_with_options
     schema: foobar_schema
@@ -481,7 +481,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT c.relname,a.rolname,n.nspname
             FROM pg_class as c
@@ -508,7 +508,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: seq1
 
@@ -516,7 +516,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_table:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: t1
     columns:
@@ -529,7 +529,7 @@
   become: true
   check_mode: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: seq1
     state: absent
@@ -549,7 +549,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'seq1'"
   register: result
@@ -565,7 +565,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: seq1
     state: absent
@@ -585,7 +585,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'seq1'"
   register: result
@@ -602,7 +602,7 @@
   become: true
   check_mode: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar2
     owner: "{{ db_user2 }}"
@@ -621,7 +621,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar2'"
   register: result
@@ -637,7 +637,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: foobar2
     owner: "{{ db_user2 }}"
@@ -656,7 +656,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'foobar2'"
   register: result
@@ -670,7 +670,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT c.relname,a.rolname,n.nspname
             FROM pg_class as c
@@ -693,7 +693,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_sequence:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: 'just_a_name"; SELECT * FROM information_schema.tables; --'
     trust_input: false

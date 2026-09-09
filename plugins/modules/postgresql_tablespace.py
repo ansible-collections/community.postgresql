@@ -70,10 +70,7 @@ options:
   login_db:
     description:
     - Name of database to connect to and run queries against.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
-    aliases:
-    - db
   trust_input:
     description:
     - If C(false), check whether values of parameters I(tablespace), I(location), I(owner),
@@ -418,13 +415,7 @@ def main():
         location=dict(type='path', aliases=['path']),
         owner=dict(type='str'),
         set=dict(type='dict'),
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str'),
         rename_to=dict(type='str', removed_in_version='5.0.0',
                        removed_from_collection='community.postgresql'),
         session_role=dict(type='str'),
