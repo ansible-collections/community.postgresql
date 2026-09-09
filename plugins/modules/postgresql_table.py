@@ -25,7 +25,7 @@ options:
   state:
     description:
     - The table state. I(state=absent) is mutually exclusive with I(tablespace), I(owner), I(unlogged),
-      I(like), I(including), I(columns), I(truncate), I(storage_params) and, I(rename).
+      I(like), I(including), I(columns), I(truncate), and I(storage_params).
     type: str
     default: present
     choices: [ absent, present ]
@@ -45,35 +45,28 @@ options:
   like:
     description:
     - Create a table like another table (with similar DDL).
-      Mutually exclusive with I(columns), I(rename), and I(truncate).
+      Mutually exclusive with I(columns) and I(truncate).
     type: str
   including:
     description:
     - Keywords that are used with like parameter, may be DEFAULTS, CONSTRAINTS, INDEXES, STORAGE, COMMENTS or ALL.
-      Needs I(like) specified. Mutually exclusive with I(columns), I(rename), and I(truncate).
+      Needs I(like) specified. Mutually exclusive with I(columns) and I(truncate).
     type: str
   columns:
     description:
     - Columns that are needed.
     type: list
     elements: str
-  rename:
-    description:
-    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)). This option will be removed in version 5.0.0.
-      To rename a table, use the M(community.postgresql.postgresql_query) module.
-    - New table name. Mutually exclusive with I(tablespace), I(owner),
-      I(unlogged), I(like), I(including), I(columns), I(truncate), and I(storage_params).
-    type: str
   truncate:
     description:
     - Truncate a table. Mutually exclusive with I(tablespace), I(owner), I(unlogged),
-      I(like), I(including), I(columns), I(rename), and I(storage_params).
+      I(like), I(including), I(columns), and I(storage_params).
     type: bool
     default: false
   storage_params:
     description:
     - Storage parameters like fillfactor, autovacuum_vacuum_treshold, etc.
-      Mutually exclusive with I(rename) and I(truncate).
+      Mutually exclusive with I(truncate).
     type: list
     elements: str
   login_db:
@@ -440,11 +433,6 @@ class Table(object):
         query = "TRUNCATE TABLE %s" % pg_quote_identifier(self.name, 'table')
         return exec_sql(self, query, return_bool=True)
 
-    def rename(self, newname):
-        query = "ALTER TABLE %s RENAME TO %s" % (pg_quote_identifier(self.name, 'table'),
-                                                 pg_quote_identifier(newname, 'table'))
-        return exec_sql(self, query, return_bool=True)
-
     def set_owner(self, username):
         query = 'ALTER TABLE %s OWNER TO "%s"' % (pg_quote_identifier(self.name, 'table'), username)
         return exec_sql(self, query, return_bool=True)
@@ -489,8 +477,6 @@ def main():
         unlogged=dict(type='bool', default=False),
         like=dict(type='str'),
         including=dict(type='str'),
-        rename=dict(type='str', removed_in_version='5.0.0',
-                    removed_from_collection='community.postgresql'),
         truncate=dict(type='bool', default=False),
         columns=dict(type='list', elements='str'),
         storage_params=dict(type='list', elements='str'),
@@ -510,7 +496,6 @@ def main():
     unlogged = module.params['unlogged']
     like = module.params['like']
     including = module.params['including']
-    newname = module.params['rename']
     storage_params = module.params['storage_params']
     truncate = module.params['truncate']
     columns = module.params['columns']
@@ -521,24 +506,19 @@ def main():
     if not trust_input:
         # Check input for potentially dangerous elements:
         check_input(module, table, tablespace, owner, like, including,
-                    newname, storage_params, columns, session_role)
+                    storage_params, columns, session_role)
 
     if state == 'present' and cascade:
         module.warn("cascade=true is ignored when state=present")
 
     # Check mutual exclusive parameters:
-    if state == 'absent' and (truncate or newname or columns or tablespace or like or storage_params or unlogged or owner or including):
+    if state == 'absent' and (truncate or columns or tablespace or like or storage_params or unlogged or owner or including):
         module.fail_json(msg="%s: state=absent is mutually exclusive with: "
-                             "truncate, rename, columns, tablespace, "
+                             "truncate, columns, tablespace, "
                              "including, like, storage_params, unlogged, owner" % table)
 
-    if truncate and (newname or columns or like or unlogged or storage_params or owner or tablespace or including):
+    if truncate and (columns or like or unlogged or storage_params or owner or tablespace or including):
         module.fail_json(msg="%s: truncate is mutually exclusive with: "
-                             "rename, columns, like, unlogged, including, "
-                             "storage_params, owner, tablespace" % table)
-
-    if newname and (columns or like or unlogged or storage_params or owner or tablespace or including):
-        module.fail_json(msg="%s: rename is mutually exclusive with: "
                              "columns, like, unlogged, including, "
                              "storage_params, owner, tablespace" % table)
 
@@ -583,12 +563,6 @@ def main():
     elif truncate:
         changed = table_obj.truncate()
 
-    elif newname:
-        changed = table_obj.rename(newname)
-        q = table_obj.executed_queries
-        table_obj = Table(newname, module, cursor)
-        table_obj.executed_queries = q
-
     elif state == 'present' and not like:
         changed = table_obj.create(columns, storage_params,
                                    tablespace, unlogged, owner)
@@ -604,7 +578,6 @@ def main():
             db_connection.commit()
 
         # Refresh table info for RETURN.
-        # Note, if table has been renamed, it gets info by newname:
         table_obj.get_info()
         db_connection.commit()
         if table_obj.exists:

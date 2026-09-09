@@ -87,11 +87,8 @@ options:
       For the directory format which is supported since collection version 1.4.0.
     - "Restore program is selected by target file format: C(.tar), C(.pgc), and C(.dir) are handled by pg_restore, other with pgsql."
     - "."
-    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)).
-      V(rename) is used to rename the database O(name) to O(target).
-      To rename a database, use the M(community.postgresql.postgresql_query) module.
     type: str
-    choices: [ absent, dump, present, rename, restore ]
+    choices: [ absent, dump, present, restore ]
     default: present
   force:
     description:
@@ -698,33 +695,6 @@ def set_tablespace(cursor, db, tablespace):
     cursor.execute(query)
     return True
 
-
-def rename_db(module, cursor, db, target, check_mode=False):
-    source_db = db_exists(cursor, db)
-    target_db = db_exists(cursor, target)
-
-    if source_db and target_db:
-        module.fail_json(msg='Both the source and the target databases exist.')
-
-    if not source_db and target_db:
-        # If the source db doesn't exist and
-        # the target db exists, we assume that
-        # the desired state has been reached and
-        # respectively nothing needs to be changed
-        return False
-
-    if not source_db and not target_db:
-        module.fail_json(msg='The source and the target databases do not exist.')
-
-    if source_db and not target_db:
-        if check_mode:
-            return True
-
-        query = 'ALTER DATABASE "%s" RENAME TO "%s"' % (db, target)
-        executed_commands.append(query)
-        cursor.execute(query)
-        return True
-
 # ===========================================
 # Module execution.
 #
@@ -742,7 +712,7 @@ def main():
         icu_locale=dict(type='str', default=''),
         locale_provider=dict(type='str', default=''),
         state=dict(type='str', default='present',
-                   choices=['absent', 'dump', 'present', 'rename', 'restore']),
+                   choices=['absent', 'dump', 'present', 'restore']),
         target=dict(type='path', default=''),
         target_opts=dict(type='str', default=''),
         maintenance_db=dict(type='str', default="postgres"),
@@ -772,7 +742,6 @@ def main():
     target_opts = module.params["target_opts"]
     state = module.params["state"]
     changed = False
-    maintenance_db = module.params['maintenance_db']
     session_role = module.params["session_role"]
     conn_limit = module.params['conn_limit']
     tablespace = module.params['tablespace']
@@ -780,19 +749,6 @@ def main():
     trust_input = module.params['trust_input']
     force = module.params['force']
     comment = module.params['comment']
-
-    if state == 'rename':
-        module.warn('The rename choice of the state option is deprecated and will be removed '
-                    'in version 5.0.0. Use the community.postgresql.postgresql_query module instead.')
-
-        if not target:
-            module.fail_json(msg='The "target" option must be defined when the "rename" option is used.')
-
-        if db == target:
-            module.fail_json(msg='The "name/db" option and the "target" option cannot be the same.')
-
-        if maintenance_db == db:
-            module.fail_json(msg='The "maintenance_db" option and the "name/db" option cannot be the same.')
 
     # Check input
     if not trust_input:
@@ -836,9 +792,6 @@ def main():
                 changed = not db_matches(cursor, db, owner, template, encoding, lc_collate, lc_ctype,
                                          icu_locale, locale_provider, conn_limit, tablespace, comment)
 
-            elif state == "rename":
-                changed = rename_db(module, cursor, db, target, check_mode=True)
-
             module.exit_json(changed=changed, db=db, executed_commands=executed_commands)
 
         # Handle real mode
@@ -875,9 +828,6 @@ def main():
             else:
                 module.exit_json(changed=True, msg=stdout, stderr=stderr, rc=rc, cmd=cmd,
                                  executed_commands=executed_commands)
-
-        elif state == 'rename':
-            changed = rename_db(module, cursor, db, target)
 
     except (SQLParseError, NotSupportedError) as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())

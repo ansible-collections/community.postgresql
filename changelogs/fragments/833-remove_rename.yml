@@ -1,0 +1,13 @@
+removed_features:
+  - postgresql_db - the ``rename`` choice of the ``state`` option has been removed.
+    Use the ``community.postgresql.postgresql_query`` module instead
+    (https://github.com/ansible-collections/community.postgresql/issues/833).
+  - postgresql_sequence - the ``rename_to`` option has been removed.
+    Use the ``community.postgresql.postgresql_query`` module instead
+    (https://github.com/ansible-collections/community.postgresql/issues/833).
+  - postgresql_table - the ``rename`` option has been removed.
+    Use the ``community.postgresql.postgresql_query`` module instead
+    (https://github.com/ansible-collections/community.postgresql/issues/833).
+  - postgresql_tablespace - the ``rename_to`` option has been removed.
+    Use the ``community.postgresql.postgresql_query`` module instead
+    (https://github.com/ansible-collections/community.postgresql/issues/833).
