@@ -229,7 +229,7 @@
     that:
       - '"host\tall\tall\t2001:db8::1/128\tmd5\t#comment1\nhost\tall\tall\t2001:db8::2/128\tmd5\t#comment2" == content'
 
-- name: Create a rule with the comment 'comment3' and keep_comments_at_rules
+- name: Create a rule with the comment 'comment3'
   postgresql_pg_hba:
     contype: host
     dest: /tmp/pg_hba2.conf
@@ -237,7 +237,6 @@
     address: "2001:db8::3/128"
     state: present
     comment: "comment3"
-    keep_comments_at_rules: true
 
 - name: Fetch the file
   fetch:
