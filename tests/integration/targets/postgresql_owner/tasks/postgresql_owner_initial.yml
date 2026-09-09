@@ -41,7 +41,7 @@
   become: true
   postgresql_db:
     login_user: '{{ pg_user }}'
-    login_db: acme
+    name: acme
 
 # Create test table
 
@@ -3061,7 +3061,7 @@
   become: true
   postgresql_db:
     login_user: '{{ pg_user }}'
-    login_db: acme
+    name: acme
     state: absent
 
 - name: postgresql_owner - drop test tablespace
