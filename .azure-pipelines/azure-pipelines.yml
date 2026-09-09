@@ -37,6 +37,7 @@ resources:
   containers:
     - container: default
       image: quay.io/ansible/azure-pipelines-test-container:8.0.0
+      mapDockerSocket: true
 
 pool: Standard
 
