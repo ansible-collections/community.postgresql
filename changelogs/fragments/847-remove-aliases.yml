@@ -1,0 +1,2 @@
+removed_features:
+- "postgresql modules - the ``login``, ``host`` and ``unix_socket`` aliases have been removed in ``community.postgresql 5.0.0``. Use the ``login_user``, ``login_host`` and ``login_unix_socket`` options instead (https://github.com/ansible-collections/community.postgresql/issues/847)."
