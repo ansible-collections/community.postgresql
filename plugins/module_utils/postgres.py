@@ -87,13 +87,6 @@ def postgres_common_argument_spec():
         login_port=dict(
             type='int',
             default=int(env_vars.get("PGPORT", 5432)),
-            aliases=['port'], deprecated_aliases=[
-                {
-                    'name': 'port',
-                    'version': '5.0.0',
-                    'collection_name': 'community.postgresql',
-                }
-            ],
         ),
         ssl_mode=dict(
             default='prefer',

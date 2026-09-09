@@ -61,13 +61,7 @@ class TestPostgresCommonArgSpec():
             login_password=dict(default='', no_log=True),
             login_host=dict(default=''),
             login_unix_socket=dict(default=''),
-            login_port=dict(type='int', default=5432, aliases=['port'], deprecated_aliases=[
-                {
-                    'collection_name': 'community.postgresql',
-                    'name': 'port',
-                    'version': '5.0.0'
-                }
-            ]),
+            login_port=dict(type='int', default=5432),
             ssl_mode=dict(
                 default='prefer',
                 choices=['allow', 'disable', 'prefer', 'require', 'verify-ca', 'verify-full']
