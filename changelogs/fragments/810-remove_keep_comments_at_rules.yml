@@ -1,0 +1,4 @@
+removed_features:
+  - postgresql_pg_hba - the ``keep_comments_at_rules`` option has been removed.
+    It had no effect since it was deprecated
+    (https://github.com/ansible-collections/community.postgresql/issues/810).
