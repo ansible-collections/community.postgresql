@@ -95,14 +95,6 @@ options:
     - Only used with I(state=absent).
     type: bool
     default: false
-  rename_to:
-    description:
-    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)).
-      This option will be removed in version 5.0.0.
-      To rename a sequence, use the M(community.postgresql.postgresql_query) module.
-    - The new name for the I(sequence).
-    - Works only for existing sequences.
-    type: str
   owner:
     description:
     - Set the owner for the I(sequence).
@@ -137,7 +129,7 @@ options:
     - db
   trust_input:
     description:
-    - If C(false), check whether values of parameters I(sequence), I(schema), I(rename_to),
+    - If C(false), check whether values of parameters I(sequence), I(schema),
       I(owner), I(newschema), I(session_role) are potentially dangerous.
     - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
@@ -290,11 +282,6 @@ owner:
     returned: success
     type: str
     sample: 'postgres'
-newname:
-    description: Shows the new sequence name after rename.
-    returned: success
-    type: str
-    sample: 'barfoo'
 newschema:
     description: Shows the new schema of the sequence after schema change.
     returned: success
@@ -337,7 +324,6 @@ class Sequence(object):
         maxvalue (int) -- maximum value of the sequence
         increment (int) -- increment value of the sequence
         cycle (bool) -- sequence can cycle or not
-        new_name (str) -- name of the renamed sequence
         new_schema (str) -- name of the new schema
         exists (bool) -- sequence exists or not
     """
@@ -355,7 +341,6 @@ class Sequence(object):
         self.maxvalue = ''
         self.increment = ''
         self.cycle = ''
-        self.new_name = ''
         self.new_schema = ''
         self.exists = False
         # Collect info
@@ -439,14 +424,6 @@ class Sequence(object):
 
         return exec_sql(self, ' '.join(query), return_bool=True)
 
-    def rename(self):
-        """Implements ALTER SEQUENCE RENAME TO command behavior."""
-        query = ['ALTER SEQUENCE']
-        query.append(self.__add_schema())
-        query.append('RENAME TO "%s"' % self.module.params['rename_to'])
-
-        return exec_sql(self, ' '.join(query), return_bool=True)
-
     def set_owner(self):
         """Implements ALTER SEQUENCE OWNER TO command behavior."""
         query = ['ALTER SEQUENCE']
@@ -485,8 +462,6 @@ def main():
         cycle=dict(type='bool', default=False),
         schema=dict(type='str', default='public'),
         cascade=dict(type='bool', default=False),
-        rename_to=dict(type='str', removed_in_version='5.0.0',
-                       removed_from_collection='community.postgresql'),
         owner=dict(type='str'),
         newschema=dict(type='str'),
         login_db=dict(type='str', default='', aliases=['db', 'database'], deprecated_aliases=[
@@ -508,16 +483,6 @@ def main():
         argument_spec=argument_spec,
         supports_check_mode=True,
         mutually_exclusive=[
-            ['rename_to', 'data_type'],
-            ['rename_to', 'increment'],
-            ['rename_to', 'minvalue'],
-            ['rename_to', 'maxvalue'],
-            ['rename_to', 'start'],
-            ['rename_to', 'cache'],
-            ['rename_to', 'cycle'],
-            ['rename_to', 'cascade'],
-            ['rename_to', 'owner'],
-            ['rename_to', 'newschema'],
             ['cascade', 'data_type'],
             ['cascade', 'increment'],
             ['cascade', 'minvalue'],
@@ -535,7 +500,6 @@ def main():
             module,
             module.params['sequence'],
             module.params['schema'],
-            module.params['rename_to'],
             module.params['owner'],
             module.params['newschema'],
             module.params['session_role'],
@@ -562,8 +526,6 @@ def main():
 
     # Create new sequence
     if not data.exists and module.params['state'] == 'present':
-        if module.params.get('rename_to'):
-            module.fail_json(msg="Sequence '%s' does not exist, nothing to rename" % module.params['sequence'])
         if module.params.get('newschema'):
             module.fail_json(msg="Sequence '%s' does not exist, change of schema not possible" % module.params['sequence'])
 
@@ -577,13 +539,6 @@ def main():
     # Drop existing sequence
     elif data.exists and module.params['state'] == 'absent':
         changed = data.drop()
-
-    # Rename sequence
-    if data.exists and module.params.get('rename_to'):
-        if data.name != module.params['rename_to']:
-            changed = data.rename()
-            if changed:
-                data.new_name = module.params['rename_to']
 
     # Refresh information
     if module.params['state'] == 'present':
@@ -629,8 +584,6 @@ def main():
     )
 
     if module.params['state'] == 'present':
-        if data.new_name:
-            kw['newname'] = data.new_name
         if data.new_schema:
             kw['newschema'] = data.new_schema
 

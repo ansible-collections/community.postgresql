@@ -540,94 +540,6 @@
       - result.rowcount == 0
 
 #
-# Check rename table
-#
-
-# Rename a table in check_mode.
-# In check_mode test4 won't be exist after the following playbook,
-# so result.changed == 'absent' for the table with this name
-- name: postgresql_table - rename table in check_mode
-  become: true
-  become_user: "{{ pg_user }}"
-  postgresql_table:
-    db: postgres
-    login_user: "{{ pg_user }}"
-    name: test3
-    rename: test4
-  register: result
-  ignore_errors: true
-  check_mode: true
-
-- assert:
-    that:
-      - result is changed
-      - result.queries == ['ALTER TABLE "test3" RENAME TO "test4"']
-      - result.state == "absent"
-
-# Check that the table exists after the previous step, rowcount must be 1
-- name: postgresql_table - check that table exists after the previous step
-  become_user: "{{ pg_user }}"
-  become: true
-  postgresql_query:
-    db: postgres
-    login_user: "{{ pg_user }}"
-    query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test3'"
-  ignore_errors: true
-  register: result
- 
-- assert:
-    that:
-      - result.rowcount == 1
-
-# Rename a table:
-- name: postgresql_table - rename table
-  become: true
-  become_user: "{{ pg_user }}"
-  postgresql_table:
-    db: postgres
-    login_user: "{{ pg_user }}"
-    name: test3
-    rename: test4
-  register: result
-  ignore_errors: true
-
-- assert:
-    that:
-      - result is changed
-      - result.queries == ['ALTER TABLE "test3" RENAME TO "test4"']
-      - result.state == "present"
-
-# Check that the table test 3 doesn't exist after the previous step, rowcount must be - 0
-- name: postgresql_table - check that table exists after the previous step
-  become_user: "{{ pg_user }}"
-  become: true
-  postgresql_query:
-    db: postgres
-    login_user: "{{ pg_user }}"
-    query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test3'"
-  ignore_errors: true
-  register: result
- 
-- assert:
-    that:
-      - result.rowcount == 0
-
-# Check that the table test 4 exists after the previous step, rowcount must be - 1
-- name: postgresql_table - check that table exists after the previous step
-  become_user: "{{ pg_user }}"
-  become: true
-  postgresql_query:
-    db: postgres
-    login_user: "{{ pg_user }}"
-    query: "SELECT 1 FROM pg_stat_all_tables WHERE relname = 'test4'"
-  ignore_errors: true
-  register: result
- 
-- assert:
-    that:
-      - result.rowcount == 1
-
-#
 # Check create unlogged table
 #
 
@@ -737,7 +649,7 @@
   when: postgres_version_resp.stdout is version('9.1', '>=')
 
 #
-# Create, drop, and rename table in a specific schema:
+# Create and drop table in a specific schema:
 #
 - name: postgresql_table - create table in a specific schema
   postgresql_table:
@@ -839,20 +751,6 @@
 - assert:
     that:
       - result.rowcount == 1
-
-- name: postgresql_table - rename the table that contents a schema name
-  postgresql_table:
-    db: postgres
-    login_user: "{{ pg_user }}"
-    name: public.test_schema_table
-    rename: new_test_schema_table
-    trust_input: true
-  register: result
-
-- assert:
-    that:
-      - result is changed
-      - result.queries == ['ALTER TABLE "public"."test_schema_table" RENAME TO "new_test_schema_table"']
 
 ############################
 # Test trust_input parameter
