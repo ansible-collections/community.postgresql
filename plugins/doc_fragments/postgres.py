@@ -16,7 +16,6 @@ options:
       - The username this module should use to establish its PostgreSQL session.
     type: str
     default: postgres
-    aliases: [ login ]
   login_password:
     description:
       - The password this module should use to establish its PostgreSQL session.
@@ -28,20 +27,16 @@ options:
       - If you have connection issues when using C(localhost), try to use C(127.0.0.1) instead.
     default: ''
     type: str
-    aliases: [ host ]
   login_unix_socket:
     description:
       - Path to a Unix domain socket for local connections.
     type: str
     default: ''
-    aliases: [ unix_socket ]
   login_port:
     description:
       - Database port to connect to.
-      - The C(port) alias is deprecated and will be removed in the next major release. Use C(login_port) instead.
     type: int
     default: 5432
-    aliases: [ port ]
   ssl_mode:
     description:
       - Determines whether or with what priority a secure SSL TCP/IP connection will be negotiated with the server.
