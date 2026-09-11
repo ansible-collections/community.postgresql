@@ -53,7 +53,7 @@ options:
     choices: [ local, host, hostnossl, hostssl, hostgssenc, hostnogssenc ]
   comment:
     description:
-      - A comment that will be placed in the same line behind the rule. See also the I(keep_comments_at_rules) parameter.
+      - A comment that will be placed in the same line behind the rule.
     type: str
     version_added: '1.5.0'
   databases:
@@ -86,12 +86,6 @@ options:
       - Ignores all errors in the existing file.
     type: bool
     default: false
-  keep_comments_at_rules:
-    description:
-      - This option has been deprecated and doesn't do anything. The module behaves as if this is C(true).
-    type: bool
-    default: true
-    version_added: '1.5.0'
   rules:
     description:
       - A list of objects, specifying rules for the pg_hba.conf. Use this to manage multiple rules at once.
@@ -199,7 +193,7 @@ EXAMPLES = '''
     databases: mydb
     state: absent
 
-- name: Grant some_user access to some_db, comment that and keep other rule-specific comments attached to their rules
+- name: Grant some_user access to some_db with a comment
   community.postgresql.postgresql_pg_hba:
     dest: /var/lib/postgres/data/pg_hba.conf
     contype: host
@@ -207,7 +201,6 @@ EXAMPLES = '''
     databases: some_db
     method: md5
     source: ::/0
-    keep_comments_at_rules: true
     comment: "this rule is an example"
 
 - name: Replace everything with a new set of rules
@@ -1282,11 +1275,6 @@ def main():
         netmask=dict(type='str'),
         # TODO this can probably be changed to dict without breaking
         options=dict(type='str'),
-        # DEPRECATED, does nothing
-        keep_comments_at_rules=dict(type='bool',
-                                    default=True,
-                                    removed_in_version="5.0.0",
-                                    removed_from_collection="community.postgresql"),
         state=dict(type='str', default="present", choices=["absent", "present"]),
         users=dict(type='str', default='all'),
         rules=dict(type='list', elements='dict'),

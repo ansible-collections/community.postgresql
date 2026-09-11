@@ -52,14 +52,6 @@ options:
     - For more information see U(https://www.postgresql.org/docs/current/sql-createtablespace.html).
     - When reset is passed as an option's value, if the option was set previously, it will be removed.
     type: dict
-  rename_to:
-    description:
-    - DEPRECATED (see the L(discussion,https://github.com/ansible-collections/community.postgresql/issues/820)).
-      This option will be removed in version 5.0.0.
-      To rename a tablespace, use the M(community.postgresql.postgresql_query) module.
-    - New name of the tablespace.
-    - The new name cannot begin with pg_, as such names are reserved for system tablespaces.
-    type: str
   session_role:
     description:
     - Switch to session_role after connecting. The specified session_role must
@@ -74,7 +66,7 @@ options:
   trust_input:
     description:
     - If C(false), check whether values of parameters I(tablespace), I(location), I(owner),
-      I(rename_to), I(session_role), I(settings_list) are potentially dangerous.
+      I(session_role), I(settings_list) are potentially dangerous.
     - It makes sense to use C(false) only when SQL injections via the parameters are possible.
     type: bool
     default: true
@@ -178,11 +170,6 @@ location:
     returned: success
     type: str
     sample: '/incredible/fast/ssd'
-newname:
-    description: New tablespace name.
-    returned: if existent
-    type: str
-    sample: new_ssd
 state:
     description: Tablespace state at the end of execution.
     returned: success
@@ -222,7 +209,6 @@ class PgTablespace(object):
         owner (str) -- tablespace owner
         location (str) -- path to the tablespace directory in the file system
         executed_queries (list) -- list of executed queries
-        new_name (str) -- new name for the tablespace
         opt_not_supported (bool) -- flag indicates a tablespace option is supported or not
     """
 
@@ -235,7 +221,6 @@ class PgTablespace(object):
         self.settings = {}
         self.location = ''
         self.executed_queries = []
-        self.new_name = ''
         self.opt_not_supported = False
         self.comment = None
         # Collect info:
@@ -340,18 +325,6 @@ class PgTablespace(object):
         return set_comment(self.cursor, comment, 'tablespace', self.name,
                            check_mode, self.executed_queries)
 
-    def rename(self, newname):
-        """Rename tablespace.
-
-        Return True if success, otherwise, return False.
-
-        args:
-            newname (str) -- new name for the tablespace"
-        """
-        query = 'ALTER TABLESPACE "%s" RENAME TO "%s"' % (self.name, newname)
-        self.new_name = newname
-        return exec_sql(self, query, return_bool=True)
-
     def set_settings(self, new_settings):
         """Set tablespace settings (options).
 
@@ -416,8 +389,6 @@ def main():
         owner=dict(type='str'),
         set=dict(type='dict'),
         login_db=dict(type='str'),
-        rename_to=dict(type='str', removed_in_version='5.0.0',
-                       removed_from_collection='community.postgresql'),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
         comment=dict(type='str', default=None),
@@ -432,15 +403,14 @@ def main():
     state = module.params["state"]
     location = module.params["location"]
     owner = module.params["owner"]
-    rename_to = module.params["rename_to"]
     settings = module.params["set"]
     session_role = module.params["session_role"]
     trust_input = module.params["trust_input"]
     comment = module.params["comment"]
 
-    if state == 'absent' and (location or owner or rename_to or settings):
+    if state == 'absent' and (location or owner or settings):
         module.fail_json(msg="state=absent is mutually exclusive location, "
-                             "owner, rename_to, and set")
+                             "owner, and set")
 
     if not trust_input:
         # Check input for potentially dangerous elements:
@@ -450,7 +420,7 @@ def main():
             settings_list = ['%s = %s' % (k, v) for k, v in settings.items()]
 
         check_input(module, tablespace, location, owner,
-                    rename_to, session_role, settings_list, comment)
+                    session_role, settings_list, comment)
 
     # Ensure psycopg libraries are available before connecting to DB:
     ensure_required_libs(module)
@@ -473,9 +443,6 @@ def main():
 
     # Create new tablespace:
     if not tblspace.exists and state == 'present':
-        if rename_to:
-            module.fail_json(msg="Tablespace %s does not exist, nothing to rename" % tablespace)
-
         if not location:
             module.fail_json(msg="'location' parameter must be passed with "
                                  "state=present if the tablespace doesn't exist")
@@ -493,11 +460,6 @@ def main():
         set_autocommit(db_connection, True)
 
         changed = tblspace.drop()
-
-    # Rename tablespace:
-    elif tblspace.exists and rename_to:
-        if tblspace.name != rename_to:
-            changed = tblspace.rename(rename_to)
 
     if state == 'present':
         # Refresh information:
@@ -541,9 +503,6 @@ def main():
 
     if state == 'present':
         kw['state'] = 'present'
-
-        if tblspace.new_name:
-            kw['newname'] = tblspace.new_name
 
     elif state == 'absent':
         kw['state'] = 'absent'

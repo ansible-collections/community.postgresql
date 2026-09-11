@@ -176,47 +176,13 @@
     - result.queries == []
   when: postgres_version_resp.stdout is version('9.0', '>=')
 
-- name: postgresql_tablespace - rename tablespace
-  become_user: '{{ pg_user }}'
-  become: true
-  postgresql_tablespace:
-    login_db: postgres
-    login_user: '{{ pg_user }}'
-    name: acme
-    rename_to: foo
-  register: result
-  ignore_errors: true
-
-- assert:
-    that:
-    - result is changed
-    - result.newname == 'foo'
-    - result.queries == ["ALTER TABLESPACE \"acme\" RENAME TO \"foo\""]
-
-- name: postgresql_tablespace - rename tablespace to potentially dangerous name
-  become_user: '{{ pg_user }}'
-  become: true
-  postgresql_tablespace:
-    login_db: postgres
-    login_user: '{{ pg_user }}'
-    name: foo
-    rename_to: '{{ dangerous_name }}'
-    trust_input: false
-  register: result
-  ignore_errors: true
-
-- assert:
-    that:
-    - result is failed
-    - result.msg == 'Passed input \'{{ dangerous_name }}\' is potentially dangerous'
-
 - name: postgresql_tablespace - drop tablespace
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
     login_db: postgres
     login_user: '{{ pg_user }}'
-    name: foo
+    name: acme
     state: absent
     trust_input: true
   register: result
@@ -226,7 +192,7 @@
     that:
     - result is changed
     - result.state == 'absent'
-    - result.queries == ["DROP TABLESPACE \"foo\""]
+    - result.queries == ["DROP TABLESPACE \"acme\""]
 
 - name: postgresql_tablespace - try to drop nonexistent tablespace
   become_user: '{{ pg_user }}'
@@ -234,7 +200,7 @@
   postgresql_tablespace:
     login_db: postgres
     login_user: '{{ pg_user }}'
-    name: foo
+    name: acme
     state: absent
   register: result
 
