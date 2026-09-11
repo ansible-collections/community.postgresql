@@ -129,7 +129,10 @@ stages:
     jobs:
       - template: templates/matrix.yml
         parameters:
-          testFormat: devel/linux/{0}/1
+          testFormat: devel/linux/{0}
+          groups:
+            - 1
+            - 2
           targets:
             - name: Fedora 44
               test: fedora44
@@ -144,7 +147,10 @@ stages:
     jobs:
       - template: templates/matrix.yml
         parameters:
-          testFormat: 2.21/linux/{0}/1
+          testFormat: 2.21/linux/{0}
+          groups:
+            - 1
+            - 2
           targets:
             - name: Fedora 43
               test: fedora43
@@ -159,7 +165,10 @@ stages:
     jobs:
       - template: templates/matrix.yml
         parameters:
-          testFormat: 2.20/linux/{0}/1
+          testFormat: 2.20/linux/{0}
+          groups:
+            - 1
+            - 2
           targets:
             - name: Fedora 42
               test: fedora42
@@ -174,7 +183,10 @@ stages:
     jobs:
       - template: templates/matrix.yml
         parameters:
-          testFormat: 2.19/linux/{0}/1
+          testFormat: 2.19/linux/{0}
+          groups:
+            - 1
+            - 2
           targets:
             - name: Fedora 41
               test: fedora41
@@ -189,7 +201,10 @@ stages:
     jobs:
       - template: templates/matrix.yml
         parameters:
-          testFormat: 2.18/linux/{0}/1
+          testFormat: 2.18/linux/{0}
+          groups:
+            - 1
+            - 2
           targets:
             - name: Fedora 40
               test: fedora40
