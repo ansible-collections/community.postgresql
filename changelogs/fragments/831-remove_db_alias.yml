@@ -1,0 +1,58 @@
+removed_features:
+  - postgresql_copy - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_ext - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_idx - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_membership - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_owner - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_ping - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_privs - the ``db`` and ``database`` aliases of the ``login_db`` option have been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_publication - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_query - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_schema - the ``db`` and ``database`` aliases of the ``login_db`` option have been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_script - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_sequence - the ``db`` and ``database`` aliases of the ``login_db`` option have been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_set - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_slot - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_subscription - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_table - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_tablespace - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_user - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).
+  - postgresql_user_obj_stat_info - the ``db`` alias of the ``login_db`` option has been removed.
+    Use the ``login_db`` option instead
+    (https://github.com/ansible-collections/community.postgresql/issues/831).

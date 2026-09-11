@@ -5,7 +5,7 @@
     name: "{{ db_user1 }}"
     encrypted: 'true'
     password: "md5{{ (db_password ~ db_user1) | hash('md5')}}"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
   register: redo_as_admin
 
@@ -35,7 +35,7 @@
     name: "{{ db_user1 }}"
     encrypted: 'true'
     password: "md5{{ (db_password ~ db_user1) | hash('md5')}}"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ db_user1 }}"
     login_password: "{{ db_password }}"
   register: redo_as_normal_user

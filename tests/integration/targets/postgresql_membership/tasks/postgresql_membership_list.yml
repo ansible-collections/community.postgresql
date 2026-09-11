@@ -25,7 +25,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -39,7 +39,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "ml_ro"
       target_role: "ml_alice"
       memberships:
@@ -58,7 +58,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_role: "ml_alice"
       state: present
     register: result
@@ -74,7 +74,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "ml_ro"
       state: present
     register: result
@@ -94,7 +94,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_role: "ml_alice"
       memberships:
       - groups: "ml_ro"
@@ -113,7 +113,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_role: "ml_alice"
       memberships:
       - target_roles: "ml_bob"
@@ -131,7 +131,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "ml_ro"
       state: present
@@ -148,7 +148,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_role: "ml_alice"
       memberships:
       - groups: "ml_ro"
@@ -169,7 +169,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_role: "ml_alice"
       memberships:
       - groups: "ml_ro"
@@ -194,7 +194,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "ml_ro"
@@ -216,7 +216,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_roles:
       - "ml_alice"
       - "ml_bob"
@@ -242,7 +242,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_roles:
       - "ml_alice"
       - "ml_bob"
@@ -263,7 +263,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_roles: "ml_alice"
       memberships:
       - groups: "ml_report"
@@ -288,7 +288,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_roles: "ml_alice"
       memberships:
       - groups: "ml_ro"
@@ -310,7 +310,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_roles: "ml_alice"
       memberships:
       - groups: "ml_ro"
@@ -329,7 +329,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_roles: "ml_alice"
       memberships: []
       state: exact
@@ -345,7 +345,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_roles: "ml_alice"
       memberships: []
       state: exact
@@ -361,7 +361,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships: []
       state: exact
     register: result
@@ -377,7 +377,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_roles: "ml_alice"
       memberships:
       - groups: "ml_ro"
@@ -389,7 +389,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       target_roles: "ml_alice"
       memberships:
       - groups: "ml_ro"
@@ -409,7 +409,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true

@@ -25,7 +25,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -36,7 +36,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ item }}"
     with_items:
     - 'GRANT "grantor_group" TO "grantor_other" WITH ADMIN OPTION'
@@ -48,7 +48,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "grantor_group"
       target_role: "grantor_user"
@@ -65,7 +65,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "grantor_group"
       target_role: "grantor_user"
@@ -86,7 +86,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "grantor_group" TO "grantor_user" WITH ADMIN OPTION GRANTED BY "grantor_other"'
 
   - name: postgresql_membership - clearing an option another grant keeps warns
@@ -94,7 +94,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "grantor_group"
         admin_option: false
@@ -116,7 +116,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_options_by }}"
       positional_args:
       - "grantor_group"
@@ -137,7 +137,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "grantor_group"
       target_role: "grantor_user"
@@ -156,7 +156,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "grantor_group"
       target_role: "grantor_user"
@@ -172,7 +172,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: >-
         SELECT gr.rolname AS grantor FROM pg_catalog.pg_auth_members m
         JOIN pg_catalog.pg_roles g ON m.roleid = g.oid
@@ -192,7 +192,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "grantor_keep"
       target_role: "grantor_user"
@@ -213,7 +213,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "grantor_group"
@@ -229,7 +229,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "grantor_keep"
       target_role: "grantor_user"
@@ -247,7 +247,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true
@@ -277,7 +277,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -286,7 +286,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ item }}"
     with_items:
     - 'GRANT "pair_group" TO "pair_other" WITH ADMIN OPTION'
@@ -299,7 +299,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "pair_group"
       target_role: "pair_user"
       state: present
@@ -319,7 +319,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "pair_group" TO "pair_user"'
 
   - name: postgresql_membership - absent revokes every grant of the pair
@@ -327,7 +327,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "pair_group"
       target_role: "pair_user"
       state: absent
@@ -347,7 +347,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "pair_group"
@@ -363,7 +363,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "pair_group"
       target_role: "pair_user"
       state: absent
@@ -381,7 +381,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "pair_group"
       target_role: "pair_user"
       state: present
@@ -399,7 +399,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "pair_group" TO "pair_user" GRANTED BY "pair_other"'
 
   - name: postgresql_membership - exact revokes every grant of an unwanted group
@@ -407,7 +407,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "pair_keep"
       target_role: "pair_user"
       state: exact
@@ -425,7 +425,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "pair_group"
@@ -443,7 +443,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true
@@ -471,7 +471,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -480,7 +480,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ item }}"
     with_items:
     - 'GRANT "grantor_group" TO "grantor_other" WITH ADMIN OPTION'
@@ -491,7 +491,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "grantor_group"
       target_role: "grantor_user"
       state: present
@@ -506,7 +506,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "grantor_group"
       target_role: "grantor_user"
       state: absent
@@ -521,7 +521,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "grantor_group"
@@ -541,7 +541,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ dg_roles }}"
 
@@ -550,7 +550,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ item }}"
     with_items:
     - 'GRANT "dg_group" TO "dg_granter" WITH ADMIN OPTION'
@@ -563,7 +563,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: >-
         SELECT (SELECT rolname FROM pg_catalog.pg_roles WHERE oid = m.grantor) AS grantor
         FROM pg_catalog.pg_auth_members m
@@ -582,7 +582,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "dg_group"
       target_role: "dg_user"
       state: absent
@@ -597,7 +597,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "dg_group"
@@ -615,7 +615,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "grantor_group"
         granted_by: "grantor_other"
@@ -637,7 +637,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true
@@ -666,7 +666,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -676,7 +676,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "gb_group" TO "gb_admin" WITH ADMIN OPTION'
 
   - name: postgresql_membership - grant recorded under granted_by
@@ -684,7 +684,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "gb_group"
         granted_by: "gb_admin"
@@ -703,7 +703,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "gb_group"
         granted_by: "gb_admin"
@@ -723,7 +723,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       group: "gb_group"
       target_role: "gb_user"
       state: present
@@ -741,7 +741,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "gb_group"
       target_role: "gb_user"
@@ -760,7 +760,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "gb_group"
         granted_by: "gb_admin"
@@ -779,7 +779,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "gb_group"
@@ -797,7 +797,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true
@@ -825,7 +825,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -834,7 +834,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ item }}"
     with_items:
     - 'GRANT "ga_group" TO "ga_other" WITH ADMIN OPTION'
@@ -846,7 +846,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       granted_by_any: true
       memberships:
       - groups: "ga_group"
@@ -865,7 +865,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "ga_keep"
         granted_by_any: true
@@ -884,7 +884,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "ga_group" TO "ga_user"'
 
   - name: postgresql_membership - absent with granted_by_any revokes every grant of the membership
@@ -892,7 +892,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       granted_by_any: true
       memberships:
       - groups: "ga_group"
@@ -913,7 +913,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "ga_group"
@@ -929,7 +929,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "ga_group" TO "ga_user" GRANTED BY "ga_other"'
 
   # The task-level key makes exact prune under every granting role. ga_keep is
@@ -939,7 +939,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       granted_by_any: true
       memberships:
       - groups: "ga_keep"
@@ -961,7 +961,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "ga_group"
         granted_by_any: true
@@ -982,7 +982,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "ga_group"
         granted_by_any: true
@@ -1003,7 +1003,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "ga_group"
         granted_by: "ga_other"
@@ -1023,7 +1023,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "ga_group" TO "ga_user" GRANTED BY "ga_other"'
 
   # The task-level default does not reach a row naming granted_by, which manages
@@ -1033,7 +1033,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       granted_by_any: true
       memberships:
       - groups: "ga_group"
@@ -1054,7 +1054,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true

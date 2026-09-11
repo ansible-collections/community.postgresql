@@ -27,8 +27,6 @@ options:
     description:
     - Name of the database to connect to and where
       the subscription state will be changed.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
-    aliases: [ db ]
     type: str
     required: true
   state:
@@ -166,7 +164,7 @@ EXAMPLES = r'''
 
 - name: Refresh acme publication
   community.postgresql.postgresql_subscription:
-    db: mydb
+    login_db: mydb
     name: acme
     state: refresh
 
@@ -646,13 +644,7 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         name=dict(type='str', required=True),
-        login_db=dict(type='str', required=True, aliases=['db'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str', required=True),
         state=dict(type='str', default='present', choices=['absent', 'present', 'refresh']),
         publications=dict(type='list', elements='str'),
         connparams=dict(type='dict'),

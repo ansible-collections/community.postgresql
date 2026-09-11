@@ -26,8 +26,6 @@ options:
     description:
     - Name of the database to connect to and where
       the publication state will be changed.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
-    aliases: [ db ]
     type: str
   columns:
     description:
@@ -991,13 +989,7 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         name=dict(required=True),
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str'),
         state=dict(type='str', default='present', choices=['absent', 'present']),
         tables=dict(type='list', elements='str'),
         parameters=dict(type='dict'),

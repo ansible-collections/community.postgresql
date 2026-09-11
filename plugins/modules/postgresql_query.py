@@ -44,10 +44,7 @@ options:
   login_db:
     description:
     - Name of database to connect to and run queries against.
-    - The O(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
-    aliases:
-    - db
   autocommit:
     description:
     - Execute in autocommit mode when the query can't be run inside a transaction block
@@ -336,13 +333,7 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         query=dict(type='raw'),
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str'),
         positional_args=dict(type='list', elements='raw'),
         named_args=dict(type='dict'),
         session_role=dict(type='str'),

@@ -7,7 +7,7 @@
     password: "password"
     role_attr_flags: "CREATEDB,LOGIN,CREATEROLE"
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
 
 - name: Create DB as session_role
   become_user: "{{ pg_user }}"
@@ -30,7 +30,7 @@
   become: true
   postgresql_ext:
     name: plpgsql
-    db: "{{ db_session_role1 }}"
+    login_db: "{{ db_session_role1 }}"
     login_user: "{{ pg_user }}"
     state: absent
   when:
@@ -41,7 +41,7 @@
   become: true
   postgresql_ext:
     name: plpgsql
-    db: "{{ db_session_role1 }}"
+    login_db: "{{ db_session_role1 }}"
     login_user: "{{ pg_user }}"
     session_role: "{{ db_session_role2 }}"
   ignore_errors: true
@@ -60,7 +60,7 @@
   become: true
   postgresql_ext:
     name: plpgsql
-    db: "{{ db_session_role1 }}"
+    login_db: "{{ db_session_role1 }}"
     login_user: "{{ pg_user }}"
     session_role: "{{ db_session_role1 }}"
     trust_input: false
@@ -86,7 +86,7 @@
   become: true
   postgresql_ext:
     name: plpgsql
-    db: "{{ db_session_role1 }}"
+    login_db: "{{ db_session_role1 }}"
     login_user: "{{ pg_user }}"
     state: absent
     trust_input: false
@@ -108,7 +108,7 @@
     name: "{{ item }}"
     state: absent
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
   with_items:
     - "{{ db_session_role1 }}"
     - "{{ db_session_role2 }}"

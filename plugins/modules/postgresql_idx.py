@@ -26,10 +26,7 @@ options:
   login_db:
     description:
     - Name of database to connect to and where the index will be created/dropped.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
-    aliases:
-    - db
   session_role:
     description:
     - Switch to session_role after connecting.
@@ -459,13 +456,7 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         idxname=dict(type='str', required=True, aliases=['name']),
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str'),
         state=dict(type='str', default='present', choices=['absent', 'present']),
         concurrent=dict(type='bool', default=True),
         unique=dict(type='bool', default=False),

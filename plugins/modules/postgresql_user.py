@@ -46,11 +46,8 @@ options:
   login_db:
     description:
     - Name of database to connect to and where user's permissions are granted.
-    - The O(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
     default: ''
-    aliases:
-    - db
   fail_on_user:
     description:
     - If V(true), fails when the user (role) cannot be removed. Otherwise just log and continue.
@@ -853,13 +850,7 @@ def main():
         user=dict(type='str', required=True, aliases=['name']),
         password=dict(type='str', default=None, no_log=True),
         state=dict(type='str', default='present', choices=['absent', 'present']),
-        login_db=dict(type='str', default="", aliases=['db'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str', default=""),
         fail_on_user=dict(type='bool', default=True, aliases=['fail_on_role']),
         role_attr_flags=dict(type='str', default=''),
         encrypted=dict(type='bool', default=True),

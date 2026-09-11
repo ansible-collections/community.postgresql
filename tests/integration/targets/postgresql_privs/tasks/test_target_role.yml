@@ -5,7 +5,7 @@
   postgresql_user:
     name: "{{ db_user1 }}"
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
 
 - name: Create DB
   become_user: "{{ pg_user }}"
@@ -23,7 +23,7 @@
     encrypted: true
     password: password
     role_attr_flags: LOGIN
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
 
 #######################################
@@ -35,7 +35,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     objs: TABLES
     privs: SELECT
     type: default_privs
@@ -62,7 +62,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     state: absent
     objs: TABLES
     privs: SELECT
@@ -83,7 +83,7 @@
   postgresql_user:
     name: "{{ db_user2 }}"
     state: absent
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
 
 - name: Remove user owner of objects
@@ -92,7 +92,7 @@
   postgresql_user:
     name: "{{ db_user3 }}"
     state: absent
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
 
 - name: Destroy DBs
@@ -112,7 +112,7 @@
   postgresql_user:
     name: "{{ item }}"
     state: absent
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
   loop:
     - "{{ db_user1 }}"

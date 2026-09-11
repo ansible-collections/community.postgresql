@@ -22,7 +22,7 @@
     encrypted: 'true'
     password: "password"
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
   become: true
   become_user: "{{ pg_user }}"
 

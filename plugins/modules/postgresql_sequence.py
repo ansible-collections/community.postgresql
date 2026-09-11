@@ -121,12 +121,8 @@ options:
   login_db:
     description:
     - Name of database to connect to and run queries against.
-    - The V(db) and V(database) aliases are deprecated and will be removed in version 5.0.0.
     type: str
     default: ''
-    aliases:
-    - database
-    - db
   trust_input:
     description:
     - If C(false), check whether values of parameters I(sequence), I(schema),
@@ -137,7 +133,7 @@ options:
     version_added: '0.2.0'
 
 notes:
-- If you do not pass db parameter, sequence will be created in the database
+- If you do not pass login_db parameter, sequence will be created in the database
   named postgres.
 
 attributes:
@@ -464,18 +460,7 @@ def main():
         cascade=dict(type='bool', default=False),
         owner=dict(type='str'),
         newschema=dict(type='str'),
-        login_db=dict(type='str', default='', aliases=['db', 'database'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            },
-            {
-                'name': 'database',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str', default=''),
         session_role=dict(type='str'),
         trust_input=dict(type="bool", default=True),
     )
