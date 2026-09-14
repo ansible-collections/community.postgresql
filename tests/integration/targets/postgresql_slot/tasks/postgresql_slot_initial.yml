@@ -5,19 +5,19 @@
 - name: postgresql_slot - set max_replication_slots
   become_user: "{{ pg_user }}"
   become: true
-  postgresql_set:
+  postgresql_alter_system:
     login_user: "{{ pg_user }}"
     login_db: postgres
-    name: max_replication_slots
+    param: max_replication_slots
     value: '10'
 
 - name: postgresql_slot - set wal_level to logical
   become_user: "{{ pg_user }}"
   become: true
-  postgresql_set:
+  postgresql_alter_system:
     login_user: "{{ pg_user }}"
     login_db: postgres
-    name: wal_level
+    param: wal_level
     value: logical
 
 - name: postgresql_slot - stop PostgreSQL

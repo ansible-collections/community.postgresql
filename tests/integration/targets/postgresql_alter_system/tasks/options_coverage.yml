@@ -2,9 +2,7 @@
 # WARNING: These are designed specifically for Ansible tests       #
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
-# This file was copied here from the postgresql_set test target
-# and modified to use postgresql_alter_system instead
-# to some tricky options.
+# Coverage tests for some tricky options.
 # Typically you need a file like test_bool.yml, etc.
 
 - vars:

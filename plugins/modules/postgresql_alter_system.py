@@ -180,7 +180,6 @@ executed_queries = []
 
 PG_SUPPORTED_VER = 140000
 
-# It was copied here from postgresql_set.
 # GUC_LIST_QUOTE parameters list for each version where they changed (from PG_REQ_VER).
 # It is a tuple of tuples as we need to iterate it in order.
 PARAMETERS_GUC_LIST_QUOTE = (
@@ -202,7 +201,6 @@ PARAMETERS_GUC_LIST_QUOTE = (
 )
 
 
-# It was copied here from postgresql_set.
 def param_is_guc_list_quote(server_version, name):
     for guc_list_quote_ver, guc_list_quote_params in PARAMETERS_GUC_LIST_QUOTE:
         if server_version >= guc_list_quote_ver:
@@ -210,7 +208,6 @@ def param_is_guc_list_quote(server_version, name):
     return False
 
 
-# It was copied here from postgresql_set.
 def param_guc_list_unquote(value):
     # Unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
     # Assume the parameter is GUC_LIST_QUOTE (check in param_is_guc_list_quote function)
@@ -301,7 +298,6 @@ class ValueString():
 
     def __normalize(self, pg_ver, param_name, value):
         # Check parameter is GUC_LIST_QUOTE (done once as depend only on server version).
-        # These functions were copied here from the postgresql_set module
         is_guc_list_quote = param_is_guc_list_quote(pg_ver, param_name)
         if is_guc_list_quote:
             return param_guc_list_unquote(value)
