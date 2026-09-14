@@ -35,7 +35,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -49,7 +49,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ item }}"
     with_items:
     - 'GRANT "sr_group" TO "sr_direct" WITH ADMIN OPTION'
@@ -72,7 +72,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_direct"
-      db: postgres
+      login_db: postgres
       group: "sr_group"
       target_role: "sr_member"
       state: present
@@ -90,7 +90,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_direct"
-      db: postgres
+      login_db: postgres
       group: "sr_group"
       target_role: "sr_member"
       state: present
@@ -107,7 +107,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_direct"
-      db: postgres
+      login_db: postgres
       group: "sr_group"
       target_role: "sr_member"
       state: absent
@@ -128,7 +128,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       group: "sr_group"
       target_role: "sr_member"
       state: present
@@ -146,7 +146,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       group: "sr_group"
       target_role: "sr_member"
       state: present
@@ -164,7 +164,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       group: "sr_group"
       target_role: "sr_member"
       state: absent
@@ -180,7 +180,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "sr_group"
@@ -201,7 +201,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_group"
       target_role: "sr_member"
@@ -220,7 +220,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "sr_group"
@@ -238,7 +238,7 @@
     become: true
     postgresql_membership:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_group"
         granted_by: "sr_member2"
@@ -261,7 +261,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_nogrant"
       target_role: "sr_member"
@@ -284,7 +284,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups:
         - "sr_own"
@@ -305,7 +305,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "sr_own"
@@ -324,7 +324,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_own"
       target_role: "sr_member"
@@ -344,7 +344,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       target_role: "sr_member3"
       memberships:
       - groups: "sr_own"
@@ -367,7 +367,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       target_role: "sr_member3"
       memberships:
       - groups: "sr_own"
@@ -389,7 +389,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_group"
         granted_by: "sr_direct"
@@ -410,7 +410,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_group"
         granted_by: "sr_team"
@@ -430,7 +430,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_group"
         granted_by: "sr_team"
@@ -453,7 +453,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       target_role: "sr_member"
       memberships:
       - groups: "sr_usage_grp"
@@ -474,7 +474,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'REVOKE "sr_team" FROM "sr_indirect"'
 
   - name: postgresql_membership - a converged task survives an unusable granting role
@@ -483,7 +483,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_group"
         granted_by: "sr_team"
@@ -502,7 +502,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_group"
         granted_by: "sr_team"
@@ -525,7 +525,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       memberships:
       - groups: "sr_group"
         granted_by: "sr_team"
@@ -545,7 +545,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "sr_group"
@@ -565,7 +565,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_indirect"
-      db: postgres
+      login_db: postgres
       group: "sr_group"
       target_role: "sr_member"
       state: absent
@@ -585,7 +585,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: "{{ q_grant_count }}"
       positional_args:
       - "sr_group"
@@ -603,7 +603,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true
@@ -630,7 +630,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
     with_items: "{{ roles }}"
 
@@ -639,7 +639,7 @@
     become: true
     postgresql_query:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       query: 'GRANT "sr_group" TO "sr_direct" WITH ADMIN OPTION'
 
   - name: postgresql_membership - grant as a non-superuser, no GRANTED BY emitted
@@ -648,7 +648,7 @@
     postgresql_membership:
       login_user: "{{ pg_user }}"
       session_role: "sr_direct"
-      db: postgres
+      login_db: postgres
       group: "sr_group"
       target_role: "sr_member"
       state: present
@@ -666,7 +666,7 @@
     become: true
     postgresql_user:
       login_user: "{{ pg_user }}"
-      db: postgres
+      login_db: postgres
       name: "{{ item }}"
       state: absent
     ignore_errors: true

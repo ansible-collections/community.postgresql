@@ -49,7 +49,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     table: test_table
     columns: id, story
@@ -74,7 +74,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_indexes WHERE indexname = 'Test0_idx'
   register: result
@@ -87,7 +87,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     table: test_table
     columns: id, story
@@ -112,7 +112,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_indexes WHERE indexname = 'Test0_idx'
   register: result
@@ -125,7 +125,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     table: test_table
     columns: id, story
@@ -149,7 +149,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     schema: foo
     table: foo_table
@@ -181,7 +181,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     schema: public
     table: test_table
@@ -211,7 +211,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     table: test_table
     columns: id
@@ -237,7 +237,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     table: test_table
     columns: story
@@ -263,7 +263,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     table: test_table
     columns: story
@@ -283,7 +283,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     schema: foo
     name: foo_test_idx
@@ -309,7 +309,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_indexes WHERE indexname = 'foo_test_idx' AND schemaname = 'foo'
   register: result
@@ -324,7 +324,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     schema: foo
     name: foo_test_idx
@@ -348,7 +348,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_indexes WHERE indexname = 'foo_test_idx' and schemaname = 'foo'
   register: result
@@ -363,7 +363,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_idx:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     schema: foo
     name: foo_test_idx

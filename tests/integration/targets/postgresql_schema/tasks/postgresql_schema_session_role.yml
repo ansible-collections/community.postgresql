@@ -7,7 +7,7 @@
     password: "password"
     role_attr_flags: "CREATEDB,LOGIN,CREATEROLE"
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
 
 - name: Create DB as session_role
   become_user: "{{ pg_user }}"
@@ -23,7 +23,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: "{{ db_session_role1 }}"
+    login_db: "{{ db_session_role1 }}"
     login_user: "{{ pg_user }}"
     name: "{{ db_session_role1 }}"
     session_role: "{{ db_session_role1 }}"
@@ -32,7 +32,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: "{{ db_session_role1 }}"
+    login_db: "{{ db_session_role1 }}"
     login_user: "{{ pg_user }}"
     name: "{{ db_session_role1 }}"
     owner: "{{ db_session_role1 }}"
@@ -46,7 +46,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
     name: "{{ db_session_role1 }}"
     session_role: "{{ db_session_role1 }}"
@@ -72,7 +72,7 @@
     name: "{{ item }}"
     state: absent
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
   with_items:
     - "{{ db_session_role1 }}"
     - "{{ db_session_role2 }}"

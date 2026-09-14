@@ -14,7 +14,7 @@
   <<: *task_parameters
   ignore_errors: true
   community.postgresql.postgresql_ping:
-    db: "{{ db_default }}"
+    login_db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
 
 - name: Assert return values
@@ -51,7 +51,7 @@
   <<: *task_parameters
   ignore_errors: true
   community.postgresql.postgresql_ping:
-    db: "{{ db_name_nonexist }}"
+    login_db: "{{ db_name_nonexist }}"
     login_user: "{{ pg_user }}"
 
 - name: Assert that ping of non-existing database returns nothing
@@ -68,7 +68,7 @@
     PGPORT: 5435
   ignore_errors: true
   community.postgresql.postgresql_ping:
-    db: "{{ db_default }}"
+    login_db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
 
 - name: Assert that ping of the database on non-existent port returns nothing
@@ -85,7 +85,7 @@
     PGUSER: "none_existent_test_user"
   ignore_errors: true
   community.postgresql.postgresql_ping:
-    db: "{{ db_default }}"
+    login_db: "{{ db_default }}"
 
 - name: Assert that ping of the database by a non-existent user returns nothing
   ansible.builtin.assert:
@@ -109,7 +109,7 @@
     PGUSER: "{{ ping_test_user }}"
   ignore_errors: true
   community.postgresql.postgresql_ping:
-    db: "{{ db_default }}"
+    login_db: "{{ db_default }}"
     login_password: "{{ ping_test_user_pass }}"
 
 - name: Assert ping of the database by existent user
@@ -132,7 +132,7 @@
     - name: Test ping DB with SSL 1
       <<: *task_parameters
       community.postgresql.postgresql_ping:
-        db: "{{ ssl_db }}"
+        login_db: "{{ ssl_db }}"
         login_user: "{{ ssl_user }}"
         login_password: "{{ ssl_pass }}"
         login_host: 127.0.0.1
@@ -151,7 +151,7 @@
     - name: Test ping DB with SSL 2
       <<: *task_parameters
       community.postgresql.postgresql_ping:
-        db: "{{ ssl_db }}"
+        login_db: "{{ ssl_db }}"
         login_user: "{{ ssl_user }}"
         login_password: "{{ ssl_pass }}"
         login_host: 127.0.0.1
@@ -173,7 +173,7 @@
   <<: *task_parameters
   ignore_errors: true
   community.postgresql.postgresql_ping:
-    db: "{{ db_default }}"
+    login_db: "{{ db_default }}"
     login_user: "{{ pg_user }}"
     trust_input: false
     session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
@@ -189,7 +189,7 @@
 - name: Try to connect to non-existent DB
   <<: *task_parameters
   community.postgresql.postgresql_ping:
-    db: "{{ db_name_nonexist }}"
+    login_db: "{{ db_name_nonexist }}"
     login_user: "{{ pg_user }}"
 
 - name: Assert connection to non-existent DB

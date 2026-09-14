@@ -25,11 +25,8 @@ options:
   login_db:
     description:
     - Name of the database to add or remove the extension to/from.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     required: true
     type: str
-    aliases:
-    - db
   schema:
     description:
     - Name of the schema to add the extension to.
@@ -396,13 +393,7 @@ def ext_valid_update_path(cursor, ext, current_version, version):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        login_db=dict(type='str', aliases=['db'], required=True, deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str', required=True),
         ext=dict(type="str", required=True, aliases=["name"]),
         schema=dict(type="str"),
         state=dict(type="str", default="present", choices=["absent", "present"]),

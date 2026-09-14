@@ -55,10 +55,7 @@ options:
   login_db:
     description:
     - Name of database to connect to and run queries against.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
-    aliases:
-    - db
   encoding:
     description:
     - Set the client encoding for the current session (e.g. C(UTF-8)).
@@ -250,13 +247,7 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         path=dict(type='path'),
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str'),
         positional_args=dict(type='list', elements='raw'),
         named_args=dict(type='dict'),
         session_role=dict(type='str'),

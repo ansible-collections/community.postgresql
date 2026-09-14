@@ -13,7 +13,7 @@
   become: true
   postgresql_query:
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
     query: >-
       SELECT current_setting('server_version_num') AS server_version_num,
              (SELECT rolname FROM pg_catalog.pg_roles WHERE oid = 10) AS bootstrap

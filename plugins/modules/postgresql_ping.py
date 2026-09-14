@@ -18,10 +18,7 @@ options:
   login_db:
     description:
     - Name of a database to connect to.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
-    aliases:
-    - db
   session_role:
     description:
     - Switch to session_role after connecting. The specified session_role must
@@ -163,13 +160,7 @@ class PgPing(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str'),
         session_role=dict(type='str'),
         trust_input=dict(type='bool', default=True),
     )

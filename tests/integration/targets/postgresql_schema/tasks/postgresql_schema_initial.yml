@@ -8,7 +8,7 @@
     encrypted: true
     password: password
     role_attr_flags: LOGIN
-    db: postgres
+    login_db: postgres
     login_user: "{{ pg_user }}"
   loop:
   - "{{ db_user1 }}"
@@ -29,7 +29,7 @@
   become: true
   check_mode: true
   postgresql_schema:
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: acme
     login_user: "{{ pg_user }}"
   register: result
@@ -44,7 +44,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'acme'"
   register: result
@@ -58,7 +58,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: acme
     login_user: "{{ pg_user }}"
     trust_input: true
@@ -75,7 +75,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'acme'"
   register: result
@@ -90,7 +90,7 @@
   become: true
   check_mode: true
   postgresql_schema:
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: acme
     state: absent
     login_user: "{{ pg_user }}"
@@ -105,7 +105,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'acme'"
   register: result
@@ -119,7 +119,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: acme
     state: absent
     login_user: "{{ pg_user }}"
@@ -135,7 +135,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'acme'"
   register: result
@@ -150,7 +150,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: acme
     login_user: "{{ pg_user }}"
     owner: "{{ dangerous_name }}"
@@ -169,7 +169,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: acme
     login_user: "{{ pg_user }}"
   register: result
@@ -178,7 +178,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "CREATE TABLE acme.table1()"
   register: result2
@@ -196,7 +196,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT schema_name,schema_owner FROM information_schema.schemata WHERE schema_name = 'acme'"
   register: result
@@ -209,7 +209,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'acme' AND tablename = 'table1')"
   register: result
@@ -223,7 +223,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: acme
     state: absent
     cascade_drop: true
@@ -240,7 +240,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'acme'"
   register: result
@@ -255,7 +255,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: acme
     owner: "{{ db_user2 }}"
     login_user: "{{ pg_user }}"
@@ -272,7 +272,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT schema_name,schema_owner FROM information_schema.schemata WHERE schema_name = 'acme' AND schema_owner = '{{ db_user2 }}'"
   register: result
@@ -287,7 +287,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_schema:
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: acme
     state: absent
     login_user: "{{ pg_user }}"
@@ -303,7 +303,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'acme'"
   register: result
@@ -320,7 +320,7 @@
   become: true
   postgresql_schema:
     login_user: "{{ pg_user }}"
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: comment_schema
     comment: Test schema 1
   register: result
@@ -335,7 +335,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
@@ -351,7 +351,7 @@
   become: true
   postgresql_schema:
     login_user: "{{ pg_user }}"
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: comment_schema
     comment: Test schema 1
   register: result
@@ -368,7 +368,7 @@
   become: true
   postgresql_schema:
     login_user: "{{ pg_user }}"
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: comment_schema
     comment: Test schema 2
   register: result
@@ -383,7 +383,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
@@ -399,7 +399,7 @@
   become: true
   postgresql_schema:
     login_user: "{{ pg_user }}"
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: comment_schema
     comment: Test schema 2
   register: result
@@ -414,7 +414,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
@@ -430,7 +430,7 @@
   become: true
   postgresql_schema:
     login_user: "{{ pg_user }}"
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: comment_schema
   register: result
 
@@ -444,7 +444,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
@@ -460,7 +460,7 @@
   become: true
   postgresql_schema:
     login_user: "{{ pg_user }}"
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: comment_schema
     comment: ''
   register: result
@@ -475,7 +475,7 @@
   become: true
   become_user: "{{ pg_user }}"
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "SELECT obj_description((SELECT oid FROM pg_namespace WHERE nspname = 'comment_schema'), 'pg_namespace') AS comment"
   register: result
@@ -491,7 +491,7 @@
   become: true
   postgresql_schema:
     login_user: "{{ pg_user }}"
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: comment_schema
     comment: ''
   register: result
@@ -508,7 +508,7 @@
   become: true
   postgresql_schema:
     login_user: "{{ pg_user }}"
-    database: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     name: comment_schema
     state: absent
 
@@ -518,7 +518,7 @@
   postgresql_user:
     name: "{{ db_user2 }}"
     state: absent
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
 
 - name: Destroy DB

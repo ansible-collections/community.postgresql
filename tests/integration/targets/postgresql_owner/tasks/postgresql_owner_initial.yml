@@ -14,7 +14,7 @@
   become: true
   postgresql_user:
     login_user: '{{ pg_user }}'
-    db: postgres
+    login_db: postgres
     name: '{{ item }}'
   ignore_errors: true
   with_items:
@@ -26,7 +26,7 @@
   become: true
   postgresql_user:
     login_user: '{{ pg_user }}'
-    db: postgres
+    login_db: postgres
     name: '{{ item }}'
     role_attr_flags: SUPERUSER
   ignore_errors: true
@@ -41,7 +41,7 @@
   become: true
   postgresql_db:
     login_user: '{{ pg_user }}'
-    db: acme
+    name: acme
 
 # Create test table
 
@@ -50,7 +50,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: CREATE TABLE test_table (id int)
 
 - name: postgresql_owner - set owner
@@ -58,7 +58,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_table
     obj_type: table
@@ -70,7 +70,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: CREATE SEQUENCE test_seq
 
 # Create test function
@@ -80,7 +80,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE FUNCTION test_function(integer) RETURNS integer AS 'select $1 + 1;'
       LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
@@ -92,7 +92,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: CREATE SCHEMA test_schema
 
 # Create test view
@@ -102,7 +102,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: CREATE VIEW test_view AS SELECT * FROM test_table
 
 # Create test materialized view
@@ -112,7 +112,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: CREATE MATERIALIZED VIEW test_mat_view AS SELECT * FROM test_table
   when: postgres_version_resp.stdout is version('9.4', '>=')
 
@@ -146,7 +146,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     name: acme
     owner: alice
@@ -159,7 +159,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE OR REPLACE PROCEDURE test_procedure(id integer)
       LANGUAGE SQL
@@ -175,7 +175,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: CREATE TYPE test_type AS ENUM ('new', 'open', 'closed')
 
 # Create test aggregate
@@ -185,7 +185,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE AGGREGATE test_aggregate (float8)
       (
@@ -202,7 +202,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE FUNCTION test_routine(integer) RETURNS integer AS 'select $1 + 1;'
       LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT
@@ -216,7 +216,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE DOMAIN test_domain AS TEXT
         CHECK(
@@ -231,7 +231,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE COLLATION test_collation (locale = 'en_US.utf8')
 
@@ -248,7 +248,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE FOREIGN DATA WRAPPER test_foreign_data_wrapper
 
@@ -259,7 +259,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE SERVER test_server FOREIGN DATA WRAPPER test_foreign_data_wrapper
 
@@ -270,7 +270,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE FOREIGN TABLE test_foreign_table (id int) SERVER test_server
 
@@ -281,7 +281,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE FUNCTION test_event_trigger_function()
         RETURNS event_trigger
@@ -298,7 +298,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE EVENT TRIGGER test_event_trigger ON ddl_command_start
       EXECUTE FUNCTION test_event_trigger_function()
@@ -311,7 +311,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       SELECT lo_creat(-1);
   register: result_large_object
@@ -327,7 +327,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE PUBLICATION test_publication FOR TABLE test_table
 
@@ -338,7 +338,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE TABLE test_statistics_table (a int, b int)
 
@@ -347,7 +347,7 @@
   become: true
   postgresql_query:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     query: >
       CREATE STATISTICS test_statistics (dependencies) ON a, b FROM test_statistics_table
 
@@ -364,7 +364,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: non_existent
     reassign_owned_by: bob
   register: result
@@ -379,7 +379,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: alice
     reassign_owned_by: non_existent
     fail_on_role: false
@@ -394,7 +394,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: alice
     reassign_owned_by: bob
   check_mode: true
@@ -409,7 +409,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
@@ -426,7 +426,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: alice
     reassign_owned_by: bob
     trust_input: true
@@ -441,7 +441,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_tables WHERE tablename = 'test_table' AND tableowner = 'alice'
   ignore_errors: true
@@ -459,7 +459,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: '{{ dangerous_name }}'
     reassign_owned_by: alice
     trust_input: false
@@ -476,7 +476,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: '{{ dangerous_name }}'
     reassign_owned_by: alice
   register: result
@@ -501,7 +501,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: acme
     obj_type: database
@@ -517,7 +517,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_database AS d JOIN pg_roles AS r
@@ -534,7 +534,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: acme
     obj_type: database
@@ -549,7 +549,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_database AS d JOIN pg_roles AS r
@@ -566,7 +566,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: acme
     obj_type: database
@@ -581,7 +581,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_database AS d JOIN pg_roles AS r
@@ -600,7 +600,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_table
     obj_type: table
@@ -616,7 +616,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
@@ -633,7 +633,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_table
     obj_type: table
@@ -648,7 +648,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
@@ -665,7 +665,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_table
     obj_type: table
@@ -680,7 +680,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_tables WHERE tablename = 'test_table'
@@ -699,7 +699,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_seq
     obj_type: sequence
@@ -715,7 +715,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
@@ -733,7 +733,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_seq
     obj_type: sequence
@@ -748,7 +748,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
@@ -766,7 +766,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_seq
     obj_type: sequence
@@ -781,7 +781,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
@@ -801,7 +801,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_function
     obj_type: function
@@ -819,7 +819,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -838,7 +838,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_function
     obj_type: function
@@ -855,7 +855,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -874,7 +874,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_function
     obj_type: function
@@ -891,7 +891,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -912,7 +912,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_schema
     obj_type: schema
@@ -928,7 +928,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM information_schema.schemata
@@ -945,7 +945,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_schema
     obj_type: schema
@@ -960,7 +960,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM information_schema.schemata
@@ -977,7 +977,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_seq
     obj_type: sequence
@@ -992,7 +992,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM information_schema.schemata
@@ -1011,7 +1011,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_view
     obj_type: view
@@ -1027,7 +1027,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_views WHERE viewname = 'test_view' AND viewowner = 'bob'
   ignore_errors: true
@@ -1042,7 +1042,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_view
     obj_type: view
@@ -1057,7 +1057,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_views WHERE viewname = 'test_view' AND viewowner = 'bob'
   ignore_errors: true
@@ -1072,7 +1072,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_view
     obj_type: view
@@ -1087,7 +1087,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_views WHERE viewname = 'test_view' AND viewowner = 'bob'
   ignore_errors: true
@@ -1104,7 +1104,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_mat_view
     obj_type: matview
@@ -1122,7 +1122,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_matviews WHERE matviewname = 'test_mat_view' AND matviewowner = 'bob'
   ignore_errors: true
@@ -1139,7 +1139,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_mat_view
     obj_type: matview
@@ -1156,7 +1156,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_matviews WHERE matviewname = 'test_mat_view' AND matviewowner = 'bob'
   ignore_errors: true
@@ -1173,7 +1173,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_mat_view
     obj_type: matview
@@ -1190,7 +1190,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: SELECT 1 FROM pg_matviews WHERE matviewname = 'test_mat_view' AND matviewowner = 'bob'
   ignore_errors: true
@@ -1209,7 +1209,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: acme
     obj_type: tablespace
@@ -1225,7 +1225,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_tablespace AS t JOIN pg_roles AS r
@@ -1242,7 +1242,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: acme
     obj_type: tablespace
@@ -1257,7 +1257,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_tablespace AS t JOIN pg_roles AS r
@@ -1274,7 +1274,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: acme
     obj_type: tablespace
@@ -1289,7 +1289,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_tablespace AS t JOIN pg_roles AS r
@@ -1308,7 +1308,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_procedure
     obj_type: procedure
@@ -1326,7 +1326,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -1345,7 +1345,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_procedure
     obj_type: procedure
@@ -1362,7 +1362,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -1381,7 +1381,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_procedure
     obj_type: procedure
@@ -1398,7 +1398,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -1419,7 +1419,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_type
     obj_type: type
@@ -1435,7 +1435,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
@@ -1452,7 +1452,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_type
     obj_type: type
@@ -1467,7 +1467,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
@@ -1484,7 +1484,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_type
     obj_type: type
@@ -1499,7 +1499,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
@@ -1518,7 +1518,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_aggregate(float8)
     obj_type: aggregate
@@ -1534,7 +1534,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -1551,7 +1551,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_aggregate(float8)
     obj_type: aggregate
@@ -1566,7 +1566,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -1583,7 +1583,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_aggregate(float8)
     obj_type: aggregate
@@ -1598,7 +1598,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -1617,7 +1617,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_routine
     obj_type: routine
@@ -1635,7 +1635,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -1654,7 +1654,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_routine
     obj_type: routine
@@ -1671,7 +1671,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -1690,7 +1690,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_routine
     obj_type: routine
@@ -1707,7 +1707,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_proc AS f JOIN pg_roles AS r
@@ -1728,7 +1728,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: plpgsql
     obj_type: language
@@ -1744,7 +1744,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_language AS l JOIN pg_roles AS r
@@ -1761,7 +1761,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: plpgsql
     obj_type: language
@@ -1776,7 +1776,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_language AS l JOIN pg_roles AS r
@@ -1793,7 +1793,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: plpgsql
     obj_type: language
@@ -1808,7 +1808,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_language AS l JOIN pg_roles AS r
@@ -1827,7 +1827,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_domain
     obj_type: domain
@@ -1843,7 +1843,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
@@ -1860,7 +1860,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_domain
     obj_type: domain
@@ -1875,7 +1875,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
@@ -1892,7 +1892,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_domain
     obj_type: domain
@@ -1907,7 +1907,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_type AS t JOIN pg_roles AS r
@@ -1926,7 +1926,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_collation
     obj_type: collation
@@ -1942,7 +1942,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
@@ -1959,7 +1959,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_collation
     obj_type: collation
@@ -1974,7 +1974,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
@@ -1991,7 +1991,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_collation
     obj_type: collation
@@ -2006,7 +2006,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_collation AS c JOIN pg_roles AS r
@@ -2025,7 +2025,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: windows_1256_to_utf8
     obj_type: conversion
@@ -2041,7 +2041,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
@@ -2058,7 +2058,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: windows_1256_to_utf8
     obj_type: conversion
@@ -2073,7 +2073,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
@@ -2090,7 +2090,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: windows_1256_to_utf8
     obj_type: conversion
@@ -2105,7 +2105,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_conversion AS c JOIN pg_roles AS r
@@ -2124,7 +2124,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: simple
     obj_type: text_search_configuration
@@ -2140,7 +2140,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
@@ -2157,7 +2157,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: simple
     obj_type: text_search_configuration
@@ -2172,7 +2172,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
@@ -2189,7 +2189,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: simple
     obj_type: text_search_configuration
@@ -2204,7 +2204,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_ts_config AS t JOIN pg_roles AS r
@@ -2223,7 +2223,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: simple
     obj_type: text_search_dictionary
@@ -2239,7 +2239,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
@@ -2256,7 +2256,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: simple
     obj_type: text_search_dictionary
@@ -2271,7 +2271,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
@@ -2288,7 +2288,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: simple
     obj_type: text_search_dictionary
@@ -2303,7 +2303,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_ts_dict AS t JOIN pg_roles AS r
@@ -2322,7 +2322,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob_super
     obj_name: test_foreign_data_wrapper
     obj_type: foreign_data_wrapper
@@ -2338,7 +2338,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
@@ -2355,7 +2355,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob_super
     obj_name: test_foreign_data_wrapper
     obj_type: foreign_data_wrapper
@@ -2370,7 +2370,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
@@ -2387,7 +2387,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob_super
     obj_name: test_foreign_data_wrapper
     obj_type: foreign_data_wrapper
@@ -2402,7 +2402,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_foreign_data_wrapper AS f JOIN pg_roles AS r
@@ -2421,7 +2421,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_server
     obj_type: server
@@ -2437,7 +2437,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_foreign_server AS f JOIN pg_roles AS r
@@ -2454,7 +2454,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_server
     obj_type: server
@@ -2469,7 +2469,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_foreign_server AS f JOIN pg_roles AS r
@@ -2486,7 +2486,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_server
     obj_type: server
@@ -2501,7 +2501,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_foreign_server AS f JOIN pg_roles AS r
@@ -2520,7 +2520,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_foreign_table
     obj_type: foreign_table
@@ -2536,7 +2536,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
@@ -2554,7 +2554,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_foreign_table
     obj_type: foreign_table
@@ -2569,7 +2569,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
@@ -2587,7 +2587,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_foreign_table
     obj_type: foreign_table
@@ -2602,7 +2602,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_class AS c JOIN pg_roles AS r
@@ -2622,7 +2622,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob_super
     obj_name: test_event_trigger
     obj_type: event_trigger
@@ -2640,7 +2640,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
@@ -2659,7 +2659,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob_super
     obj_name: test_event_trigger
     obj_type: event_trigger
@@ -2676,7 +2676,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
@@ -2695,7 +2695,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob_super
     obj_name: test_event_trigger
     obj_type: event_trigger
@@ -2712,7 +2712,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_event_trigger AS e JOIN pg_roles AS r
@@ -2733,7 +2733,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: '{{ test_large_object }}'
     obj_type: large_object
@@ -2752,7 +2752,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_largeobject_metadata AS l JOIN pg_roles AS r
@@ -2769,7 +2769,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: '{{ test_large_object }}'
     obj_type: large_object
@@ -2784,7 +2784,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_largeobject_metadata AS l JOIN pg_roles AS r
@@ -2801,7 +2801,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: '{{ test_large_object }}'
     obj_type: large_object
@@ -2816,7 +2816,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_largeobject_metadata AS l JOIN pg_roles AS r
@@ -2835,7 +2835,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_publication
     obj_type: publication
@@ -2853,7 +2853,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_publication AS p JOIN pg_roles AS r
@@ -2872,7 +2872,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_publication
     obj_type: publication
@@ -2889,7 +2889,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_publication AS p JOIN pg_roles AS r
@@ -2908,7 +2908,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_publication
     obj_type: publication
@@ -2925,7 +2925,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_publication AS p JOIN pg_roles AS r
@@ -2946,7 +2946,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_statistics
     obj_type: statistics
@@ -2964,7 +2964,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_statistic_ext AS s JOIN pg_roles AS r
@@ -2983,7 +2983,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_statistics
     obj_type: statistics
@@ -3000,7 +3000,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_statistic_ext AS s JOIN pg_roles AS r
@@ -3019,7 +3019,7 @@
   become: true
   postgresql_owner:
     login_user: '{{ pg_user }}'
-    db: acme
+    login_db: acme
     new_owner: bob
     obj_name: test_statistics
     obj_type: statistics
@@ -3036,7 +3036,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: acme
+    login_db: acme
     login_user: '{{ pg_user }}'
     query: >
       SELECT 1 FROM pg_statistic_ext AS s JOIN pg_roles AS r
@@ -3061,14 +3061,14 @@
   become: true
   postgresql_db:
     login_user: '{{ pg_user }}'
-    db: acme
+    name: acme
     state: absent
 
 - name: postgresql_owner - drop test tablespace
   become_user: '{{ pg_user }}'
   become: true
   postgresql_tablespace:
-    db: postgres
+    login_db: postgres
     login_user: '{{ pg_user }}'
     name: acme
     state: absent

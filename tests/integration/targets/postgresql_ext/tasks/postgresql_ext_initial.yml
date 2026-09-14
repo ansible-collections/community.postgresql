@@ -7,7 +7,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_schema:
-    database: postgres
+    login_db: postgres
     name: schema1
     state: present
 
@@ -15,7 +15,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: DROP EXTENSION IF EXISTS postgis
   ignore_errors: true
 
@@ -39,7 +39,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: SELECT extname FROM pg_extension WHERE extname='postgis'
   ignore_errors: true
   register: result
@@ -68,7 +68,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: SELECT extname FROM pg_extension WHERE extname='postgis'
   ignore_errors: true
   register: result
@@ -81,7 +81,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
   register: result
 
@@ -110,7 +110,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
   register: result
 
@@ -141,7 +141,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
   register: result
 
@@ -171,7 +171,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: "SELECT obj_description((SELECT oid FROM pg_catalog.pg_extension WHERE extname = 'postgis'), 'pg_extension') AS comment"
   register: result
 
@@ -202,7 +202,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_ext:
-    db: postgres
+    login_db: postgres
     name: postgis
     state: absent
   ignore_errors: true
@@ -217,7 +217,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: SELECT extname FROM pg_extension WHERE extname='postgis'
   ignore_errors: true
   register: result
@@ -230,7 +230,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_ext:
-    db: postgres
+    login_db: postgres
     name: postgis
     schema: schema1
   ignore_errors: true
@@ -245,7 +245,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: "SELECT extname FROM pg_extension AS e LEFT JOIN pg_catalog.pg_namespace AS n \nON n.oid = e.extnamespace WHERE e.extname='postgis' AND n.nspname='schema1'\n"
   ignore_errors: true
   register: result
@@ -258,7 +258,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_ext:
-    db: postgres
+    login_db: postgres
     name: postgis
     state: absent
     cascade: true
@@ -274,7 +274,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: SELECT extname FROM pg_extension WHERE extname='postgis'
   ignore_errors: true
   register: result
@@ -287,7 +287,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_ext:
-    db: postgres
+    login_db: postgres
     name: postgis
     cascade: true
   ignore_errors: true
@@ -304,7 +304,7 @@
   become_user: '{{ pg_user }}'
   become: true
   postgresql_query:
-    db: postgres
+    login_db: postgres
     query: SELECT extname FROM pg_extension WHERE extname='postgis'
   ignore_errors: true
   register: result
@@ -317,7 +317,7 @@
 
 - name: postgresql_ext - check that using a dangerous name fails
   postgresql_ext:
-    db: postgres
+    login_db: postgres
     name: postgis
     session_role: 'curious.anonymous"; SELECT * FROM information_schema.tables; --'
     trust_input: false

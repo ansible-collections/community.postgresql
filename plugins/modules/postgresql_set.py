@@ -58,10 +58,7 @@ options:
   login_db:
     description:
     - Name of database to connect.
-    - The V(db) alias is deprecated and will be removed in version 5.0.0.
     type: str
-    aliases:
-    - db
   trust_input:
     description:
     - If C(false), check whether values of parameters are potentially dangerous.
@@ -430,13 +427,7 @@ def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
         name=dict(type='str', required=True),
-        login_db=dict(type='str', aliases=['db'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str'),
         value=dict(type='str'),
         reset=dict(type='bool', default=False),
         session_role=dict(type='str'),

@@ -70,7 +70,7 @@
   become: true
   postgresql_set:
     login_user: '{{ pg_user }}'
-    db: postgres
+    login_db: postgres
     name: ssl
     value: true
 
@@ -79,7 +79,7 @@
   become: true
   postgresql_set:
     login_user: '{{ pg_user }}'
-    db: postgres
+    login_db: postgres
     name: ssl_cert_file
     value: /etc/server.crt
 
@@ -88,7 +88,7 @@
   become: true
   postgresql_set:
     login_user: '{{ pg_user }}'
-    db: postgres
+    login_db: postgres
     name: ssl_key_file
     value: /etc/server.key
 
@@ -97,7 +97,7 @@
   become: true
   postgresql_set:
     login_user: '{{ pg_user }}'
-    db: postgres
+    login_db: postgres
     name: ssl_ca_file
     value: /etc/client-ca.crt
 

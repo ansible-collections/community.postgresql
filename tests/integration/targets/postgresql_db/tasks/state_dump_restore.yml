@@ -29,7 +29,7 @@
     password: "password"
     role_attr_flags: "CREATEDB,LOGIN,CREATEROLE"
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
 
 - set_fact: db_file_name="{{tmp_dir}}/{{file}}"
 
@@ -232,4 +232,4 @@
     name: "{{ db_user1 }}"
     state: "absent"
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres

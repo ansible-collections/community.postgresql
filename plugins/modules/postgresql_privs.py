@@ -22,12 +22,8 @@ options:
   login_db:
     description:
     - Name of database to connect to.
-    - The V(db) and V(database) aliases are deprecated and will be removed in version 5.0.0.
     required: true
     type: str
-    aliases:
-    - db
-    - database
   state:
     description:
     - If C(present), the specified privileges are granted, if C(absent) they are revoked.
@@ -986,18 +982,7 @@ class QueryBuilder(object):
 def main():
     argument_spec = postgres_common_argument_spec()
     argument_spec.update(
-        login_db=dict(type='str', required=True, aliases=['db', 'database'], deprecated_aliases=[
-            {
-                'name': 'db',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            },
-            {
-                'name': 'database',
-                'version': '5.0.0',
-                'collection_name': 'community.postgresql',
-            }],
-        ),
+        login_db=dict(type='str', required=True),
         state=dict(default='present', choices=['present', 'absent']),
         privs=dict(required=False, aliases=['priv']),
         type=dict(default='table',

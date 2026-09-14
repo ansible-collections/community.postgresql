@@ -32,14 +32,14 @@
         name: "{{ db_user1 }}"
         encrypted: 'true'
         password: "md5{{ (db_password ~ db_user1) | hash('md5')}}"
-        db: "{{ db_name }}"
+        login_db: "{{ db_name }}"
         login_user: "{{ pg_user }}"
 
     - name: Grant privs on test_table1
       become_user: "{{ pg_user }}"
       become: true
       postgresql_privs:
-        db: "{{ db_name }}"
+        login_db: "{{ db_name }}"
         login_user: "{{ pg_user }}"
         roles: "{{ db_user1 }}"
         privs: 'INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER'
@@ -50,7 +50,7 @@
       become_user: "{{ pg_user }}"
       become: true
       postgresql_privs:
-        db: "{{ db_name }}"
+        login_db: "{{ db_name }}"
         login_user: "{{ pg_user }}"
         roles: "{{ db_user1 }}"
         privs: 'INSERT'
@@ -96,7 +96,7 @@
   become: true
   postgresql_privs:
     roles: "{{ db_user1 }}"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     privs: 'SELECT'
     type: table
     objs: test_table2
@@ -135,7 +135,7 @@
     roles: "{{ db_user1 }}"
     privs: "INSERT"
     objs: "test_table2"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     trust_input: false
   register: result
@@ -166,7 +166,7 @@
     roles: "{{ db_user1 }}"
     privs: "INSERT,select,UPDATE,TRUNCATE,REFERENCES,TRIGGER,delete"
     objs: "test_table2,test_table1"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     trust_input: false
   register: result
@@ -206,7 +206,7 @@
     roles: "{{ db_user1 }}"
     privs: "Create,connect,TEMP"
     objs: "{{ db_name }}"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     trust_input: false
 
@@ -232,7 +232,7 @@
     roles: "{{ db_user1 }}"
     privs: "CREATE,connect"
     objs: "{{ db_name }}"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     trust_input: false
   register: result
@@ -263,7 +263,7 @@
     roles: "{{ db_user1 }}"
     privs: "INSERT"
     objs: "test_table1"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     trust_input: false
 
@@ -288,7 +288,7 @@
     roles: "{{ db_user1 }}"
     privs: 'INSERT,SELECT,UPDATE,DELETE,TRUNCATE,REFERENCES,trigger'
     objs: "test_table2,test_table1"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     trust_input: false
 
@@ -319,7 +319,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_user:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     name: "{{ item }}"
   loop:
@@ -334,7 +334,7 @@
     roles: "{{ db_user_with_dots1 }}"
     privs: "INSERT"
     objs: "test_table1"
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     trust_input: false
 
@@ -342,7 +342,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_query:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     query: "select privilege_type from information_schema.role_table_grants where grantee='{{ db_user_with_dots1 }}' and table_name='test_table1'"
   register: result
@@ -356,7 +356,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     state: "present"
     roles: "{{ db_user_with_dots1 }}"
@@ -371,7 +371,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     state: present
     type: 'database'
@@ -388,7 +388,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     state: present
     type: 'database'
@@ -405,7 +405,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     state: absent
     type: 'database'
@@ -422,7 +422,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     state: absent
     type: 'database'
@@ -441,7 +441,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     state: absent
     type: 'database'
@@ -458,7 +458,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     state: absent
     type: 'database'
@@ -475,7 +475,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     state: present
     type: 'database'
@@ -492,7 +492,7 @@
   become_user: "{{ pg_user }}"
   become: true
   postgresql_privs:
-    db: "{{ db_name }}"
+    login_db: "{{ db_name }}"
     login_user: "{{ pg_user }}"
     state: present
     type: 'database'
@@ -533,7 +533,7 @@
     name: "{{ item }}"
     state: 'absent'
     login_user: "{{ pg_user }}"
-    db: postgres
+    login_db: postgres
   loop:
   - "{{ db_user1 }}"
   - "{{ db_user2 }}"
