@@ -1,4 +1,0 @@
-removed_features:
-  - "postgresql_set - the module has been removed. Please use the
-    ``community.postgresql.postgresql_alter_system`` module instead
-    (https://github.com/ansible-collections/community.postgresql/issues/823)."
