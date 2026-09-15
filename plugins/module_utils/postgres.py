@@ -19,6 +19,8 @@ from os import environ
 
 from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import missing_required_lib
+from ansible_collections.community.postgresql.plugins.module_utils.database import \
+    pg_quote_name
 from ansible_collections.community.postgresql.plugins.module_utils.version import \
     LooseVersion
 
@@ -157,7 +159,7 @@ def connect_to_db(module, conn_params, autocommit=False, fail_on_conn=True):
                 cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
             try:
-                cursor.execute('SET ROLE "%s"' % module.params['session_role'])
+                cursor.execute('SET ROLE %s' % pg_quote_name(module.params['session_role']))
             except Exception as e:
                 module.fail_json(msg="Could not switch role: %s" % to_native(e))
             finally:
@@ -441,7 +443,8 @@ def set_comment(cursor, comment, obj_type, obj_name, check_mode=True, executed_q
         obj_type (str) -- Object type.
         executed_statements (list) -- List of executed state-modifying statements.
     """
-    query = 'COMMENT ON %s "%s" IS ' % (obj_type.upper(), obj_name)
+    # Every caller passes a single unqualified name, so it is quoted as one identifier.
+    query = 'COMMENT ON %s %s IS ' % (obj_type.upper(), pg_quote_name(obj_name, for_params=True))
 
     if not check_mode:
         cursor.execute(query + '%(comment)s', {'comment': comment})

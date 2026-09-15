@@ -421,6 +421,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input,
     pg_quote_identifier,
+    pg_quote_name,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     HAS_PSYCOPG,
@@ -787,7 +788,7 @@ class Connection(object):
         if not objs:
             return False
 
-        quoted_schema_qualifier = '"%s"' % schema_qualifier.replace('"', '""') if schema_qualifier else None
+        quoted_schema_qualifier = pg_quote_name(schema_qualifier) if schema_qualifier else None
         # obj_ids: quoted db object identifiers (sometimes schema-qualified)
         if obj_type in ('function', 'procedure'):
             obj_ids = []
@@ -796,11 +797,14 @@ class Connection(object):
                     f, args = obj.split('(', 1)
                 except Exception:
                     raise Error('Illegal function / procedure signature: "%s".' % obj)
-                obj_ids.append('%s."%s"(%s' % (quoted_schema_qualifier, f, args))
+                obj_ids.append('%s.%s(%s' % (quoted_schema_qualifier, pg_quote_name(f), args))
         elif obj_type in ['table', 'sequence', 'type']:
-            obj_ids = ['%s."%s"' % (quoted_schema_qualifier, o) for o in objs]
+            obj_ids = ['%s.%s' % (quoted_schema_qualifier, pg_quote_name(o)) for o in objs]
         else:
-            obj_ids = ['"%s"' % o for o in objs]
+            # Everything left here is a single unqualified name: a role for
+            # obj_type=group, otherwise a database, schema, language, tablespace,
+            # foreign server or wrapper, or a parameter.
+            obj_ids = [pg_quote_name(o) for o in objs]
 
         # set_what: SQL-fragment specifying what to set for the target roles:
         # Either group membership or privileges on objects of a certain type
@@ -829,7 +833,7 @@ class Connection(object):
         # as_who: SQL-fragment specifying to who to set the above
         as_who = None
         if target_roles:
-            as_who = ','.join('"%s"' % r for r in target_roles)
+            as_who = ','.join(pg_quote_name(r) for r in target_roles)
 
         status_before = get_status(objs)
 
@@ -1064,7 +1068,7 @@ def main():
 
     if p.session_role:
         try:
-            conn.cursor.execute('SET ROLE "%s"' % p.session_role)
+            conn.cursor.execute('SET ROLE %s' % pg_quote_name(p.session_role))
         except Exception as e:
             module.fail_json(msg="Could not switch to role %s: %s" % (p.session_role, to_native(e)), exception=traceback.format_exc())
 
@@ -1131,7 +1135,7 @@ def main():
                     # So the approach that works for all implicit roles is uppercase without double quotes.
                     roles.append('%s' % r.upper())
                 else:
-                    roles.append('"%s"' % r.replace('"', '""'))
+                    roles.append(pg_quote_name(r))
             else:
                 if fail_on_role:
                     module.fail_json(msg="Role '%s' does not exist" % r)

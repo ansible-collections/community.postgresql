@@ -1738,7 +1738,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER LANGUAGE plpgsql OWNER TO "bob"']
+    - result.queries == ['ALTER LANGUAGE "plpgsql" OWNER TO "bob"']
 
 - name: postgresql_owner - check that nothing changed after the previous step
   become_user: '{{ pg_user }}'
@@ -1770,7 +1770,7 @@
 - assert:
     that:
     - result is changed
-    - result.queries == ['ALTER LANGUAGE plpgsql OWNER TO "bob"']
+    - result.queries == ['ALTER LANGUAGE "plpgsql" OWNER TO "bob"']
 
 - name: postgresql_owner - check that language owner has been changed after the previous step
   become_user: '{{ pg_user }}'
@@ -3053,6 +3053,174 @@
 # #############################
 
 #
+# A role name containing a double quote must be quoted as one identifier with the
+# embedded quote doubled, rather than ending the identifier early and producing
+# invalid SQL. Created with raw SQL to keep this test independent of how
+# postgresql_user quotes names.
+#
+
+- name: postgresql_owner - create a role whose name contains a double quote
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    login_db: postgres
+    query: 'CREATE ROLE "quo""ted"'
+
+- name: postgresql_owner - create a table for the quoted role to own
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    query: CREATE TABLE quoted_owner_table (id int)
+
+- name: postgresql_owner - hand the table to the quoted role
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    new_owner: 'quo"ted'
+    obj_name: quoted_owner_table
+    obj_type: table
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER TABLE "quoted_owner_table" OWNER TO "quo""ted"']
+
+- name: postgresql_owner - the table really is owned by the quoted role
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    query: >-
+      SELECT tableowner FROM pg_catalog.pg_tables
+      WHERE tablename = 'quoted_owner_table'
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0].tableowner == 'quo"ted'
+
+- name: postgresql_owner - handing it over again is idempotent
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    new_owner: 'quo"ted'
+    obj_name: quoted_owner_table
+    obj_type: table
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+#
+# A language name reached ALTER LANGUAGE unquoted, so a double quote in it
+# produced invalid SQL. The language is dropped along with the acme database.
+#
+
+- name: postgresql_owner - create a language whose name contains a double quote
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    query: 'CREATE LANGUAGE "pl""q" HANDLER plpgsql_call_handler'
+
+- name: postgresql_owner - hand the quoted language to the quoted role in check_mode
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    new_owner: 'quo"ted'
+    obj_name: 'pl"q'
+    obj_type: language
+  check_mode: true
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LANGUAGE "pl""q" OWNER TO "quo""ted"']
+
+- name: postgresql_owner - check mode left the language owner alone
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    query: >-
+      SELECT pg_catalog.pg_get_userbyid(lanowner) AS owner
+      FROM pg_catalog.pg_language WHERE lanname = %s
+    positional_args:
+    - 'pl"q'
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0].owner != 'quo"ted'
+
+- name: postgresql_owner - hand the quoted language to the quoted role
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    new_owner: 'quo"ted'
+    obj_name: 'pl"q'
+    obj_type: language
+  register: result
+
+- assert:
+    that:
+    - result is changed
+    - result.queries == ['ALTER LANGUAGE "pl""q" OWNER TO "quo""ted"']
+
+- name: postgresql_owner - the language really is owned by the quoted role
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    query: >-
+      SELECT pg_catalog.pg_get_userbyid(lanowner) AS owner
+      FROM pg_catalog.pg_language WHERE lanname = %s
+    positional_args:
+    - 'pl"q'
+  register: result
+
+- assert:
+    that:
+    - result.query_result[0].owner == 'quo"ted'
+
+- name: postgresql_owner - handing the language over again is idempotent
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_owner:
+    login_user: '{{ pg_user }}'
+    login_db: acme
+    new_owner: 'quo"ted'
+    obj_name: 'pl"q'
+    obj_type: language
+  register: result
+
+- assert:
+    that:
+    - result is not changed
+    - result.queries == []
+
+# #############################
+
+#
 # Clean up
 #
 
@@ -3072,3 +3240,11 @@
     login_user: '{{ pg_user }}'
     name: acme
     state: absent
+
+- name: postgresql_owner - drop the role whose name contains a double quote
+  become_user: '{{ pg_user }}'
+  become: true
+  postgresql_query:
+    login_user: '{{ pg_user }}'
+    login_db: postgres
+    query: 'DROP ROLE IF EXISTS "quo""ted"'

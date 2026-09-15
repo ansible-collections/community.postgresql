@@ -24,3 +24,9 @@
   when:
   - ansible_distribution == 'Ubuntu'
   - postgres_version_resp.stdout is version('9.1', '>=')
+
+# Names containing a double quote must be quoted as identifiers.
+# It uses the mock extension as well.
+- import_tasks: postgresql_ext_quoted_names.yml
+  when:
+  - ansible_distribution == 'Ubuntu'

@@ -1,0 +1,14 @@
+bugfixes:
+  - postgres module_utils - fix ``session_role`` containing a double quote producing invalid SQL in the ``SET ROLE`` issued on connect, which affects every module in this collection.
+  - postgresql_db - fix a database, owner or tablespace name containing a double quote producing invalid SQL in ``ALTER DATABASE`` and ``DROP DATABASE``.
+  - postgresql_ext - fix an extension or schema name containing a double quote producing invalid SQL in ``CREATE EXTENSION``, ``ALTER EXTENSION`` and ``DROP EXTENSION``. A per cent sign in such a name also broke ``CREATE EXTENSION`` and ``ALTER EXTENSION``, which carry query parameters.
+  - postgresql_idx - fix an index, schema, table or tablespace name containing a double quote producing invalid SQL in ``CREATE INDEX`` and ``DROP INDEX``. The schema-qualified names are quoted per part, so a dot in either name stays part of that name.
+  - postgresql_owner - fix a database, tablespace or language name containing a double quote producing invalid SQL in ``ALTER DATABASE``, ``ALTER TABLESPACE`` and ``ALTER LANGUAGE``. The language name was interpolated unquoted and is now quoted as a single identifier.
+  - postgresql_privs - fix an object name containing a double quote producing invalid SQL for schema-qualified types, and ``session_role`` containing one producing invalid SQL in ``SET ROLE``.
+  - postgresql_publication - fix an owner name containing a double quote producing invalid SQL in ``ALTER PUBLICATION ... OWNER TO``.
+  - postgresql_schema - fix an owner name containing a double quote producing invalid SQL in ``CREATE SCHEMA ... AUTHORIZATION`` and ``ALTER SCHEMA ... OWNER TO``.
+  - postgresql_sequence - fix a sequence, schema or owner name containing a double quote producing invalid SQL in ``ALTER SEQUENCE``.
+  - postgresql_subscription - fix a subscription, publication or owner name containing a double quote producing invalid SQL in ``CREATE SUBSCRIPTION``, ``ALTER SUBSCRIPTION`` and ``DROP SUBSCRIPTION``.
+  - postgresql_table - fix an owner or tablespace name containing a double quote producing invalid SQL in ``CREATE TABLE`` and ``ALTER TABLE``.
+  - postgresql_tablespace - fix a tablespace or owner name containing a double quote producing invalid SQL in ``CREATE TABLESPACE``, ``ALTER TABLESPACE`` and ``DROP TABLESPACE``.
+  - postgresql_user - fix a key in O(configuration) containing a double quote producing invalid SQL in ``ALTER ROLE ... SET`` and ``ALTER ROLE ... RESET`` when O(quote_configuration_values=false). The key is now quoted as a single identifier.

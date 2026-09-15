@@ -1,0 +1,211 @@
+# Copyright: (c) 2026, Florian R. Hölzlwimmer (@Hoeze) <git.ich@frhoelzlwimmer.de>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+####################################################################
+# The subscription, publication and owner names all reach CREATE   #
+# SUBSCRIPTION, ALTER SUBSCRIPTION and DROP SUBSCRIPTION, which    #
+# interpolated them raw. A name containing a double quote must be  #
+# quoted as an identifier instead.                                 #
+#                                                                  #
+# The replication slot name is not an identifier and PostgreSQL    #
+# restricts its character set, so the subscription gets an         #
+# explicit slot name rather than the default of its own name.      #
+####################################################################
+
+- vars:
+    quoted_sub: 'sub"scription'
+    quoted_pub: 'publication"1'
+    quoted_pub2: 'publication"2'
+    quoted_owner: 'sub"owner'
+    quoted_slot: quoted_sub_slot
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: '{{ test_db }}'
+
+  block:
+
+  - name: postgresql_subscription - create publications whose names contain a double quote
+    <<: *task_parameters
+    postgresql_publication:
+      <<: *pg_parameters
+      login_port: '{{ primary_port }}'
+      name: '{{ item }}'
+    loop:
+    - '{{ quoted_pub }}'
+    - '{{ quoted_pub2 }}'
+
+  - name: postgresql_subscription - create a role whose name contains a double quote
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ quoted_owner }}'
+      role_attr_flags: SUPERUSER,LOGIN
+
+  - name: postgresql_subscription - create a subscription whose name contains a double quote
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ quoted_sub }}'
+      state: present
+      publications: '{{ quoted_pub }}'
+      comment: Made by Ansible
+      connparams:
+        host: 127.0.0.1
+        port: '{{ primary_port }}'
+        user: '{{ replication_role }}'
+        password: '{{ replication_pass }}'
+        dbname: '{{ test_db }}'
+      subsparams:
+        slot_name: '{{ quoted_slot }}'
+
+  - assert:
+      that:
+      - result is changed
+      - result.exists == true
+      - result.name == quoted_sub
+      - result.final_state.publications == [quoted_pub]
+      - expected_sub_name in result.queries[0]
+      - expected_pub_name in result.queries[0]
+      - result.queries[1] == expected_comment
+    vars:
+      expected_sub_name: 'CREATE SUBSCRIPTION "sub""scription"'
+      expected_pub_name: 'PUBLICATION "publication""1"'
+      expected_comment: 'COMMENT ON SUBSCRIPTION "sub""scription" IS ''Made by Ansible'''
+
+  - name: postgresql_subscription - the subscription is stored under the literal name
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: >-
+        SELECT s.subname, s.subpublications,
+        obj_description(s.oid, 'pg_subscription') AS comment
+        FROM pg_catalog.pg_subscription AS s WHERE s.subname = %s
+      positional_args:
+      - '{{ quoted_sub }}'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].subname == quoted_sub
+      - result.query_result[0].subpublications == [quoted_pub]
+      - result.query_result[0].comment == 'Made by Ansible'
+
+  - name: postgresql_subscription - set publications whose names contain a double quote
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ quoted_sub }}'
+      state: present
+      publications:
+      - '{{ quoted_pub }}'
+      - '{{ quoted_pub2 }}'
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == [expected_set_publication]
+      - result.final_state.publications == [quoted_pub, quoted_pub2]
+    vars:
+      expected_set_publication: 'ALTER SUBSCRIPTION "sub""scription" SET PUBLICATION "publication""1", "publication""2"'
+
+  - name: postgresql_subscription - set an owner whose name contains a double quote
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ quoted_sub }}'
+      state: present
+      owner: '{{ quoted_owner }}'
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == [expected_owner]
+      - result.final_state.owner == quoted_owner
+    vars:
+      expected_owner: 'ALTER SUBSCRIPTION "sub""scription" OWNER TO "sub""owner"'
+
+  - name: postgresql_subscription - the owner is stored under the literal name
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: >-
+        SELECT pg_catalog.pg_get_userbyid(subowner) AS owner
+        FROM pg_catalog.pg_subscription WHERE subname = %s
+      positional_args:
+      - '{{ quoted_sub }}'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+      - result.query_result[0].owner == quoted_owner
+
+  - name: postgresql_subscription - drop the subscription
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ quoted_sub }}'
+      state: absent
+
+  - assert:
+      that:
+      - result is changed
+      - result.exists == false
+      - result.queries == [expected_drop]
+    vars:
+      expected_drop: 'DROP SUBSCRIPTION "sub""scription"'
+
+  - name: postgresql_subscription - the subscription is gone
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      query: SELECT subname FROM pg_catalog.pg_subscription WHERE subname = %s
+      positional_args:
+      - '{{ quoted_sub }}'
+
+  - assert:
+      that:
+      - result.rowcount == 0
+
+  always:
+
+  - name: postgresql_subscription - drop the quoted subscription
+    <<: *task_parameters
+    postgresql_subscription:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ quoted_sub }}'
+      state: absent
+    ignore_errors: true
+
+  - name: postgresql_subscription - drop the quoted publications
+    <<: *task_parameters
+    postgresql_publication:
+      <<: *pg_parameters
+      login_port: '{{ primary_port }}'
+      name: '{{ item }}'
+      state: absent
+    loop:
+    - '{{ quoted_pub }}'
+    - '{{ quoted_pub2 }}'
+    ignore_errors: true
+
+  - name: postgresql_subscription - drop the quoted owner
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      login_port: '{{ replica_port }}'
+      name: '{{ quoted_owner }}'
+      state: absent
+    ignore_errors: true

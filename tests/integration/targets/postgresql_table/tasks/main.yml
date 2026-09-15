@@ -5,3 +5,6 @@
 
 # Initial CI tests of postgresql_table module
 - import_tasks: postgresql_table_initial.yml
+
+# Names containing a double quote must be quoted as identifiers:
+- import_tasks: postgresql_table_quoted_names.yml

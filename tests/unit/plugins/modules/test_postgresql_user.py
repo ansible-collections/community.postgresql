@@ -9,13 +9,12 @@ __metaclass__ = type
 
 import sys
 
-import pytest
-
 if sys.version_info[0] == 3:
-    from plugins.modules.postgresql_user import parse_user_configuration, compare_user_configurations, _pg_quote_user
+    from plugins.modules.postgresql_user import parse_user_configuration, compare_user_configurations, \
+        user_configuration
 elif sys.version_info[0] == 2:
     from ansible_collections.community.postgresql.plugins.modules.postgresql_user import parse_user_configuration, \
-        compare_user_configurations, _pg_quote_user
+        compare_user_configurations, user_configuration
 
 
 def test_parse_user_configuration(mocker):
@@ -71,24 +70,15 @@ def test_compare_user_configurations():
     assert output == {"reset": [], "update": {}}
 
 
-def test__pg_quote_user(mocker):
-    """Tests if quoting users works correctly"""
+def test_user_configuration_quotes_keys(mocker):
+    """Tests if configuration keys are quoted as identifiers, with an embedded double quote doubled"""
     module = mocker.MagicMock()
-    output = _pg_quote_user('someuser', module)
-    assert output == '"someuser"'
-    output = _pg_quote_user('"someuser"', module)
-    assert output == '"someuser"'
-    output = _pg_quote_user('some.user.with.dots', module)
-    assert output == '"some.user.with.dots"'
-    output = _pg_quote_user('some.user.with\"\"quotes', module)
-    assert output == '"some.user.with\"\"quotes"'
-    _pg_quote_user('someuser"', module)
-    module.fail_json.assert_called_once_with("The value of the user-field can't contain a double-quote in the end "
-                                             "if it doesn't start with one and vice-versa.")
-    module = mocker.MagicMock()
-    _pg_quote_user('"someuser', module)
-    module.fail_json.assert_called_once_with("The value of the user-field can't contain a double-quote in the end "
-                                             "if it doesn't start with one and vice-versa.")
-    module = mocker.MagicMock()
-    with pytest.raises(Exception, match='User escaped identifiers must escape extra quotes'):
-        _pg_quote_user('some.user.with\"illegal.quotes', module)
+    cursor = mocker.MagicMock()
+    cursor.fetchone.return_value = {"rolconfig": ['re"set=1']}
+    # quote_values=False, because that is the path where a key containing a double quote is not rejected
+    changed = user_configuration(cursor, module, 'us"er', {'se"t': '2'}, True, False)
+    assert changed
+    assert cursor.execute.call_args_list[1:] == [
+        mocker.call('ALTER ROLE "us""er" RESET "re""set";'),
+        mocker.call('ALTER ROLE "us""er" SET "se""t" TO 2;'),
+    ]

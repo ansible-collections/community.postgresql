@@ -288,6 +288,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     SQLParseError,
     check_input,
+    pg_quote_name,
 )
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
@@ -311,14 +312,14 @@ class NotSupportedError(Exception):
 
 
 def set_owner(cursor, db, owner):
-    query = 'ALTER DATABASE "%s" OWNER TO "%s"' % (db, owner)
+    query = 'ALTER DATABASE %s OWNER TO %s' % (pg_quote_name(db), pg_quote_name(owner))
     executed_commands.append(query)
     cursor.execute(query)
     return True
 
 
 def set_conn_limit(cursor, db, conn_limit):
-    query = 'ALTER DATABASE "%s" CONNECTION LIMIT %s' % (db, conn_limit)
+    query = 'ALTER DATABASE %s CONNECTION LIMIT %s' % (pg_quote_name(db), conn_limit)
     executed_commands.append(query)
     cursor.execute(query)
     return True
@@ -398,10 +399,10 @@ def db_dropconns(cursor, db):
 
 def db_delete(cursor, db, force=False):
     if db_exists(cursor, db):
-        query = 'DROP DATABASE "%s"' % db
+        query = 'DROP DATABASE %s' % pg_quote_name(db)
         if force:
             if get_server_version(cursor.connection) >= 130000:
-                query = ('DROP DATABASE "%s" WITH (FORCE)' % db)
+                query = ('DROP DATABASE %s WITH (FORCE)' % pg_quote_name(db))
             else:
                 db_dropconns(cursor, db)
         executed_commands.append(query)
@@ -418,11 +419,13 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_l
 
     icu_supported = get_server_version(cursor.connection) >= 150000
 
-    query_fragments = ['CREATE DATABASE "%s"' % db]
+    # This statement carries query parameters, so the names are escaped for the
+    # substitution psycopg runs over the whole of it.
+    query_fragments = ['CREATE DATABASE %s' % pg_quote_name(db, for_params=True)]
     if owner:
-        query_fragments.append('OWNER "%s"' % owner)
+        query_fragments.append('OWNER %s' % pg_quote_name(owner, for_params=True))
     if template:
-        query_fragments.append('TEMPLATE "%s"' % template)
+        query_fragments.append('TEMPLATE %s' % pg_quote_name(template, for_params=True))
     if encoding:
         query_fragments.append('ENCODING %(enc)s')
     if lc_collate:
@@ -434,7 +437,7 @@ def db_create(cursor, db, owner, template, encoding, lc_collate, lc_ctype, icu_l
     if locale_provider and icu_supported:
         query_fragments.append('LOCALE_PROVIDER %(localeprovider)s')
     if tablespace:
-        query_fragments.append('TABLESPACE "%s"' % tablespace)
+        query_fragments.append('TABLESPACE %s' % pg_quote_name(tablespace, for_params=True))
     if conn_limit:
         query_fragments.append("CONNECTION LIMIT %(conn_limit)s" % {"conn_limit": conn_limit})
     query = ' '.join(query_fragments)
@@ -690,7 +693,7 @@ def do_with_password(module, cmd, password):
 
 
 def set_tablespace(cursor, db, tablespace):
-    query = 'ALTER DATABASE "%s" SET TABLESPACE "%s"' % (db, tablespace)
+    query = 'ALTER DATABASE %s SET TABLESPACE %s' % (pg_quote_name(db), pg_quote_name(tablespace))
     executed_commands.append(query)
     cursor.execute(query)
     return True
@@ -778,7 +781,7 @@ def main():
 
         if session_role:
             try:
-                cursor.execute('SET ROLE "%s"' % session_role)
+                cursor.execute('SET ROLE %s' % pg_quote_name(session_role))
             except Exception as e:
                 module.fail_json(msg="Could not switch role: %s" % to_native(e), exception=traceback.format_exc())
 

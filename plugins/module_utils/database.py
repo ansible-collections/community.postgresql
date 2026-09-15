@@ -129,7 +129,7 @@ def pg_quote_identifier(identifier, id_type):
     return '.'.join(identifier_fragments)
 
 
-def pg_quote_name(name):
+def pg_quote_name(name, for_params=False):
     """Return a name as a quoted SQL identifier.
 
     For objects that are never schema qualified, such as roles, databases and
@@ -140,9 +140,16 @@ def pg_quote_name(name):
     Args:
         name (str) -- name to quote.
 
+    Kwargs:
+        for_params (bool) -- double any per cent sign, for a statement that psycopg
+            also substitutes parameters into (default False). psycopg substitutes over
+            the whole statement, so a bare per cent sign there opens a placeholder:
+            the statement fails, or a parameter is interpolated into the identifier.
+
     Returns the quoted identifier (str).
     """
-    return '"%s"' % name.replace('"', '""')
+    quoted = '"%s"' % name.replace('"', '""')
+    return quoted.replace('%', '%%') if for_params else quoted
 
 
 def mysql_quote_identifier(identifier, id_type):
