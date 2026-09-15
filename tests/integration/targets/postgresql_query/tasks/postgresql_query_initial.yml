@@ -433,7 +433,7 @@
   #############################
   # Check search_path parameter
 
-  - name: postgresql_set - create test schemas
+  - name: postgresql_query - create test schemas
     become_user: '{{ pg_user }}'
     become: true
     postgresql_schema:
@@ -444,7 +444,7 @@
     - query_test1
     - query_test2
 
-  - name: postgresql_set - create test tables
+  - name: postgresql_query - create test tables
     become_user: '{{ pg_user }}'
     become: true
     postgresql_table:

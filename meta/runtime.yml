@@ -17,7 +17,7 @@ action_groups:
     - postgresql_schema
     - postgresql_script
     - postgresql_sequence
-    - postgresql_set
+
     - postgresql_slot
     - postgresql_subscription
     - postgresql_table
@@ -31,6 +31,6 @@ plugin_routing:
         removal_version: 4.0.0
         warning_text: Use community.postgresql.postgresql_ext instead.
     postgresql_set:
-      deprecation:
+      tombstone:
         removal_version: 5.0.0
-        warning_text: Use postgresql_alter_system instead.
+        warning_text: Use community.postgresql.postgresql_alter_system instead.

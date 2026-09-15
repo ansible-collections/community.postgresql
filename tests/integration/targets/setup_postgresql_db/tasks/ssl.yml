@@ -68,37 +68,37 @@
 - name: postgresql SSL - enable SSL
   become_user: '{{ pg_user }}'
   become: true
-  postgresql_set:
+  postgresql_alter_system:
     login_user: '{{ pg_user }}'
     login_db: postgres
-    name: ssl
-    value: true
+    param: ssl
+    value: "on"
 
 - name: postgresql SSL - add ssl_cert_file
   become_user: '{{ pg_user }}'
   become: true
-  postgresql_set:
+  postgresql_alter_system:
     login_user: '{{ pg_user }}'
     login_db: postgres
-    name: ssl_cert_file
+    param: ssl_cert_file
     value: /etc/server.crt
 
 - name: postgresql SSL - add ssl_key_file
   become_user: '{{ pg_user }}'
   become: true
-  postgresql_set:
+  postgresql_alter_system:
     login_user: '{{ pg_user }}'
     login_db: postgres
-    name: ssl_key_file
+    param: ssl_key_file
     value: /etc/server.key
 
 - name: postgresql SSL - add ssl_ca_file
   become_user: '{{ pg_user }}'
   become: true
-  postgresql_set:
+  postgresql_alter_system:
     login_user: '{{ pg_user }}'
     login_db: postgres
-    name: ssl_ca_file
+    param: ssl_ca_file
     value: /etc/client-ca.crt
 
 - name: postgresql SSL - reload PostgreSQL to enable ssl on

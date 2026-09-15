@@ -847,9 +847,9 @@
 
   - name: Set database as read-only
     <<: *task_parameters
-    postgresql_set:
+    postgresql_alter_system:
       <<: *pg_parameters
-      name: 'default_transaction_read_only'
+      param: 'default_transaction_read_only'
       value: 'on'
 
   - name: Try to alter role in read-only database
@@ -867,9 +867,9 @@
 
   - name: Set database as read-write
     <<: *task_parameters
-    postgresql_set:
+    postgresql_alter_system:
       <<: *pg_parameters
-      name: 'default_transaction_read_only'
+      param: 'default_transaction_read_only'
       value: 'off'
 
   always:

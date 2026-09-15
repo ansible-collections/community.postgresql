@@ -234,7 +234,7 @@
       - result is not changed
 
   ################################################
-  # Bugfix 67377, copied from postgresql_set tests
+  # Bugfix 67377
   - name: Test archive_command with mb
     <<: *task_parameters
     postgresql_alter_system:

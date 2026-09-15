@@ -56,9 +56,9 @@
 
   - name: Set track_function (restart is required)
     <<: *task_parameters
-    postgresql_set:
+    postgresql_alter_system:
       <<: *pg_parameters
-      name: track_functions
+      param: track_functions
       value: all
 
   - name: Stop PostgreSQL
