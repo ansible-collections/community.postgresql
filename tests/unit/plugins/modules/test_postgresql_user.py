@@ -10,10 +10,11 @@ __metaclass__ = type
 import sys
 
 if sys.version_info[0] == 3:
-    from plugins.modules.postgresql_user import parse_user_configuration, compare_user_configurations
+    from plugins.modules.postgresql_user import parse_user_configuration, compare_user_configurations, \
+        user_configuration
 elif sys.version_info[0] == 2:
     from ansible_collections.community.postgresql.plugins.modules.postgresql_user import parse_user_configuration, \
-        compare_user_configurations
+        compare_user_configurations, user_configuration
 
 
 def test_parse_user_configuration(mocker):
@@ -67,3 +68,17 @@ def test_compare_user_configurations():
     assert output == no_reset_expected
     output = compare_user_configurations(current, {}, False)
     assert output == {"reset": [], "update": {}}
+
+
+def test_user_configuration_quotes_keys(mocker):
+    """Tests if configuration keys are quoted as identifiers, with an embedded double quote doubled"""
+    module = mocker.MagicMock()
+    cursor = mocker.MagicMock()
+    cursor.fetchone.return_value = {"rolconfig": ['re"set=1']}
+    # quote_values=False, because that is the path where a key containing a double quote is not rejected
+    changed = user_configuration(cursor, module, 'us"er', {'se"t': '2'}, True, False)
+    assert changed
+    assert cursor.execute.call_args_list[1:] == [
+        mocker.call('ALTER ROLE "us""er" RESET "re""set";'),
+        mocker.call('ALTER ROLE "us""er" SET "se""t" TO 2;'),
+    ]

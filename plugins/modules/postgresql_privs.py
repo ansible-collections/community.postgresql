@@ -788,7 +788,7 @@ class Connection(object):
         if not objs:
             return False
 
-        quoted_schema_qualifier = '"%s"' % schema_qualifier.replace('"', '""') if schema_qualifier else None
+        quoted_schema_qualifier = pg_quote_name(schema_qualifier) if schema_qualifier else None
         # obj_ids: quoted db object identifiers (sometimes schema-qualified)
         if obj_type in ('function', 'procedure'):
             obj_ids = []

@@ -809,17 +809,17 @@ def user_configuration(cursor, module, user, configuration, reset_unspec_config,
         # It seems psycopg's prepared statements don't work with 'ALTER ROLE' at this point.
         # This is vulnerable to SQL-injections (added to docs) but I don't see a better way to do this.
         for item in config_updates["reset"]:
-            query = 'ALTER ROLE %(user)s RESET "%(key)s";' % {"user": pg_quote_name(user), "key": item}
+            query = 'ALTER ROLE %(user)s RESET %(key)s;' % {"user": pg_quote_name(user), "key": pg_quote_name(item)}
             executed_queries.append(query)
             cursor.execute(query)
             changed = True
         for key, value in config_updates["update"].items():
             if quote_values:
-                query = ('ALTER ROLE %(user)s SET "%(key)s" TO \'%(value)s\';' %
-                         {"user": pg_quote_name(user), "key": key, "value": value})
+                query = ('ALTER ROLE %(user)s SET %(key)s TO \'%(value)s\';' %
+                         {"user": pg_quote_name(user), "key": pg_quote_name(key), "value": value})
             else:
-                query = ('ALTER ROLE %(user)s SET "%(key)s" TO %(value)s;' %
-                         {"user": pg_quote_name(user), "key": key, "value": value})
+                query = ('ALTER ROLE %(user)s SET %(key)s TO %(value)s;' %
+                         {"user": pg_quote_name(user), "key": pg_quote_name(key), "value": value})
             executed_queries.append(query)
             cursor.execute(query)
             changed = True

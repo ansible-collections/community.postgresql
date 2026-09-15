@@ -194,8 +194,10 @@ import traceback
 
 from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+from ansible_collections.community.postgresql.plugins.module_utils.database import (
+    check_input,
+    pg_quote_name,
+)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
@@ -224,7 +226,7 @@ def ext_delete(check_mode, cursor, ext, cascade):
       ext (str) -- extension name
       cascade (boolean) -- Pass the CASCADE flag to the DROP command
     """
-    query = "DROP EXTENSION \"%s\"" % ext
+    query = "DROP EXTENSION %s" % pg_quote_name(ext)
 
     if cascade:
         query += " CASCADE"
@@ -246,7 +248,9 @@ def ext_update_version(check_mode, cursor, ext, version):
       ext (str) -- extension name
       version (str) -- extension version
     """
-    query = "ALTER EXTENSION \"%s\" UPDATE" % ext
+    # The statement is always executed with a params dict, even an empty one,
+    # so psycopg substitutes over it and the name is escaped for that.
+    query = "ALTER EXTENSION %s UPDATE" % pg_quote_name(ext, for_params=True)
     params = {}
 
     if version != 'latest':
@@ -273,11 +277,13 @@ def ext_create(check_mode, cursor, ext, schema, cascade, version):
       cascade (boolean) -- Pass the CASCADE flag to the CREATE command
       version (str) -- extension version
     """
-    query = "CREATE EXTENSION \"%s\"" % ext
+    # The statement is always executed with a params dict, even an empty one,
+    # so psycopg substitutes over it and the names are escaped for that.
+    query = "CREATE EXTENSION %s" % pg_quote_name(ext, for_params=True)
     params = {}
 
     if schema:
-        query += " WITH SCHEMA \"%s\"" % schema
+        query += " WITH SCHEMA %s" % pg_quote_name(schema, for_params=True)
     if version != 'latest':
         query += " VERSION %(ver)s"
         params['ver'] = version

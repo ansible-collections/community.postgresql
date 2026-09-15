@@ -583,7 +583,7 @@ class PgOwnership(object):
 
     def __set_language_owner(self):
         """Set the language owner."""
-        query = 'ALTER LANGUAGE %s OWNER TO %s' % (self.obj_name, self.quoted_role)
+        query = 'ALTER LANGUAGE %s OWNER TO %s' % (pg_quote_name(self.obj_name), self.quoted_role)
         self.changed = exec_sql(self, query, return_bool=True)
 
     def __set_domain_owner(self):
