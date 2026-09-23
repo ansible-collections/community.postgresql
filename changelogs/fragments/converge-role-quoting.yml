@@ -1,4 +1,4 @@
-breaking_changes:
+minor_changes:
   - postgresql_user - the role name in O(name) is now taken literally, the way every other module in this collection treats a role name. The value ``"foo"`` creates a role called ``"foo"`` rather than ``foo``, and the value ``we""ird`` creates ``we""ird`` rather than ``we"ird``. Pass the literal role name in both cases.
 
 bugfixes:
