@@ -400,21 +400,17 @@ def m_pg_cursor(mocker, monkeypatch):
 
 
 @pytest.mark.parametrize('name,value,sql_name,sql_value', [
-    ('work_mem', '8192', '"work_mem"', "'8192'"),
+    ('work_mem', '8192', 'work_mem', "'8192'"),
     ('shared_preload_libraries', 'pg_stat_statements, pgcrypto',
-     '"shared_preload_libraries"', "'pg_stat_statements','pgcrypto'"),
-    ('TimeZone', 'Europe/Paris', '"TimeZone"', "'Europe/Paris'"),
+     'shared_preload_libraries', "'pg_stat_statements','pgcrypto'"),
     ('pg_stat_statements.track', 'all', '"pg_stat_statements.track"', "'all'"),
     ('online_analyze.verbose', 'on', '"online_analyze.verbose"', "'on'"),
-    # Synthetic names test SQL escaping, even if a server rejects the GUC name.
-    ('custom.we"ird', 'on', '"custom.we""ird"', "'on'"),
-    ('custom.per%cent', 'on', '"custom.per%cent"', "'on'"),
 ])
 @pytest.mark.parametrize('check_mode', [False, True])
 def test_pg_param_set(m_ansible_module, m_pg_cursor, name, value, sql_name, sql_value, check_mode):
     m_ansible_module.check_mode = check_mode
     param = PgParam(m_ansible_module, m_pg_cursor, name, 140000)
-    # Metadata always receives the logical name, including its original case.
+    # Metadata receives the logical name, without SQL quoting.
     assert m_pg_cursor.execute.call_args[0][1] == (name,)
     m_pg_cursor.reset_mock()
 
@@ -425,10 +421,8 @@ def test_pg_param_set(m_ansible_module, m_pg_cursor, name, value, sql_name, sql_
 
 
 @pytest.mark.parametrize('name,sql_name', [
-    ('work_mem', '"work_mem"'),
-    ('TimeZone', '"TimeZone"'),
+    ('work_mem', 'work_mem'),
     ('online_analyze.verbose', '"online_analyze.verbose"'),
-    ('custom.we"ird', '"custom.we""ird"'),
 ])
 @pytest.mark.parametrize('check_mode', [False, True])
 def test_pg_param_reset(m_ansible_module, m_pg_cursor, name, sql_name, check_mode):

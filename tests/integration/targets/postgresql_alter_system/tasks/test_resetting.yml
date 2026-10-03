@@ -31,7 +31,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM RESET \"log_timezone\"", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM RESET log_timezone", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == "GMT"
       - result["attrs"]["context"] == "sighup"
       - result["attrs"]["enumvals"] == None
@@ -55,7 +55,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM RESET \"log_timezone\"", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM RESET log_timezone", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == "GMT"
       - result["attrs"]["context"] == "sighup"
       - result["attrs"]["enumvals"] == None

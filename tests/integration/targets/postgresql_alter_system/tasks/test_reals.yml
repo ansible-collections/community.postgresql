@@ -26,7 +26,7 @@
       that:
       - result is changed
       - result.restart_required == False
-      - result.executed_queries == ["ALTER SYSTEM SET \"autovacuum_analyze_scale_factor\" = '1'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum_analyze_scale_factor = '1'", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == 0.1
       - result["attrs"]["context"] == "sighup"
       - result["attrs"]["enumvals"] == None
@@ -61,7 +61,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET \"autovacuum_analyze_scale_factor\" = '1'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET autovacuum_analyze_scale_factor = '1'", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == 0.1
       - result["attrs"]["context"] == "sighup"
       - result["attrs"]["enumvals"] == None

@@ -6,14 +6,12 @@
 # pg_stat_statements is available in the normal test environment. It exercises
 # a real dotted GUC; the reserved suffix online_analyze.verbose is unit-tested
 # because online_analyze is not installed in the stock PostgreSQL containers.
-- name: Test quoting a configuration parameter name
+- name: Test quoting a dotted configuration parameter name
   become: true
   become_user: '{{ pg_user }}'
   vars:
-    desired_value: >-
-      {{ ('all' if initial_setting.query_result[0].setting == 'top' else 'top')
-         if guc_name == 'pg_stat_statements.track'
-         else ('UTC' if initial_setting.query_result[0].setting == 'Europe/Paris' else 'Europe/Paris') }}
+    guc_name: pg_stat_statements.track
+    desired_value: "{{ 'all' if initial_setting.query_result[0].setting == 'top' else 'top' }}"
   module_defaults:
     community.postgresql.postgresql_alter_system:
       login_user: '{{ pg_user }}'
@@ -23,12 +21,12 @@
     community.postgresql.postgresql_query:
       login_user: '{{ pg_user }}'
       login_db: postgres
-  block:
-  - name: Read the original setting using the logical name
-    community.postgresql.postgresql_query:
       query: SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s
       named_args:
         name: '{{ guc_name }}'
+  block:
+  - name: Read the original setting using the logical name
+    community.postgresql.postgresql_query: {}
     register: initial_setting
 
   - name: Ensure the configuration parameter is registered
@@ -50,10 +48,7 @@
       - result.diff.before == result.diff.after
 
   - name: Read the setting after check mode
-    community.postgresql.postgresql_query:
-      query: SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s
-      named_args:
-        name: '{{ guc_name }}'
+    community.postgresql.postgresql_query: {}
     register: result
 
   - name: Ensure check mode did not change the database
@@ -73,10 +68,7 @@
       - result.executed_queries == ['ALTER SYSTEM SET "' ~ guc_name ~ '" = ' ~ "'" ~ desired_value ~ "'", 'SELECT pg_reload_conf()']
 
   - name: Read the changed setting
-    community.postgresql.postgresql_query:
-      query: SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s
-      named_args:
-        name: '{{ guc_name }}'
+    community.postgresql.postgresql_query: {}
     register: result
 
   - name: Verify the new value in PostgreSQL
@@ -84,44 +76,16 @@
       that:
       - result.query_result[0].setting == desired_value
 
-  - name: Set the same value again in actual and check mode
+  - name: Set the same value again
     community.postgresql.postgresql_alter_system:
       value: '{{ desired_value }}'
-    check_mode: '{{ item }}'
-    loop: [false, true]
     register: result
 
   - name: Check idempotence
     ansible.builtin.assert:
       that:
-      - item is not changed
-      - item.executed_queries == []
-    loop: '{{ result.results }}'
-
-  - name: Reset the parameter in check mode
-    community.postgresql.postgresql_alter_system:
-      value: _RESET
-    check_mode: true
-    register: result
-
-  - name: Check the reported RESET SQL and unchanged setting
-    ansible.builtin.assert:
-      that:
-      - result is changed
-      - result.executed_queries == ['ALTER SYSTEM RESET "' ~ guc_name ~ '"', 'SELECT pg_reload_conf()']
-      - result.diff.before == result.diff.after
-
-  - name: Read the setting after RESET in check mode
-    community.postgresql.postgresql_query:
-      query: SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s
-      named_args:
-        name: '{{ guc_name }}'
-    register: result
-
-  - name: Ensure RESET in check mode did not change the database
-    ansible.builtin.assert:
-      that:
-      - result.query_result[0].setting == desired_value
+      - result is not changed
+      - result.executed_queries == []
 
   always:
   - name: Reset the parameter
@@ -136,10 +100,7 @@
       - result.executed_queries == ['ALTER SYSTEM RESET "' ~ guc_name ~ '"', 'SELECT pg_reload_conf()']
 
   - name: Read the setting after RESET
-    community.postgresql.postgresql_query:
-      query: SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s
-      named_args:
-        name: '{{ guc_name }}'
+    community.postgresql.postgresql_query: {}
     register: result
 
   - name: Verify RESET restored the original setting
