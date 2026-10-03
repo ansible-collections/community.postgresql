@@ -27,6 +27,15 @@
   - name: Test options coverage
     include_tasks: options_coverage.yml
 
+  # options_coverage.yml preloads pg_stat_statements and restarts PostgreSQL.
+  - name: Test dotted and case-sensitive configuration parameter names
+    include_tasks: test_parameter_names.yml
+    loop:
+    - pg_stat_statements.track
+    - TimeZone
+    loop_control:
+      loop_var: guc_name
+
   when: postgres_version_resp.stdout is version('14', '>=')
 
 - name: Run on PostgreSQL 17 or higher

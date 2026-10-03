@@ -97,7 +97,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET work_mem = '2048'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"work_mem\" = '2048'", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == 4096
       - result["attrs"]["context"] == "user"
       - result["attrs"]["enumvals"] == None
@@ -132,7 +132,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET work_mem = '2048'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"work_mem\" = '2048'", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == 4096
       - result["attrs"]["context"] == "user"
       - result["attrs"]["enumvals"] == None
@@ -205,7 +205,7 @@
       that:
       - result is changed
       - result.restart_required == True
-      - result.executed_queries == ["ALTER SYSTEM SET huge_page_size = '2MB'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"huge_page_size\" = '2MB'", "SELECT pg_reload_conf()"]
 
   - name: Set param of internal context, must fail
     <<: *task_parameters
@@ -232,7 +232,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET autovacuum_analyze_threshold = '60'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"autovacuum_analyze_threshold\" = '60'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters
@@ -269,7 +269,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET backend_flush_after = '10'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"backend_flush_after\" = '10'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters
@@ -306,7 +306,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET backend_flush_after = '1MB'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"backend_flush_after\" = '1MB'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters
@@ -352,7 +352,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"archive_timeout\" = '1'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters
@@ -376,7 +376,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"archive_timeout\" = '1'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters
@@ -414,7 +414,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1min'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"archive_timeout\" = '1min'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters
@@ -438,7 +438,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1min'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"archive_timeout\" = '1min'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters
@@ -489,7 +489,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET archive_timeout = '1h'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"archive_timeout\" = '1h'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters
@@ -540,7 +540,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET log_temp_files = '1MB'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"log_temp_files\" = '1MB'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters
@@ -564,7 +564,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET log_temp_files = '-1'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"log_temp_files\" = '-1'", "SELECT pg_reload_conf()"]
 
   - name: Check in DB
     <<: *task_parameters

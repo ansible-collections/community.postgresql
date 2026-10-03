@@ -7,12 +7,14 @@ __metaclass__ = type
 
 import pytest
 
+from ansible_collections.community.postgresql.plugins.modules import postgresql_alter_system
 from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_system import (
     build_value_class,
     check_pg_version,
     check_problematic_params,
     convert_ret_vals,
     normalize_bool_val,
+    PgParam,
     str_contains_float,
     to_int,
     ValueBool,
@@ -385,3 +387,81 @@ def test_value_time_fail(m_ansible_module, value):
 def test_value_string(m_ansible_module, param_name, value, expected_normalized):
     obj = ValueString(m_ansible_module, param_name, value, None, 140000)
     assert obj.normalized == expected_normalized
+
+
+@pytest.fixture
+def m_pg_cursor(mocker, monkeypatch):
+    cursor = mocker.MagicMock()
+    cursor.fetchall.return_value = [{
+        'setting': 'off', 'unit': None, 'context': 'user', 'vartype': 'string',
+    }]
+    monkeypatch.setattr(postgresql_alter_system, 'executed_queries', [])
+    return cursor
+
+
+@pytest.mark.parametrize('name,value,sql_name,sql_value', [
+    ('work_mem', '8192', '"work_mem"', "'8192'"),
+    ('shared_preload_libraries', 'pg_stat_statements, pgcrypto',
+     '"shared_preload_libraries"', "'pg_stat_statements','pgcrypto'"),
+    ('TimeZone', 'Europe/Paris', '"TimeZone"', "'Europe/Paris'"),
+    ('pg_stat_statements.track', 'all', '"pg_stat_statements.track"', "'all'"),
+    ('online_analyze.verbose', 'on', '"online_analyze.verbose"', "'on'"),
+    # Synthetic names test SQL escaping, even if a server rejects the GUC name.
+    ('custom.we"ird', 'on', '"custom.we""ird"', "'on'"),
+    ('custom.per%cent', 'on', '"custom.per%cent"', "'on'"),
+])
+@pytest.mark.parametrize('check_mode', [False, True])
+def test_pg_param_set(m_ansible_module, m_pg_cursor, name, value, sql_name, sql_value, check_mode):
+    m_ansible_module.check_mode = check_mode
+    param = PgParam(m_ansible_module, m_pg_cursor, name, 140000)
+    # Metadata always receives the logical name, including its original case.
+    assert m_pg_cursor.execute.call_args[0][1] == (name,)
+    m_pg_cursor.reset_mock()
+
+    assert param.set(value) is True
+    queries = ['ALTER SYSTEM SET %s = %s' % (sql_name, sql_value), 'SELECT pg_reload_conf()']
+    assert postgresql_alter_system.executed_queries == queries
+    assert [call.args[0] for call in m_pg_cursor.execute.call_args_list] == ([] if check_mode else queries)
+
+
+@pytest.mark.parametrize('name,sql_name', [
+    ('work_mem', '"work_mem"'),
+    ('TimeZone', '"TimeZone"'),
+    ('online_analyze.verbose', '"online_analyze.verbose"'),
+    ('custom.we"ird', '"custom.we""ird"'),
+])
+@pytest.mark.parametrize('check_mode', [False, True])
+def test_pg_param_reset(m_ansible_module, m_pg_cursor, name, sql_name, check_mode):
+    m_ansible_module.check_mode = check_mode
+    param = PgParam(m_ansible_module, m_pg_cursor, name, 140000)
+    assert m_pg_cursor.execute.call_args[0][1] == (name,)
+    m_pg_cursor.reset_mock()
+
+    assert param.reset() is True
+    queries = ['ALTER SYSTEM RESET %s' % sql_name, 'SELECT pg_reload_conf()']
+    assert postgresql_alter_system.executed_queries == queries
+    assert [call.args[0] for call in m_pg_cursor.execute.call_args_list] == ([] if check_mode else queries)
+
+
+@pytest.mark.parametrize('check_mode', [False, True])
+def test_pg_param_set_idempotent(m_ansible_module, m_pg_cursor, check_mode):
+    m_ansible_module.check_mode = check_mode
+    m_pg_cursor.fetchall.return_value[0]['vartype'] = 'bool'
+    param = PgParam(m_ansible_module, m_pg_cursor, 'online_analyze.verbose', 140000)
+    m_pg_cursor.reset_mock()
+
+    assert param.set('False') is False
+    assert postgresql_alter_system.executed_queries == []
+    m_pg_cursor.execute.assert_not_called()
+
+
+def test_pg_param_prequoted_name_is_not_metadata(mocker, m_pg_cursor):
+    module = mocker.MagicMock()
+    module.fail_json.side_effect = ValueError
+    m_pg_cursor.fetchall.return_value = []
+
+    with pytest.raises(ValueError):
+        PgParam(module, m_pg_cursor, '"online_analyze.verbose"', 140000)
+
+    assert m_pg_cursor.execute.call_args[0][1] == ('"online_analyze.verbose"',)
+    module.fail_json.assert_called_once_with(msg='Parameter "online_analyze.verbose" does not exist')
