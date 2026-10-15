@@ -251,3 +251,40 @@
       that:
       - result is failed
       - result.msg is search('is potentially dangerous')
+
+  # https://github.com/ansible-collections/community.postgresql/issues/959
+  - name: postgresql_info - create a database without extensions
+    <<: *task_parameters
+    postgresql_db:
+      login_user: '{{ pg_user }}'
+      login_port: '{{ primary_port }}'
+      name: '{{ test_db_no_ext }}'
+
+  - name: postgresql_info - drop the default extension
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      login_db: '{{ test_db_no_ext }}'
+      login_port: '{{ primary_port }}'
+      query: DROP EXTENSION IF EXISTS plpgsql
+
+  - name: postgresql_info - get info about a database without extensions
+    <<: *task_parameters
+    postgresql_info:
+      <<: *pg_parameters
+      login_port: '{{ primary_port }}'
+      filter:
+      - databases
+
+  - assert:
+      that:
+      - result is not failed
+      - result.databases[test_db_no_ext]['extensions'] == {}
+
+  - name: postgresql_info - drop the database without extensions
+    <<: *task_parameters
+    postgresql_db:
+      login_user: '{{ pg_user }}'
+      login_port: '{{ primary_port }}'
+      name: '{{ test_db_no_ext }}'
+      state: absent
