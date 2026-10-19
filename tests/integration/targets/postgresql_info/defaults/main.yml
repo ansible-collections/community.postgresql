@@ -8,6 +8,7 @@ test_pub2: second_publication
 replication_role: logical_replication
 replication_pass: alsdjfKJKDf1#
 test_db: acme_db
+test_db_no_ext: acme_db_no_ext
 test_subscription: test
 test_subscription2: test2
 conn_timeout: 100

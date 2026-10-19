@@ -710,16 +710,14 @@ class PgClusterInfo(object):
         return self.__exec_sql('SHOW %s' % pg_quote_name(setting))[0][setting]
 
     def __exec_sql(self, query):
-        """Execute SQL and return the result."""
+        """Execute SQL and return the result rows (an empty list if there are none)."""
         try:
             self.cursor.execute(query)
-            res = self.cursor.fetchall()
-            if res:
-                return res
+            return self.cursor.fetchall()
         except Exception as e:
             self.module.fail_json(msg="Cannot execute SQL '%s': %s" % (query, to_native(e)))
             self.cursor.close()
-        return False
+        return []
 
     def __get_current_db(self):
         """Get current DB"""
