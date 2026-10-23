@@ -4,6 +4,46 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v5.1.0
+======
+
+Release Summary
+---------------
+
+This is a minor release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- postgresql_user - the role name in O(name) is now taken literally, the way every other module in this collection treats a role name. The value ``"foo"`` creates a role called ``"foo"`` rather than ``foo``, and the value ``we""ird`` creates ``we""ird`` rather than ``we"ird``. Pass the literal role name in both cases.
+
+Bugfixes
+--------
+
+- postgres module_utils - fix ``session_role`` containing a double quote producing invalid SQL in the ``SET ROLE`` issued on connect, which affects every module in this collection.
+- postgres module_utils - fix ``set_comment`` interpolating the object name into ``COMMENT ON`` unquoted, so a name containing a double quote produced invalid SQL or, under psycopg2, executed the rest of the name as SQL. Affects ``postgresql_user``, ``postgresql_db``, ``postgresql_schema``, ``postgresql_ext``, ``postgresql_publication``, ``postgresql_subscription`` and ``postgresql_tablespace``.
+- postgresql_db - fix a database, owner or tablespace name containing a double quote producing invalid SQL in ``ALTER DATABASE`` and ``DROP DATABASE``.
+- postgresql_db - fix the database, owner, template and tablespace names in ``CREATE DATABASE`` being interpolated unquoted, so that a name containing a double quote produced invalid SQL. They are now quoted as single identifiers.
+- postgresql_ext - fix an extension or schema name containing a double quote producing invalid SQL in ``CREATE EXTENSION``, ``ALTER EXTENSION`` and ``DROP EXTENSION``. A per cent sign in such a name also broke ``CREATE EXTENSION`` and ``ALTER EXTENSION``, which carry query parameters.
+- postgresql_idx - fix an index, schema, table or tablespace name containing a double quote producing invalid SQL in ``CREATE INDEX`` and ``DROP INDEX``. The schema-qualified names are quoted per part, so a dot in either name stays part of that name.
+- postgresql_info - fix the module failing with ``'bool' object is not iterable`` when a database has no extensions installed. A query that returns no rows now gives an empty result instead of ``False`` (https://github.com/ansible-collections/community.postgresql/issues/959).
+- postgresql_owner - fix a database, tablespace or language name containing a double quote producing invalid SQL in ``ALTER DATABASE``, ``ALTER TABLESPACE`` and ``ALTER LANGUAGE``. The language name was interpolated unquoted and is now quoted as a single identifier.
+- postgresql_owner - fix a role whose name contains a double quote producing invalid SQL. The name is now quoted as a single identifier with embedded quotes doubled, in the ``OWNER TO`` and ``REASSIGN OWNED BY`` statements alike.
+- postgresql_privs - fix a name containing a double quote in ``objs`` producing invalid SQL for object types that are not schema qualified, which covers ``type=group`` as well as ``database``, ``schema``, ``language``, ``tablespace``, ``foreign_server``, ``foreign_data_wrapper`` and ``parameter``.
+- postgresql_privs - fix a role named in ``target_roles`` whose name contains a double quote producing invalid SQL in the generated ``ALTER DEFAULT PRIVILEGES FOR ROLE`` statement.
+- postgresql_privs - fix an object name containing a double quote producing invalid SQL for schema-qualified types, and ``session_role`` containing one producing invalid SQL in ``SET ROLE``.
+- postgresql_publication - fix an owner name containing a double quote producing invalid SQL in ``ALTER PUBLICATION ... OWNER TO``.
+- postgresql_schema - fix an owner name containing a double quote producing invalid SQL in ``CREATE SCHEMA ... AUTHORIZATION`` and ``ALTER SCHEMA ... OWNER TO``.
+- postgresql_sequence - fix a sequence, schema or owner name containing a double quote producing invalid SQL in ``ALTER SEQUENCE``.
+- postgresql_subscription - fix a subscription, publication or owner name containing a double quote producing invalid SQL in ``CREATE SUBSCRIPTION``, ``ALTER SUBSCRIPTION`` and ``DROP SUBSCRIPTION``.
+- postgresql_table - fix an owner or tablespace name containing a double quote producing invalid SQL in ``CREATE TABLE`` and ``ALTER TABLE``.
+- postgresql_tablespace - fix a tablespace or owner name containing a double quote producing invalid SQL in ``CREATE TABLESPACE``, ``ALTER TABLESPACE`` and ``DROP TABLESPACE``.
+- postgresql_user - fix a key in O(configuration) containing a double quote producing invalid SQL in ``ALTER ROLE ... SET`` and ``ALTER ROLE ... RESET`` when O(quote_configuration_values=false). The key is now quoted as a single identifier.
+- postgresql_user - fix a role whose name contains a double quote being rejected with ``User escaped identifiers must escape extra quotes``. Such a name is now escaped and accepted, and a name that is not a balanced pair of quotes no longer fails.
+- postgresql_user, postgresql_db, postgres module_utils - fix a name containing a per cent sign breaking ``CREATE USER``, ``ALTER USER``, ``CREATE DATABASE`` and ``COMMENT ON``, which also carry query parameters. Such a name either failed with ``unsupported format character`` or had a parameter interpolated into it; a name of the form ``x%(password)sy`` put the password into the role name.
+
 v5.0.0
 ======
 
