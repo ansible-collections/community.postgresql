@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_alter_system - quote dotted configuration parameter names in ALTER SYSTEM SET and RESET, fixing names containing SQL keywords such as ``online_analyze.verbose`` (https://github.com/ansible-collections/community.postgresql/issues/940).

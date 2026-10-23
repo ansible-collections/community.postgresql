@@ -24,6 +24,7 @@ options:
   param:
     description:
     - Name of PostgreSQL server parameter.
+    - Pass the name without SQL quotes, including for dotted names such as C(online_analyze.verbose).
     type: str
     required: true
 
@@ -166,7 +167,7 @@ restart_required:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+    check_input, pg_quote_name
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
@@ -616,6 +617,8 @@ class PgParam():
         self.module = module
         self.cursor = cursor
         self.name = name
+        # A dotted GUC is one configuration name, not a schema-qualified object.
+        self.sql_name = pg_quote_name(name) if '.' in name else name
         self.pg_ver = pg_ver
 
         self.attrs = self.get_attrs()
@@ -663,7 +666,7 @@ class PgParam():
         # is always a removal of the line from postgresql.auto.conf
         # this will always run the command to ensure the removal
         # and report changed=true
-        query = "ALTER SYSTEM RESET %s" % self.name
+        query = "ALTER SYSTEM RESET %s" % self.sql_name
         self.__exec_set_sql(query)
         return True
 
@@ -701,13 +704,13 @@ class PgParam():
                 else:
                     tmp.append("'" + elem.strip() + "'")
 
-            query = "ALTER SYSTEM SET %s = %s" % (self.name, ','.join(tmp))
+            query = "ALTER SYSTEM SET %s = %s" % (self.sql_name, ','.join(tmp))
 
         elif self.pg_ver >= 140000:
-            query = "ALTER SYSTEM SET %s = '%s'" % (self.name, value)
+            query = "ALTER SYSTEM SET %s = '%s'" % (self.sql_name, value)
 
         else:
-            query = "ALTER SYSTEM SET %s = %s" % (self.name, value)
+            query = "ALTER SYSTEM SET %s = %s" % (self.sql_name, value)
 
         return query
 

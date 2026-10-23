@@ -27,6 +27,10 @@
   - name: Test options coverage
     include_tasks: options_coverage.yml
 
+  # options_coverage.yml preloads pg_stat_statements and restarts PostgreSQL.
+  - name: Test a dotted configuration parameter name
+    include_tasks: test_parameter_names.yml
+
   when: postgres_version_resp.stdout is version('14', '>=')
 
 - name: Run on PostgreSQL 17 or higher
