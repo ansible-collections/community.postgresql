@@ -74,6 +74,18 @@ stages:
             - name: Units
               test: 'devel/units/1'
 
+  - stage: Ansible_2_22
+    displayName: Sanity & Units 2.22
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          targets:
+            - name: Sanity
+              test: '2.22/sanity/1'
+            - name: Units
+              test: '2.22/units/1'
+
   - stage: Ansible_2_21
     displayName: Sanity & Units 2.21
     dependsOn: []
@@ -110,18 +122,6 @@ stages:
             - name: Units
               test: '2.19/units/1'
 
-  - stage: Ansible_2_18
-    displayName: Sanity & Units 2.18
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          targets:
-            - name: Sanity
-              test: '2.18/sanity/1'
-            - name: Units
-              test: '2.18/units/1'
-
 ## Docker
   - stage: Docker_devel
     displayName: Docker devel
@@ -130,6 +130,21 @@ stages:
       - template: templates/matrix.yml
         parameters:
           testFormat: devel/linux/{0}/1
+          targets:
+            - name: Fedora 44
+              test: fedora44
+            - name: Ubuntu 26.04
+              test: ubuntu2604
+            - name: Ubuntu 24.04
+              test: ubuntu2404
+
+  - stage: Docker_2_22
+    displayName: Docker 2.22
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.22/linux/{0}/1
           targets:
             - name: Fedora 44
               test: fedora44
@@ -183,20 +198,6 @@ stages:
             - name: Ubuntu 22.04
               test: ubuntu2204
 
-  - stage: Docker_2_18
-    displayName: Docker 2.18
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.18/linux/{0}/1
-          targets:
-            - name: Fedora 40
-              test: fedora40
-            - name: Ubuntu 22.04
-              test: ubuntu2204
-
-
 ## Remote
   - stage: Remote_devel
     displayName: Remote devel
@@ -205,6 +206,17 @@ stages:
       - template: templates/matrix.yml
         parameters:
           testFormat: devel/{0}/1
+          targets:
+            - name: RHEL 10.2
+              test: rhel/10.2
+
+  - stage: Remote_2_22
+    displayName: Remote 2.22
+    dependsOn: []
+    jobs:
+      - template: templates/matrix.yml
+        parameters:
+          testFormat: 2.22/{0}/1
           targets:
             - name: RHEL 10.2
               test: rhel/10.2
@@ -219,10 +231,10 @@ stages:
         parameters:
           testFormat: 2.21/{0}/1
           targets:
-            - name: RHEL 10.1
-              test: rhel/10.1
-            - name: RHEL 9.7
-              test: rhel/9.7
+            - name: RHEL 10.2
+              test: rhel/10.2
+            - name: RHEL 9.8
+              test: rhel/9.8
 
   - stage: Remote_2_20
     displayName: Remote 2.20
@@ -232,10 +244,10 @@ stages:
         parameters:
           testFormat: 2.20/{0}/1
           targets:
-            - name: RHEL 10.1
-              test: rhel/10.1
-            - name: RHEL 9.7
-              test: rhel/9.7
+            - name: RHEL 10.2
+              test: rhel/10.2
+            - name: RHEL 9.8
+              test: rhel/9.8
 
   - stage: Remote_2_19
     displayName: Remote 2.19
@@ -248,36 +260,25 @@ stages:
             - name: RHEL 9.7
               test: rhel/9.7
 
-  - stage: Remote_2_18
-    displayName: Remote devel
-    dependsOn: []
-    jobs:
-      - template: templates/matrix.yml
-        parameters:
-          testFormat: 2.18/{0}/1
-          targets:
-            - name: RHEL 9.7
-              test: rhel/9.7
-
 ## Finally
 
   - stage: Summary
     condition: succeededOrFailed()
     dependsOn:
       - Ansible_devel
+      - Ansible_2_22
       - Ansible_2_21
       - Ansible_2_20
       - Ansible_2_19
-      - Ansible_2_18
       - Docker_devel
+      - Docker_2_22
       - Docker_2_21
       - Docker_2_20
       - Docker_2_19
-      - Docker_2_18
       - Remote_devel
+      - Remote_2_22
       - Remote_2_21
       - Remote_2_20
       - Remote_2_19
-      - Remote_2_18
     jobs:
       - template: templates/coverage.yml
