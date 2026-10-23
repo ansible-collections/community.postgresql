@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_info - fix the module failing with ``'bool' object is not iterable`` when a database has no extensions installed. A query that returns no rows now gives an empty result instead of ``False`` (https://github.com/ansible-collections/community.postgresql/issues/959).
