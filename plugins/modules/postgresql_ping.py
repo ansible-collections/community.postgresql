@@ -135,11 +135,24 @@ class PgPing(object):
         full = raw.split()[1]
         m = re.match(r"(\d+)\.(\d+)(?:\.(\d+))?", full)
 
-        major = int(m.group(1))
-        minor = int(m.group(2))
         patch = None
-        if m.group(3) is not None:
-            patch = int(m.group(3))
+        if m is not None:
+            major = int(m.group(1))
+            minor = int(m.group(2))
+            if m.group(3) is not None:
+                patch = int(m.group(3))
+        else:
+            query = "SELECT current_setting('server_version_num')"
+            server_version_num = exec_sql(self, query, add_to_executed=False)[0]["current_setting"]
+            server_version_num = int(server_version_num)
+
+            # PostgreSQL 10+ encodes MAJOR * 10000 + MINOR.
+            # Older versions encode MAJOR * 10000 + MINOR * 100 + PATCH.
+            major, remainder = divmod(server_version_num, 10000)
+            if major >= 10:
+                minor = remainder
+            else:
+                minor, patch = divmod(remainder, 100)
 
         self.version = dict(
             major=major,
