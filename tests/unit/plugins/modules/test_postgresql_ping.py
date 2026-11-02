@@ -35,7 +35,7 @@ def test_get_pg_version_keeps_release_output(monkeypatch, raw, major, minor, ful
 
     def mock_exec_sql(_obj, query, add_to_executed=False):
         queries.append(query)
-        assert query == "SELECT version()"
+        assert query == "SELECT pg_catalog.version()"
         return [{"version": raw}]
 
     monkeypatch.setattr(postgresql_ping, "exec_sql", mock_exec_sql)
@@ -54,7 +54,7 @@ def test_get_pg_version_keeps_release_output(monkeypatch, raw, major, minor, ful
 
     assert ping.is_available is True
     assert ping.version == expected
-    assert queries == ["SELECT version()"]
+    assert queries == ["SELECT pg_catalog.version()"]
 
 
 @pytest.mark.parametrize(
@@ -72,9 +72,9 @@ def test_get_pg_version_uses_server_version_num_for_prereleases(
 
     def mock_exec_sql(_obj, query, add_to_executed=False):
         queries.append(query)
-        if query == "SELECT version()":
+        if query == "SELECT pg_catalog.version()":
             return [{"version": raw}]
-        if query == "SELECT current_setting('server_version_num')":
+        if query == "SELECT pg_catalog.current_setting('server_version_num')":
             return [{"current_setting": server_version_num}]
         raise AssertionError("Unexpected query: %s" % query)
 
@@ -91,6 +91,6 @@ def test_get_pg_version_uses_server_version_num_for_prereleases(
         "raw": raw,
     }
     assert queries == [
-        "SELECT version()",
-        "SELECT current_setting('server_version_num')",
+        "SELECT pg_catalog.version()",
+        "SELECT pg_catalog.current_setting('server_version_num')",
     ]

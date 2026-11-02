@@ -124,7 +124,7 @@ class PgPing(object):
         return (self.is_available, self.version)
 
     def get_pg_version(self):
-        query = "SELECT version()"
+        query = "SELECT pg_catalog.version()"
         raw = exec_sql(self, query, add_to_executed=False)[0]["version"]
 
         if not raw:
@@ -142,7 +142,7 @@ class PgPing(object):
             if m.group(3) is not None:
                 patch = int(m.group(3))
         else:
-            query = "SELECT current_setting('server_version_num')"
+            query = "SELECT pg_catalog.current_setting('server_version_num')"
             server_version_num = exec_sql(self, query, add_to_executed=False)[0]["current_setting"]
             server_version_num = int(server_version_num)
 
