@@ -639,7 +639,7 @@ def db_restore(module, target, target_opts="",
     if comp_prog_path:
         env = os.environ.copy()
         if password:
-            env = {"PGPASSWORD": password}
+            env["PGPASSWORD"] = password
         p1 = subprocess.Popen([comp_prog_path, target], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p2 = subprocess.Popen(cmd, stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env)
         (stdout2, stderr2) = p2.communicate()
