@@ -40,8 +40,12 @@ options:
   unlogged:
     description:
     - Create an unlogged table.
+    - If the table already exists and I(unlogged) is set explicitly, the table
+      is changed with C(ALTER TABLE ... SET UNLOGGED) or C(ALTER TABLE ... SET LOGGED)
+      when its current persistence differs.
+    - If not set, a new table is created as a regular (logged) table
+      and the persistence of an existing table is left unchanged.
     type: bool
-    default: false
   like:
     description:
     - Create a table like another table (with similar DDL).
@@ -100,6 +104,7 @@ notes:
   named postgres.
 - PostgreSQL allows to create columnless table, so columns param is optional.
 - Unlogged tables are available from PostgreSQL server version 9.1.
+- Changing the persistence of an existing table (I(unlogged)) requires PostgreSQL server version 9.5 or later.
 - If the table already exists and columns are specified they will be ignored.
   Columns can not be altered on an existing table.
 
@@ -271,6 +276,7 @@ class Table(object):
             'owner': '',
             'tblspace': '',
             'storage_params': [],
+            'unlogged': False,
         }
         self.exists = False
         self.__exists_in_db()
@@ -289,7 +295,7 @@ class Table(object):
             schema = 'public'
             tblname = self.name
 
-        query = ("SELECT t.tableowner, t.tablespace, c.reloptions "
+        query = ("SELECT t.tableowner, t.tablespace, c.reloptions, c.relpersistence "
                  "FROM pg_tables AS t "
                  "INNER JOIN pg_class AS c ON  c.relname = t.tablename "
                  "INNER JOIN pg_namespace AS n ON t.schemaname = n.nspname AND c.relnamespace = n.oid "
@@ -303,6 +309,7 @@ class Table(object):
                 owner=res[0]["tableowner"],
                 tblspace=res[0]["tablespace"] if res[0]["tablespace"] else '',
                 storage_params=res[0]["reloptions"] if res[0]["reloptions"] else [],
+                unlogged=res[0]["relpersistence"] == 'u',
             )
 
             return True
@@ -311,17 +318,18 @@ class Table(object):
             return False
 
     def create(self, columns='', params='', tblspace='',
-               unlogged=False, owner=''):
+               unlogged=None, owner=''):
         """
         Create table.
-        If table exists, check passed args (params, tblspace, owner) and,
+        If table exists, check passed args (params, tblspace, owner, unlogged) and,
         if they're different from current, change them.
         Arguments:
         params - storage params (passed by "WITH (...)" in SQL),
             comma separated.
         tblspace - tablespace.
         owner - table owner.
-        unlogged - create unlogged table.
+        unlogged - create unlogged table. If the table exists and the value
+            is not None, change the table persistence when it differs.
         columns - column string (comma separated).
         """
         name = pg_quote_identifier(self.name, 'table')
@@ -350,6 +358,10 @@ class Table(object):
                 if new_param:
                     self.set_stor_params(params)
                     changed = True
+
+            if unlogged is not None and self.info['unlogged'] != unlogged:
+                self.set_unlogged(unlogged)
+                changed = True
 
             if changed:
                 return True
@@ -450,6 +462,11 @@ class Table(object):
                                                       pg_quote_name(tblspace))
         return exec_sql(self, query, return_bool=True)
 
+    def set_unlogged(self, unlogged):
+        query = 'ALTER TABLE %s SET %s' % (pg_quote_identifier(self.name, 'table'),
+                                           'UNLOGGED' if unlogged else 'LOGGED')
+        return exec_sql(self, query, return_bool=True)
+
     def set_stor_params(self, params):
         query = "ALTER TABLE %s SET (%s)" % (pg_quote_identifier(self.name, 'table'), params)
         return exec_sql(self, query, return_bool=True)
@@ -468,7 +485,7 @@ def main():
         login_db=dict(type='str', default=''),
         tablespace=dict(type='str'),
         owner=dict(type='str'),
-        unlogged=dict(type='bool', default=False),
+        unlogged=dict(type='bool'),
         like=dict(type='str'),
         including=dict(type='str'),
         truncate=dict(type='bool', default=False),
@@ -506,12 +523,12 @@ def main():
         module.warn("cascade=true is ignored when state=present")
 
     # Check mutual exclusive parameters:
-    if state == 'absent' and (truncate or columns or tablespace or like or storage_params or unlogged or owner or including):
+    if state == 'absent' and (truncate or columns or tablespace or like or storage_params or unlogged is not None or owner or including):
         module.fail_json(msg="%s: state=absent is mutually exclusive with: "
                              "truncate, columns, tablespace, "
                              "including, like, storage_params, unlogged, owner" % table)
 
-    if truncate and (columns or like or unlogged or storage_params or owner or tablespace or including):
+    if truncate and (columns or like or unlogged is not None or storage_params or owner or tablespace or including):
         module.fail_json(msg="%s: truncate is mutually exclusive with: "
                              "columns, like, unlogged, including, "
                              "storage_params, owner, tablespace" % table)

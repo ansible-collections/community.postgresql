@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_table - change the persistence of an existing table with ``ALTER TABLE ... SET UNLOGGED`` or ``ALTER TABLE ... SET LOGGED`` when ``unlogged`` is set explicitly and differs from the current state. ``unlogged`` no longer defaults to ``false``, so existing tables are left as they are when the option is not set (https://github.com/ansible-collections/community.postgresql/issues/878).

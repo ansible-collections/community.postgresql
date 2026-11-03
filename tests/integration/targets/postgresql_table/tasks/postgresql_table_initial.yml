@@ -611,6 +611,122 @@
     that:
       - result.rowcount == 1
   when: postgres_version_resp.stdout is version('9.1', '>=')
+# Change the persistence of an existing table:
+- name: postgresql_table - unlogged table persistence changes
+  become: true
+  become_user: "{{ pg_user }}"
+  when: postgres_version_resp.stdout is version('9.5', '>=')
+  block:
+  - name: postgresql_table - unlogged true on an unlogged table is idempotent
+    postgresql_table:
+      login_db: postgres
+      login_user: "{{ pg_user }}"
+      name: test5
+      unlogged: true
+    register: result
+
+  - assert:
+      that:
+        - result is not changed
+        - result.queries == []
+
+  - name: postgresql_table - omitted unlogged leaves an unlogged table as it is
+    postgresql_table:
+      login_db: postgres
+      login_user: "{{ pg_user }}"
+      name: test5
+    register: result
+
+  - assert:
+      that:
+        - result is not changed
+        - result.queries == []
+
+  - name: postgresql_table - set table logged in check_mode
+    postgresql_table:
+      login_db: postgres
+      login_user: "{{ pg_user }}"
+      name: test5
+      unlogged: false
+    register: result
+    check_mode: true
+
+  - assert:
+      that:
+        - result is changed
+        - result.queries == ['ALTER TABLE "test5" SET LOGGED']
+
+  - name: postgresql_table - check that the table is still unlogged
+    postgresql_query:
+      login_db: postgres
+      login_user: "{{ pg_user }}"
+      query: "SELECT relpersistence FROM pg_class WHERE relname = 'test5'"
+    register: result
+
+  - assert:
+      that:
+        - result.query_result[0].relpersistence == 'u'
+
+  - name: postgresql_table - set table logged
+    postgresql_table:
+      login_db: postgres
+      login_user: "{{ pg_user }}"
+      name: test5
+      unlogged: false
+    register: result
+
+  - assert:
+      that:
+        - result is changed
+        - result.queries == ['ALTER TABLE "test5" SET LOGGED']
+
+  - name: postgresql_table - check that the table is logged
+    postgresql_query:
+      login_db: postgres
+      login_user: "{{ pg_user }}"
+      query: "SELECT relpersistence FROM pg_class WHERE relname = 'test5'"
+    register: result
+
+  - assert:
+      that:
+        - result.query_result[0].relpersistence == 'p'
+
+  - name: postgresql_table - set table logged again, idempotence
+    postgresql_table:
+      login_db: postgres
+      login_user: "{{ pg_user }}"
+      name: test5
+      unlogged: false
+    register: result
+
+  - assert:
+      that:
+        - result is not changed
+        - result.queries == []
+
+  - name: postgresql_table - set table unlogged
+    postgresql_table:
+      login_db: postgres
+      login_user: "{{ pg_user }}"
+      name: test5
+      unlogged: true
+    register: result
+
+  - assert:
+      that:
+        - result is changed
+        - result.queries == ['ALTER TABLE "test5" SET UNLOGGED']
+
+  - name: postgresql_table - check that the table is unlogged
+    postgresql_query:
+      login_db: postgres
+      login_user: "{{ pg_user }}"
+      query: "SELECT relpersistence FROM pg_class WHERE relname = 'test5'"
+    register: result
+
+  - assert:
+      that:
+        - result.query_result[0].relpersistence == 'u'
 
 # Drop table CASCADE:
 - name: postgresql_table - drop table cascade
