@@ -85,7 +85,7 @@ The minimum supported and tested versions of Psycopg are 2.5.1 and 3.1.8 respect
 
 ## Releases Support Timeline
 
-We maintain one previous major release version (1.x.y, 2.x.y, ...) for two years after the next major version is released (bugfixes only).
+We maintain one previous major release version (X.y.z) for two years after the current major version was released (bugfixes only, no new features).
 
 Here is the table for the support timeline:
 - 1.x.y: released 2020-11-17, EOL
