@@ -27,88 +27,116 @@
       - result is failed
       - result.msg is search("is not supported by the module to avoid crashe")
 
-  - name: Set value of type string in check_mode
-    <<: *task_parameters
-    check_mode: true
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: log_timezone
-      value: Europe/Berlin
-
-  - name: Check the result
-    assert:
-      that:
-      - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET log_timezone = 'Europe/Berlin'", "SELECT pg_reload_conf()"]
-      - result["attrs"]["boot_val"] == "GMT"
-      - result["attrs"]["context"] == "sighup"
-      - result["attrs"]["enumvals"] == None
-      - result["attrs"]["unit"] == None
-      - result["attrs"]["vartype"] == "string"
-      - result["attrs"]["min_val"] == None
-      - result["attrs"]["max_val"] == None
-      - result["diff"]["before"]["pending_restart"] == False
-      - result["diff"]["before"]["setting"] != "Europe/Berlin"
-      - result["diff"]["after"]["pending_restart"] == False
-      - result["diff"]["after"]["setting"] != "Europe/Berlin"
-
-  - name: Check nothing has changed
+  - name: Read the original TimeZone setting
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_timezone'"
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'TimeZone'"
+    register: original_timezone
 
-  - name: Check the output
-    assert:
-      that:
-      - result.query_result[0]["setting"] != "Europe/Berlin"
+  - name: Test mixed-case string parameter names
+    block:
+    - name: Set value of type string in check_mode
+      <<: *task_parameters
+      check_mode: true
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: TimeZone
+        value: Europe/Berlin
 
-  - name: Set value of type string
-    <<: *task_parameters
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: log_timezone
-      value: Europe/Berlin
+    - name: Check the result
+      assert:
+        that:
+        - result is changed
+        - result.executed_queries == ["ALTER SYSTEM SET \"TimeZone\" = 'Europe/Berlin'", "SELECT pg_reload_conf()"]
+        - result["attrs"]["boot_val"] == "GMT"
+        - result["attrs"]["context"] == "user"
+        - result["attrs"]["enumvals"] == None
+        - result["attrs"]["unit"] == None
+        - result["attrs"]["vartype"] == "string"
+        - result["attrs"]["min_val"] == None
+        - result["attrs"]["max_val"] == None
+        - result["diff"]["before"]["pending_restart"] == False
+        - result["diff"]["before"]["setting"] != "Europe/Berlin"
+        - result["diff"]["after"]["pending_restart"] == False
+        - result["diff"]["after"]["setting"] != "Europe/Berlin"
 
-  - name: Check the result
-    assert:
-      that:
-      - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET log_timezone = 'Europe/Berlin'", "SELECT pg_reload_conf()"]
-      - result["attrs"]["boot_val"] == "GMT"
-      - result["attrs"]["context"] == "sighup"
-      - result["attrs"]["enumvals"] == None
-      - result["attrs"]["unit"] == None
-      - result["attrs"]["vartype"] == "string"
-      - result["attrs"]["min_val"] == None
-      - result["attrs"]["max_val"] == None
-      - result["diff"]["before"]["pending_restart"] == False
-      - result["diff"]["before"]["setting"] != "Europe/Berlin"
-      - result["diff"]["after"]["pending_restart"] == False
-      - result["diff"]["after"]["setting"] == "Europe/Berlin"
+    - name: Check nothing has changed
+      <<: *task_parameters
+      postgresql_query:
+        <<: *pg_parameters
+        query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'TimeZone'"
 
-  - name: Check it has changed
-    <<: *task_parameters
-    postgresql_query:
-      <<: *pg_parameters
-      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_timezone'"
+    - name: Check the output
+      assert:
+        that:
+        - result.query_result[0]["setting"] != "Europe/Berlin"
 
-  - name: Check the output
-    assert:
-      that:
-      - result.query_result[0]["setting"] == "Europe/Berlin"
+    - name: Set value of type string
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: '"TimeZone"'
+        value: Europe/Berlin
 
-  - name: Set same value again
-    <<: *task_parameters
-    postgresql_alter_system:
-      <<: *pg_parameters
-      param: log_timezone
-      value: Europe/Berlin
+    - name: Check the result
+      assert:
+        that:
+        - result is changed
+        - result.executed_queries == ["ALTER SYSTEM SET \"TimeZone\" = 'Europe/Berlin'", "SELECT pg_reload_conf()"]
+        - result["attrs"]["boot_val"] == "GMT"
+        - result["attrs"]["context"] == "user"
+        - result["attrs"]["enumvals"] == None
+        - result["attrs"]["unit"] == None
+        - result["attrs"]["vartype"] == "string"
+        - result["attrs"]["min_val"] == None
+        - result["attrs"]["max_val"] == None
+        - result["diff"]["before"]["pending_restart"] == False
+        - result["diff"]["before"]["setting"] != "Europe/Berlin"
+        - result["diff"]["after"]["pending_restart"] == False
+        - result["diff"]["after"]["setting"] == "Europe/Berlin"
 
-  - name: Check the result
-    assert:
-      that:
-      - result is not changed
+    - name: Check it has changed
+      <<: *task_parameters
+      postgresql_query:
+        <<: *pg_parameters
+        query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'TimeZone'"
+
+    - name: Check the output
+      assert:
+        that:
+        - result.query_result[0]["setting"] == "Europe/Berlin"
+
+    - name: Set same value again
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: TimeZone
+        value: Europe/Berlin
+
+    - name: Check the result
+      assert:
+        that:
+        - result is not changed
+
+    always:
+    - name: Reset TimeZone after testing
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: TimeZone
+        value: _RESET
+
+    - name: Read TimeZone after cleanup
+      <<: *task_parameters
+      postgresql_query:
+        <<: *pg_parameters
+        query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'TimeZone'"
+
+    - name: Verify the original TimeZone setting is restored
+      assert:
+        that:
+        - result.query_result == original_timezone.query_result
 
   - name: Set shared_preload_libraries
     <<: *task_parameters
@@ -163,7 +191,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET search_path = \"$user\",'public','extensions'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"search_path\" = \"$user\",'public','extensions'", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == '"$user", public'
       - result["attrs"]["context"] == "user"
       - result["attrs"]["enumvals"] == None

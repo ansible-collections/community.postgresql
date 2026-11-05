@@ -9,11 +9,13 @@ __metaclass__ = type
 
 import sys
 
+import pytest
+
 if sys.version_info[0] == 3:
-    from plugins.module_utils.database import check_input, pg_quote_name
+    from plugins.module_utils.database import check_input, pg_quote_name, pg_unquote_name
 elif sys.version_info[0] == 2:
     from ansible_collections.community.postgresql.plugins.module_utils.database import (
-        check_input, pg_quote_name,
+        check_input, pg_quote_name, pg_unquote_name,
     )
 
 
@@ -61,6 +63,27 @@ def test_pg_quote_name_for_params():
     # one, so what reaches the server is the name as written.
     doubled = pg_quote_name('per%cent', for_params=True)
     assert doubled % {} == '"per%cent"'
+
+
+@pytest.mark.parametrize('name,expected', [
+    ('work_mem', 'work_mem'),
+    ('"work_mem"', 'work_mem'),
+    ('online_analyze.verbose', 'online_analyze.verbose'),
+    ('"online_analyze.verbose"', 'online_analyze.verbose'),
+    ('"custom.subsystem.option"', 'custom.subsystem.option'),
+    ('"TimeZone"', 'TimeZone'),
+    ('"custom.we""ird"', 'custom.we"ird'),
+    ('"""work_mem"""', '"work_mem"'),
+    ('"work_mem', '"work_mem'),
+    ('work_mem"', 'work_mem"'),
+    ('"custom.we"ird"', '"custom.we"ird"'),
+    ('"custom"."option"', '"custom"."option"'),
+    ('"work_mem"\n', '"work_mem"\n'),
+    ('""', '""'),
+    ('"custom.\x00option"', '"custom.\x00option"'),
+])
+def test_pg_unquote_name(name, expected):
+    assert pg_unquote_name(name) == expected
 
 
 def test_check_input_nested_inputs(mocker):

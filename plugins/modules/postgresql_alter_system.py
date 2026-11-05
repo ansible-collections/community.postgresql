@@ -24,6 +24,8 @@ options:
   param:
     description:
     - Name of PostgreSQL server parameter.
+    - Accepts a logical name such as C(online_analyze.verbose), optionally enclosed in SQL double quotes.
+    - Dotted names are treated as one configuration parameter name.
     type: str
     required: true
 
@@ -151,7 +153,7 @@ executed_queries:
   returned: success
   type: list
   elements: str
-  sample: ["ALTER SYSTEM SET shared_preload_libraries = ''"]
+  sample: ["ALTER SYSTEM SET \"shared_preload_libraries\" = ''"]
 
 restart_required:
   description:
@@ -166,7 +168,7 @@ restart_required:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input
+    check_input, pg_quote_name, pg_unquote_name
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
@@ -616,6 +618,7 @@ class PgParam():
         self.module = module
         self.cursor = cursor
         self.name = name
+        self.sql_name = '.'.join(pg_quote_name(part) for part in name.split('.'))
         self.pg_ver = pg_ver
 
         self.attrs = self.get_attrs()
@@ -663,7 +666,7 @@ class PgParam():
         # is always a removal of the line from postgresql.auto.conf
         # this will always run the command to ensure the removal
         # and report changed=true
-        query = "ALTER SYSTEM RESET %s" % self.name
+        query = "ALTER SYSTEM RESET %s" % self.sql_name
         self.__exec_set_sql(query)
         return True
 
@@ -701,13 +704,13 @@ class PgParam():
                 else:
                     tmp.append("'" + elem.strip() + "'")
 
-            query = "ALTER SYSTEM SET %s = %s" % (self.name, ','.join(tmp))
+            query = "ALTER SYSTEM SET %s = %s" % (self.sql_name, ','.join(tmp))
 
         elif self.pg_ver >= 140000:
-            query = "ALTER SYSTEM SET %s = '%s'" % (self.name, value)
+            query = "ALTER SYSTEM SET %s = '%s'" % (self.sql_name, value)
 
         else:
-            query = "ALTER SYSTEM SET %s = %s" % (self.name, value)
+            query = "ALTER SYSTEM SET %s = %s" % (self.sql_name, value)
 
         return query
 
@@ -798,7 +801,8 @@ def main():
         supports_check_mode=True,
     )
 
-    param = module.params['param']
+    # Normalize once, before parameter-specific checks and metadata lookups.
+    param = pg_unquote_name(module.params['param'])
     value = module.params['value']
     session_role = module.params['session_role']
     trust_input = module.params['trust_input']
@@ -810,7 +814,7 @@ def main():
 
     if not trust_input:
         # Check input for potentially dangerous elements
-        check_input(module, param, value, session_role)
+        check_input(module, module.params['param'], value, session_role)
 
     # Ensure psycopg libraries are available before connecting to DB
     ensure_required_libs(module)

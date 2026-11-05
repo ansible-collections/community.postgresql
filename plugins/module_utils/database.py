@@ -152,6 +152,16 @@ def pg_quote_name(name, for_params=False):
     return quoted.replace('%', '%%') if for_params else quoted
 
 
+def pg_unquote_name(name):
+    """Decode one complete double-quoted SQL identifier, otherwise return it unchanged.
+
+    Preserve case and dots, and decode doubled quotes exactly once. Malformed
+    quoting is left intact so callers can reject the name without repairing it.
+    """
+    match = re.match(r'\A"((?:[^"\x00]|"")+)"\Z', name)
+    return match.group(1).replace('""', '"') if match else name
+
+
 def mysql_quote_identifier(identifier, id_type):
     identifier_fragments = _identifier_parse(identifier, quote_char='`')
     if (len(identifier_fragments) - 1) > _MYSQL_IDENTIFIER_TO_DOT_LEVEL[id_type]:
