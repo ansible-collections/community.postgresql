@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_db - keep the inherited environment (for example ``PGSSLMODE``, ``PGSSLROOTCERT`` or ``PATH``) when restoring a compressed dump with ``login_password`` set. Before, the environment of the restore command was replaced by ``PGPASSWORD`` alone, so it differed from the uncompressed restore path.
