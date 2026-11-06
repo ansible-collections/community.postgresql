@@ -76,6 +76,203 @@
 - assert:
     that: result is changed
 
+
+###############################################
+# Regression coverage for issue #582
+###############################################
+
+- name: Grant default table privileges for issue 582
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    login_db: "{{ db_name }}"
+    objs: TABLES
+    privs: SELECT,TRUNCATE,TRIGGER
+    type: default_privs
+    role: "{{ db_user2 }}"
+    target_roles: "{{ db_user1 }}"
+    login_user: "{{ pg_user }}"
+  register: result
+
+- assert:
+    that: result is changed
+
+- name: Grant default sequence privileges for issue 582
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    login_db: "{{ db_name }}"
+    objs: SEQUENCES
+    privs: USAGE
+    type: default_privs
+    role: "{{ db_user2 }}"
+    target_roles: "{{ db_user1 }}"
+    login_user: "{{ pg_user }}"
+  register: result
+
+- assert:
+    that: result is changed
+
+- name: Revoke only TRUNCATE and TRIGGER in check mode
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    login_db: "{{ db_name }}"
+    state: absent
+    objs: TABLES
+    privs: TRUNCATE,TRIGGER
+    type: default_privs
+    role: "{{ db_user2 }}"
+    target_roles: "{{ db_user1 }}"
+    login_user: "{{ pg_user }}"
+  check_mode: true
+  register: result
+
+- assert:
+    that: result is changed
+
+- name: Verify check mode preserved existing default privileges
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    login_db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: |
+      WITH privileges AS (
+          SELECT d.defaclobjtype, acl.privilege_type
+          FROM pg_default_acl AS d
+          CROSS JOIN LATERAL pg_catalog.aclexplode(d.defaclacl) AS acl
+          JOIN pg_roles AS target_role ON target_role.oid = d.defaclrole
+          JOIN pg_roles AS grantee_role ON grantee_role.oid = acl.grantee
+          WHERE d.defaclnamespace = (
+              SELECT oid FROM pg_namespace WHERE nspname = 'public'
+          )
+            AND target_role.rolname = '{{ db_user1 }}'
+            AND grantee_role.rolname = '{{ db_user2 }}'
+      )
+      SELECT
+          EXISTS (
+              SELECT 1 FROM privileges
+              WHERE defaclobjtype = 'r' AND privilege_type = 'SELECT'
+          ) AS table_select,
+          EXISTS (
+              SELECT 1 FROM privileges
+              WHERE defaclobjtype = 'r' AND privilege_type = 'TRUNCATE'
+          ) AS table_truncate,
+          EXISTS (
+              SELECT 1 FROM privileges
+              WHERE defaclobjtype = 'r' AND privilege_type = 'TRIGGER'
+          ) AS table_trigger,
+          EXISTS (
+              SELECT 1 FROM privileges
+              WHERE defaclobjtype = 'S' AND privilege_type = 'USAGE'
+          ) AS sequence_usage
+  register: result
+
+- assert:
+    that:
+      - result.query_result[0].table_select
+      - result.query_result[0].table_truncate
+      - result.query_result[0].table_trigger
+      - result.query_result[0].sequence_usage
+
+- name: Revoke only TRUNCATE and TRIGGER from default table privileges
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    login_db: "{{ db_name }}"
+    state: absent
+    objs: TABLES
+    privs: TRUNCATE,TRIGGER
+    type: default_privs
+    role: "{{ db_user2 }}"
+    target_roles: "{{ db_user1 }}"
+    login_user: "{{ pg_user }}"
+  register: result
+
+- assert:
+    that: result is changed
+
+- name: Verify selective default privilege revocation
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_query:
+    login_db: "{{ db_name }}"
+    login_user: "{{ pg_user }}"
+    query: |
+      WITH privileges AS (
+          SELECT d.defaclobjtype, acl.privilege_type
+          FROM pg_default_acl AS d
+          CROSS JOIN LATERAL pg_catalog.aclexplode(d.defaclacl) AS acl
+          JOIN pg_roles AS target_role ON target_role.oid = d.defaclrole
+          JOIN pg_roles AS grantee_role ON grantee_role.oid = acl.grantee
+          WHERE d.defaclnamespace = (
+              SELECT oid FROM pg_namespace WHERE nspname = 'public'
+          )
+            AND target_role.rolname = '{{ db_user1 }}'
+            AND grantee_role.rolname = '{{ db_user2 }}'
+      )
+      SELECT
+          EXISTS (
+              SELECT 1 FROM privileges
+              WHERE defaclobjtype = 'r' AND privilege_type = 'SELECT'
+          ) AS table_select,
+          EXISTS (
+              SELECT 1 FROM privileges
+              WHERE defaclobjtype = 'r' AND privilege_type = 'TRUNCATE'
+          ) AS table_truncate,
+          EXISTS (
+              SELECT 1 FROM privileges
+              WHERE defaclobjtype = 'r' AND privilege_type = 'TRIGGER'
+          ) AS table_trigger,
+          EXISTS (
+              SELECT 1 FROM privileges
+              WHERE defaclobjtype = 'S' AND privilege_type = 'USAGE'
+          ) AS sequence_usage
+  register: result
+
+- assert:
+    that:
+      - result.query_result[0].table_select
+      - not result.query_result[0].table_truncate
+      - not result.query_result[0].table_trigger
+      - result.query_result[0].sequence_usage
+
+- name: Check repeating selective default privilege revocation in check mode
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    login_db: "{{ db_name }}"
+    state: absent
+    objs: TABLES
+    privs: TRUNCATE,TRIGGER
+    type: default_privs
+    role: "{{ db_user2 }}"
+    target_roles: "{{ db_user1 }}"
+    login_user: "{{ pg_user }}"
+  check_mode: true
+  register: result
+
+- assert:
+    that: result is not changed
+
+- name: Check repeating selective default privilege revocation
+  become_user: "{{ pg_user }}"
+  become: true
+  postgresql_privs:
+    login_db: "{{ db_name }}"
+    state: absent
+    objs: TABLES
+    privs: TRUNCATE,TRIGGER
+    type: default_privs
+    role: "{{ db_user2 }}"
+    target_roles: "{{ db_user1 }}"
+    login_user: "{{ pg_user }}"
+  register: result
+
+- assert:
+    that: result is not changed
+
 # Cleanup
 - name: Remove user given permissions
   become_user: "{{ pg_user }}"

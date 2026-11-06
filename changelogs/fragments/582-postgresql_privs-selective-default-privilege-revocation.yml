@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_privs - fixed revocation of default privileges to respect the requested ``privs`` and ``objs`` when ``state: absent`` is used (https://github.com/ansible-collections/community.postgresql/issues/582).
