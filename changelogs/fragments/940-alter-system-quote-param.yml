@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_alter_system - consistently quote configuration parameter name components in ALTER SYSTEM SET and RESET, preserving case and supporting quoted and unquoted names containing SQL keywords such as ``online_analyze.verbose`` (https://github.com/ansible-collections/community.postgresql/issues/940).
