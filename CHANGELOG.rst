@@ -4,6 +4,22 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v4.2.1
+======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Bugfixes
+--------
+
+- postgresql_db - keep the inherited environment (for example ``PGSSLMODE``, ``PGSSLROOTCERT`` or ``PATH``) when restoring a compressed dump with ``login_password`` set. Before, the environment of the restore command was replaced by ``PGPASSWORD`` alone, so it differed from the uncompressed restore path.
+- postgresql_ping - Handle beta and release-candidate server versions when parsing the version number.
+
 v4.2.0
 ======
 

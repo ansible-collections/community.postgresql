@@ -1118,3 +1118,22 @@ releases:
     - 882-postgresql_db-restore-fix.yml
     - 888-postgresql-priv-maintain.yml
     release_date: '2025-12-04'
+  4.2.1:
+    changes:
+      bugfixes:
+      - postgresql_db - keep the inherited environment (for example ``PGSSLMODE``,
+        ``PGSSLROOTCERT`` or ``PATH``) when restoring a compressed dump with ``login_password``
+        set. Before, the environment of the restore command was replaced by ``PGPASSWORD``
+        alone, so it differed from the uncompressed restore path.
+      - postgresql_ping - Handle beta and release-candidate server versions when parsing
+        the version number.
+      release_summary: 'This is a patch release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 4.2.1.yml
+    - 966_postgresql_ping_prerelease_versions.yml
+    - postgresql_db_restore_compressed_env.yml
+    release_date: '2026-11-06'
