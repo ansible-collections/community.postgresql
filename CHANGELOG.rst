@@ -4,6 +4,24 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v5.1.1
+======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Bugfixes
+--------
+
+- postgresql_alter_system - consistently quote configuration parameter name components in ALTER SYSTEM SET and RESET, preserving case and supporting quoted and unquoted names containing SQL keywords such as ``online_analyze.verbose`` (https://github.com/ansible-collections/community.postgresql/issues/940).
+- postgresql_db - keep the inherited environment (for example ``PGSSLMODE``, ``PGSSLROOTCERT`` or ``PATH``) when restoring a compressed dump with ``login_password`` set. Before, the environment of the restore command was replaced by ``PGPASSWORD`` alone, so it differed from the uncompressed restore path.
+- postgresql_ping - Handle beta and release-candidate server versions when parsing the version number.
+- postgresql_table - change the persistence of an existing table with ``ALTER TABLE ... SET UNLOGGED`` or ``ALTER TABLE ... SET LOGGED`` when ``unlogged`` is set explicitly and differs from the current state. ``unlogged`` no longer defaults to ``false``, so existing tables are left as they are when the option is not set (https://github.com/ansible-collections/community.postgresql/issues/878).
+
 v5.1.0
 ======
 
