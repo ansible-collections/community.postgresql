@@ -62,3 +62,34 @@ def test_present_default_privileges_keep_existing_revoke_all_then_grant_behavior
         'ALTER DEFAULT PRIVILEGES FOR ROLE "writers" IN SCHEMA "public" '
         'GRANT SELECT ON TABLES TO "developers";',
     ]
+
+def test_absent_default_privileges_all_default_all_revokes_legacy_object_classes():
+    query = (
+        postgresql_privs.QueryBuilder('absent')
+        .for_objtype('default_privs')
+        .for_whom('"developers"')
+        .as_who('"writers"')
+        .for_schema('"public"')
+        .set_what('ALL')
+        .for_objs(['TABLES', 'FUNCTIONS', 'SEQUENCES', 'TYPES'])
+        .build()
+    )
+
+    assert set(query.splitlines()) == {
+        (
+            'ALTER DEFAULT PRIVILEGES FOR ROLE "writers" IN SCHEMA "public" '
+            'REVOKE ALL ON TABLES FROM "developers";'
+        ),
+        (
+            'ALTER DEFAULT PRIVILEGES FOR ROLE "writers" IN SCHEMA "public" '
+            'REVOKE ALL ON FUNCTIONS FROM "developers";'
+        ),
+        (
+            'ALTER DEFAULT PRIVILEGES FOR ROLE "writers" IN SCHEMA "public" '
+            'REVOKE ALL ON SEQUENCES FROM "developers";'
+        ),
+        (
+            'ALTER DEFAULT PRIVILEGES FOR ROLE "writers" IN SCHEMA "public" '
+            'REVOKE ALL ON TYPES FROM "developers";'
+        ),
+    }
