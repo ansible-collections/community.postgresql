@@ -63,6 +63,7 @@ def test_present_default_privileges_keep_existing_revoke_all_then_grant_behavior
         'GRANT SELECT ON TABLES TO "developers";',
     ]
 
+
 def test_absent_default_privileges_all_default_all_revokes_legacy_object_classes():
     query = (
         postgresql_privs.QueryBuilder('absent')
