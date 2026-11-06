@@ -115,7 +115,7 @@ release_summary: |-
 EOF
 ```
 
-Generate the changelog:
+Generate the changelog. Do NOT generate a changelog manually, always use the following command:
 
 ```bash
 antsibull-changelog release --reload-plugins
