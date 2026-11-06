@@ -1,3 +1,0 @@
----
-bugfixes:
-  - postgresql_ping - Handle beta and release-candidate server versions when parsing the version number.
