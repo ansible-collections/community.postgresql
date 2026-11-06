@@ -1021,7 +1021,7 @@ def main():
 
     # param "schema": default, allowed depends on param "type"
     if p.type in ['table', 'sequence', 'function', 'procedure', 'type', 'default_privs']:
-        if p.objs == 'schemas' or p.schema == 'not-specified':
+        if (p.objs and p.objs.upper() == 'SCHEMAS') or p.schema == 'not-specified':
             p.schema = None
         else:
             p.schema = p.schema or 'public'
