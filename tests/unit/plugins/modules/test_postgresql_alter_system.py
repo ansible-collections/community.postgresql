@@ -394,6 +394,7 @@ def m_pg_cursor(mocker, monkeypatch):
     cursor = mocker.MagicMock()
     cursor.fetchall.return_value = [{
         'setting': 'off', 'unit': None, 'context': 'user', 'vartype': 'string',
+        'pending_restart': False,
     }]
     monkeypatch.setattr(postgresql_alter_system, 'executed_queries', [])
     return cursor
@@ -443,6 +444,46 @@ def test_pg_param_reset(m_ansible_module, m_pg_cursor, name, sql_name, check_mod
     queries = ['ALTER SYSTEM RESET %s' % sql_name, 'SELECT pg_reload_conf()']
     assert postgresql_alter_system.executed_queries == queries
     assert [call.args[0] for call in m_pg_cursor.execute.call_args_list] == ([] if check_mode else queries)
+
+
+PENDING_ATTRS = {
+    'setting': '', 'unit': None, 'context': 'postmaster', 'vartype': 'string',
+    'pending_restart': True,
+}
+
+
+def test_pg_param_set_pending_restart_idempotent(m_ansible_module, m_pg_cursor):
+    # pg_settings shows the running value, pg_file_settings the pending one
+    m_pg_cursor.fetchall.side_effect = [
+        [dict(PENDING_ATTRS)],
+        [{'setting': 'pg_stat_statements, pgcrypto'}],
+    ]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'shared_preload_libraries', 140000)
+    assert 'pg_file_settings' in m_pg_cursor.execute.call_args[0][0]
+    m_pg_cursor.reset_mock()
+
+    assert param.set('pg_stat_statements,pgcrypto') is False
+    assert postgresql_alter_system.executed_queries == []
+    m_pg_cursor.execute.assert_not_called()
+
+
+def test_pg_param_set_pending_restart_changed(m_ansible_module, m_pg_cursor):
+    m_pg_cursor.fetchall.side_effect = [
+        [dict(PENDING_ATTRS)],
+        [{'setting': 'pg_stat_statements'}],
+    ]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'shared_preload_libraries', 140000)
+
+    assert param.set('pg_stat_statements,pgcrypto') is True
+
+
+def test_pg_param_set_pending_restart_no_access(m_ansible_module, m_pg_cursor):
+    # Without access to pg_file_settings, fall back to the running value
+    m_pg_cursor.fetchall.side_effect = [[dict(PENDING_ATTRS)], Exception('permission denied')]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'shared_preload_libraries', 140000)
+
+    assert param.init_value.normalized == ''
+    assert param.set('pg_stat_statements') is True
 
 
 @pytest.mark.parametrize('check_mode', [False, True])
