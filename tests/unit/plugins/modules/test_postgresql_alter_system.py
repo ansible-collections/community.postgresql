@@ -7,12 +7,14 @@ __metaclass__ = type
 
 import pytest
 
+from ansible_collections.community.postgresql.plugins.modules import postgresql_alter_system
 from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_system import (
     build_value_class,
     check_pg_version,
     check_problematic_params,
     convert_ret_vals,
     normalize_bool_val,
+    PgParam,
     str_contains_float,
     to_int,
     ValueBool,
@@ -385,3 +387,52 @@ def test_value_time_fail(m_ansible_module, value):
 def test_value_string(m_ansible_module, param_name, value, expected_normalized):
     obj = ValueString(m_ansible_module, param_name, value, None, 140000)
     assert obj.normalized == expected_normalized
+
+
+@pytest.fixture
+def m_pg_cursor(mocker, monkeypatch):
+    cursor = mocker.MagicMock()
+    cursor.fetchall.return_value = [{
+        'setting': 'off', 'unit': None, 'context': 'user', 'vartype': 'string',
+        'pending_restart': False,
+    }]
+    monkeypatch.setattr(postgresql_alter_system, 'executed_queries', [])
+    return cursor
+
+
+PENDING_ATTRS = {
+    'setting': '', 'unit': None, 'context': 'postmaster', 'vartype': 'string',
+    'pending_restart': True,
+}
+
+
+def test_pg_param_set_pending_restart_idempotent(m_ansible_module, m_pg_cursor):
+    m_pg_cursor.fetchall.side_effect = [
+        [dict(PENDING_ATTRS)],
+        [{'setting': 'pg_stat_statements, pgcrypto'}],
+    ]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'shared_preload_libraries', 140000)
+    assert 'pg_file_settings' in m_pg_cursor.execute.call_args[0][0]
+    m_pg_cursor.reset_mock()
+
+    assert param.set('pg_stat_statements,pgcrypto') is False
+    assert postgresql_alter_system.executed_queries == []
+    m_pg_cursor.execute.assert_not_called()
+
+
+def test_pg_param_set_pending_restart_changed(m_ansible_module, m_pg_cursor):
+    m_pg_cursor.fetchall.side_effect = [
+        [dict(PENDING_ATTRS)],
+        [{'setting': 'pg_stat_statements'}],
+    ]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'shared_preload_libraries', 140000)
+
+    assert param.set('pg_stat_statements,pgcrypto') is True
+
+
+def test_pg_param_set_pending_restart_no_access(m_ansible_module, m_pg_cursor):
+    m_pg_cursor.fetchall.side_effect = [[dict(PENDING_ATTRS)], Exception('permission denied')]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'shared_preload_libraries', 140000)
+
+    assert param.init_value.normalized == ''
+    assert param.set('pg_stat_statements') is True

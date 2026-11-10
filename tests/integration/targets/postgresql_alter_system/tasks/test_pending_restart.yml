@@ -1,0 +1,117 @@
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+# https://github.com/ansible-collections/community.postgresql/issues/597
+# For parameters of postmaster context pg_settings shows the running value
+# until restart, so the module must compare with the pending value
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: Set a list param of postmaster context
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: shared_preload_libraries
+      value: 'pg_stat_statements,auto_explain'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.restart_required == True
+
+  - name: Set the same value again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: shared_preload_libraries
+      value: 'pg_stat_statements,auto_explain'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+      - result.restart_required == True
+      - result.executed_queries == []
+
+  - name: Set the same value with other quoting and spaces
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: shared_preload_libraries
+      value: '"pg_stat_statements", auto_explain'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
+  - name: Set another value in check mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: shared_preload_libraries
+      value: pg_stat_statements
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Set an integer param of postmaster context
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: max_prepared_transactions
+      value: 5
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.restart_required == True
+
+  - name: Set the same value again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: max_prepared_transactions
+      value: 5
+
+  - name: Check the result
+    assert:
+      that:
+      - result is not changed
+
+  - name: Set another value
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: max_prepared_transactions
+      value: 6
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  always:
+  - name: Reset the params
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: _RESET
+    loop:
+    - shared_preload_libraries
+    - max_prepared_transactions
