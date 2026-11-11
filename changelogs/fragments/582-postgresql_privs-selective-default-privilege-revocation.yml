@@ -1,0 +1,5 @@
+bugfixes:
+  - "postgresql_privs - fixed revocation of default privileges to respect the requested
+    ``privs`` and ``objs`` when ``state: absent`` is used (https://github.com/ansible-collections/community.postgresql/issues/582).
+    To retain the previous behavior of revoking all default privileges on TABLES,
+    FUNCTIONS, SEQUENCES and TYPES, use ``objs: ALL_DEFAULT`` with ``privs: ALL``."
