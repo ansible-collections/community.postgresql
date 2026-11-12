@@ -24,6 +24,9 @@
   - name: Test params of boolean type
     include_tasks: test_bools.yml
 
+  - name: Test params waiting for a restart
+    include_tasks: test_pending_restart.yml
+
   - name: Copied from postgresql_set to ensure some compatibility
     include_tasks: options_coverage.yml
 

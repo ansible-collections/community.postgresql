@@ -72,6 +72,11 @@ attributes:
         and reports changed=true.
       - For all other values, the module compares the desired value against the current
         setting in C(pg_catalog.pg_settings) and reports changed=false when they match.
+      - When the parameter waits for a restart (C(pending_restart=true)), the module compares
+        the desired value against the last entry in C(pg_catalog.pg_file_settings) instead,
+        because C(pg_catalog.pg_settings) still shows the running value.
+        If the session cannot read C(pg_catalog.pg_file_settings), the module uses the
+        running value and can report changed=true until PostgreSQL is restarted.
 
 seealso:
 - module: community.postgresql.postgresql_info
@@ -628,10 +633,19 @@ class PgParam():
         # for some service restart is required
         self.__check_param_context(self.attrs["context"])
 
+        # When a parameter waits for a restart, pg_settings still shows
+        # the running value, so compare with the value that will be applied
+        # after the restart instead. Otherwise every run reports changed=true
+        current_value = self.attrs["setting"]
+        if self.attrs["pending_restart"]:
+            pending_value = self.get_pending_value()
+            if pending_value is not None:
+                current_value = pending_value
+
         # Return a proper value class based on vartype and unit
         # from a pg_catalog.pg_settings entry for a specific parameter
         self.init_value = build_value_class(self.module, self.name,
-                                            self.attrs["setting"],
+                                            current_value,
                                             self.attrs["unit"],
                                             self.attrs["vartype"],
                                             self.pg_ver)
@@ -683,6 +697,23 @@ class PgParam():
             self.module.fail_json(msg="Parameter %s does not exist" % self.name)
 
         return res[0]
+
+    def get_pending_value(self):
+        # The last entry in the configuration files wins.
+        # Reading pg_catalog.pg_file_settings requires superuser
+        # by default, so return None if it is not possible
+        query = ("SELECT setting FROM pg_catalog.pg_file_settings "
+                 "WHERE name = %s ORDER BY seqno DESC LIMIT 1")
+        try:
+            self.cursor.execute(query, (self.name,))
+            res = self.cursor.fetchall()
+        except Exception:
+            return None
+
+        if not res:
+            return None
+
+        return res[0]["setting"]
 
     def __construct_alter_system_query(self, value):
         if isinstance(value, str) and ',' in value and \
