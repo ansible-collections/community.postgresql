@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_db - fixed compressed dump restores hanging when the decompressor writes enough diagnostics to fill its stderr pipe (https://github.com/ansible-collections/community.postgresql/issues/917).

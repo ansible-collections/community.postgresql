@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import sys
+import threading
 
 if sys.version_info[0] == 3:
     from plugins.modules import postgresql_db
@@ -43,3 +44,51 @@ def test_db_restore_compressed_keeps_environment_without_password(mocker, monkey
     env = _run_compressed_restore(mocker, monkeypatch, password=None)
     assert "PGPASSWORD" not in env
     assert env["PGSSLMODE"] == "verify-full"
+
+
+def test_db_restore_compressed_drains_decompressor_stderr(mocker):
+    module = mocker.MagicMock()
+    module.get_bin_path.side_effect = lambda name, required=False: "/usr/bin/" + name
+
+    stderr_read_started = threading.Event()
+    release_stderr_read = threading.Event()
+
+    p1 = mocker.MagicMock()
+    p1.stdout = mocker.MagicMock()
+    p1.returncode = 0
+
+    def read_p1_stderr():
+        stderr_read_started.set()
+        assert release_stderr_read.wait(1)
+        return b"decompressor warning"
+
+    p1.stderr.read.side_effect = read_p1_stderr
+
+    p2 = mocker.MagicMock()
+    p2.returncode = 0
+
+    def communicate():
+        assert stderr_read_started.wait(1)
+        release_stderr_read.set()
+        return b"", b""
+
+    p2.communicate.side_effect = communicate
+
+    popen = mocker.patch.object(
+        postgresql_db.subprocess,
+        "Popen",
+        side_effect=[p1, p2],
+    )
+
+    rc = postgresql_db.db_restore(
+        module,
+        "/tmp/dump.sql.gz",
+        db="test",
+        user="postgres",
+    )[0]
+
+    assert rc == 0
+    p1.stderr.read.assert_called_once_with()
+    p1.stdout.close.assert_called_once_with()
+    p1.wait.assert_called_once_with()
+    assert popen.call_count == 2
