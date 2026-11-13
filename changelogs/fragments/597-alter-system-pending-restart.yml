@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_alter_system - compare the desired value with the value pending in the configuration files when a parameter waits for a restart, so running the same task again no longer reports a change (https://github.com/ansible-collections/community.postgresql/issues/597).
