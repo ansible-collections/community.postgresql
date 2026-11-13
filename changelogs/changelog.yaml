@@ -1137,3 +1137,23 @@ releases:
     - 966_postgresql_ping_prerelease_versions.yml
     - postgresql_db_restore_compressed_env.yml
     release_date: '2026-11-06'
+  4.2.2:
+    changes:
+      bugfixes:
+      - postgresql_alter_system - compare the desired value with the value pending
+        in the configuration files when a parameter waits for a restart, so running
+        the same task again no longer reports a change (https://github.com/ansible-collections/community.postgresql/issues/597).
+      - 'postgresql_privs - fixed revocation of default privileges to respect the
+        requested ``privs`` and ``objs`` when ``state: absent`` is used (https://github.com/ansible-collections/community.postgresql/issues/582).
+        To retain the previous behavior of revoking all default privileges on TABLES,
+        FUNCTIONS, SEQUENCES and TYPES, use ``objs: ALL_DEFAULT`` with ``privs: ALL``.'
+      release_summary: 'This is a patch release of the ``community.postgresql`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 4.2.2.yml
+    - 582-postgresql_privs-selective-default-privilege-revocation.yml
+    - 597-alter-system-pending-restart.yml
+    release_date: '2026-11-13'

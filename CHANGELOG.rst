@@ -4,6 +4,22 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v4.2.2
+======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Bugfixes
+--------
+
+- postgresql_alter_system - compare the desired value with the value pending in the configuration files when a parameter waits for a restart, so running the same task again no longer reports a change (https://github.com/ansible-collections/community.postgresql/issues/597).
+- postgresql_privs - fixed revocation of default privileges to respect the requested ``privs`` and ``objs`` when ``state: absent`` is used (https://github.com/ansible-collections/community.postgresql/issues/582). To retain the previous behavior of revoking all default privileges on TABLES, FUNCTIONS, SEQUENCES and TYPES, use ``objs: ALL_DEFAULT`` with ``privs: ALL``.
+
 v4.2.1
 ======
 
