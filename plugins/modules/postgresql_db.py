@@ -280,6 +280,7 @@ executed_commands:
 
 import os
 import subprocess
+import threading
 import traceback
 from shlex import quote as shlex_quote
 
@@ -642,12 +643,22 @@ def db_restore(module, target, target_opts="",
             env["PGPASSWORD"] = password
         p1 = subprocess.Popen([comp_prog_path, target], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p2 = subprocess.Popen(cmd, stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env)
+
+        p1_stderr = []
+
+        def read_p1_stderr():
+            p1_stderr.append(p1.stderr.read())
+
+        stderr_thread = threading.Thread(target=read_p1_stderr)
+        stderr_thread.start()
+
         (stdout2, stderr2) = p2.communicate()
+        stderr_thread.join()
         p1.stdout.close()
         p1.wait()
+
         if p1.returncode != 0:
-            stderr1 = p1.stderr.read()
-            return p1.returncode, '', stderr1, 'cmd: ****'
+            return p1.returncode, '', p1_stderr[0], 'cmd: ****'
         else:
             return p2.returncode, '', stderr2, 'cmd: ****'
     else:
