@@ -33,7 +33,7 @@ options:
     description:
     - The slot state.
     - I(state=present) implies the slot must be present in the system.
-    - I(state=absent) implies the I(groups) must be revoked from I(target_roles).
+    - I(state=absent) implies the slot must be absent in the system.
     type: str
     default: present
     choices: [ absent, present ]
