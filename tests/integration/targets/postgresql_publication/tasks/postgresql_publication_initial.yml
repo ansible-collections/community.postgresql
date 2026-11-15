@@ -104,6 +104,7 @@
       - result.alltables == true
       - result.tables == []
       - result.parameters.publish != {}
+      - result.parameters.publish_via_partition_root == false
 
   # Check
   - name: postgresql_publication - check the publication was created
@@ -112,7 +113,7 @@
       <<: *pg_parameters
       query: >
         SELECT * FROM pg_publication WHERE pubname = '{{ test_pub }}'
-        AND pubowner = '10' AND puballtables = 't'
+        AND pubowner = '10' AND puballtables = 't' and pubviaroot ='f'
 
   - assert:
       that:
@@ -255,6 +256,112 @@
       - result.rowcount == 0
 
   # Test
+  - name: postgresql_publication - create publication with publish_via_partition_root
+    <<: *task_parameters
+    postgresql_publication:
+      <<: *pg_parameters
+      name: '{{ test_pub }}'
+      parameters:
+        publish_via_partition_root: true
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["CREATE PUBLICATION \"{{ test_pub }}\" FOR ALL TABLES WITH (publish_via_partition_root = 'True')"]
+      - result.parameters.publish_via_partition_root == true
+
+  # Check 1
+  - name: postgresql_publication - check that test publication exists with pubviaroot
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >
+        SELECT * FROM pg_publication WHERE pubname = '{{ test_pub }}'
+        AND pubviaroot = 't'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
+  # Check 2
+  - name: postgresql_publication - check idempotency
+    <<: *task_parameters
+    postgresql_publication:
+      <<: *pg_parameters
+      name: '{{ test_pub }}'
+      parameters:
+        publish_via_partition_root: true
+
+  - assert:
+      that:
+      - result is not changed
+      - result.parameters.publish_via_partition_root == true
+
+  # Test
+  - name: postgresql_publication - change publish_via_partition_root, check_mode
+    <<: *task_parameters
+    postgresql_publication:
+      <<: *pg_parameters
+      name: '{{ test_pub }}'
+      parameters:
+        publish_via_partition_root: false
+    check_mode: true
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["ALTER PUBLICATION \"{{ test_pub }}\" SET (publish_via_partition_root = 'False')"]
+
+  # Check 1
+  - name: postgresql_publication - check that test publication exists with pubviaroot always true
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >
+        SELECT * FROM pg_publication WHERE pubname = '{{ test_pub }}'
+        AND pubviaroot = 't'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
+  # Test
+  - name: postgresql_publication - change publish_via_partition_root to false
+    <<: *task_parameters
+    postgresql_publication:
+      <<: *pg_parameters
+      name: '{{ test_pub }}'
+      parameters:
+        publish_via_partition_root: false
+
+  - assert:
+      that:
+      - result is changed
+      - result.queries == ["ALTER PUBLICATION \"{{ test_pub }}\" SET (publish_via_partition_root = 'False')"]
+      - result.parameters.publish_via_partition_root == false
+
+  # Check 1
+  - name: postgresql_publication - check that test publication exists with pubviaroot to false
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >
+        SELECT * FROM pg_publication WHERE pubname = '{{ test_pub }}'
+        AND pubviaroot = 'f'
+
+  - assert:
+      that:
+      - result.rowcount == 1
+
+  - name: postgresql_publication - drop publication for next tests
+    <<: *task_parameters
+    postgresql_publication:
+      <<: *pg_parameters
+      name: '{{ test_pub }}'
+      state: absent
+      cascade: true
+
+  # Test
   - name: postgresql_publication - create publication with tables, owner, params
     <<: *task_parameters
     postgresql_publication:
@@ -284,7 +391,7 @@
       <<: *pg_parameters
       query: >
         SELECT * FROM pg_publication WHERE pubname = '{{ test_pub }}'
-        AND pubowner != '10' AND puballtables = 'f' AND pubinsert = 't' AND pubdelete = 'f'
+        AND pubowner != '10' AND puballtables = 'f' AND pubinsert = 't' AND pubdelete = 'f' AND pubviaroot = 'f'
 
   - assert:
       that:

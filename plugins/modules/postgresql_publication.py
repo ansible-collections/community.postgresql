@@ -249,7 +249,7 @@ parameters:
   description: Publication parameters at the end of runtime.
   returned: if publication exists
   type: dict
-  sample: {'publish': {'insert': false, 'delete': false, 'update': true}}
+  sample: {'publish': {'insert': false, 'delete': false, 'update': true}, 'publish_via_partition_root': false}
 '''
 
 
@@ -445,6 +445,7 @@ class PgPublication():
         self.attrs['parameters']['publish']['delete'] = pub_info.get('pubdelete', False)
         if pub_info.get('pubtruncate'):
             self.attrs['parameters']['publish']['truncate'] = pub_info.get('pubtruncate')
+        self.attrs['parameters']['publish_via_partition_root'] = pub_info.get('pubviaroot', False)
 
         # If alltables flag is False, get the list of targeted tables:
         if not pub_info.get('puballtables'):
@@ -707,14 +708,14 @@ class PgPublication():
         if pgtrunc_sup:
             query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
                      "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
-                     "p.pubupdate , p.pubdelete, p.pubtruncate FROM pg_publication AS p "
+                     "p.pubupdate , p.pubdelete, p.pubtruncate, p.pubviaroot FROM pg_publication AS p "
                      "JOIN pg_catalog.pg_roles AS r "
                      "ON p.pubowner = r.oid "
                      "WHERE p.pubname = %(pname)s")
         else:
             query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
                      "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
-                     "p.pubupdate , p.pubdelete FROM pg_publication AS p "
+                     "p.pubupdate , p.pubdelete, p.pubviaroot FROM pg_publication AS p "
                      "JOIN pg_catalog.pg_roles AS r "
                      "ON p.pubowner = r.oid "
                      "WHERE p.pubname = %(pname)s")
