@@ -1,6 +1,6 @@
 # Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-# The file for testing postgresql_copy module.
+# The file for testing postgresql_publication module.
 
 - vars:
     test_table1: acme1
@@ -1030,8 +1030,8 @@
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
-      query: >- 
-        SELECT rowfilter FROM pg_publication_tables 
+      query: >-
+        SELECT rowfilter FROM pg_publication_tables
         WHERE pubname = 'test_pub_rowfilter' AND tablename = 'acme1'
 
   - assert:
@@ -1071,7 +1071,7 @@
     postgresql_query:
       <<: *pg_parameters
       query: >-
-        SELECT rowfilter FROM pg_publication_tables 
+        SELECT rowfilter FROM pg_publication_tables
         WHERE pubname = 'test_pub_rowfilter' AND tablename = 'acme1'
 
   - assert:
@@ -1110,7 +1110,7 @@
     postgresql_query:
       <<: *pg_parameters
       query: >-
-        SELECT rowfilter FROM pg_publication_tables 
+        SELECT rowfilter FROM pg_publication_tables
         WHERE pubname = 'test_pub_rowfilter' AND tablename = 'acme1'
 
   - assert:
@@ -1171,7 +1171,7 @@
     postgresql_query:
       <<: *pg_parameters
       query: >-
-        SELECT rowfilter FROM pg_publication_tables 
+        SELECT rowfilter FROM pg_publication_tables
         WHERE pubname = 'test_pub2_rowfilter' AND tablename = 'acme1'
 
   - assert:
@@ -1207,7 +1207,7 @@
     postgresql_query:
       <<: *pg_parameters
       query: >-
-        SELECT rowfilter FROM pg_publication_tables 
+        SELECT rowfilter FROM pg_publication_tables
         WHERE pubname = 'test_pub2_rowfilter' AND tablename = 'acme1'
 
   - assert:
