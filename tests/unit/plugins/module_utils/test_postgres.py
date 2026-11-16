@@ -340,3 +340,37 @@ class TestGetConnParams():
         monkeypatch.setattr(pg, 'psycopg', m_psycopg2)
         assert pg.get_conn_params(m_ansible_module, INPUT_DICT, warn_db_default=False) == EXPECTED_DICT
         assert m_ansible_module.warn_msg == ''
+
+
+class TestListToPgArray():
+
+    """Namespace for testing list_to_pg_array() and its callers."""
+
+    @pytest.mark.parametrize("value,expected", [
+        ([1, 2, 3], "{1, 2, 3}"),
+        ([1.5, 2], "{1.5, 2}"),
+        ([], "{}"),
+        ([[1, 2, 3]], "{1, 2, 3}"),
+        (["a", "b"], '{"a", "b"}'),
+        (["1", "2"], '{"1", "2"}'),
+        ([""], '{""}'),
+        (["a b", "c,d", "{e}"], '{"a b", "c,d", "{e}"}'),
+        (["it's"], "{\"it's\"}"),
+        (['say "hi"'], '{"say \\"hi\\""}'),
+        (["back\\slash"], '{"back\\\\slash"}'),
+        (["[a]", 1], '{"[a]", 1}'),
+        (["a", 1], '{"a", 1}'),
+    ])
+    def test_list_to_pg_array(self, value, expected):
+        """Test list_to_pg_array(): strings are quoted, other elements are not."""
+        assert pg.list_to_pg_array(value) == expected
+
+    def test_convert_elements_to_pg_arrays_list(self):
+        """Test convert_elements_to_pg_arrays() with positional arguments."""
+        args = ["a", 1, ["b", "c"], [1, 2]]
+        assert pg.convert_elements_to_pg_arrays(args) == ["a", 1, '{"b", "c"}', "{1, 2}"]
+
+    def test_convert_elements_to_pg_arrays_dict(self):
+        """Test convert_elements_to_pg_arrays() with named arguments."""
+        args = {"one": "a", "two": ["b", "c"], "three": [1, 2]}
+        assert pg.convert_elements_to_pg_arrays(args) == {"one": "a", "two": '{"b", "c"}', "three": "{1, 2}"}

@@ -404,6 +404,64 @@
       - result.rowcount == 1
     when: postgres_version_resp.stdout is version('9.4', '>=')
 
+  # https://github.com/ansible-collections/community.postgresql/issues/411
+  - set_fact:
+      my_str_list:
+      - a
+      - b c
+      - it's
+      - say "hi"
+      - back\slash
+      - x,y
+      - '{z}'
+      - ''
+
+  - name: postgresql_query - pass a list of strings by positional_args
+    become_user: '{{ pg_user }}'
+    become: true
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT unnest(%s::text[]) AS elem
+      positional_args:
+      - '{{ my_str_list }}'
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.rowcount == 8
+      - result.query_result | map(attribute='elem') | list == my_str_list
+
+  - name: postgresql_query - pass a list of strings by named_args
+    become_user: '{{ pg_user }}'
+    become: true
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT unnest(%(str_val)s::text[]) AS elem
+      named_args:
+        str_val: '{{ my_str_list }}'
+    register: result
+
+  - assert:
+      that:
+      - result is not changed
+      - result.rowcount == 8
+      - result.query_result | map(attribute='elem') | list == my_str_list
+
+  - name: postgresql_query - compare a list of strings with an array
+    become_user: '{{ pg_user }}'
+    become: true
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT %s::text[] = ARRAY['a', 'b'] AS same
+      positional_args:
+      - ['a', 'b']
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].same
+
   - name: postgresql_query - test trust_input parameter
     become_user: '{{ pg_user }}'
     become: true
