@@ -199,6 +199,14 @@ EXAMPLES = r'''
       publish: 'insert,update'
 
 - name: >
+    Create publication "acme", targeting all tables
+    For partitioned tables, DML operations will be published via the root partition only
+  community.postgresql.postgresql_publication:
+    name: acme
+    parameters:
+      publish_via_partition_root: true
+
+- name: >
     Assuming publication "acme" exists and there are targeted
     tables "prices" and "vehicles", add table "stores" to the publication
   community.postgresql.postgresql_publication:
@@ -254,6 +262,7 @@ parameters:
 
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input, pg_quote_identifier, pg_quote_name)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -635,7 +644,7 @@ class PgPublication():
         # Update pub parameters:
         if params:
             for key, val in params.items():
-                if self.attrs['parameters'].get(key):
+                if key in self.attrs['parameters']:
 
                     # In PostgreSQL 10/11 only 'publish' optional parameter is presented.
                     if key == 'publish':
@@ -654,6 +663,12 @@ class PgPublication():
                         # Compare val_dict and the dict with current 'publish' parameters,
                         # if they're different, set new values:
                         if val_dict != self.attrs['parameters']['publish']:
+                            changed = self.__pub_set_param(key, val, check_mode=check_mode)
+
+                    elif key == 'publish_via_partition_root':
+                        # PostgreSQL 13+ introduces the 'publish_via_partition_root' optional parameter.
+                        # We use Ansible's boolean() function to correctly parse all supported boolean formats for the provided value.
+                        if self.attrs['parameters'][key] != boolean(val):
                             changed = self.__pub_set_param(key, val, check_mode=check_mode)
 
                     # Default behavior for other cases:
