@@ -104,7 +104,6 @@
       - result.alltables == true
       - result.tables == []
       - result.parameters.publish != {}
-      - result.parameters.publish_via_partition_root == false
 
   # Check
   - name: postgresql_publication - check the publication was created
@@ -304,6 +303,7 @@
 
   # Test
   - name: postgresql_publication - create publication with publish_via_partition_root
+    when: postgres_version_resp.stdout is version('13', '>=')
     <<: *task_parameters
     postgresql_publication:
       <<: *pg_parameters
@@ -316,9 +316,11 @@
       - result is changed
       - result.queries == ["CREATE PUBLICATION \"{{ test_pub }}\" FOR ALL TABLES WITH (publish_via_partition_root = 'True')"]
       - result.parameters.publish_via_partition_root == true
+    when: postgres_version_resp.stdout is version('13', '>=')
 
   # Check 1
   - name: postgresql_publication - check that test publication exists with pubviaroot
+    when: postgres_version_resp.stdout is version('13', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -329,9 +331,11 @@
   - assert:
       that:
       - result.rowcount == 1
+    when: postgres_version_resp.stdout is version('13', '>=')
 
   # Check 2
   - name: postgresql_publication - check idempotency
+    when: postgres_version_resp.stdout is version('13', '>=')
     <<: *task_parameters
     postgresql_publication:
       <<: *pg_parameters
@@ -343,9 +347,11 @@
       that:
       - result is not changed
       - result.parameters.publish_via_partition_root == true
+    when: postgres_version_resp.stdout is version('13', '>=')
 
   # Test
   - name: postgresql_publication - change publish_via_partition_root, check_mode
+    when: postgres_version_resp.stdout is version('13', '>=')
     <<: *task_parameters
     postgresql_publication:
       <<: *pg_parameters
@@ -358,9 +364,11 @@
       that:
       - result is changed
       - result.queries == ["ALTER PUBLICATION \"{{ test_pub }}\" SET (publish_via_partition_root = 'False')"]
+    when: postgres_version_resp.stdout is version('13', '>=')
 
   # Check 1
   - name: postgresql_publication - check that test publication exists with pubviaroot always true
+    when: postgres_version_resp.stdout is version('13', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -371,9 +379,11 @@
   - assert:
       that:
       - result.rowcount == 1
+    when: postgres_version_resp.stdout is version('13', '>=')
 
   # Test
   - name: postgresql_publication - change publish_via_partition_root to false
+    when: postgres_version_resp.stdout is version('13', '>=')
     <<: *task_parameters
     postgresql_publication:
       <<: *pg_parameters
@@ -386,9 +396,11 @@
       - result is changed
       - result.queries == ["ALTER PUBLICATION \"{{ test_pub }}\" SET (publish_via_partition_root = 'False')"]
       - result.parameters.publish_via_partition_root == false
+    when: postgres_version_resp.stdout is version('13', '>=')
 
   # Check 1
   - name: postgresql_publication - check that test publication exists with pubviaroot to false
+    when: postgres_version_resp.stdout is version('13', '>=')
     <<: *task_parameters
     postgresql_query:
       <<: *pg_parameters
@@ -399,8 +411,10 @@
   - assert:
       that:
       - result.rowcount == 1
+    when: postgres_version_resp.stdout is version('13', '>=')
 
   - name: postgresql_publication - drop publication for next tests
+    when: postgres_version_resp.stdout is version('13', '>=')
     <<: *task_parameters
     postgresql_publication:
       <<: *pg_parameters

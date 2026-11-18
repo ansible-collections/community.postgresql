@@ -452,9 +452,10 @@ class PgPublication():
         self.attrs['parameters']['publish']['insert'] = pub_info.get('pubinsert', False)
         self.attrs['parameters']['publish']['update'] = pub_info.get('pubupdate', False)
         self.attrs['parameters']['publish']['delete'] = pub_info.get('pubdelete', False)
-        if pub_info.get('pubtruncate'):
+        if 'pubtruncate' in pub_info:
             self.attrs['parameters']['publish']['truncate'] = pub_info.get('pubtruncate')
-        self.attrs['parameters']['publish_via_partition_root'] = pub_info.get('pubviaroot', False)
+        if 'pubviaroot' in pub_info:
+            self.attrs['parameters']['publish_via_partition_root'] = pub_info.get('pubviaroot')
 
         # If alltables flag is False, get the list of targeted tables:
         if not pub_info.get('puballtables'):
@@ -719,21 +720,21 @@ class PgPublication():
         pgtrunc_sup = exec_sql(self, ("SELECT 1 FROM information_schema.columns "
                                       "WHERE table_name = 'pg_publication' "
                                       "AND column_name = 'pubtruncate'"), add_to_executed=False)
+        pgtrunc_col = ", p.pubtruncate" if pgtrunc_sup else ""
 
-        if pgtrunc_sup:
-            query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
-                     "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
-                     "p.pubupdate , p.pubdelete, p.pubtruncate, p.pubviaroot FROM pg_publication AS p "
-                     "JOIN pg_catalog.pg_roles AS r "
-                     "ON p.pubowner = r.oid "
-                     "WHERE p.pubname = %(pname)s")
-        else:
-            query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
-                     "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
-                     "p.pubupdate , p.pubdelete, p.pubviaroot FROM pg_publication AS p "
-                     "JOIN pg_catalog.pg_roles AS r "
-                     "ON p.pubowner = r.oid "
-                     "WHERE p.pubname = %(pname)s")
+        # Check pg_publication.pubviaroot exists (supported from PostgreSQL 13):
+        pgpubviaroot_sup = exec_sql(self, ("SELECT 1 FROM information_schema.columns "
+                                           "WHERE table_name = 'pg_publication' "
+                                           "AND column_name = 'pubviaroot'"), add_to_executed=False)
+        pgtrunc_col += ", " if pgpubviaroot_sup else ""
+        pgpubviaroot_col = "p.pubviaroot" if pgpubviaroot_sup else ""
+
+        query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
+                 "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
+                 "p.pubupdate , p.pubdelete {}{} FROM pg_publication AS p "
+                 "JOIN pg_catalog.pg_roles AS r "
+                 "ON p.pubowner = r.oid "
+                 "WHERE p.pubname = %(pname)s").format(pgtrunc_col, pgpubviaroot_col)
 
         result = exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
         if result:
