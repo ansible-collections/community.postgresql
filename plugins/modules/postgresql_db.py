@@ -645,11 +645,15 @@ def db_restore(module, target, target_opts="",
         (stdout2, stderr2) = p2.communicate()
         p1.stdout.close()
         p1.wait()
+        # Check the restore program first: when it exits early (bad option,
+        # failed login), the decompressor is killed by SIGPIPE and has
+        # nothing useful on stderr, so its result would hide the real error.
+        if p2.returncode != 0:
+            return p2.returncode, '', stderr2, 'cmd: ****'
         if p1.returncode != 0:
             stderr1 = p1.stderr.read()
             return p1.returncode, '', stderr1, 'cmd: ****'
-        else:
-            return p2.returncode, '', stderr2, 'cmd: ****'
+        return p2.returncode, '', stderr2, 'cmd: ****'
     else:
         if any(substring in cmd for substring in ['--format=Directory', '--format=Custom']):
             cmd = '{0} {1}'.format(cmd, shlex_quote(target))
