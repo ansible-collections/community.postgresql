@@ -526,9 +526,28 @@ def list_to_pg_array(elem):
     Returns:
         elem (str): String representation of PostgreSQL array.
     """
-    elem = str(elem).strip('[]')
-    elem = '{' + elem + '}'
-    return elem
+    items = [quote_pg_array_string(item) if isinstance(item, str) else str(item)
+             for item in elem]
+
+    # strip() keeps what the previous implementation did with a list
+    # wrapped in another list: [[1, 2, 3]] is passed as '{1, 2, 3}'
+    return '{' + ', '.join(items).strip('[]') + '}'
+
+
+def quote_pg_array_string(item):
+    """Quote the passed string as an element of a PostgreSQL array literal.
+
+    Inside an array literal, an element is quoted with double quotes,
+    and a backslash escapes a double quote or a backslash.
+    Single quotes have no special meaning there.
+
+    Args:
+        item (str): String that needs to be quoted.
+
+    Returns:
+        item (str): Double-quoted string with double quotes and backslashes escaped.
+    """
+    return '"' + item.replace('\\', '\\\\').replace('"', '\\"') + '"'
 
 
 def convert_to_supported(val):
