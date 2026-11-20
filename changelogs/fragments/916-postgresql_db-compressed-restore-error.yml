@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_db - when restoring a compressed dump, report the error of ``psql`` or ``pg_restore`` if it fails. Before, a restore program that exited early (for example on an unknown option in ``target_opts`` or a failed login) made the decompressor die of ``SIGPIPE``, and the module returned ``rc=-13`` with an empty message (https://github.com/ansible-collections/community.postgresql/issues/916).
