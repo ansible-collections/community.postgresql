@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_query, postgresql_script - when a list of strings is passed in ``positional_args`` or ``named_args``, quote its elements as PostgreSQL array elements instead of passing Python's single quotes as part of each element (https://github.com/ansible-collections/community.postgresql/issues/411).
