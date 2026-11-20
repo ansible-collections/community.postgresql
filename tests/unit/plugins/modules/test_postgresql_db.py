@@ -43,3 +43,35 @@ def test_db_restore_compressed_keeps_environment_without_password(mocker, monkey
     env = _run_compressed_restore(mocker, monkeypatch, password=None)
     assert "PGPASSWORD" not in env
     assert env["PGSSLMODE"] == "verify-full"
+
+
+def _run_failed_compressed_restore(mocker, decompressor_rc, decompressor_err, restore_rc, restore_err):
+    module = mocker.MagicMock()
+    module.get_bin_path.side_effect = lambda name, required=False: "/usr/bin/" + name
+
+    decompressor = mocker.MagicMock()
+    decompressor.returncode = decompressor_rc
+    decompressor.stderr.read.return_value = decompressor_err
+    restore = mocker.MagicMock()
+    restore.communicate.return_value = (b"", restore_err)
+    restore.returncode = restore_rc
+    mocker.patch.object(postgresql_db.subprocess, "Popen", side_effect=[decompressor, restore])
+
+    rc, dummy, stderr, dummy = postgresql_db.db_restore(module, "/tmp/dump.sql.gz", db="test")
+    return rc, stderr
+
+
+def test_db_restore_compressed_reports_restore_error_over_sigpipe(mocker):
+    # psql exits before reading stdin, so zcat is killed by SIGPIPE (-13)
+    # with an empty stderr. The psql error is the one to report.
+    rc, stderr = _run_failed_compressed_restore(
+        mocker, -13, b"", 1, b"psql: error: unrecognized option '--verbose'\n")
+    assert rc == 1
+    assert stderr == b"psql: error: unrecognized option '--verbose'\n"
+
+
+def test_db_restore_compressed_reports_decompressor_error(mocker):
+    rc, stderr = _run_failed_compressed_restore(
+        mocker, 1, b"gzip: /tmp/dump.sql.gz: unexpected end of file\n", 0, b"")
+    assert rc == 1
+    assert stderr == b"gzip: /tmp/dump.sql.gz: unexpected end of file\n"
