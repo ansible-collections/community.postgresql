@@ -131,8 +131,8 @@ stages:
         parameters:
           testFormat: devel/linux/{0}/1
           targets:
-            - name: Fedora 44
-              test: fedora44
+            - name: Fedora 45
+              test: fedora45
             - name: Ubuntu 26.04
               test: ubuntu2604
             - name: Ubuntu 24.04
