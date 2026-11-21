@@ -16,6 +16,7 @@ from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_s
     normalize_bool_val,
     PgParam,
     str_contains_float,
+    to_float,
     to_int,
     ValueBool,
     ValueEnum,
@@ -268,11 +269,32 @@ def test_value_int(m_ansible_module, value, expected_normalized):
     ('20ms', 20),
     ('0.025', 0.025),
     ('1', 1),
+    ('1.0', 1),
+    ('1.50', 1.5),
+    ('0.00001', 0.00001),
+    ('1e-05', 0.00001),
+    ('1.79769e+308', 1.79769e+308),
+    ('0.123456789', 0.123457),
 ]
 )
 def test_value_real(m_ansible_module, value, expected_normalized):
     obj = ValueReal(m_ansible_module, 'param', value, None)
     assert obj.normalized == expected_normalized
+
+
+@pytest.mark.parametrize('value,expected', [
+    ('1', 1.0),
+    ('1.5', 1.5),
+    ('1e-05', 0.00001),
+]
+)
+def test_to_float(m_ansible_module, value, expected):
+    assert to_float(m_ansible_module, value) == expected
+
+
+def test_to_float_fail(m_ansible_module):
+    to_float(m_ansible_module, 'blah')
+    assert m_ansible_module.err_msg == 'Value blah cannot be converted to float'
 
 
 # Whatever you pass, the class always returns a normalized value in bytes

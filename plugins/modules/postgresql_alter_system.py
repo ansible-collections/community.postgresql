@@ -357,7 +357,9 @@ class ValueReal():
         if len(value) > 2 and value[-2:].isalpha():
             value = value[:-2]
 
-        return float(value) if str_contains_float(value) else to_int(self.module, value)
+        # pg_settings shows real values with 6 significant digits (C format %g),
+        # e.g. 1e-05 for 0.00001, so compare them with the same precision
+        return float('%g' % to_float(self.module, value))
 
 
 class ValueTime():
@@ -498,6 +500,17 @@ class ValueMem():
             self.module.fail_json(msg=val_err_msg)
 
         return (int_part, unit_part)
+
+
+def to_float(module, value):
+    """Tries to convert the value to float and
+    fail gracefully when no success.
+    """
+    try:
+        return float(value)
+    except Exception:
+        val_err_msg = "Value %s cannot be converted to float" % value
+        module.fail_json(msg=val_err_msg)
 
 
 def to_int(module, value):
