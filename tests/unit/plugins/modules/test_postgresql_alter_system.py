@@ -14,6 +14,7 @@ from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_s
     check_problematic_params,
     convert_ret_vals,
     normalize_bool_val,
+    param_is_guc_list_quote,
     PgParam,
     str_contains_float,
     to_int,
@@ -381,12 +382,29 @@ def test_value_time_fail(m_ansible_module, value):
     ('unix_socket_directories', 'value1', 'value1'),
     ('unix_socket_directories', 'value1,value2,value3', 'value1, value2, value3'),
     ('unix_socket_directories', '"value1", "value2", "value3"', 'value1, value2, value3'),
+    ('output_plugin_libraries', 'value1,value2,value3', 'value1, value2, value3'),
+    ('output_plugin_libraries', '"value1", "value2", "value3"', 'value1, value2, value3'),
     ('param', 'value', 'value'),
 ]
 )
 def test_value_string(m_ansible_module, param_name, value, expected_normalized):
     obj = ValueString(m_ansible_module, param_name, value, None, 140000)
     assert obj.normalized == expected_normalized
+
+
+@pytest.mark.parametrize('pg_ver,name,expected', [
+    (140000, 'output_plugin_libraries', True),
+    (170000, 'output_plugin_libraries', True),
+    (180000, 'output_plugin_libraries', True),
+    (170000, 'oauth_validator_libraries', False),
+    (180000, 'oauth_validator_libraries', True),
+    (190000, 'oauth_validator_libraries', True),
+    (180000, 'search_path', True),
+    (180000, 'log_destination', False),
+]
+)
+def test_param_is_guc_list_quote(pg_ver, name, expected):
+    assert param_is_guc_list_quote(pg_ver, name) is expected
 
 
 @pytest.fixture

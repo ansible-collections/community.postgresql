@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_alter_system - treat ``output_plugin_libraries`` (PostgreSQL 14.24, 15.19, 16.15, 17.11, 18.6 and later) and ``oauth_validator_libraries`` (PostgreSQL 18+) as GUC_LIST_QUOTE list parameters, so setting the same list again no longer reports a change (https://github.com/ansible-collections/community.postgresql/pull/996).

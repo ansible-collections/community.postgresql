@@ -189,9 +189,24 @@ PG_SUPPORTED_VER = 140000
 
 # GUC_LIST_QUOTE parameters list for each version where they changed (from PG_REQ_VER).
 # It is a tuple of tuples as we need to iterate it in order.
+# Reference: variable_is_guc_list_quote() in PostgreSQL src/bin/pg_dump/dumputils.c.
+# output_plugin_libraries exists since minor releases 14.24, 15.19, 16.15, 17.11
+# and 18.6: listing it for the whole major version is harmless, as the module
+# fails earlier for a parameter the server does not have.
 PARAMETERS_GUC_LIST_QUOTE = (
+    (180000, (
+        'local_preload_libraries',
+        'oauth_validator_libraries',
+        'output_plugin_libraries',
+        'search_path',
+        'session_preload_libraries',
+        'shared_preload_libraries',
+        'temp_tablespaces',
+        'unix_socket_directories'
+    )),
     (140000, (
         'local_preload_libraries',
+        'output_plugin_libraries',
         'search_path',
         'session_preload_libraries',
         'shared_preload_libraries',
