@@ -1,0 +1,109 @@
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+# A value set with ALTER ROLE ... SET for the role the module connects as
+# is what pg_settings shows in its session. The module must compare the
+# desired value with the server one, i.e. the one ALTER SYSTEM changes.
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: Set work_mem for the role the module connects as
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "ALTER ROLE {{ pg_user }} SET work_mem = '64MB'"
+
+  - name: Set the same value with ALTER SYSTEM in check mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 64MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET \"work_mem\" = '64MB'", "SELECT pg_reload_conf()"]
+
+  - name: Set the same value with ALTER SYSTEM
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 64MB
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET \"work_mem\" = '64MB'", "SELECT pg_reload_conf()"]
+
+  - name: Check the value is in postgresql.auto.conf
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_file_settings WHERE name = 'work_mem' AND sourcefile LIKE '%postgresql.auto.conf'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result | length == 1
+      - result.query_result[0]["setting"] == "64MB"
+
+  - name: Set the same value again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 64MB
+
+  - name: Check idempotence
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  - name: Set the server value back to the default one
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: _RESET
+
+  - name: Set the default value while the role value differs
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: 4MB
+
+  - name: Check nothing has changed as it is the server value
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  always:
+  - name: Reset work_mem for the role
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "ALTER ROLE {{ pg_user }} RESET work_mem"
+
+  - name: Reset the param
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: work_mem
+      value: _RESET

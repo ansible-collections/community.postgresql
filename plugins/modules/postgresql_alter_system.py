@@ -79,6 +79,12 @@ attributes:
         because C(pg_catalog.pg_settings) still shows the running value.
         If the session cannot read C(pg_catalog.pg_file_settings), the module uses the
         running value and can report changed=true until PostgreSQL is restarted.
+      - When the parameter is set for the role or the database the module connects to,
+        for the connection or for the session, C(pg_catalog.pg_settings) shows that value.
+        The module then compares the desired value against the last entry in
+        C(pg_catalog.pg_file_settings), or against the default value if there is none.
+        If the session cannot read C(pg_catalog.pg_file_settings), the module warns and
+        uses the value C(pg_catalog.pg_settings) shows.
 
 seealso:
 - module: community.postgresql.postgresql_info
@@ -511,6 +517,17 @@ def to_int(module, value):
         module.fail_json(msg=val_err_msg)
 
 
+# Values of pg_catalog.pg_settings.source for a setting that applies to the
+# current session only: ALTER ROLE/DATABASE ... SET, connection options or SET.
+# Such a setting overrides the one in the configuration files that ALTER SYSTEM changes.
+SESSION_SOURCES = ('database', 'user', 'database user', 'client', 'session')
+
+# Last entry for a parameter in the configuration files, the one that applies.
+# Reading pg_catalog.pg_file_settings requires superuser by default.
+FILE_SETTING_QUERY = ("SELECT setting FROM pg_catalog.pg_file_settings "
+                      "WHERE name = %s ORDER BY seqno DESC LIMIT 1")
+
+
 # Run "SELECT DISTINCT unit FROM pg_catalog.pg_settings;"
 # and extract memory-related ones
 MEM_PARAM_UNITS = {"B", "kB", "8kB", "MB"}
@@ -641,6 +658,10 @@ class PgParam():
             if pending_value is not None:
                 current_value = pending_value
 
+        elif self.attrs["source"] in SESSION_SOURCES:
+            current_value = self.get_system_value(
+                "it is set for the current role, database or session (source: %s)" % self.attrs["source"])
+
         # Return a proper value class based on vartype and unit
         # from a pg_catalog.pg_settings entry for a specific parameter
         self.init_value = build_value_class(self.module, self.name,
@@ -686,7 +707,7 @@ class PgParam():
 
     def get_attrs(self):
         query = ("SELECT setting, unit, context, vartype, enumvals, "
-                 "boot_val, min_val, max_val, pending_restart "
+                 "boot_val, min_val, max_val, pending_restart, source "
                  "FROM pg_catalog.pg_settings where name = %s")
         res = self.__exec_sql(query, (self.name,))
         # You can uncomment the line below while debugging
@@ -701,16 +722,37 @@ class PgParam():
         # The last entry in the configuration files wins.
         # Reading pg_catalog.pg_file_settings requires superuser
         # by default, so return None if it is not possible
-        query = ("SELECT setting FROM pg_catalog.pg_file_settings "
-                 "WHERE name = %s ORDER BY seqno DESC LIMIT 1")
         try:
-            self.cursor.execute(query, (self.name,))
+            self.cursor.execute(FILE_SETTING_QUERY, (self.name,))
             res = self.cursor.fetchall()
         except Exception:
             return None
 
         if not res:
             return None
+
+        return res[0]["setting"]
+
+    def get_system_value(self, reason):
+        """Return the server value of a parameter when pg_catalog.pg_settings does not show it.
+
+        It is the last entry in the configuration files, or the default value
+        if no file sets the parameter. If pg_catalog.pg_file_settings cannot be
+        read, warn with the reason why pg_settings is not used and return the
+        value pg_settings shows.
+        """
+        try:
+            self.cursor.execute(FILE_SETTING_QUERY, (self.name,))
+            res = self.cursor.fetchall()
+        except Exception:
+            self.module.warn("pg_catalog.pg_settings does not show the server value of %s: %s. "
+                             "pg_catalog.pg_file_settings cannot be read, so the desired value is "
+                             "compared with the value pg_catalog.pg_settings shows."
+                             % (self.name, reason))
+            return self.attrs["setting"]
+
+        if not res:
+            return self.attrs["boot_val"]
 
         return res[0]["setting"]
 
