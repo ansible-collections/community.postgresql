@@ -210,8 +210,30 @@ def test_check_problematic_params(m_ansible_module, param_input, value_input, er
 
 @pytest.mark.parametrize('_input,expected', [
     ('blah', 'blah'),
+    ('', ''),
+    ('o', 'o'),
+    ('try', 'try'),
     ('True', 'on'),
     ('False', 'off'),
+    ('true', 'on'),
+    ('TRUE', 'on'),
+    ('t', 'on'),
+    ('yes', 'on'),
+    ('y', 'on'),
+    ('on', 'on'),
+    ('ON', 'on'),
+    ('1', 'on'),
+    ('false', 'off'),
+    ('f', 'off'),
+    ('no', 'off'),
+    ('n', 'off'),
+    ('off', 'off'),
+    ('of', 'off'),
+    ('OFF', 'off'),
+    ('0', 'off'),
+    # PostgreSQL rejects booleans with surrounding spaces
+    (' on', ' on'),
+    ('off ', 'off '),
 ]
 )
 def test_normalize_bool_val(_input, expected):
@@ -249,6 +271,25 @@ def test_build_value_class(m_ansible_module, param_name, value, unit, vartype, p
 )
 def test_value_bool(m_ansible_module, value, expected_normalized):
     obj = ValueBool(m_ansible_module, "param", value, None)
+    assert obj.normalized == expected_normalized
+
+
+@pytest.mark.parametrize('value,expected_normalized', [
+    ('try', 'try'),
+    ('WARNING', 'warning'),
+    ('Replica', 'replica'),
+    ('True', 'on'),
+    ('False', 'off'),
+    ('ON', 'on'),
+    # Boolean prefixes are not valid enum values: ALTER SYSTEM rejects them
+    ('t', 't'),
+    ('y', 'y'),
+    ('of', 'of'),
+    ('n', 'n'),
+]
+)
+def test_value_enum(m_ansible_module, value, expected_normalized):
+    obj = ValueEnum(m_ansible_module, "param", value, None)
     assert obj.normalized == expected_normalized
 
 

@@ -21,6 +21,9 @@
   - name: Test params of string type
     include_tasks: test_strings.yml
 
+  - name: Test boolean and enum values written in other spellings
+    include_tasks: test_bool_enum_spellings.yml
+
   - name: Test params of boolean type
     include_tasks: test_bools.yml
 
