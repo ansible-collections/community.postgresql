@@ -201,6 +201,14 @@ EXAMPLES = r'''
       publish: 'insert,update'
 
 - name: >
+    Create publication "acme", targeting all tables
+    For partitioned tables, DML operations will be published via the root partition only
+  community.postgresql.postgresql_publication:
+    name: acme
+    parameters:
+      publish_via_partition_root: true
+
+- name: >
     Assuming publication "acme" exists and there are targeted
     tables "prices" and "vehicles", add table "stores" to the publication
   community.postgresql.postgresql_publication:
@@ -251,11 +259,12 @@ parameters:
   description: Publication parameters at the end of runtime.
   returned: if publication exists
   type: dict
-  sample: {'publish': {'insert': false, 'delete': false, 'update': true}}
+  sample: {'publish': {'insert': false, 'delete': false, 'update': true}, 'publish_via_partition_root': false}
 '''
 
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.parsing.convert_bool import boolean
 from ansible_collections.community.postgresql.plugins.module_utils.database import (
     check_input, pg_quote_identifier)
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
@@ -445,8 +454,10 @@ class PgPublication():
         self.attrs['parameters']['publish']['insert'] = pub_info.get('pubinsert', False)
         self.attrs['parameters']['publish']['update'] = pub_info.get('pubupdate', False)
         self.attrs['parameters']['publish']['delete'] = pub_info.get('pubdelete', False)
-        if pub_info.get('pubtruncate'):
+        if 'pubtruncate' in pub_info:
             self.attrs['parameters']['publish']['truncate'] = pub_info.get('pubtruncate')
+        if 'pubviaroot' in pub_info:
+            self.attrs['parameters']['publish_via_partition_root'] = pub_info.get('pubviaroot')
 
         # If alltables flag is False, get the list of targeted tables:
         if not pub_info.get('puballtables'):
@@ -636,7 +647,7 @@ class PgPublication():
         # Update pub parameters:
         if params:
             for key, val in params.items():
-                if self.attrs['parameters'].get(key):
+                if key in self.attrs['parameters']:
 
                     # In PostgreSQL 10/11 only 'publish' optional parameter is presented.
                     if key == 'publish':
@@ -655,6 +666,12 @@ class PgPublication():
                         # Compare val_dict and the dict with current 'publish' parameters,
                         # if they're different, set new values:
                         if val_dict != self.attrs['parameters']['publish']:
+                            changed = self.__pub_set_param(key, val, check_mode=check_mode)
+
+                    elif key == 'publish_via_partition_root':
+                        # PostgreSQL 13+ introduces the 'publish_via_partition_root' optional parameter.
+                        # We use Ansible's boolean() function to correctly parse all supported boolean formats for the provided value.
+                        if self.attrs['parameters'][key] != boolean(val):
                             changed = self.__pub_set_param(key, val, check_mode=check_mode)
 
                     # Default behavior for other cases:
@@ -705,21 +722,21 @@ class PgPublication():
         pgtrunc_sup = exec_sql(self, ("SELECT 1 FROM information_schema.columns "
                                       "WHERE table_name = 'pg_publication' "
                                       "AND column_name = 'pubtruncate'"), add_to_executed=False)
+        pgtrunc_col = ", p.pubtruncate" if pgtrunc_sup else ""
 
-        if pgtrunc_sup:
-            query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
-                     "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
-                     "p.pubupdate , p.pubdelete, p.pubtruncate FROM pg_publication AS p "
-                     "JOIN pg_catalog.pg_roles AS r "
-                     "ON p.pubowner = r.oid "
-                     "WHERE p.pubname = %(pname)s")
-        else:
-            query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
-                     "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
-                     "p.pubupdate , p.pubdelete FROM pg_publication AS p "
-                     "JOIN pg_catalog.pg_roles AS r "
-                     "ON p.pubowner = r.oid "
-                     "WHERE p.pubname = %(pname)s")
+        # Check pg_publication.pubviaroot exists (supported from PostgreSQL 13):
+        pgpubviaroot_sup = exec_sql(self, ("SELECT 1 FROM information_schema.columns "
+                                           "WHERE table_name = 'pg_publication' "
+                                           "AND column_name = 'pubviaroot'"), add_to_executed=False)
+        pgtrunc_col += ", " if pgpubviaroot_sup else ""
+        pgpubviaroot_col = "p.pubviaroot" if pgpubviaroot_sup else ""
+
+        query = ("SELECT obj_description(p.oid, 'pg_publication') AS comment, "
+                 "r.rolname AS pubowner, p.puballtables, p.pubinsert, "
+                 "p.pubupdate , p.pubdelete {}{} FROM pg_publication AS p "
+                 "JOIN pg_catalog.pg_roles AS r "
+                 "ON p.pubowner = r.oid "
+                 "WHERE p.pubname = %(pname)s").format(pgtrunc_col, pgpubviaroot_col)
 
         result = exec_sql(self, query, query_params={'pname': self.name}, add_to_executed=False)
         if result:
