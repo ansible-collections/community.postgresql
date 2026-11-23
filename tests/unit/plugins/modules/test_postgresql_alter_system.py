@@ -394,7 +394,7 @@ def m_pg_cursor(mocker, monkeypatch):
     cursor = mocker.MagicMock()
     cursor.fetchall.return_value = [{
         'setting': 'off', 'unit': None, 'context': 'user', 'vartype': 'string',
-        'pending_restart': False,
+        'pending_restart': False, 'source': 'default',
     }]
     monkeypatch.setattr(postgresql_alter_system, 'executed_queries', [])
     return cursor
@@ -448,7 +448,7 @@ def test_pg_param_reset(m_ansible_module, m_pg_cursor, name, sql_name, check_mod
 
 PENDING_ATTRS = {
     'setting': '', 'unit': None, 'context': 'postmaster', 'vartype': 'string',
-    'pending_restart': True,
+    'pending_restart': True, 'source': 'default',
 }
 
 
@@ -517,7 +517,7 @@ def test_pg_param_unknown_name_fails_before_alter_system(mocker, m_pg_cursor, na
     module.fail_json.assert_called_once_with(msg='Parameter %s does not exist' % name)
     m_pg_cursor.execute.assert_called_once_with(
         'SELECT setting, unit, context, vartype, enumvals, '
-        'boot_val, min_val, max_val, pending_restart '
+        'boot_val, min_val, max_val, pending_restart, source '
         'FROM pg_catalog.pg_settings where name = %s', (name,))
     assert postgresql_alter_system.executed_queries == []
 
@@ -544,7 +544,7 @@ def test_main_quoted_and_unquoted_names(mocker, m_pg_cursor, name, logical_name,
     check_input = mocker.spy(postgresql_alter_system, 'check_input')
     m_pg_cursor.fetchall.return_value = [dict(
         setting='off', unit=None, context='user', vartype='bool', enumvals=None,
-        boot_val='off', min_val=None, max_val=None, pending_restart=False,
+        boot_val='off', min_val=None, max_val=None, pending_restart=False, source='default',
     )]
 
     postgresql_alter_system.main()
@@ -578,3 +578,51 @@ def test_main_quoted_name_cannot_bypass_problematic_param_check(mocker, name):
     module.fail_json.assert_called_once()
     assert 'Use `value: _RESET` instead.' in module.fail_json.call_args.kwargs['msg']
     ensure_libs.assert_not_called()
+
+
+# work_mem set to 64MB with ALTER ROLE ... SET for the role the module connects as
+SESSION_ATTRS = {
+    'setting': '65536', 'unit': 'kB', 'context': 'user', 'vartype': 'integer',
+    'boot_val': '4096', 'pending_restart': False, 'source': 'user',
+}
+
+
+@pytest.mark.parametrize('source', ['global', 'database', 'user', 'database user', 'client', 'session'])
+def test_pg_param_session_value_compares_with_file_value(m_ansible_module, m_pg_cursor, source):
+    m_pg_cursor.fetchall.side_effect = [
+        [dict(SESSION_ATTRS, source=source)],
+        [{'setting': '8MB'}],
+    ]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'work_mem', 140000)
+    assert 'pg_file_settings' in m_pg_cursor.execute.call_args[0][0]
+
+    assert param.init_value.normalized == 8 * 1024 * 1024
+    assert param.set('64MB') is True
+    assert param.set('8MB') is False
+
+
+def test_pg_param_session_value_without_file_entry_uses_boot_val(m_ansible_module, m_pg_cursor):
+    m_pg_cursor.fetchall.side_effect = [[dict(SESSION_ATTRS)], []]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'work_mem', 140000)
+
+    assert param.init_value.normalized == 4096 * 1024
+    assert param.set('64MB') is True
+
+
+def test_pg_param_session_value_no_access(m_ansible_module, m_pg_cursor):
+    # Without access to pg_file_settings, warn and use the session value
+    m_pg_cursor.fetchall.side_effect = [[dict(SESSION_ATTRS)], Exception('permission denied')]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'work_mem', 140000)
+
+    assert 'source: user' in m_ansible_module.warn_msg
+    assert param.init_value.normalized == 65536 * 1024
+    assert param.set('64MB') is False
+
+
+@pytest.mark.parametrize('source', ['default', 'configuration file', 'command line'])
+def test_pg_param_server_value_does_not_read_file_settings(m_ansible_module, m_pg_cursor, source):
+    m_pg_cursor.fetchall.return_value = [dict(SESSION_ATTRS, source=source)]
+    PgParam(m_ansible_module, m_pg_cursor, 'work_mem', 140000)
+
+    m_pg_cursor.execute.assert_called_once()
+    assert m_ansible_module.warn_msg is None
