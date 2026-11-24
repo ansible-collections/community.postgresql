@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_query, postgresql_script - when a list passed in ``positional_args`` or ``named_args`` contains ``None``, send that element as SQL ``NULL`` instead of the text ``None``, which was stored as a string in a text array and failed for other array types such as ``int[]``.
