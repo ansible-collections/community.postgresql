@@ -462,6 +462,27 @@
       that:
       - result.query_result[0].same
 
+  - name: postgresql_query - pass None in a list as NULL
+    become_user: '{{ pg_user }}'
+    become: true
+    postgresql_query:
+      <<: *pg_parameters
+      query: >-
+        SELECT %s::text[] = ARRAY['a', NULL, 'NULL']::text[] AS same_text,
+               %s::int[] = ARRAY[1, NULL]::int[] AS same_int,
+               array_position(%s::text[], NULL) AS null_pos
+      positional_args:
+      - ['a', null, 'NULL']
+      - [1, null]
+      - ['a', null, 'NULL']
+    register: result
+
+  - assert:
+      that:
+      - result.query_result[0].same_text
+      - result.query_result[0].same_int
+      - result.query_result[0].null_pos == 2
+
   - name: postgresql_query - test trust_input parameter
     become_user: '{{ pg_user }}'
     become: true
