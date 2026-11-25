@@ -526,12 +526,31 @@ def list_to_pg_array(elem):
     Returns:
         elem (str): String representation of PostgreSQL array.
     """
-    items = [quote_pg_array_string(item) if isinstance(item, str) else str(item)
-             for item in elem]
+    items = [pg_array_element(item) for item in elem]
 
     # strip() keeps what the previous implementation did with a list
     # wrapped in another list: [[1, 2, 3]] is passed as '{1, 2, 3}'
     return '{' + ', '.join(items).strip('[]') + '}'
+
+
+def pg_array_element(item):
+    """Render one element of a list as an element of a PostgreSQL array literal.
+
+    A string is double-quoted, None becomes an unquoted NULL (the SQL null
+    value; a quoted "NULL" would be the four-letter string), and any other
+    value is rendered with str(), as before.
+
+    Args:
+        item: Element of the list that is converted.
+
+    Returns:
+        item (str): The element as it appears in the array literal.
+    """
+    if item is None:
+        return 'NULL'
+    if isinstance(item, str):
+        return quote_pg_array_string(item)
+    return str(item)
 
 
 def quote_pg_array_string(item):

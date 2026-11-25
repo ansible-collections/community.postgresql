@@ -384,6 +384,11 @@ class TestListToPgArray():
         (["back\\slash"], '{"back\\\\slash"}'),
         (["[a]", 1], '{"[a]", 1}'),
         (["a", 1], '{"a", 1}'),
+        ([None], "{NULL}"),
+        (["a", None, "b"], '{"a", NULL, "b"}'),
+        ([1, None], "{1, NULL}"),
+        (["NULL"], '{"NULL"}'),
+        (["None"], '{"None"}'),
     ])
     def test_list_to_pg_array(self, value, expected):
         """Test list_to_pg_array(): strings are quoted, other elements are not."""
