@@ -122,3 +122,198 @@
     assert:
       that:
       - result["attrs"]["max_val"] == "1.79769e+308"
+
+  # pg_settings shows real values with 6 significant digits
+  # and small ones in scientific notation, e.g. 1e-05
+  - name: Test real values with decimals and in scientific notation
+    block:
+    - name: Set a real value written with a decimal part
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: autovacuum_vacuum_scale_factor
+        value: '0.50'
+
+    - name: Check the result
+      assert:
+        that:
+        - result is changed
+        - result["diff"]["after"]["setting"] == 0.5
+
+    - name: Set the same value written as an integer with a decimal part
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: seq_page_cost
+        value: '1.0'
+
+    - name: Check the result
+      assert:
+        that:
+        - result is not changed
+        - result.executed_queries == []
+
+    - name: Set a small real value in check mode
+      <<: *task_parameters
+      check_mode: true
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: autovacuum_vacuum_scale_factor
+        value: '0.00001'
+
+    - name: Check the result
+      assert:
+        that:
+        - result is changed
+        - result.executed_queries == ["ALTER SYSTEM SET \"autovacuum_vacuum_scale_factor\" = '0.00001'", "SELECT pg_reload_conf()"]
+
+    - name: Check nothing has changed
+      <<: *task_parameters
+      postgresql_query:
+        <<: *pg_parameters
+        query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'autovacuum_vacuum_scale_factor'"
+
+    - name: Check the output
+      assert:
+        that:
+        - result.query_result[0]["setting"] == "0.5"
+
+    - name: Set a small real value
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: autovacuum_vacuum_scale_factor
+        value: '0.00001'
+
+    - name: Check the result
+      assert:
+        that:
+        - result is changed
+        - result["diff"]["after"]["setting"] | float == 0.00001
+
+    - name: Check the setting is shown in scientific notation
+      <<: *task_parameters
+      postgresql_query:
+        <<: *pg_parameters
+        query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'autovacuum_vacuum_scale_factor'"
+
+    - name: Check the output
+      assert:
+        that:
+        - result.query_result[0]["setting"] == "1e-05"
+
+    - name: Set the same value again in both notations
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: autovacuum_vacuum_scale_factor
+        value: '{{ item }}'
+      loop:
+      - '0.00001'
+      - '1e-05'
+
+    - name: Check idempotence
+      assert:
+        that:
+        - item is not changed
+        - item.executed_queries == []
+      loop: '{{ result.results }}'
+
+    - name: Set a value with more than 6 significant digits
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: autovacuum_vacuum_scale_factor
+        value: '0.123456789'
+
+    - name: Set it again
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: autovacuum_vacuum_scale_factor
+        value: '0.123456789'
+
+    - name: Check idempotence
+      assert:
+        that:
+        - result is not changed
+        - result.executed_queries == []
+
+    # vacuum_cost_delay is of type real with unit ms
+    - name: Set a real param with a time unit to a fractional value in check mode
+      <<: *task_parameters
+      check_mode: true
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: vacuum_cost_delay
+        value: '0.5'
+
+    - name: Check the result
+      assert:
+        that:
+        - result is changed
+        - result.executed_queries == ["ALTER SYSTEM SET \"vacuum_cost_delay\" = '0.5'", "SELECT pg_reload_conf()"]
+
+    - name: Check nothing has changed
+      <<: *task_parameters
+      postgresql_query:
+        <<: *pg_parameters
+        query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'vacuum_cost_delay'"
+
+    - name: Check the output
+      assert:
+        that:
+        - result.query_result[0]["setting"] == "0"
+
+    - name: Set a real param with a time unit to a fractional value
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: vacuum_cost_delay
+        value: '0.5'
+
+    - name: Check the result
+      assert:
+        that:
+        - result is changed
+
+    - name: Check the setting
+      <<: *task_parameters
+      postgresql_query:
+        <<: *pg_parameters
+        query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'vacuum_cost_delay'"
+
+    - name: Check the output
+      assert:
+        that:
+        - result.query_result[0]["setting"] == "0.5"
+
+    - name: Set the same value again, also with another unit
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: vacuum_cost_delay
+        value: '{{ item }}'
+      loop:
+      - '0.5'
+      - '0.5ms'
+      - '500us'
+
+    - name: Check idempotence
+      assert:
+        that:
+        - item is not changed
+        - item.executed_queries == []
+      loop: '{{ result.results }}'
+
+    always:
+    - name: Reset the params
+      <<: *task_parameters
+      postgresql_alter_system:
+        <<: *pg_parameters
+        param: '{{ item }}'
+        value: _RESET
+      loop:
+      - autovacuum_vacuum_scale_factor
+      - seq_page_cost
+      - vacuum_cost_delay
