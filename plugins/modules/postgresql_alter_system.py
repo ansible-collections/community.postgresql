@@ -328,19 +328,33 @@ class ValueEnum():
         self.normalized = self.__normalize(value)
 
     def __normalize(self, value):
-        return normalize_bool_val(value)
+        # YAML booleans such as on/off reach the module as "True" and "False",
+        # as the value option is a string
+        if value in ("True", "False"):
+            return normalize_bool_val(value)
+        # PostgreSQL matches enum values case-insensitively and
+        # pg_catalog.pg_settings shows them in lower case. Boolean prefixes
+        # such as "t" are not valid enum values: ALTER SYSTEM rejects them
+        return value.lower()
 
 
 def normalize_bool_val(value):
-    # No idea why Ansible converts on/off passed as string
-    # to "True" and "False". However, there are represented
-    # as "on" and "off" in pg_catalog.pg_settings.
-    if value == "True":
-        return "on"
-    elif value == "False":
-        return "off"
-    else:
+    """Return "on" or "off" for any boolean spelling PostgreSQL accepts.
+
+    PostgreSQL accepts, case-insensitively, true, false, yes, no, on, off, 1, 0
+    and unique prefixes of them, e.g. "t" or "of", without surrounding spaces.
+    pg_catalog.pg_settings shows booleans as "on" and "off". YAML booleans such
+    as on/off reach the module as "True" and "False", as the value option is
+    a string. Any other value is returned unchanged, so ALTER SYSTEM rejects it.
+    """
+    lowered = value.lower()
+    if not lowered:
         return value
+    if 'true'.startswith(lowered) or 'yes'.startswith(lowered) or lowered in ('on', '1'):
+        return "on"
+    if 'false'.startswith(lowered) or 'no'.startswith(lowered) or lowered in ('of', 'off', '0'):
+        return "off"
+    return value
 
 
 class ValueReal():
