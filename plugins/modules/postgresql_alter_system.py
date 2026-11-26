@@ -359,20 +359,35 @@ class ValueReal():
         if len(value) > 2 and value[-2:].isalpha():
             value = value[:-2]
 
-        return float(value) if str_contains_float(value) else to_int(self.module, value)
+        # pg_settings shows real values with 6 significant digits (C format %g),
+        # e.g. 1e-05 for 0.00001, so compare them with the same precision
+        return float('%g' % to_float(self.module, value))
 
 
 class ValueTime():
-    """Represents a time-related parameter."""
+    """Represents a time-related parameter.
+
+    Parameters of type real, such as vacuum_cost_delay, accept fractional values.
+    """
 
     VALID_UNITS = {"us", "ms", "s", "min", "h", "d"}
 
-    def __init__(self, module, param_name, value, default_unit, pg_ver=None):
+    UNIT_TO_MICROSECONDS = {
+        "us": 1,
+        "ms": 1000,
+        "s": 1000000,
+        "min": 60 * 1000000,
+        "h": 60 * 60 * 1000000,
+        "d": 24 * 60 * 60 * 1000000,
+    }
+
+    def __init__(self, module, param_name, value, default_unit, pg_ver=None, is_real=False):
         # We do not use all the parameters in every class
         # like default_unit, etc., but we need them to instantiate
         # classes in a standard manner
         self.module = module
         self.default_unit = default_unit
+        self.is_real = is_real
         self.num_value, self.passed_unit = self.__set(param_name, value)
         self.normalized = self.__normalize(self.num_value, self.passed_unit)
 
@@ -396,6 +411,13 @@ class ValueTime():
         elif passed_unit == "d":
             value_in_microsecs = num_value * 24 * 60 * 60 * 1000000
 
+        if self.is_real and num_value != -1:
+            # pg_settings shows real values in the unit of the parameter
+            # with 6 significant digits, so compare them with the same precision
+            unit_in_microsecs = ValueTime.UNIT_TO_MICROSECONDS[self.default_unit]
+            value_in_unit = float('%g' % (value_in_microsecs / unit_in_microsecs))
+            value_in_microsecs = value_in_unit * unit_in_microsecs
+
         return value_in_microsecs
 
     def __set(self, param_name, value):
@@ -404,27 +426,28 @@ class ValueTime():
     def __validate(self, param_name, value):
         int_part = None
         unit_part = None
+        to_number = to_float if self.is_real else to_int
 
         # When the value is like 1min
         if len(value) > 3 and value[-3:].isalpha():
-            int_part = to_int(self.module, value[:-3])
+            int_part = to_number(self.module, value[:-3])
             unit_part = value[-3:]
 
         # When the value is like 1ms
         elif len(value) > 2 and value[-2:].isalpha():
-            int_part = to_int(self.module, value[:-2])
+            int_part = to_number(self.module, value[:-2])
             unit_part = value[-2:]
 
         # When the value is like 1s
         elif len(value) > 1 and value[-1].isalpha():
-            int_part = to_int(self.module, value[:-1])
+            int_part = to_number(self.module, value[:-1])
             unit_part = value[-1]
 
         # When it doesn't contain a unit part
         # we set it as the unit defined for this
         # parameter in pg_catalog.pg_settings
         else:
-            int_part = to_int(self.module, value)
+            int_part = to_number(self.module, value)
             unit_part = self.default_unit
 
         if unit_part not in ValueTime.VALID_UNITS:
@@ -502,6 +525,17 @@ class ValueMem():
         return (int_part, unit_part)
 
 
+def to_float(module, value):
+    """Tries to convert the value to float and
+    fail gracefully when no success.
+    """
+    try:
+        return float(value)
+    except Exception:
+        val_err_msg = "Value %s cannot be converted to float" % value
+        module.fail_json(msg=val_err_msg)
+
+
 def to_int(module, value):
     """Tries to convert the value to int and
     fail gracefully when no success.
@@ -535,7 +569,7 @@ def build_value_class(module, param_name, value, unit, vartype, pg_ver):
     elif unit in TIME_PARAM_UNITS:
         # It can be of type integer or real, that's why
         # we don't have them under vartype == "integer"
-        return ValueTime(module, param_name, value, unit)
+        return ValueTime(module, param_name, value, unit, is_real=(vartype == "real"))
 
     elif vartype == "integer":
         if unit in MEM_PARAM_UNITS:

@@ -16,6 +16,7 @@ from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_s
     normalize_bool_val,
     PgParam,
     str_contains_float,
+    to_float,
     to_int,
     ValueBool,
     ValueEnum,
@@ -223,6 +224,7 @@ def test_normalize_bool_val(_input, expected):
     ('negative_param', '-1', None, 'integer', None, ValueInt),
     ('time_param', '1', 'min', 'integer', None, ValueTime),
     ('time_param', '1', 's', 'real', None, ValueTime),
+    ('time_param', '0.5', 'ms', 'real', None, ValueTime),
     ('time_param', '1', 'ms', 'whatever', None, ValueTime),
     ('int_param', '1', 'B', 'integer', None, ValueMem),
     ('int_param', '1', 'kB', 'integer', None, ValueMem),
@@ -268,11 +270,32 @@ def test_value_int(m_ansible_module, value, expected_normalized):
     ('20ms', 20),
     ('0.025', 0.025),
     ('1', 1),
+    ('1.0', 1),
+    ('1.50', 1.5),
+    ('0.00001', 0.00001),
+    ('1e-05', 0.00001),
+    ('1.79769e+308', 1.79769e+308),
+    ('0.123456789', 0.123457),
 ]
 )
 def test_value_real(m_ansible_module, value, expected_normalized):
     obj = ValueReal(m_ansible_module, 'param', value, None)
     assert obj.normalized == expected_normalized
+
+
+@pytest.mark.parametrize('value,expected', [
+    ('1', 1.0),
+    ('1.5', 1.5),
+    ('1e-05', 0.00001),
+]
+)
+def test_to_float(m_ansible_module, value, expected):
+    assert to_float(m_ansible_module, value) == expected
+
+
+def test_to_float_fail(m_ansible_module):
+    to_float(m_ansible_module, 'blah')
+    assert m_ansible_module.err_msg == 'Value blah cannot be converted to float'
 
 
 # Whatever you pass, the class always returns a normalized value in bytes
@@ -324,6 +347,32 @@ def test_value_mem(m_ansible_module, value, default_unit, expected_normalized):
 def test_value_time(m_ansible_module, value, default_unit, expected_normalized):
     obj = ValueTime(m_ansible_module, 'param', value, default_unit, None)
     assert obj.normalized == expected_normalized
+
+
+# Time parameters of type real, such as vacuum_cost_delay, accept fractional values
+@pytest.mark.parametrize('value,default_unit,expected_normalized', [
+    ('0.5', 'ms', 500),
+    ('0.5ms', 'ms', 500),
+    ('500us', 'ms', 500),
+    ('2.5', 'ms', 2500),
+    ('2', 'ms', 2000),
+    ('1e-05', 'ms', 0.01),
+    ('0.0001234567', 'ms', 0.123457),
+    ('-1', 'ms', -1),
+]
+)
+def test_value_time_real(m_ansible_module, value, default_unit, expected_normalized):
+    obj = ValueTime(m_ansible_module, 'param', value, default_unit, None, is_real=True)
+    assert obj.normalized == pytest.approx(expected_normalized)
+
+
+def test_value_time_integer_rejects_fraction(m_ansible_module):
+    try:
+        ValueTime(m_ansible_module, 'param', '0.5', 'ms', None)
+    except Exception:
+        # The mocked fail_json does not exit, so the conversion goes on with None
+        pass
+    assert m_ansible_module.err_msg == 'Value 0.5 cannot be converted to int'
 
 
 @pytest.mark.parametrize('value', [

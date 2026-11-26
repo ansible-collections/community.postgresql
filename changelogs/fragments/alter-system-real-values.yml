@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_alter_system - compare values of parameters of type real as floating point numbers with the 6 significant digits shown by ``pg_settings``. Values such as ``1.0`` failed with ``cannot be converted to int``, and so did every run for a parameter whose current value is shown in scientific notation, such as ``1e-05``. Parameters of type real with a time unit, such as ``vacuum_cost_delay``, accept fractional values too (https://github.com/ansible-collections/community.postgresql/pull/997).
