@@ -1,0 +1,139 @@
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+# List parameters with the GUC_LIST_QUOTE flag: pg_settings shows their
+# elements separated by ", " and quoted when needed, so the module must
+# normalize the desired value the same way to stay idempotent.
+# output_plugin_libraries exists since PostgreSQL 14.24, 15.19, 16.15, 17.11 and 18.6,
+# oauth_validator_libraries since PostgreSQL 18.0: the test uses those the server has.
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+    list_params: "{{ available_params.query_result | default([]) | map(attribute='name') | list }}"
+
+  block:
+  - name: Find the list params the server has
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: >-
+        SELECT name FROM pg_catalog.pg_settings
+        WHERE name IN ('output_plugin_libraries', 'oauth_validator_libraries')
+    register: available_params
+
+  - name: Read the original settings
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s"
+      named_args:
+        name: '{{ item }}'
+    loop: '{{ list_params }}'
+    register: original_settings
+
+  - name: Set list params in check mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: 'lib_one,lib_two'
+    loop: '{{ list_params }}'
+
+  - name: Check the result
+    assert:
+      that:
+      - item is changed
+      - item.executed_queries == ["ALTER SYSTEM SET \"" ~ item.item ~ "\" = 'lib_one','lib_two'", "SELECT pg_reload_conf()"]
+    loop: '{{ result.results }}'
+
+  - name: Check nothing has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s"
+      named_args:
+        name: '{{ item }}'
+    loop: '{{ list_params }}'
+
+  - name: Check the output
+    assert:
+      that:
+      - item.0.query_result == item.1.query_result
+    loop: '{{ result.results | zip(original_settings.results) | list }}'
+
+  - name: Set list params
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: 'lib_one,lib_two'
+    loop: '{{ list_params }}'
+
+  - name: Check the result
+    assert:
+      that:
+      - item is changed
+      - item["diff"]["after"]["setting"] == "lib_one, lib_two"
+    loop: '{{ result.results }}'
+
+  - name: Check the params have changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s"
+      named_args:
+        name: '{{ item }}'
+    loop: '{{ list_params }}'
+
+  - name: Check the output
+    assert:
+      that:
+      - item.query_result[0]["setting"] == "lib_one, lib_two"
+    loop: '{{ result.results }}'
+
+  - name: Set the same values again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: 'lib_one,lib_two'
+    loop: '{{ list_params }}'
+
+  - name: Check idempotence
+    assert:
+      that:
+      - item is not changed
+      - item.executed_queries == []
+    loop: '{{ result.results }}'
+
+  - name: Set the same values with other quoting and spaces
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: '"lib_one", lib_two'
+    loop: '{{ list_params }}'
+
+  - name: Check idempotence
+    assert:
+      that:
+      - item is not changed
+      - item.executed_queries == []
+    loop: '{{ result.results }}'
+
+  always:
+  - name: Reset the params
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: _RESET
+    loop: '{{ list_params }}'
