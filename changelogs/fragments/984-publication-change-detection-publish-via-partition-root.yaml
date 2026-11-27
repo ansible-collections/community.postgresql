@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_publication - fix change detection for publish_via_partition_root (https://github.com/ansible-collections/community.postgresql/pull/984)

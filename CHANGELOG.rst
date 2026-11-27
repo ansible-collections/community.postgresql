@@ -4,6 +4,28 @@ Community PostgreSQL Collection Release Notes
 
 .. contents:: Topics
 
+v5.1.3
+======
+
+Release Summary
+---------------
+
+This is a patch release of the ``community.postgresql`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Bugfixes
+--------
+
+- postgresql_alter_system - compare boolean values in every spelling PostgreSQL accepts, such as ``true``, ``yes`` or ``1``, and enum values case-insensitively, so setting the same value again in another spelling or case, such as ``WARNING`` for ``log_min_messages``, no longer reports a change (https://github.com/ansible-collections/community.postgresql/pull/998).
+- postgresql_alter_system - compare values of parameters of type real as floating point numbers with the 6 significant digits shown by ``pg_settings``. Values such as ``1.0`` failed with ``cannot be converted to int``, and so did every run for a parameter whose current value is shown in scientific notation, such as ``1e-05``. Parameters of type real with a time unit, such as ``vacuum_cost_delay``, accept fractional values too (https://github.com/ansible-collections/community.postgresql/pull/997).
+- postgresql_alter_system - treat ``output_plugin_libraries`` (PostgreSQL 14.24, 15.19, 16.15, 17.11, 18.6 and later) and ``oauth_validator_libraries`` (PostgreSQL 18+) as GUC_LIST_QUOTE list parameters, so setting the same list again no longer reports a change (https://github.com/ansible-collections/community.postgresql/pull/996).
+- postgresql_alter_system - when a parameter is set for the role or the database the module connects to (``ALTER ROLE/DATABASE ... SET``), for all roles (``ALTER ROLE ALL ... SET``), for the connection or for the session, compare the desired value with the value in the configuration files instead of the session value shown by ``pg_settings``. Previously the module could report no change and leave the server configuration untouched (https://github.com/ansible-collections/community.postgresql/pull/999).
+- postgresql_db - when restoring a compressed dump, report the error of ``psql`` or ``pg_restore`` if it fails. Before, a restore program that exited early (for example on an unknown option in ``target_opts`` or a failed login) made the decompressor die of ``SIGPIPE``, and the module returned ``rc=-13`` with an empty message (https://github.com/ansible-collections/community.postgresql/issues/916).
+- postgresql_publication - fix change detection for publish_via_partition_root (https://github.com/ansible-collections/community.postgresql/pull/984)
+- postgresql_query, postgresql_script - when a list of strings is passed in ``positional_args`` or ``named_args``, quote its elements as PostgreSQL array elements instead of passing Python's single quotes as part of each element (https://github.com/ansible-collections/community.postgresql/issues/411).
+- postgresql_query, postgresql_script - when a list passed in ``positional_args`` or ``named_args`` contains ``None``, send that element as SQL ``NULL`` instead of the text ``None``, which was stored as a string in a text array and failed for other array types such as ``int[]``.
+
 v5.1.2
 ======
 
