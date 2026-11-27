@@ -24,6 +24,9 @@
   - name: Test params of boolean type
     include_tasks: test_bools.yml
 
+  - name: Test list params with the GUC_LIST_QUOTE flag
+    include_tasks: test_guc_list_quote.yml
+
   - name: Test params waiting for a restart
     include_tasks: test_pending_restart.yml
 
