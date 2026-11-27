@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_alter_system - when a parameter is set for the role or the database the module connects to (``ALTER ROLE/DATABASE ... SET``), for all roles (``ALTER ROLE ALL ... SET``), for the connection or for the session, compare the desired value with the value in the configuration files instead of the session value shown by ``pg_settings``. Previously the module could report no change and leave the server configuration untouched (https://github.com/ansible-collections/community.postgresql/pull/999).

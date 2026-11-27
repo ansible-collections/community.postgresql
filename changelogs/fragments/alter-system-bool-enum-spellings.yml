@@ -1,2 +1,0 @@
-bugfixes:
-  - postgresql_alter_system - compare boolean values in every spelling PostgreSQL accepts, such as ``true``, ``yes`` or ``1``, and enum values case-insensitively, so setting the same value again in another spelling or case, such as ``WARNING`` for ``log_min_messages``, no longer reports a change (https://github.com/ansible-collections/community.postgresql/pull/998).
