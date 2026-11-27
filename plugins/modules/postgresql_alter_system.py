@@ -133,6 +133,7 @@ attrs:
     'unit': 'kB',
     'context': 'user',
     'vartype': 'integer',
+    'enumvals': null,
     'min_val': 64,
     'max_val': 2147483647,
     'boot_val': 4096,
@@ -158,13 +159,15 @@ diff:
 
 executed_queries:
   description:
-  - List of executed queries except SELECTs.
-  - In the check mode, returns a query that
+  - List of executed queries that change the configuration,
+    followed by C(SELECT pg_reload_conf()) that applies it.
+  - Queries that only read parameter information are not included.
+  - In the check mode, returns the queries that
     would be supposed to get executed in the real mode.
   returned: success
   type: list
   elements: str
-  sample: ["ALTER SYSTEM SET \"shared_preload_libraries\" = ''"]
+  sample: ["ALTER SYSTEM SET \"work_mem\" = '8MB'", "SELECT pg_reload_conf()"]
 
 restart_required:
   description:
