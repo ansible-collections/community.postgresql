@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_alter_system - compared ``archive_command`` with the value in the configuration files while ``archive_mode`` is off, as ``pg_settings`` then shows it as ``(disabled)``, so setting it no longer reported a change on every run (https://github.com/ansible-collections/community.postgresql/pull/1009).

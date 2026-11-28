@@ -36,6 +36,9 @@
   - name: Test params set for the role the module connects as
     include_tasks: test_session_overrides.yml
 
+  - name: Test archive_command while archive_mode is off
+    include_tasks: test_archive_command.yml
+
   - name: Test options coverage
     include_tasks: options_coverage.yml
 

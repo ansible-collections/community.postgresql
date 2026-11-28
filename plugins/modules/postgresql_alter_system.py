@@ -85,6 +85,8 @@ attributes:
         C(pg_catalog.pg_file_settings), or against the default value if there is none.
         If the session cannot read C(pg_catalog.pg_file_settings), the module warns and
         uses the value C(pg_catalog.pg_settings) shows.
+      - While C(archive_mode) is off, C(pg_catalog.pg_settings) shows C(archive_command)
+        as C((disabled\)), so the module compares its desired value the same way.
 
 seealso:
 - module: community.postgresql.postgresql_info
@@ -727,6 +729,10 @@ class PgParam():
         elif self.attrs["source"] in SESSION_SOURCES:
             current_value = self.get_system_value(
                 "it is set for the current role or database, for all roles or for the session (source: %s)" % self.attrs["source"])
+
+        elif self.name == "archive_command" and self.attrs["setting"] == "(disabled)":
+            # pg_settings shows this instead of the value while archive_mode is off
+            current_value = self.get_system_value("it is shown as (disabled) while archive_mode is off")
 
         # Return a proper value class based on vartype and unit
         # from a pg_catalog.pg_settings entry for a specific parameter

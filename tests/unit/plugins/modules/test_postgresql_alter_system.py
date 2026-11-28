@@ -734,3 +734,44 @@ def test_pg_param_server_value_does_not_read_file_settings(m_ansible_module, m_p
 
     m_pg_cursor.execute.assert_called_once()
     assert m_ansible_module.warn_msg is None
+
+
+# pg_settings shows archive_command as "(disabled)" while archive_mode is off
+ARCHIVE_DISABLED_ATTRS = {
+    'setting': '(disabled)', 'unit': None, 'context': 'sighup', 'vartype': 'string',
+    'boot_val': '', 'pending_restart': False, 'source': 'configuration file',
+}
+
+
+def test_pg_param_archive_command_disabled_compares_with_file_value(m_ansible_module, m_pg_cursor):
+    m_pg_cursor.fetchall.side_effect = [
+        [dict(ARCHIVE_DISABLED_ATTRS)],
+        [{'setting': 'cp %p /arch/%f'}],
+    ]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'archive_command', 140000)
+    assert 'pg_file_settings' in m_pg_cursor.execute.call_args[0][0]
+
+    assert param.set('cp %p /arch/%f') is False
+    assert param.set('cp %p /other/%f') is True
+
+
+def test_pg_param_archive_command_disabled_without_file_entry(m_ansible_module, m_pg_cursor):
+    m_pg_cursor.fetchall.side_effect = [[dict(ARCHIVE_DISABLED_ATTRS, source='default')], []]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'archive_command', 140000)
+
+    assert param.init_value.normalized == ''
+
+
+def test_pg_param_archive_command_disabled_no_access(m_ansible_module, m_pg_cursor):
+    m_pg_cursor.fetchall.side_effect = [[dict(ARCHIVE_DISABLED_ATTRS)], Exception('permission denied')]
+    param = PgParam(m_ansible_module, m_pg_cursor, 'archive_command', 140000)
+
+    assert 'archive_mode is off' in m_ansible_module.warn_msg
+    assert param.init_value.normalized == '(disabled)'
+
+
+def test_pg_param_archive_command_enabled_does_not_read_file_settings(m_ansible_module, m_pg_cursor):
+    m_pg_cursor.fetchall.return_value = [dict(ARCHIVE_DISABLED_ATTRS, setting='cp %p /arch/%f')]
+    PgParam(m_ansible_module, m_pg_cursor, 'archive_command', 140000)
+
+    m_pg_cursor.execute.assert_called_once()

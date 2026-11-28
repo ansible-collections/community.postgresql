@@ -1,0 +1,99 @@
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+# While archive_mode is off, which is the default,
+# pg_settings shows archive_command as "(disabled)".
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: Check archive_mode is off
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name IN ('archive_mode', 'archive_command') ORDER BY name"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "(disabled)"
+      - result.query_result[1]["setting"] == "off"
+
+  - name: Set archive_command in check mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_command
+      value: cp %p /arch/%f
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET \"archive_command\" = 'cp %p /arch/%f'", "SELECT pg_reload_conf()"]
+
+  - name: Set archive_command
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_command
+      value: cp %p /arch/%f
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  - name: Check the value is in postgresql.auto.conf
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_file_settings WHERE name = 'archive_command' AND sourcefile LIKE '%postgresql.auto.conf'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result | length == 1
+      - result.query_result[0]["setting"] == "cp %p /arch/%f"
+
+  - name: Set the same value again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_command
+      value: cp %p /arch/%f
+
+  - name: Check idempotence
+    assert:
+      that:
+      - result is not changed
+      - result.executed_queries == []
+
+  - name: Set another value
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_command
+      value: cp %p /other/%f
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+
+  always:
+  - name: Reset the param
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: archive_command
+      value: _RESET
