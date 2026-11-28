@@ -27,6 +27,9 @@
   - name: Test params waiting for a restart
     include_tasks: test_pending_restart.yml
 
+  - name: Test params set for the role the module connects as
+    include_tasks: test_session_overrides.yml
+
   - name: Copied from postgresql_set to ensure some compatibility
     include_tasks: options_coverage.yml
 
