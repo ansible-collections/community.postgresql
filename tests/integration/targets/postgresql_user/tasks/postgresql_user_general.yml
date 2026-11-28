@@ -787,6 +787,59 @@
   - assert:
       that: not result.changed
 
+  # PostgreSQL normalizes search_path (spacing, case of unquoted names, quotes):
+  # values equivalent to the stored one must not report a change.
+  - name: Test idempotency with a non-normalized but equivalent search_path
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values: false
+      configuration:
+        search_path: "PG_CATALOG ,'public'"
+
+  - assert:
+      that:
+        - not result.changed
+        - result.queries == []
+
+  - name: Test idempotency with a non-normalized search_path in check mode
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values: false
+      configuration:
+        search_path: 'pg_catalog,public'
+    check_mode: true
+
+  - assert:
+      that:
+        - not result.changed
+
+  - name: Test changing search_path in check mode
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values: false
+      configuration:
+        search_path: '"$user",public'
+    check_mode: true
+
+  - assert:
+      that:
+        - result.changed
+
+  - name: Test that check mode did not change search_path
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
+        - result.query_result[0]['rolconfig'] == ["search_path=pg_catalog, public"]
+
   - name: Test setting search_path
     <<: *task_parameters
     postgresql_user:
@@ -805,6 +858,46 @@
   - assert:
       that:
         - result.rowcount == 1
+        - result.query_result[0]['rolconfig'] == ["search_path=pg_catalog, public", "work_mem=16MB"]
+
+  - name: Test idempotency with a quoted value and quote_configuration_values=false
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values: false
+      configuration:
+        search_path: 'pg_catalog,public'
+        work_mem: "'16MB'"
+
+  - assert:
+      that:
+        - not result.changed
+        - result.queries == []
+
+  - name: Test that a value rejected by PostgreSQL fails
+    <<: *task_parameters
+    postgresql_user:
+      <<: *pg_parameters
+      name: '{{ test_user }}'
+      quote_configuration_values: false
+      configuration:
+        search_path: 'pg_catalog, public'
+        work_mem: "'16XB'"
+    ignore_errors: true
+
+  - assert:
+      that:
+        - result is failed
+        - "'work_mem' in result.msg"
+
+  - name: Test that the rejected value did not change the settings
+    <<: *task_parameters
+    postgresql_query:
+      query: "SELECT rolconfig from pg_roles where rolname = '{{ test_user }}'"
+
+  - assert:
+      that:
         - result.query_result[0]['rolconfig'] == ["search_path=pg_catalog, public", "work_mem=16MB"]
 
   - name: Purge configuration parameters from user

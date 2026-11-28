@@ -1,0 +1,2 @@
+bugfixes:
+  - postgresql_user - ``configuration`` values were compared with the form that PostgreSQL stores, so a value equivalent to the stored one (for example ``search_path`` set to ``a,public``, stored as ``a, public``, or ``work_mem`` set to ``'16MB'`` with ``quote_configuration_values=false``) reported no change (https://github.com/ansible-collections/community.postgresql/pull/1015).
