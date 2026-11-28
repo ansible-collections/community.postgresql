@@ -37,6 +37,12 @@ options:
     - Use V(_RESET) to run the C(ALTER SYSTEM RESET param) which will remove
       a corresponding entry from C(postgresql.auto.conf). Always returns C(changed=True).
     - For boolean parameters, pass the V("on") or V("off") string.
+    - For list parameters with the GUC_LIST_QUOTE flag, such as C(shared_preload_libraries),
+      C(session_preload_libraries) or C(search_path), an empty value is not supported
+      because PostgreSQL would store it as one element with an empty name. Use V(_RESET) instead.
+    - For list parameters with the GUC_LIST_QUOTE flag, separate the elements with commas.
+      Enclose an element that contains a comma in double quotes, for example V("a,b", c).
+      Any other value is passed to PostgreSQL as one value, even if it contains commas.
     type: str
     required: true
 
@@ -179,10 +185,12 @@ restart_required:
   sample: true
 '''
 
+import csv
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.community.postgresql.plugins.module_utils.database import \
-    check_input, pg_quote_name, pg_unquote_name
+    check_input, pg_quote_literal, pg_quote_name, pg_unquote_name
 from ansible_collections.community.postgresql.plugins.module_utils.postgres import (
     connect_to_db,
     ensure_required_libs,
@@ -239,10 +247,21 @@ def param_is_guc_list_quote(server_version, name):
     return False
 
 
+def split_guc_list(value):
+    """Split the value of a GUC_LIST_QUOTE parameter into its elements.
+
+    Elements are separated by commas. An element enclosed in double quotes
+    can contain commas, and two double quotes inside it stand for one.
+    Spaces around elements and empty elements are dropped.
+    """
+    elements = next(csv.reader([value], skipinitialspace=True), [])
+    return [elem.strip() for elem in elements if elem.strip()]
+
+
 def param_guc_list_unquote(value):
     # Unquote GUC_LIST_QUOTE parameter (each element can be quoted or not)
     # Assume the parameter is GUC_LIST_QUOTE (check in param_is_guc_list_quote function)
-    return ', '.join([v.strip('" ') for v in value.split(',')])
+    return ', '.join(split_guc_list(value))
 
 
 def check_pg_version(module, pg_ver):
@@ -254,13 +273,18 @@ def check_pg_version(module, pg_ver):
 
 
 def check_problematic_params(module, param, value):
-    # Due to a bug in PostgreSQL
-    if param == 'shared_preload_libraries' and value == '':
-        msg = ("Due to a PostgreSQL bug in resetting shared_preload_libraries "
+    # ALTER SYSTEM SET stores an empty string for a GUC_LIST_QUOTE parameter as '""',
+    # i.e. a list with one element whose name is empty. PostgreSQL then fails to load
+    # the library "" at startup (shared_preload_libraries) or at every new connection
+    # (session_preload_libraries, local_preload_libraries).
+    # The check runs before connecting, so it covers the parameters of all versions.
+    is_guc_list_quote = any(param in params for dummy, params in PARAMETERS_GUC_LIST_QUOTE)
+    if is_guc_list_quote and not split_guc_list(value):
+        msg = ("Due to a PostgreSQL bug in resetting %s "
                "with ALTER SYSTEM SET, setting it as an empty string "
                "is not supported by the module to avoid crashes. "
                "Use `value: _RESET` instead. "
-               "If you think the bug has been fixed, please let us know.")
+               "If you think the bug has been fixed, please let us know." % param)
         module.fail_json(msg=msg)
 
 # Andersson007 originally used ABC, but it turned out that
@@ -823,35 +847,21 @@ class PgParam():
         return res[0]["setting"]
 
     def __construct_alter_system_query(self, value):
-        if isinstance(value, str) and ',' in value and \
-                not self.name.endswith(('_command', '_prefix')) and \
-                not (self.pg_ver < 140000 and self.name == 'unix_socket_directories'):
-            # Issue https://github.com/ansible-collections/community.postgresql/issues/78
-            # Change value from 'one, two, three' -> "'one','two','three'"
-            # PR https://github.com/ansible-collections/community.postgresql/pull/400
-            # Parameter names ends with '_command' or '_prefix'
-            # can contains commas but they are not lists
-            # PR https://github.com/ansible-collections/community.postgresql/pull/521
-            # unix_socket_directories up to PostgreSQL 13 lacks GUC_LIST_INPUT and
-            # GUC_LIST_QUOTE options so it is a single value parameter
-            tmp = []
-            for elem in value.split(','):
-                if elem.strip()[0] == '"':
-                    # In case like search_path value "$user"
-                    # just append it w/o any modifications
-                    tmp.append(elem.strip())
-                else:
-                    tmp.append("'" + elem.strip() + "'")
-
-            query = "ALTER SYSTEM SET %s = %s" % (self.sql_name, ','.join(tmp))
+        if param_is_guc_list_quote(self.pg_ver, self.name):
+            # PostgreSQL quotes each element of these parameters as an identifier
+            # when it stores the value, so each element is a separate literal:
+            # 'one, "two"' -> 'one','two'
+            sql_value = ','.join(pg_quote_literal(elem) for elem in split_guc_list(value))
 
         elif self.pg_ver >= 140000:
-            query = "ALTER SYSTEM SET %s = '%s'" % (self.sql_name, value)
+            # Any other value, including a list such as log_destination,
+            # is passed as one literal: PostgreSQL splits list values itself
+            sql_value = pg_quote_literal(value)
 
         else:
-            query = "ALTER SYSTEM SET %s = %s" % (self.sql_name, value)
+            sql_value = value
 
-        return query
+        return "ALTER SYSTEM SET %s = %s" % (self.sql_name, sql_value)
 
     def __check_param_context(self, context):
         if context == "internal":

@@ -1,0 +1,105 @@
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+# Values are passed to ALTER SYSTEM SET as SQL string literals:
+# quotes and backslashes must be escaped, and only GUC_LIST_QUOTE
+# parameters are split into one literal per element.
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+    # param: [value passed to the module, setting expected in pg_settings]
+    test_values:
+      restore_command: ["test -f '/arch/%f' && cp '/arch/%f' %p", "test -f '/arch/%f' && cp '/arch/%f' %p"]
+      archive_cleanup_command: ['echo C:\arch\%r', 'echo C:\arch\%r']
+      TimeZone: ['EST5EDT,M3.2.0,M11.1.0', 'EST5EDT,M3.2.0,M11.1.0']
+      log_destination: ['stderr,csvlog', 'stderr,csvlog']
+      search_path: ['"$user", public, ext_literal,', '"$user", public, ext_literal']
+      temp_tablespaces: ['"a,b", c', '"a,b", c']
+      ssl_ciphers: ['ECDHE-RSA-AES128-GCM-SHA256,ECDHE-RSA-AES256-GCM-SHA384', 'ECDHE-RSA-AES128-GCM-SHA256,ECDHE-RSA-AES256-GCM-SHA384']
+
+  block:
+  - name: Set the values in check mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value[0] }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check the result
+    assert:
+      that:
+      - item is changed
+    loop: '{{ result.results }}'
+
+  - name: Check the generated queries
+    assert:
+      that:
+      - result.results[0].executed_queries[0] == "ALTER SYSTEM SET \"restore_command\" = 'test -f ''/arch/%f'' && cp ''/arch/%f'' %p'"
+      - result.results[1].executed_queries[0] == "ALTER SYSTEM SET \"archive_cleanup_command\" = E'echo C:\\\\arch\\\\%r'"
+      - result.results[2].executed_queries[0] == "ALTER SYSTEM SET \"TimeZone\" = 'EST5EDT,M3.2.0,M11.1.0'"
+      - result.results[3].executed_queries[0] == "ALTER SYSTEM SET \"log_destination\" = 'stderr,csvlog'"
+      - result.results[4].executed_queries[0] == "ALTER SYSTEM SET \"search_path\" = '$user','public','ext_literal'"
+      - result.results[5].executed_queries[0] == "ALTER SYSTEM SET \"temp_tablespaces\" = 'a,b','c'"
+      - result.results[6].executed_queries[0] == "ALTER SYSTEM SET \"ssl_ciphers\" = 'ECDHE-RSA-AES128-GCM-SHA256,ECDHE-RSA-AES256-GCM-SHA384'"
+
+  - name: Set the values
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value[0] }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check the result
+    assert:
+      that:
+      - item is changed
+    loop: '{{ result.results }}'
+
+  - name: Read the settings
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s"
+      named_args:
+        name: '{{ item.key }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check the settings
+    assert:
+      that:
+      - item.query_result[0]["setting"] == item.item.value[1]
+    loop: '{{ result.results }}'
+
+  - name: Set the same values again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value[0] }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check idempotence
+    assert:
+      that:
+      - item is not changed
+      - item.executed_queries == []
+    loop: '{{ result.results }}'
+
+  always:
+  - name: Reset the params
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: _RESET
+    loop: '{{ test_values.keys() | list }}'

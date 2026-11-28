@@ -27,6 +27,47 @@
       - result is failed
       - result.msg is search("is not supported by the module to avoid crashe")
 
+  # ALTER SYSTEM SET would store '""' for these list params: a library with
+  # an empty name that makes every new connection fail
+  - name: Read the configuration before setting empty lists
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT pg_read_file('postgresql.auto.conf') AS content
+    register: original_config
+
+  - name: Set list params with an empty value, must fail
+    <<: *task_parameters
+    ignore_errors: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: ''
+    loop:
+    - session_preload_libraries
+    - local_preload_libraries
+    - search_path
+    - temp_tablespaces
+
+  - name: Check the result
+    assert:
+      that:
+      - item is failed
+      - item is not changed
+      - item.msg is search("Due to a PostgreSQL bug in resetting " ~ item.item)
+    loop: '{{ result.results }}'
+
+  - name: Read the configuration after setting empty lists
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: SELECT pg_read_file('postgresql.auto.conf') AS content
+
+  - name: Check the configuration has not changed
+    assert:
+      that:
+      - result.query_result == original_config.query_result
+
   - name: Read the original TimeZone setting
     <<: *task_parameters
     postgresql_query:
@@ -191,7 +232,7 @@
     assert:
       that:
       - result is changed
-      - result.executed_queries == ["ALTER SYSTEM SET \"search_path\" = \"$user\",'public','extensions'", "SELECT pg_reload_conf()"]
+      - result.executed_queries == ["ALTER SYSTEM SET \"search_path\" = '$user','public','extensions'", "SELECT pg_reload_conf()"]
       - result["attrs"]["boot_val"] == '"$user", public'
       - result["attrs"]["context"] == "user"
       - result["attrs"]["enumvals"] == None
