@@ -18,6 +18,9 @@
   - name: Test params of type real
     include_tasks: test_reals.yml
 
+  - name: Test memory and time params with fractional and rounded values
+    include_tasks: test_units.yml
+
   - name: Test params of string type
     include_tasks: test_strings.yml
 

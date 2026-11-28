@@ -355,6 +355,14 @@ def test_to_float_fail(m_ansible_module):
     ('1MB', '8kB', 1048576),
     ('1GB', 'B', 1073741824),
     ('1TB', 'MB', 1099511627776),
+    # Fractional values are accepted
+    ('1.5MB', 'kB', 1572864),
+    ('0.5GB', 'MB', 536870912),
+    ('1.5', 'MB', 2097152),
+    # Rounded to a whole number of the unit of the parameter
+    ('1001kB', '8kB', 1024000),
+    ('1020kB', '8kB', 1048576),
+    ('1500B', 'kB', 1024),
 ]
 )
 def test_value_mem(m_ansible_module, value, default_unit, expected_normalized):
@@ -373,17 +381,26 @@ def test_value_mem(m_ansible_module, value, default_unit, expected_normalized):
     ('1h', 'ms', 3600000000),
     ('1d', 'ms', 86400000000),
     ('1', 's', 1000000),
-    ('1ms', 's', 1000),
+    ('1ms', 's', 0),
     ('1s', 's', 1000000),
     ('1min', 's', 60000000),
     ('1h', 's', 3600000000),
     ('1d', 's', 86400000000),
     ('1', 'min', 60000000),
     ('1min', 'min', 60000000),
-    ('1ms', 'min', 1000),
-    ('1s', 'min', 1000000),
+    ('1ms', 'min', 0),
+    ('1s', 'min', 0),
     ('1h', 'min', 3600000000),
     ('1d', 'min', 86400000000),
+    # Fractional values are accepted
+    ('1.5min', 's', 90000000),
+    ('1.5s', 'ms', 1500000),
+    ('0.5h', 'min', 1800000000),
+    # Rounded to a whole number of the unit of the parameter
+    ('1500ms', 's', 2000000),
+    ('1400ms', 's', 1000000),
+    ('90s', 'min', 120000000),
+    ('-1', 's', -1),
 ]
 )
 def test_value_time(m_ansible_module, value, default_unit, expected_normalized):
@@ -408,13 +425,16 @@ def test_value_time_real(m_ansible_module, value, default_unit, expected_normali
     assert obj.normalized == pytest.approx(expected_normalized)
 
 
-def test_value_time_integer_rejects_fraction(m_ansible_module):
-    try:
-        ValueTime(m_ansible_module, 'param', '0.5', 'ms', None)
-    except Exception:
-        # The mocked fail_json does not exit, so the conversion goes on with None
-        pass
-    assert m_ansible_module.err_msg == 'Value 0.5 cannot be converted to int'
+@pytest.mark.parametrize('value,is_real,expected', [
+    (2.5, False, 2),
+    (3.5, False, 4),
+    (125.125, False, 125),
+    (0.5, True, 0.5),
+    (0.123456789, True, 0.123457),
+]
+)
+def test_round_to_unit(value, is_real, expected):
+    assert postgresql_alter_system.round_to_unit(value, is_real) == expected
 
 
 @pytest.mark.parametrize('value', [

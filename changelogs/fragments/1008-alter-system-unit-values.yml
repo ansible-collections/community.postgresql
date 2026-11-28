@@ -1,0 +1,3 @@
+bugfixes:
+  - postgresql_alter_system - accepted fractional values for memory and time parameters, such as ``1.5MB`` or ``1.5min``, which failed with ``cannot be converted to int`` (https://github.com/ansible-collections/community.postgresql/pull/1008).
+  - postgresql_alter_system - rounded memory and time values to a whole number of the parameter's unit, as PostgreSQL does when storing them, so values such as ``1001kB`` for ``effective_cache_size`` or ``1500ms`` for a parameter in seconds no longer reported a change on every run (https://github.com/ansible-collections/community.postgresql/pull/1008).

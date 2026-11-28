@@ -33,7 +33,11 @@ options:
     description:
     - Parameter value to set.
     - Specify the value in appropriate units!
-    - For memory-related parameters of type integer, it is C(kB), C(MB), C(GB), and C(TB).
+    - For memory-related parameters of type integer, it is C(B), C(kB), C(MB), C(GB), and C(TB).
+    - For time-related parameters, it is C(us), C(ms), C(s), C(min), C(h), and C(d).
+    - Fractional values such as V(1.5MB) are accepted. PostgreSQL rounds the value of an integer
+      parameter to a whole number of the unit shown in C(pg_catalog.pg_settings), and the module
+      compares values the same way.
     - Use V(_RESET) to run the C(ALTER SYSTEM RESET param) which will remove
       a corresponding entry from C(postgresql.auto.conf). Always returns C(changed=True).
     - For boolean parameters, pass the V("on") or V("off") string.
@@ -403,10 +407,9 @@ class ValueReal():
 class ValueTime():
     """Represents a time-related parameter.
 
-    Parameters of type real, such as vacuum_cost_delay, accept fractional values.
+    The normalized value is in microseconds, rounded as PostgreSQL stores it
+    in the unit of the parameter (see round_to_unit).
     """
-
-    VALID_UNITS = {"us", "ms", "s", "min", "h", "d"}
 
     UNIT_TO_MICROSECONDS = {
         "us": 1,
@@ -416,6 +419,7 @@ class ValueTime():
         "h": 60 * 60 * 1000000,
         "d": 24 * 60 * 60 * 1000000,
     }
+    VALID_UNITS = set(UNIT_TO_MICROSECONDS)
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None, is_real=False):
         # We do not use all the parameters in every class
@@ -428,62 +432,41 @@ class ValueTime():
         self.normalized = self.__normalize(self.num_value, self.passed_unit)
 
     def __normalize(self, num_value, passed_unit):
-        value_in_microsecs = None
-        # Let's convert num_value to the smallest unit,
-        # i.e. to "us" which means microseconds
         if num_value == -1:
             # When disabled, some params have -1 as value
-            value_in_microsecs = num_value
-        elif passed_unit == "us":
-            value_in_microsecs = num_value
-        elif passed_unit == "ms":
-            value_in_microsecs = num_value * 1000
-        elif passed_unit == "s":
-            value_in_microsecs = num_value * 1000000
-        elif passed_unit == "min":
-            value_in_microsecs = num_value * 60 * 1000000
-        elif passed_unit == "h":
-            value_in_microsecs = num_value * 60 * 60 * 1000000
-        elif passed_unit == "d":
-            value_in_microsecs = num_value * 24 * 60 * 60 * 1000000
+            return num_value
 
-        if self.is_real and num_value != -1:
-            # pg_settings shows real values in the unit of the parameter
-            # with 6 significant digits, so compare them with the same precision
-            unit_in_microsecs = ValueTime.UNIT_TO_MICROSECONDS[self.default_unit]
-            value_in_unit = float('%g' % (value_in_microsecs / unit_in_microsecs))
-            value_in_microsecs = value_in_unit * unit_in_microsecs
-
-        return value_in_microsecs
+        unit_in_microsecs = ValueTime.UNIT_TO_MICROSECONDS[self.default_unit]
+        value_in_unit = num_value * ValueTime.UNIT_TO_MICROSECONDS[passed_unit] / unit_in_microsecs
+        return round_to_unit(value_in_unit, self.is_real) * unit_in_microsecs
 
     def __set(self, param_name, value):
         return self.__validate(param_name, value)
 
     def __validate(self, param_name, value):
-        int_part = None
+        num_part = None
         unit_part = None
-        to_number = to_float if self.is_real else to_int
 
         # When the value is like 1min
         if len(value) > 3 and value[-3:].isalpha():
-            int_part = to_number(self.module, value[:-3])
+            num_part = to_float(self.module, value[:-3])
             unit_part = value[-3:]
 
         # When the value is like 1ms
         elif len(value) > 2 and value[-2:].isalpha():
-            int_part = to_number(self.module, value[:-2])
+            num_part = to_float(self.module, value[:-2])
             unit_part = value[-2:]
 
         # When the value is like 1s
         elif len(value) > 1 and value[-1].isalpha():
-            int_part = to_number(self.module, value[:-1])
+            num_part = to_float(self.module, value[:-1])
             unit_part = value[-1]
 
         # When it doesn't contain a unit part
         # we set it as the unit defined for this
         # parameter in pg_catalog.pg_settings
         else:
-            int_part = to_number(self.module, value)
+            num_part = to_float(self.module, value)
             unit_part = self.default_unit
 
         if unit_part not in ValueTime.VALID_UNITS:
@@ -492,64 +475,61 @@ class ValueTime():
                            'are %s' % (param_name, value, ', '.join(ValueTime.VALID_UNITS)))
             self.module.fail_json(msg=val_err_msg)
 
-        return (int_part, unit_part)
+        return (num_part, unit_part)
 
 
 class ValueMem():
-    """Represents a memory-related parameter."""
+    """Represents a memory-related parameter.
+
+    The normalized value is in bytes, rounded as PostgreSQL stores it
+    in the unit of the parameter (see round_to_unit).
+    """
     # If you pass anything else for memory-related param,
     # Postgres will show that only the following
     # units are acceptable
     VALID_UNITS = {"B", "kB", "MB", "GB", "TB"}
 
-    # Bytes = MB << 20, etc.
-    # This looks a bit better and maybe
-    # even works more efficiently than
-    # say Bytes = MB * 1024 * 1024
-    UNIT_TO_BYTES_BITWISE_SHIFT = {
-        "B": 0,
-        "kB": 10,
-        "MB": 20,
-        "GB": 30,
-        "TB": 40,
+    # "8kB" is not accepted in values, but it is the unit
+    # of some parameters in pg_catalog.pg_settings, e.g. shared_buffers
+    UNIT_TO_BYTES = {
+        "B": 1,
+        "kB": 1 << 10,
+        "8kB": 8 << 10,
+        "MB": 1 << 20,
+        "GB": 1 << 30,
+        "TB": 1 << 40,
     }
 
     def __init__(self, module, param_name, value, default_unit, pg_ver=None):
         self.module = module
         self.default_unit = default_unit
         self.num_value, self.passed_unit = self.__set(param_name, value)
-        if self.passed_unit == "8kB":
-            # This is a special case when the unit in pg_catalog.pg_settings is "8kB".
-            # Users can still pass such values as "10MB", etc.
-            # The only issue seems to appear when users don't specify values
-            # of 8kB default value explicitly, i.e., when they pass just "100".
-            # In this case the self.__validate method will assign its default unit of 8kB
-            self.normalized = (self.num_value << ValueMem.UNIT_TO_BYTES_BITWISE_SHIFT["kB"]) * 8
-        else:
-            self.normalized = self.num_value << ValueMem.UNIT_TO_BYTES_BITWISE_SHIFT[self.passed_unit]
+        unit_in_bytes = ValueMem.UNIT_TO_BYTES[self.default_unit]
+        value_in_unit = self.num_value * ValueMem.UNIT_TO_BYTES[self.passed_unit] / unit_in_bytes
+        self.normalized = round_to_unit(value_in_unit, False) * unit_in_bytes
 
     def __set(self, param_name, value):
         return self.__validate(param_name, value)
 
     def __validate(self, param_name, value):
-        int_part = None
+        num_part = None
         unit_part = None
 
         # When the value is like 1024MB
         if len(value) > 2 and value[-2:].isalpha():
-            int_part = to_int(self.module, value[:-2])
+            num_part = to_float(self.module, value[:-2])
             unit_part = value[-2:]
 
         # When the value is like 1024B
         elif len(value) > 1 and value[-1].isalpha():
-            int_part = to_int(self.module, value[:-1])
+            num_part = to_float(self.module, value[:-1])
             unit_part = value[-1]
 
         # When it doesn't contain a unit part
         # we set it as the unit defined for this
         # parameter in pg_catalog.pg_settings
         else:
-            int_part = to_int(self.module, value)
+            num_part = to_float(self.module, value)
             unit_part = self.default_unit
 
         if unit_part not in ValueMem.VALID_UNITS and unit_part != "8kB":
@@ -558,7 +538,19 @@ class ValueMem():
                            'are %s' % (param_name, value, ', '.join(ValueMem.VALID_UNITS)))
             self.module.fail_json(msg=val_err_msg)
 
-        return (int_part, unit_part)
+        return (num_part, unit_part)
+
+
+def round_to_unit(value, is_real):
+    """Round a value expressed in the unit of its parameter as PostgreSQL stores it.
+
+    Integer parameters keep the nearest whole number of their unit, e.g. 1500ms
+    is stored as 2 for a parameter in seconds. Real parameters keep 6 significant
+    digits, the precision pg_catalog.pg_settings shows them with.
+    """
+    if is_real:
+        return float('%g' % value)
+    return int(round(value))
 
 
 def to_float(module, value):

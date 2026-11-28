@@ -1,0 +1,123 @@
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+# PostgreSQL accepts fractional values for memory and time parameters
+# and stores them rounded to a whole number of the parameter's unit
+# (integer parameters) or with a fraction of it (real parameters).
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+    # param: [value passed to the module, setting expected in pg_settings,
+    #         another value that PostgreSQL stores the same way]
+    test_values:
+      effective_cache_size: ['1001kB', '125', '1000kB']
+      autovacuum_naptime: ['1500ms', '2', '2s']
+      checkpoint_timeout: ['1.5min', '90', '90s']
+      work_mem: ['1.5MB', '1536', '1536kB']
+
+  block:
+  - name: Set the values in check mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value[0] }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check the result
+    assert:
+      that:
+      - item is changed
+      - item.executed_queries == ["ALTER SYSTEM SET \"" ~ item.item.key ~ "\" = '" ~ item.item.value[0] ~ "'", "SELECT pg_reload_conf()"]
+    loop: '{{ result.results }}'
+
+  - name: Read the settings
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s"
+      named_args:
+        name: '{{ item.key }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check nothing has changed
+    assert:
+      that:
+      - item.query_result[0]["setting"] != item.item.value[1]
+    loop: '{{ result.results }}'
+
+  - name: Set the values
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value[0] }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check the result
+    assert:
+      that:
+      - item is changed
+    loop: '{{ result.results }}'
+
+  - name: Read the settings
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = %(name)s"
+      named_args:
+        name: '{{ item.key }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check the settings
+    assert:
+      that:
+      - item.query_result[0]["setting"] == item.item.value[1]
+    loop: '{{ result.results }}'
+
+  - name: Set the same values again
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value[0] }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check idempotence
+    assert:
+      that:
+      - item is not changed
+      - item.executed_queries == []
+    loop: '{{ result.results }}'
+
+  - name: Set values that PostgreSQL stores the same way
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.key }}'
+      value: '{{ item.value[2] }}'
+    loop: '{{ test_values | dict2items }}'
+
+  - name: Check idempotence
+    assert:
+      that:
+      - item is not changed
+      - item.executed_queries == []
+    loop: '{{ result.results }}'
+
+  always:
+  - name: Reset the params
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: _RESET
+    loop: '{{ test_values.keys() | list }}'
