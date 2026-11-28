@@ -152,6 +152,24 @@ def pg_quote_name(name, for_params=False):
     return quoted.replace('%', '%%') if for_params else quoted
 
 
+def pg_quote_literal(value):
+    """Return a value as a SQL string literal, like PostgreSQL's quote_literal().
+
+    Single quotes are doubled. A value containing a backslash is returned as an
+    escape string literal (E'...') with doubled backslashes, so the result does not
+    depend on the standard_conforming_strings setting.
+
+    Args:
+        value (str) -- value to quote.
+
+    Returns the quoted literal (str).
+    """
+    quoted = value.replace("'", "''")
+    if '\\' in quoted:
+        return "E'%s'" % quoted.replace('\\', '\\\\')
+    return "'%s'" % quoted
+
+
 def pg_unquote_name(name):
     """Decode one complete double-quoted SQL identifier, otherwise return it unchanged.
 

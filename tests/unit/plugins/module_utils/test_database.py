@@ -12,10 +12,10 @@ import sys
 import pytest
 
 if sys.version_info[0] == 3:
-    from plugins.module_utils.database import check_input, pg_quote_name, pg_unquote_name
+    from plugins.module_utils.database import check_input, pg_quote_literal, pg_quote_name, pg_unquote_name
 elif sys.version_info[0] == 2:
     from ansible_collections.community.postgresql.plugins.module_utils.database import (
-        check_input, pg_quote_name, pg_unquote_name,
+        check_input, pg_quote_literal, pg_quote_name, pg_unquote_name,
     )
 
 
@@ -63,6 +63,19 @@ def test_pg_quote_name_for_params():
     # one, so what reaches the server is the name as written.
     doubled = pg_quote_name('per%cent', for_params=True)
     assert doubled % {} == '"per%cent"'
+
+
+@pytest.mark.parametrize('value,expected', [
+    ('', "''"),
+    ('plain', "'plain'"),
+    ("it's", "'it''s'"),
+    ("cp %p '/arch/%f'", "'cp %p ''/arch/%f'''"),
+    ('"double"', "'\"double\"'"),
+    ('C:\\arch', "E'C:\\\\arch'"),
+    ("a\\'b", "E'a\\\\''b'"),
+])
+def test_pg_quote_literal(value, expected):
+    assert pg_quote_literal(value) == expected
 
 
 @pytest.mark.parametrize('name,expected', [

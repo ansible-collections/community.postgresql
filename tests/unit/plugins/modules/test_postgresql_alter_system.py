@@ -16,6 +16,7 @@ from ansible_collections.community.postgresql.plugins.modules.postgresql_alter_s
     normalize_bool_val,
     param_is_guc_list_quote,
     PgParam,
+    split_guc_list,
     str_contains_float,
     to_float,
     to_int,
@@ -195,14 +196,24 @@ def test_check_pg_version(m_ansible_module, _input, warn_msg):
     assert m_ansible_module.warn_msg == warn_msg
 
 
+EMPTY_LIST_ERR = ('Due to a PostgreSQL bug in resetting %s '
+                  'with ALTER SYSTEM SET, setting it as an empty string '
+                  'is not supported by the module to avoid crashes. '
+                  'Use `value: _RESET` instead. '
+                  'If you think the bug has been fixed, please let us know.')
+
+
 @pytest.mark.parametrize('param_input,value_input,err_msg', [
     ('work_mem', '1024', None),
+    ('log_destination', '', None),
     ('shared_preload_libraries', 'pg_stat_statements', None),
-    ('shared_preload_libraries', '', 'Due to a PostgreSQL bug in resetting shared_preload_libraries '
-                                     'with ALTER SYSTEM SET, setting it as an empty string '
-                                     'is not supported by the module to avoid crashes. '
-                                     'Use `value: _RESET` instead. '
-                                     'If you think the bug has been fixed, please let us know.'),
+    ('shared_preload_libraries', '', EMPTY_LIST_ERR % 'shared_preload_libraries'),
+    ('session_preload_libraries', '', EMPTY_LIST_ERR % 'session_preload_libraries'),
+    ('local_preload_libraries', ' ', EMPTY_LIST_ERR % 'local_preload_libraries'),
+    ('search_path', ', ,', EMPTY_LIST_ERR % 'search_path'),
+    ('search_path', '', EMPTY_LIST_ERR % 'search_path'),
+    ('output_plugin_libraries', '', EMPTY_LIST_ERR % 'output_plugin_libraries'),
+    ('oauth_validator_libraries', '', EMPTY_LIST_ERR % 'oauth_validator_libraries'),
 ]
 )
 def test_check_problematic_params(m_ansible_module, param_input, value_input, err_msg):
@@ -482,6 +493,23 @@ def test_value_string(m_ansible_module, param_name, value, expected_normalized):
     assert obj.normalized == expected_normalized
 
 
+@pytest.mark.parametrize('value,expected', [
+    ('', []),
+    (',', []),
+    (' , ,', []),
+    ('a', ['a']),
+    ('a,b', ['a', 'b']),
+    (' a , b ', ['a', 'b']),
+    ('a,,b,', ['a', 'b']),
+    ('"$user", public', ['$user', 'public']),
+    ('"a,b", c', ['a,b', 'c']),
+    ('"we""ird"', ['we"ird']),
+]
+)
+def test_split_guc_list(value, expected):
+    assert split_guc_list(value) == expected
+
+
 @pytest.mark.parametrize('pg_ver,name,expected', [
     (140000, 'output_plugin_libraries', True),
     (170000, 'output_plugin_libraries', True),
@@ -516,7 +544,20 @@ def m_pg_cursor(mocker, monkeypatch):
      '"shared_preload_libraries"', "'pg_stat_statements','pgcrypto'", 140000),
     ('pg_stat_statements.track', 'all', '"pg_stat_statements"."track"', "'all'", 140000),
     ('online_analyze.verbose', 'on', '"online_analyze"."verbose"', "'on'", 140000),
-    ('online_analyze.something', 'a, b', '"online_analyze"."something"', "'a','b'", 140000),
+    # Only GUC_LIST_QUOTE parameters are split into one literal per element
+    ('online_analyze.something', 'a, b', '"online_analyze"."something"', "'a, b'", 140000),
+    ('log_destination', 'stderr,csvlog', '"log_destination"', "'stderr,csvlog'", 140000),
+    ('TimeZone', 'EST5EDT,M3.2.0,M11.1.0', '"TimeZone"', "'EST5EDT,M3.2.0,M11.1.0'", 140000),
+    ('primary_conninfo', 'host=a,b port=5432', '"primary_conninfo"', "'host=a,b port=5432'", 140000),
+    ('ssl_ciphers', 'ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-AES256-GCM-SHA384', '"ssl_ciphers"',
+     "'ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-AES256-GCM-SHA384'", 140000),
+    ('search_path', '"$user", public', '"search_path"', "'$user','public'", 140000),
+    ('search_path', 'public,', '"search_path"', "'public'", 140000),
+    ('search_path', '"a,b", c', '"search_path"', "'a,b','c'", 140000),
+    ('search_path', "o'brien", '"search_path"', "'o''brien'", 140000),
+    # Quotes and backslashes are escaped
+    ('archive_command', "cp %p '/arch/%f'", '"archive_command"', "'cp %p ''/arch/%f'''", 140000),
+    ('archive_command', 'copy %p C:\\arch\\%f', '"archive_command"', "E'copy %p C:\\\\arch\\\\%f'", 140000),
     ('Custom.SUBSYSTEM.option', 'on', '"Custom"."SUBSYSTEM"."option"', "'on'", 140000),
     ('online_analyze.verbose', 'on', '"online_analyze"."verbose"', 'on', 130000),
 ])
@@ -672,7 +713,9 @@ def test_main_quoted_and_unquoted_names(mocker, m_pg_cursor, name, logical_name,
     assert module.exit_json.call_args.kwargs['changed'] is True
 
 
-@pytest.mark.parametrize('name', ['shared_preload_libraries', '"shared_preload_libraries"'])
+@pytest.mark.parametrize('name', [
+    'shared_preload_libraries', '"shared_preload_libraries"', 'session_preload_libraries', 'search_path',
+])
 def test_main_quoted_name_cannot_bypass_problematic_param_check(mocker, name):
     module = mocker.MagicMock()
     module.params = dict(param=name, value='', session_role=None, trust_input=True)
