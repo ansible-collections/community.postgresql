@@ -142,6 +142,8 @@ options:
       - Takes a dict where the key is the name of the configuration parameter. If the key includes special characters
         like C(.) and C(-), it needs to be quoted to ensure the YAML is valid.
       - Sets or updates any parameter in the list that is not present or has the wrong value in the database.
+      - Values are compared in the form normalized by PostgreSQL, so equivalent spellings
+        (for example C(a,B) and C(a, b) for C(search_path)) do not report a change.
       - Removes any parameter from the user that is not listed here.
       - Parameters that are present in the database but are not included in this list will only be reset, if
         O(reset_unspecified_configuration=true).
@@ -792,17 +794,27 @@ def parse_user_configuration(module, configs):
         return {}
 
 
+def get_user_configuration(cursor, module, user):
+    """Returns the raw 'rolconfig' array of the role (database-independent settings), or None if empty."""
+    cursor.execute("SELECT rolconfig FROM pg_roles WHERE rolname = %(user)s;", {"user": user})
+    row = cursor.fetchone()
+    if row is None:
+        module.fail_json(msg="Can't find user %(user)s in 'pg_roles'" % {"user": user})
+    return row['rolconfig']
+
+
 def user_configuration(cursor, module, user, configuration, reset_unspec_config, quote_values):
-    """Updates the user's configuration parameters if necessary."""
-    current_config_query = "SELECT rolconfig FROM pg_roles WHERE rolname = %(user)s;"
-    cursor.execute(current_config_query, {"user": user})
-    current_config = cursor.fetchone()
+    """Updates the user's configuration parameters if necessary.
+
+    Parameters whose value already matches the stored one textually are skipped without queries.
+    PostgreSQL stores a normalized form of each value (for search_path, 'a,B' is stored as 'a, b'),
+    so the other parameters are set inside a savepoint: if 'rolconfig' is unchanged afterwards,
+    the value was equivalent and the savepoint is rolled back.
+    """
+    current_raw = get_user_configuration(cursor, module, user)
     changed = False
 
-    if current_config is None:
-        module.fail_json(msg="Can't find user %(user)s in 'pg_roles'" % {"user": user})
-
-    current_config_dict = parse_user_configuration(module, current_config['rolconfig'])
+    current_config_dict = parse_user_configuration(module, current_raw)
     config_updates = compare_user_configurations(current_config_dict, configuration, reset_unspec_config)
 
     try:
@@ -813,6 +825,8 @@ def user_configuration(cursor, module, user, configuration, reset_unspec_config,
             executed_queries.append(query)
             cursor.execute(query)
             changed = True
+        if config_updates["reset"]:
+            current_raw = get_user_configuration(cursor, module, user)
         for key, value in config_updates["update"].items():
             if quote_values:
                 query = ('ALTER ROLE %(user)s SET %(key)s TO \'%(value)s\';' %
@@ -820,8 +834,15 @@ def user_configuration(cursor, module, user, configuration, reset_unspec_config,
             else:
                 query = ('ALTER ROLE %(user)s SET %(key)s TO %(value)s;' %
                          {"user": pg_quote_name(user), "key": pg_quote_name(key), "value": value})
-            executed_queries.append(query)
+            cursor.execute("SAVEPOINT ansible_pg_user_config;")
             cursor.execute(query)
+            new_raw = get_user_configuration(cursor, module, user)
+            if new_raw == current_raw:
+                cursor.execute("ROLLBACK TO SAVEPOINT ansible_pg_user_config;")
+                continue
+            cursor.execute("RELEASE SAVEPOINT ansible_pg_user_config;")
+            current_raw = new_raw
+            executed_queries.append(query)
             changed = True
     except psycopg.ProgrammingError as e:
         module.fail_json("Unable to update configuration for '%(user)s' due to: %(exception)s" %
