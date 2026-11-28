@@ -1,0 +1,169 @@
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+# PostgreSQL accepts several spellings of booleans (true, yes, 1, ...) and
+# enum values in any case, but pg_settings shows them as on/off and in lower case.
+- vars:
+    task_parameters: &task_parameters
+      become_user: '{{ pg_user }}'
+      become: true
+      register: result
+    pg_parameters: &pg_parameters
+      login_user: '{{ pg_user }}'
+      login_db: postgres
+
+  block:
+  - name: Set a boolean param to off
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: jit
+      value: 'false'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result["diff"]["after"]["setting"] == "off"
+
+  - name: Set the boolean param to off with other spellings
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: jit
+      value: '{{ item }}'
+    loop: ['false', 'FALSE', 'no', 'off', 'OFF', '0', 'f']
+
+  - name: Check idempotence
+    assert:
+      that:
+      - item is not changed
+      - item.executed_queries == []
+    loop: '{{ result.results }}'
+
+  - name: Set the boolean param to on in check mode
+    <<: *task_parameters
+    check_mode: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: jit
+      value: 'yes'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result.executed_queries == ["ALTER SYSTEM SET jit = 'yes'", "SELECT pg_reload_conf()"]
+
+  - name: Check nothing has changed
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'jit'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "off"
+
+  - name: Set the boolean param to on
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: jit
+      value: 'yes'
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result["diff"]["after"]["setting"] == "on"
+
+  - name: Set the boolean param to on with other spellings
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: jit
+      value: '{{ item }}'
+    loop: ['true', 'True', 'yes', 'on', 'ON', '1', 't']
+
+  - name: Check idempotence
+    assert:
+      that:
+      - item is not changed
+      - item.executed_queries == []
+    loop: '{{ result.results }}'
+
+  - name: Set an enum param in upper case
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_min_messages
+      value: ERROR
+
+  - name: Check the result
+    assert:
+      that:
+      - result is changed
+      - result["diff"]["after"]["setting"] == "error"
+
+  - name: Check the setting
+    <<: *task_parameters
+    postgresql_query:
+      <<: *pg_parameters
+      query: "SELECT setting FROM pg_catalog.pg_settings WHERE name = 'log_min_messages'"
+
+  - name: Check the output
+    assert:
+      that:
+      - result.query_result[0]["setting"] == "error"
+
+  - name: Set the enum param again in any case
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: log_min_messages
+      value: '{{ item }}'
+    loop: ['ERROR', 'Error', 'error']
+
+  - name: Check idempotence
+    assert:
+      that:
+      - item is not changed
+      - item.executed_queries == []
+    loop: '{{ result.results }}'
+
+  # Values PostgreSQL rejects must reach ALTER SYSTEM, even when the current
+  # value is on: boolean prefixes for enum params, spaces around booleans
+  - name: Set values PostgreSQL rejects
+    <<: *task_parameters
+    ignore_errors: true
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item.param }}'
+      value: '{{ item.value }}'
+    loop:
+    - {param: synchronous_commit, value: 't'}
+    - {param: synchronous_commit, value: 'y'}
+    - {param: jit, value: ' on'}
+
+  - name: Check the result
+    assert:
+      that:
+      - item is failed
+      - item is not changed
+      - item.msg is search('invalid value for parameter|requires a Boolean value')
+    loop: '{{ result.results }}'
+
+  always:
+  - name: Reset the params
+    <<: *task_parameters
+    postgresql_alter_system:
+      <<: *pg_parameters
+      param: '{{ item }}'
+      value: _RESET
+    loop:
+    - jit
+    - log_min_messages
